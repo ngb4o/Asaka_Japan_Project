@@ -21,6 +21,7 @@ const FALLBACK_PRODUCTS: FeaturedProductCard[] = FEATURED_PRODUCTS.map(
     benefit: product.benefit,
     image: product.image,
     alt: product.alt,
+    displayOrder: index,
   })
 );
 
