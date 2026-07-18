@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
         hostname: "asaka-api.onrender.com",
         pathname: "/uploads/**",
       },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
     ],
   },
 };

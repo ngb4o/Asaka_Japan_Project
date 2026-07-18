@@ -13,6 +13,10 @@ export const env = {
 
   JWT_SECRET: process.env.JWT_SECRET,
 
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+
   CORS_ORIGINS: (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001')
     .split(',')
     .map((origin) => origin.trim())
