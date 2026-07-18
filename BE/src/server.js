@@ -35,8 +35,11 @@ const START_SERVER = () => {
 
   app.use(errorHandlingMiddleware)
 
-  app.listen(env.APP_PORT, env.APP_HOST, () => {
-    console.log(`Hi ${env.AUTHOR}, CRM API running at http://${env.APP_HOST}:${env.APP_PORT}/api`)
+  const host = env.APP_HOST || '0.0.0.0'
+  const port = Number(process.env.PORT || env.APP_PORT || 8017)
+
+  app.listen(port, host, () => {
+    console.log(`Hi ${env.AUTHOR}, CRM API running at http://${host}:${port}/api`)
   })
 
   exitHook(() => {
