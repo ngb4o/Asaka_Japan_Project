@@ -14,6 +14,14 @@ Router.get('/status', (req, res) => {
   res.status(StatusCodes.OK).json({ message: 'ASAKA CRM API is ready' })
 })
 
+Router.get('/health', (req, res) => {
+  res.status(StatusCodes.OK).json({
+    ok: true,
+    service: 'asaka-api',
+    time: new Date().toISOString()
+  })
+})
+
 Router.use('/users', userRoute)
 Router.use('/product-categories', productCategoryRoute)
 Router.use('/products', productRoute)
