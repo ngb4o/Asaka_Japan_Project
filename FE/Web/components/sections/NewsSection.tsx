@@ -138,9 +138,9 @@ export function NewsSection() {
                 key={`skeleton-${index}`}
                 className="w-[calc((100%_-_12px)/2)] shrink-0 overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)] sm:w-[calc((100%_-_32px)/2)] lg:w-[calc((100%_-_48px)/3)]"
               >
-                <div className="aspect-[16/10] animate-pulse bg-[var(--color-surface-muted)]" />
+                <div className="aspect-[4/5] animate-pulse bg-[var(--color-surface-muted)] sm:aspect-[16/10]" />
                 <div className="space-y-3 p-3 sm:p-5">
-                  <div className="h-3 w-24 animate-pulse rounded bg-[var(--color-surface-muted)]" />
+                  <div className="h-2.5 w-16 animate-pulse rounded bg-[var(--color-surface-muted)] sm:h-3 sm:w-24" />
                   <div className="h-4 w-full animate-pulse rounded bg-[var(--color-surface-muted)]" />
                   <div className="h-3 w-5/6 animate-pulse rounded bg-[var(--color-surface-muted)]" />
                 </div>
@@ -166,9 +166,9 @@ export function NewsSection() {
               {articles.map((article) => (
                 <article
                   key={article.id}
-                  className="group flex w-[calc((100%_-_12px)/2)] shrink-0 snap-start flex-col overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)] transition-all duration-[400ms] hover:-translate-y-1 hover:shadow-[var(--shadow-elevated)] sm:w-[calc((100%_-_32px)/2)] lg:w-[calc((100%_-_48px)/3)]"
+                  className="group flex w-[calc((100%_-_12px)/2)] shrink-0 snap-start flex-col overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)] transition-all duration-[400ms] hover:-translate-y-1 sm:w-[calc((100%_-_32px)/2)] lg:w-[calc((100%_-_48px)/3)]"
                 >
-                  <div className="relative aspect-[16/10] overflow-hidden bg-[var(--color-surface-muted)]">
+                  <div className="relative aspect-[4/5] w-full overflow-hidden bg-[var(--color-surface-muted)] sm:aspect-[16/10]">
                     {article.image ? (
                       <Image
                         src={article.image}
@@ -187,8 +187,8 @@ export function NewsSection() {
                   </div>
                   <div className="flex flex-1 flex-col p-3 sm:p-5">
                     {article.date ? (
-                      <p className="flex items-center gap-2 text-[var(--text-xs)] font-normal text-[var(--color-text-inverse)]">
-                        <Calendar className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <p className="flex items-center gap-1 text-[10px] font-normal leading-none text-[var(--color-text-inverse)] sm:gap-2 sm:text-[length:var(--text-xs)]">
+                        <Calendar className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" aria-hidden="true" />
                         <time dateTime={article.dateIso}>{article.date}</time>
                       </p>
                     ) : null}
