@@ -1,0 +1,578 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ImageUpload } from "@/components/products/ImageUpload";
+import { ProductDescriptionField } from "@/components/products/ProductDescriptionField";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
+import { useToast } from "@/components/providers/ToastProvider";
+import { Pagination } from "@/components/ui/pagination";
+import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
+import {
+  SearchableSelect,
+  STATUS_OPTIONS,
+} from "@/components/ui/searchable-select";
+import { getProductCategories } from "@/lib/api/product-categories";
+import {
+  createProduct,
+  deleteProduct,
+  getProducts,
+  updateProduct,
+} from "@/lib/api/products";
+import { getImageUrl } from "@/lib/api/uploads";
+import type { Product, ProductCategory } from "@/lib/types";
+import { ApiClientError } from "@/lib/api/client";
+import { DEFAULT_PAGE_SIZE, shouldReloadPreviousPage } from "@/lib/pagination";
+import {
+  formatCurrency,
+  formatVndInput,
+  parseVndInput,
+} from "@/lib/utils";
+import { formatStockDisplay } from "@/lib/inventoryUnits";
+import {
+  buildProductPayload,
+  validateProductForm,
+  type ProductFormValues,
+} from "@/lib/validation/payloads";
+
+const EMPTY_FORM: ProductFormValues = {
+  name: "",
+  categoryId: "",
+  price: "",
+  unit: "chai",
+  unitsPerCase: 1,
+  images: [],
+  status: "active",
+};
+
+export default function ProductsPage() {
+  const confirm = useConfirm();
+  const toast = useToast();
+  const [items, setItems] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [form, setForm] = useState<ProductFormValues>(EMPTY_FORM);
+  const [submitting, setSubmitting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [orderDrafts, setOrderDrafts] = useState<Record<string, string>>({});
+  const [savingOrderId, setSavingOrderId] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [productsResult, categoriesResult] = await Promise.all([
+        getProducts({
+          search: search || undefined,
+          categoryId: categoryFilter || undefined,
+          page,
+          limit: DEFAULT_PAGE_SIZE,
+        }),
+        getProductCategories({ limit: 100, page: 1 }),
+      ]);
+      setItems(productsResult.items);
+      setOrderDrafts({});
+      if (shouldReloadPreviousPage(productsResult, page)) {
+        setPage(productsResult.totalPages);
+        return;
+      }
+      setPage(productsResult.page);
+      setTotal(productsResult.total);
+      setTotalPages(productsResult.totalPages);
+      setCategories(categoriesResult.items);
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không tải được dữ liệu"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [search, categoryFilter, page, toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  function openCreate() {
+    setEditing(null);
+    setForm({
+      ...EMPTY_FORM,
+      categoryId: categories[0]?.id || "",
+    });
+    setDialogOpen(true);
+  }
+
+  function openEdit(item: Product) {
+    setEditing(item);
+    setForm({
+      name: item.name,
+      sku: item.sku,
+      categoryId: item.categoryId,
+      description: item.description,
+      shortDescription: item.shortDescription || "",
+      unit: item.unit || "chai",
+      unitsPerCase: item.unitsPerCase || 1,
+      price: item.price,
+      costPrice: item.costPrice,
+      activeIngredient: item.activeIngredient,
+      packaging: item.packaging,
+      image: item.image,
+      images:
+        item.images?.length > 0
+          ? item.images
+          : item.image
+            ? [item.image]
+            : [],
+      status: item.status,
+    });
+    setDialogOpen(true);
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+
+    const validationError = validateProductForm(form);
+    if (validationError) {
+      toast.warning(validationError);
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const payload = buildProductPayload(form);
+
+      if (editing) {
+        await updateProduct(editing.id, payload);
+        toast.success("Đã cập nhật sản phẩm");
+      } else {
+        await createProduct(payload);
+        toast.success("Đã thêm sản phẩm");
+      }
+      setDialogOpen(false);
+      await loadData();
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Lưu thất bại");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function saveDisplayOrder(item: Product) {
+    const raw = orderDrafts[item.id];
+    const nextOrder =
+      raw === undefined || raw === ""
+        ? item.displayOrder ?? 0
+        : Math.max(0, Math.floor(Number(raw) || 0));
+    const current = item.displayOrder ?? 0;
+
+    if (nextOrder === current) {
+      setOrderDrafts((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
+      return;
+    }
+
+    setSavingOrderId(item.id);
+    try {
+      const updated = await updateProduct(item.id, { displayOrder: nextOrder });
+      setItems((prev) =>
+        prev
+          .map((row) =>
+            row.id === item.id
+              ? { ...row, displayOrder: updated.displayOrder ?? nextOrder }
+              : row
+          )
+          .sort(
+            (a, b) =>
+              (a.displayOrder ?? 0) - (b.displayOrder ?? 0) ||
+              a.name.localeCompare(b.name, "vi")
+          )
+      );
+      setOrderDrafts((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
+      toast.success("Đã cập nhật thứ tự hiển thị");
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không cập nhật được thứ tự"
+      );
+      setOrderDrafts((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
+    } finally {
+      setSavingOrderId(null);
+    }
+  }
+
+  async function handleDelete(item: Product) {
+    const confirmed = await confirm({
+      title: "Xóa sản phẩm",
+      description: `Bạn có chắc muốn xóa "${item.name}"? Hành động này không thể hoàn tác.`,
+      confirmText: "Xóa",
+      cancelText: "Hủy",
+      variant: "danger",
+    });
+    if (!confirmed) return;
+
+    try {
+      await deleteProduct(item.id);
+      toast.success(`Đã xóa sản phẩm "${item.name}"`);
+      await loadData();
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
+    }
+  }
+
+  if (loading && items.length === 0) {
+    return <PageSkeleton {...PAGE_SKELETONS.products} />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Sản phẩm</h1>
+          <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+            Quản lý danh mục thuốc bảo vệ thực vật
+          </p>
+        </div>
+        <Button onClick={openCreate} disabled={categories.length === 0}>
+          <Plus className="h-4 w-4" />
+          Thêm sản phẩm
+        </Button>
+      </div>
+
+      {categories.length === 0 && (
+        <p className="text-sm text-amber-700">
+          Vui lòng tạo ít nhất một loại sản phẩm trước khi thêm sản phẩm.
+        </p>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Danh sách</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <Input
+              placeholder="Tìm theo tên sản phẩm..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+            <SearchableSelect
+              options={[
+                { value: "", label: "Tất cả loại" },
+                ...categories.map((category) => ({
+                  value: category.id,
+                  label: category.name,
+                })),
+              ]}
+              value={categoryFilter}
+              onChange={(next) => {
+                setCategoryFilter(next);
+                setPage(1);
+              }}
+              placeholder="Tất cả loại"
+              searchPlaceholder="Tìm loại sản phẩm..."
+              clearable
+            />
+          </div>
+
+          {items.length === 0 ? (
+            <p className="text-sm text-[var(--color-text-inverse)]">Chưa có sản phẩm</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[780px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
+                    <th className="px-2 py-3 font-medium">STT</th>
+                    <th className="px-2 py-3 font-medium">Ảnh</th>
+                    <th className="px-2 py-3 font-medium">Tên</th>
+                    <th className="px-2 py-3 font-medium">Loại</th>
+                    <th className="px-2 py-3 font-medium">Giá bán</th>
+                    <th className="px-2 py-3 font-medium">Tồn kho</th>
+                    <th className="px-2 py-3 font-medium">Trạng thái</th>
+                    <th className="px-2 py-3 font-medium text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
+                      <td className="px-2 py-3">
+                        <Input
+                          type="number"
+                          min={0}
+                          className="h-8 w-16 px-2 text-center"
+                          disabled={savingOrderId === item.id}
+                          value={
+                            orderDrafts[item.id] ?? String(item.displayOrder ?? 0)
+                          }
+                          onChange={(e) =>
+                            setOrderDrafts((prev) => ({
+                              ...prev,
+                              [item.id]: e.target.value,
+                            }))
+                          }
+                          onBlur={() => void saveDisplayOrder(item)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          aria-label={`Thứ tự hiển thị ${item.name}`}
+                        />
+                      </td>
+                      <td className="px-2 py-3">
+                        {item.image || item.images?.[0] ? (
+                          <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]">
+                            <Image
+                              src={getImageUrl(item.image || item.images[0])}
+                              alt={item.name}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                            {(item.images?.length || (item.image ? 1 : 0)) > 1 ? (
+                              <span className="absolute bottom-0 right-0 rounded-tl bg-black/70 px-1 text-[10px] font-medium text-white">
+                                {item.images?.length || 1}
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[var(--color-text-inverse)]">—</span>
+                        )}
+                      </td>
+                      <td className="px-2 py-3 font-medium">{item.name}</td>
+                      <td className="px-2 py-3">{item.categoryName || "—"}</td>
+                      <td className="px-2 py-3">{formatCurrency(item.price)}</td>
+                      <td className="px-2 py-3 font-medium">
+                        {formatStockDisplay(item.totalStock ?? 0, item.unitsPerCase)}
+                      </td>
+                      <td className="px-2 py-3">
+                        <Badge variant={item.status === "active" ? "success" : "muted"}>
+                          {item.status === "active" ? "Đang bán" : "Ngưng"}
+                        </Badge>
+                      </td>
+                      <td className="px-2 py-3">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                total={total}
+                limit={DEFAULT_PAGE_SIZE}
+                onPageChange={setPage}
+                disabled={loading}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Sửa sản phẩm" : "Thêm sản phẩm"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="name">Tên sản phẩm *</Label>
+              <Input
+                id="name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="categoryId">Loại sản phẩm *</Label>
+              <SearchableSelect
+                id="categoryId"
+                options={[
+                  { value: "", label: "Chọn loại" },
+                  ...categories.map((category) => ({
+                    value: category.id,
+                    label: category.name,
+                  })),
+                ]}
+                value={form.categoryId}
+                onChange={(next) => setForm({ ...form, categoryId: next })}
+                placeholder="Chọn loại"
+                searchPlaceholder="Tìm loại sản phẩm..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="price">Giá bán (VND) *</Label>
+              <Input
+                id="price"
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={formatVndInput(form.price)}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    price: parseVndInput(e.target.value),
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="costPrice">Giá vốn (VND)</Label>
+              <Input
+                id="costPrice"
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={formatVndInput(form.costPrice ?? "")}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    costPrice: parseVndInput(e.target.value),
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="unit">Đơn vị gốc</Label>
+              <Input
+                id="unit"
+                value={form.unit || ""}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                placeholder="chai"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="unitsPerCase">Số chai / 1 thùng</Label>
+              <Input
+                id="unitsPerCase"
+                type="number"
+                min={1}
+                value={form.unitsPerCase ?? ""}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    unitsPerCase:
+                      e.target.value === "" ? "" : Number(e.target.value),
+                  })
+                }
+                placeholder="VD: 20"
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="packaging">Quy cách (hiển thị)</Label>
+              <Input
+                id="packaging"
+                value={form.packaging || ""}
+                onChange={(e) => setForm({ ...form, packaging: e.target.value })}
+                placeholder="VD: Thùng 20 chai"
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="shortDescription">Mô tả ngắn (landing page)</Label>
+                <span className="text-xs text-[var(--color-text-inverse)]">
+                  {(form.shortDescription || "").length}/300
+                </span>
+              </div>
+              <Textarea
+                id="shortDescription"
+                value={form.shortDescription || ""}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    shortDescription: e.target.value.slice(0, 300),
+                  })
+                }
+                className="min-h-[88px]"
+                placeholder="1–2 câu ngắn hiển thị dưới tên sản phẩm trên trang chủ..."
+              />
+            </div>
+            <ProductDescriptionField
+              value={form.description || ""}
+              onChange={(description) => setForm({ ...form, description })}
+            />
+            <div className="space-y-2 md:col-span-2">
+              <ImageUpload
+                label="Ảnh sản phẩm"
+                max={5}
+                values={form.images || []}
+                onValuesChange={(urls) =>
+                  setForm({
+                    ...form,
+                    images: urls,
+                    image: urls[0] || "",
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Trạng thái</Label>
+              <SearchableSelect
+                id="status"
+                options={STATUS_OPTIONS.product}
+                value={form.status || "active"}
+                onChange={(next) =>
+                  setForm({
+                    ...form,
+                    status: next as "active" | "inactive",
+                  })
+                }
+                searchable={false}
+              />
+            </div>
+            <div className="flex justify-end gap-2 md:col-span-2">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                Hủy
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Đang lưu..." : "Lưu"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

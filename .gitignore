@@ -1,0 +1,68 @@
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Next.js / build
+.next/
+out/
+build/
+dist/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Logs & debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Certificates / keys
+*.pem
+*.key
+
+# IDE / editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+*.code-workspace
+
+# Backend uploads (keep folder structure only)
+BE/uploads/**
+!BE/uploads/**/
+!BE/uploads/**/.gitkeep
+
+# Mobile (Flutter / React Native — khi có)
+**/ios/Pods/
+**/android/.gradle/
+**/android/app/build/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.dart_tool/
+**/build/
+*.iml
+
+# Misc
+*.local
+.turbo/
+.cache/

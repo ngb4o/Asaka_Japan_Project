@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-primary: "Barlow", sans-serif;
+
+  --color-text-primary: var(--crm-text-primary);
+  --color-text-secondary: var(--crm-text-secondary);
+  --color-text-tertiary: var(--crm-text-tertiary);
+  --color-text-inverse: var(--crm-text-inverse);
+  --color-surface-base: var(--crm-surface-base);
+  --color-surface-elevated: var(--crm-surface-elevated);
+  --color-surface-muted: var(--crm-surface-muted);
+  --color-surface-glass: var(--crm-surface-glass);
+  --color-border-subtle: var(--crm-border-subtle);
+  --color-badge-success-bg: var(--crm-badge-success-bg);
+  --color-badge-success-fg: var(--crm-badge-success-fg);
+  --color-badge-muted-bg: var(--crm-badge-muted-bg);
+  --color-badge-muted-fg: var(--crm-badge-muted-fg);
+  --color-danger-soft-bg: var(--crm-danger-soft-bg);
+
+  --text-xs: 14px;
+  --text-sm: 16px;
+  --text-md: 18px;
+  --text-lg: 20px;
+  --text-xl: 22px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+
+  --radius-card: 16px;
+  --radius-button: 9999px;
+  --motion-instant: 400ms;
+
+  --shadow-soft: var(--crm-shadow-soft);
+  --shadow-elevated: var(--crm-shadow-elevated);
+}
+
+:root {
+  --crm-text-primary: #080809;
+  --crm-text-secondary: #017d03;
+  --crm-text-tertiary: #ffffff;
+  --crm-text-inverse: #333333;
+  --crm-surface-base: #000000;
+  --crm-surface-elevated: #ffffff;
+  --crm-surface-muted: #f4f7f4;
+  --crm-surface-glass: rgb(255 255 255 / 0.72);
+  --crm-border-subtle: rgb(8 8 9 / 0.08);
+  --crm-badge-success-bg: #dcfce7;
+  --crm-badge-success-fg: #15803d;
+  --crm-badge-muted-bg: #f3f4f6;
+  --crm-badge-muted-fg: #4b5563;
+  --crm-danger-soft-bg: #fef2f2;
+  --crm-shadow-soft: 0 4px 24px rgb(8 8 9 / 0.06);
+  --crm-shadow-elevated: 0 12px 40px rgb(8 8 9 / 0.12);
+}
+
+.dark {
+  --crm-text-primary: #f2f5f2;
+  --crm-text-secondary: #3ecf5a;
+  --crm-text-tertiary: #0b0f0b;
+  --crm-text-inverse: #9aa69a;
+  --crm-surface-base: #050705;
+  --crm-surface-elevated: #121812;
+  --crm-surface-muted: #0c110c;
+  --crm-surface-glass: rgb(18 24 18 / 0.82);
+  --crm-border-subtle: rgb(242 245 242 / 0.1);
+  --crm-badge-success-bg: rgb(22 101 52 / 0.35);
+  --crm-badge-success-fg: #86efac;
+  --crm-badge-muted-bg: rgb(242 245 242 / 0.08);
+  --crm-badge-muted-fg: #a8b5a8;
+  --crm-danger-soft-bg: rgb(127 29 29 / 0.35);
+  --crm-shadow-soft: 0 4px 24px rgb(0 0 0 / 0.35);
+  --crm-shadow-elevated: 0 16px 48px rgb(0 0 0 / 0.45);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-border-subtle);
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    font-family: var(--font-barlow), var(--font-primary);
+    font-size: var(--text-md);
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-muted);
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 250ms ease, color 250ms ease;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-text-secondary);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .container-crm {
+    width: 100%;
+    max-width: 1280px;
+    margin-inline: auto;
+    padding-inline: 20px;
+  }
+
+  .auth-fade-in {
+    animation: auth-fade-in 700ms ease-out both;
+  }
+
+  .auth-fade-in-up {
+    animation: auth-fade-in-up 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .auth-delay {
+    animation-delay: 120ms;
+  }
+}
+
+@keyframes auth-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes auth-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate3d(24px, 12px, 0) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}

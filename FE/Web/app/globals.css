@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+@theme {
+  --font-primary: "Barlow", sans-serif;
+
+  --color-text-primary: #080809;
+  --color-text-secondary: #017d03;
+  --color-text-tertiary: #ffffff;
+  --color-text-inverse: #333333;
+  --color-surface-base: #000000;
+  --color-surface-elevated: #ffffff;
+  --color-surface-muted: #f4f7f4;
+  --color-surface-glass: rgb(255 255 255 / 0.72);
+  --color-border-subtle: rgb(8 8 9 / 0.08);
+
+  --text-xs: 14px;
+  --text-sm: 16px;
+  --text-md: 18px;
+  --text-lg: 20px;
+  --text-xl: 22px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+  --text-display: clamp(2.5rem, 5vw + 1rem, 4.75rem);
+  --text-headline: clamp(1.875rem, 3vw + 0.5rem, 3rem);
+
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 14px;
+  --space-4: 15px;
+  --space-5: 18px;
+  --space-6: 20px;
+  --space-7: 21px;
+  --space-8: 22px;
+  --space-section: clamp(2.75rem, 5vw, 5rem);
+  --space-section-sm: clamp(2rem, 4vw, 3rem);
+
+  --radius-card: 30px;
+  --radius-button: 9999px;
+  --motion-instant: 400ms;
+
+  --shadow-soft: 0 4px 24px rgb(8 8 9 / 0.06);
+  --shadow-elevated: 0 12px 40px rgb(8 8 9 / 0.12);
+  --shadow-glass: 0 8px 32px rgb(8 8 9 / 0.08);
+}
+
+/* Responsive type scale: compact and readable on small screens. */
+@media (max-width: 639px) {
+  :root {
+    --text-xs: 12px;
+    --text-sm: 14px;
+    --text-md: 16px;
+    --text-lg: 18px;
+    --text-xl: 20px;
+    --text-2xl: 22px;
+    --text-3xl: 26px;
+    --text-display: clamp(2.25rem, 10vw, 2.5rem);
+    --text-headline: 28px;
+  }
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-border-subtle);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    font-family: var(--font-barlow), var(--font-primary);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    line-height: 1.28;
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-elevated);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-text-secondary);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .text-display {
+    font-size: var(--text-display);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+
+  .text-headline {
+    font-size: var(--text-headline);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+  }
+
+  .glass-light {
+    background: var(--color-surface-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgb(255 255 255 / 0.4);
+  }
+
+  .section-padding {
+    padding-block: var(--space-section);
+    padding-inline: var(--space-6);
+  }
+
+  .container-wide {
+    width: 100%;
+    max-width: 1280px;
+    margin-inline: auto;
+  }
+
+  .organic-bg {
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 40%, rgb(1 125 3 / 0.06), transparent),
+      radial-gradient(ellipse 60% 40% at 80% 60%, rgb(1 125 3 / 0.04), transparent),
+      var(--color-surface-muted);
+  }
+
+  .social-ripple {
+    animation: social-ripple 2s ease-out infinite;
+  }
+
+  .social-ripple:nth-child(2) {
+    animation-delay: 1s;
+  }
+}
+
+@keyframes social-ripple {
+  0% {
+    box-shadow:
+      0 0 0 0 rgb(1 125 3 / 0.38),
+      0 0 0 0 rgb(1 125 3 / 0.22);
+  }
+  70%,
+  100% {
+    box-shadow:
+      0 0 0 10px rgb(1 125 3 / 0),
+      0 0 0 18px rgb(1 125 3 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .social-ripple {
+    animation: none;
+  }
+}
