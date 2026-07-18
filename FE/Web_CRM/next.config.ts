@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
         port: "8017",
         pathname: "/uploads/**",
       },
+      {
+        protocol: "https",
+        hostname: "asaka-api.onrender.com",
+        pathname: "/uploads/**",
+      },
     ],
   },
 };
