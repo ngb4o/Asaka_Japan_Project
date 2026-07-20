@@ -4,10 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowLeftRight,
+  FileText,
+  Handshake,
   LayoutDashboard,
   LogOut,
+  MessageSquare,
   Newspaper,
   Package,
+  ShoppingCart,
   Tags,
   Warehouse,
 } from "lucide-react";
@@ -17,20 +21,26 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useNotifications } from "@/lib/notifications/NotificationProvider";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Tổng quan", icon: LayoutDashboard },
-  { href: "/product-categories", label: "Loại sản phẩm", icon: Tags },
-  { href: "/products", label: "Sản phẩm", icon: Package },
-  { href: "/warehouses", label: "Kho hàng", icon: Warehouse },
-  { href: "/inventory", label: "Tồn kho", icon: ArrowLeftRight },
-  { href: "/news", label: "Tin tức", icon: Newspaper },
+  { href: "/dashboard", label: "Tổng quan", icon: LayoutDashboard, badgeKey: null },
+  { href: "/leads", label: "Lead liên hệ", icon: MessageSquare, badgeKey: "leads" as const },
+  { href: "/dealers", label: "Đại lý", icon: Handshake, badgeKey: "dealers" as const },
+  { href: "/quotes", label: "Báo giá", icon: FileText, badgeKey: null },
+  { href: "/orders", label: "Đơn hàng", icon: ShoppingCart, badgeKey: "orders" as const },
+  { href: "/product-categories", label: "Loại sản phẩm", icon: Tags, badgeKey: null },
+  { href: "/products", label: "Sản phẩm", icon: Package, badgeKey: null },
+  { href: "/warehouses", label: "Kho hàng", icon: Warehouse, badgeKey: null },
+  { href: "/inventory", label: "Tồn kho", icon: ArrowLeftRight, badgeKey: "stock" as const },
+  { href: "/news", label: "Tin tức", icon: Newspaper, badgeKey: null },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const toast = useToast();
+  const { counts } = useNotifications();
 
   async function handleLogout() {
     try {
@@ -56,7 +66,7 @@ export function Sidebar() {
         </span>
         <div>
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">ASAKA CRM</p>
-          <p className="text-xs text-[var(--color-text-inverse)]">Quản lý sản phẩm</p>
+          <p className="text-xs text-[var(--color-text-inverse)]">Quản lý kinh doanh</p>
         </div>
       </div>
 
@@ -64,6 +74,7 @@ export function Sidebar() {
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
+          const badgeCount = item.badgeKey ? counts[item.badgeKey] : 0;
 
           return (
             <Link
@@ -77,7 +88,12 @@ export function Sidebar() {
               )}
             >
               <Icon className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {badgeCount > 0 ? (
+                <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                  {badgeCount > 99 ? "99+" : badgeCount}
+                </span>
+              ) : null}
             </Link>
           );
         })}

@@ -164,3 +164,192 @@ export type InventoryMovementInput = {
   unitType?: InventoryUnitType;
   note?: string;
 };
+
+export type Lead = {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  company: string;
+  region: string;
+  message: string;
+  type: "contact" | "dealer";
+  source: string;
+  status: "new" | "contacted" | "qualified" | "converted" | "closed";
+  note: string;
+  dealerId: string | null;
+  dealerName?: string;
+  createdAt: string;
+  updatedAt: string | null;
+};
+
+export type LeadInput = {
+  name: string;
+  phone: string;
+  email?: string;
+  company?: string;
+  region?: string;
+  message?: string;
+  type?: "contact" | "dealer";
+  source?: string;
+};
+
+export type LeadUpdateInput = {
+  status?: Lead["status"];
+  note?: string;
+  dealerId?: string | null;
+};
+
+export type Dealer = {
+  id: string;
+  name: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  address: string;
+  region: string;
+  tier: "standard" | "silver" | "gold";
+  discountPercent: number;
+  status: "pending" | "active" | "inactive";
+  note: string;
+  leadId: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string | null;
+};
+
+export type DealerInput = {
+  name: string;
+  contactName?: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  region?: string;
+  tier?: Dealer["tier"];
+  discountPercent?: number;
+  status?: Dealer["status"];
+  note?: string;
+  leadId?: string;
+};
+
+export type LineItem = {
+  productId: string;
+  productName?: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+};
+
+export type LineItemInput = {
+  productId: string;
+  quantity: number;
+  unitPrice?: number;
+};
+
+export type Quote = {
+  id: string;
+  code: string;
+  dealerId: string | null;
+  dealerName?: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  items: LineItem[];
+  subtotal: number;
+  discount: number;
+  total: number;
+  status: "draft" | "sent" | "accepted" | "rejected" | "expired";
+  note: string;
+  validUntil: string | null;
+  orderId: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string | null;
+};
+
+export type QuoteInput = {
+  dealerId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  items: LineItemInput[];
+  discount?: number;
+  status?: Quote["status"];
+  note?: string;
+  validUntil?: string | null;
+};
+
+export type Order = {
+  id: string;
+  code: string;
+  dealerId: string | null;
+  dealerName?: string;
+  quoteId: string | null;
+  warehouseId: string | null;
+  warehouseName?: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  items: LineItem[];
+  subtotal: number;
+  discount: number;
+  total: number;
+  status: "pending" | "confirmed" | "delivering" | "completed" | "cancelled";
+  note: string;
+  inventoryExported: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string | null;
+};
+
+export type OrderInput = {
+  dealerId?: string;
+  quoteId?: string;
+  warehouseId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  items: LineItemInput[];
+  discount?: number;
+  status?: Order["status"];
+  note?: string;
+};
+
+export type DashboardSummary = {
+  stats: {
+    newLeads: number;
+    totalLeads: number;
+    activeDealers: number;
+    totalDealers: number;
+    draftQuotes: number;
+    pendingOrders: number;
+    completedOrders: number;
+    totalProducts: number;
+    revenue: number;
+    lowStockCount: number;
+  };
+  recentLeads: Lead[];
+  recentOrders: Pick<Order, "id" | "code" | "customerName" | "total" | "status" | "createdAt">[];
+  lowStock: { productId: string; productName: string; quantity: number }[];
+};
+
+export type AppNotification = {
+  id: string;
+  type: "lead" | "dealer_lead" | "dealer" | "order" | "stock";
+  title: string;
+  message: string;
+  href: string;
+  createdAt: string;
+  unread: boolean;
+};
+
+export type NotificationSummary = {
+  unreadCount: number;
+  counts: {
+    leads: number;
+    dealers: number;
+    orders: number;
+    stock: number;
+  };
+  items: AppNotification[];
+};

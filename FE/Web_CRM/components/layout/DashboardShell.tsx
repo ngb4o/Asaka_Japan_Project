@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
+import { NotificationProvider } from "@/lib/notifications/NotificationProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -28,10 +29,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <ConfirmProvider>
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
-      </div>
+      <NotificationProvider>
+        <div className="flex min-h-screen">
+          <Sidebar />
+          <main className="flex-1 overflow-auto p-6">{children}</main>
+        </div>
+      </NotificationProvider>
     </ConfirmProvider>
   );
 }

@@ -3,6 +3,10 @@ import type { NextRequest } from "next/server";
 
 const PROTECTED_PREFIXES = [
   "/dashboard",
+  "/leads",
+  "/dealers",
+  "/quotes",
+  "/orders",
   "/product-categories",
   "/products",
   "/warehouses",
@@ -34,6 +38,10 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/leads/:path*",
+    "/dealers/:path*",
+    "/quotes/:path*",
+    "/orders/:path*",
     "/product-categories/:path*",
     "/products/:path*",
     "/warehouses/:path*",

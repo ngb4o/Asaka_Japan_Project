@@ -216,4 +216,35 @@ export const STATUS_OPTIONS = {
     { value: "active", label: "Hiển thị" },
     { value: "inactive", label: "Ẩn" },
   ] as SelectOption[],
+  lead: [
+    { value: "new", label: "Mới" },
+    { value: "contacted", label: "Đã liên hệ" },
+    { value: "qualified", label: "Tiềm năng" },
+    { value: "converted", label: "Đã chuyển đổi" },
+    { value: "closed", label: "Đóng" },
+  ] as SelectOption[],
+  dealer: [
+    { value: "pending", label: "Chờ duyệt" },
+    { value: "active", label: "Hoạt động" },
+    { value: "inactive", label: "Ngưng" },
+  ] as SelectOption[],
+  dealerTier: [
+    { value: "standard", label: "Tiêu chuẩn" },
+    { value: "silver", label: "Bạc" },
+    { value: "gold", label: "Vàng" },
+  ] as SelectOption[],
+  quote: [
+    { value: "draft", label: "Nháp" },
+    { value: "sent", label: "Đã gửi" },
+    { value: "accepted", label: "Chấp nhận" },
+    { value: "rejected", label: "Từ chối" },
+    { value: "expired", label: "Hết hạn" },
+  ] as SelectOption[],
+  order: [
+    { value: "pending", label: "Chờ xử lý" },
+    { value: "confirmed", label: "Đã xác nhận" },
+    { value: "delivering", label: "Đang giao" },
+    { value: "completed", label: "Hoàn tất" },
+    { value: "cancelled", label: "Hủy" },
+  ] as SelectOption[],
 };
