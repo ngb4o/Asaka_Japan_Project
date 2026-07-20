@@ -111,7 +111,8 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
               <Button
                 type="button"
                 variant="danger"
-                size="icon"
+                size="sm"
+                className="h-10 w-10 shrink-0 px-0"
                 onClick={() => removeRow(index)}
                 aria-label="Xóa dòng"
               >

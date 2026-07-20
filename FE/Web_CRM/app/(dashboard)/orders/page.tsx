@@ -166,7 +166,7 @@ export default function OrdersPage() {
 
     setSubmitting(true);
     try {
-      const payload = {
+      const basePayload = {
         dealerId: form.dealerId || undefined,
         warehouseId: form.warehouseId || undefined,
         customerName: form.customerName.trim(),
@@ -174,16 +174,21 @@ export default function OrdersPage() {
         customerEmail: form.customerEmail.trim(),
         status: form.status,
         note: form.note.trim(),
-        ...(editing?.inventoryExported
-          ? {}
-          : { items: buildLineItemsPayload(form.items) }),
       };
 
       if (editing) {
-        await updateOrder(editing.id, payload);
+        await updateOrder(editing.id, {
+          ...basePayload,
+          ...(editing.inventoryExported
+            ? {}
+            : { items: buildLineItemsPayload(form.items) }),
+        });
         toast.success("Đã cập nhật đơn hàng");
       } else {
-        await createOrder(payload);
+        await createOrder({
+          ...basePayload,
+          items: buildLineItemsPayload(form.items),
+        });
         toast.success("Đã tạo đơn hàng");
       }
       setDialogOpen(false);
