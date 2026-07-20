@@ -7,6 +7,7 @@ import { Menu } from "lucide-react";
 import { NAV_LINKS, COMPANY } from "@/lib/constants";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Button } from "@/components/ui/button";
+import { DealerRegisterButton } from "@/components/dealer/DealerRegisterButton";
 import {
   Sheet,
   SheetContent,
@@ -87,16 +88,6 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="hidden lg:block">
-          <Button
-            asChild
-            size="sm"
-            className="bg-[var(--color-text-secondary)] text-white hover:bg-[#016502]"
-          >
-            <a href={resolveNavHref("#dealer")}>Trở thành đại lý</a>
-          </Button>
-        </div>
-
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild className="lg:hidden">
             <Button
@@ -128,11 +119,12 @@ export function Header() {
                   {link.label}
                 </a>
               ))}
-              <Button asChild className="mt-4 text-text-tertiary">
-                <a href={resolveNavHref("#dealer")} onClick={() => setOpen(false)}>
-                  Trở thành đại lý
-                </a>
-              </Button>
+              <DealerRegisterButton
+                className="mt-4 text-text-tertiary"
+                onClick={() => setOpen(false)}
+              >
+                Trở thành đại lý
+              </DealerRegisterButton>
             </nav>
           </SheetContent>
         </Sheet>

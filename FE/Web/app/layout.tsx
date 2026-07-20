@@ -3,6 +3,7 @@ import { Barlow } from "next/font/google";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SocialFab } from "@/components/layout/SocialFab";
+import { AppProviders } from "@/components/providers/AppProviders";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -48,10 +49,12 @@ export default function RootLayout({
   return (
     <html lang="vi" className={barlow.variable}>
       <body className={`${barlow.className} antialiased`}>
-        <Header />
-        {children}
-        <Footer />
-        <SocialFab />
+        <AppProviders>
+          <Header />
+          {children}
+          <Footer />
+          <SocialFab />
+        </AppProviders>
       </body>
     </html>
   );

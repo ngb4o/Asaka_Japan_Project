@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { COMPANY, FOOTER_LINKS } from "@/lib/constants";
+import { FooterSupportLinks } from "@/components/layout/FooterSupportLinks";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Separator } from "@/components/ui/separator";
 
@@ -47,18 +48,7 @@ export function Footer() {
                 <h3 className="text-[var(--text-sm)] font-semibold uppercase tracking-widest text-white/50">
                   Hỗ trợ
                 </h3>
-                <ul className="mt-4 space-y-3">
-                  {FOOTER_LINKS.support.map((link) => (
-                    <li key={link.href}>
-                      <a
-                        href={link.href}
-                        className="text-[var(--text-md)] font-normal text-white/80 transition-colors hover:text-[var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)] rounded-sm"
-                      >
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+                <FooterSupportLinks />
               </div>
             </div>
 

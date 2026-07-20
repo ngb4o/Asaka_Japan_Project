@@ -13,9 +13,14 @@ import { cn } from "@/lib/utils";
 type ProductImageGalleryProps = {
   images: string[];
   alt: string;
+  fit?: "cover" | "contain";
 };
 
-export function ProductImageGallery({ images, alt }: ProductImageGalleryProps) {
+export function ProductImageGallery({
+  images,
+  alt,
+  fit = "cover",
+}: ProductImageGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const activeImage = images[activeIndex] || "";
@@ -25,9 +30,22 @@ export function ProductImageGallery({ images, alt }: ProductImageGalleryProps) {
     setLightboxOpen(true);
   }
 
+  const isContain = fit === "contain";
+  const frameClassName = isContain
+    ? "aspect-square w-full sm:aspect-[4/3]"
+    : "aspect-[4/5] w-full sm:aspect-square lg:aspect-[4/5]";
+  const imageClassName = isContain
+    ? "object-contain p-4 sm:p-6"
+    : "object-cover transition-transform duration-[400ms] group-hover:scale-[1.02]";
+
   if (!activeImage) {
     return (
-      <div className="flex aspect-[4/5] items-center justify-center rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] text-sm text-[var(--color-text-inverse)] sm:aspect-square lg:aspect-[4/5]">
+      <div
+        className={cn(
+          "flex items-center justify-center rounded-2xl border border-[var(--color-border-subtle)] bg-white text-sm text-[var(--color-text-inverse)]",
+          frameClassName
+        )}
+      >
         Chưa có ảnh
       </div>
     );
@@ -39,14 +57,17 @@ export function ProductImageGallery({ images, alt }: ProductImageGalleryProps) {
         <button
           type="button"
           onClick={() => openLightbox(activeIndex)}
-          className="group relative block aspect-[4/5] w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] sm:aspect-square lg:aspect-[4/5]"
+          className={cn(
+            "group relative block overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-white shadow-[var(--shadow-soft)]",
+            frameClassName
+          )}
           aria-label={`Phóng to ảnh ${alt}`}
         >
           <Image
             src={activeImage}
             alt={alt}
             fill
-            className="object-cover transition-transform duration-[400ms] group-hover:scale-[1.02]"
+            className={imageClassName}
             sizes="(max-width: 1024px) 100vw, 50vw"
             priority
             unoptimized={
@@ -71,7 +92,7 @@ export function ProductImageGallery({ images, alt }: ProductImageGalleryProps) {
                 aria-label={`Xem ảnh ${index + 1}`}
                 aria-pressed={activeIndex === index}
                 className={cn(
-                  "relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 transition-colors",
+                  "relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-white transition-colors",
                   activeIndex === index
                     ? "border-[var(--color-text-secondary)]"
                     : "border-[var(--color-border-subtle)] hover:border-[var(--color-text-secondary)]/40"
@@ -81,7 +102,7 @@ export function ProductImageGallery({ images, alt }: ProductImageGalleryProps) {
                   src={image}
                   alt=""
                   fill
-                  className="object-cover"
+                  className={isContain ? "object-contain p-1" : "object-cover"}
                   sizes="64px"
                   unoptimized={
                     image.startsWith("http") || image.includes("localhost")

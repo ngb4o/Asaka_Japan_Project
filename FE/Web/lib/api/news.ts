@@ -40,6 +40,10 @@ function stripMarkdown(text: string) {
     .trim();
 }
 
+export function getNewsExcerpt(content: string, maxLength = 160) {
+  return stripMarkdown(content || "").slice(0, maxLength);
+}
+
 export function mapNewsToCard(item: ApiNews): NewsCard {
   const excerpt = stripMarkdown(item.content || "").slice(0, 160);
   const { display, iso } = formatDate(item.createdAt);

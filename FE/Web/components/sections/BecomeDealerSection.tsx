@@ -6,12 +6,11 @@ import { CheckCircle2 } from "lucide-react";
 import { COMPANY } from "@/lib/constants";
 import { IMAGES } from "@/lib/images";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { ContactForm } from "@/components/forms/ContactForm";
 import { FadeUp } from "@/components/motion/FadeUp";
+import { useDealerRegister } from "@/lib/dealer/DealerRegisterProvider";
 
 export function BecomeDealerSection() {
-  const [open, setOpen] = useState(false);
+  const { openDealerRegister } = useDealerRegister();
   const [registered, setRegistered] = useState(false);
 
   useEffect(() => {
@@ -21,7 +20,6 @@ export function BecomeDealerSection() {
   }, [registered]);
 
   function handleRegisterSuccess() {
-    setOpen(false);
     setRegistered(true);
   }
 
@@ -65,7 +63,9 @@ export function BecomeDealerSection() {
                 <Button
                   size="sm"
                   className="shrink-0 text-white md:h-14 md:px-10 md:text-[length:var(--text-lg)]"
-                  onClick={() => setOpen(true)}
+                  onClick={() =>
+                    openDealerRegister({ onSuccess: handleRegisterSuccess })
+                  }
                 >
                   Đăng ký đại lý
                 </Button>
@@ -84,19 +84,6 @@ export function BecomeDealerSection() {
           </FadeUp>
         </div>
       </div>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90vh] w-[calc(100vw-1.5rem)] max-w-2xl overflow-y-auto p-6 sm:p-8">
-          <DialogTitle>Đăng ký trở thành đại lý</DialogTitle>
-          <ContactForm
-            type="dealer"
-            title="Điền thông tin đăng ký"
-            submitLabel="Gửi đăng ký"
-            theme="light"
-            onSuccess={handleRegisterSuccess}
-          />
-        </DialogContent>
-      </Dialog>
     </section>
   );
 }

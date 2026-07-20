@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { HERO_STATS } from "@/lib/constants";
 import { IMAGES } from "@/lib/images";
 import { Button } from "@/components/ui/button";
+import { DealerRegisterButton } from "@/components/dealer/DealerRegisterButton";
 import { Counter } from "@/components/motion/Counter";
 import { FadeUp } from "@/components/motion/FadeUp";
 import { StaggerChildren } from "@/components/motion/StaggerChildren";
@@ -53,13 +54,12 @@ export function HeroSection() {
               ASAKA JAPAN chuyên cung cấp các giải pháp bảo vệ thực vật, xây dựng mạng lưới hợp tác bền vững với đại lý và đối tác trên nhiều tỉnh thành.
             </motion.p>
             <motion.div variants={fadeUp} className="mt-10 flex flex-wrap gap-3 md:gap-4">
-              <Button
-                asChild
+              <DealerRegisterButton
                 size="lg"
                 className="h-10 px-5 text-[length:var(--text-sm)] bg-[var(--color-text-secondary)] text-white hover:bg-[#016502] md:h-14 md:px-10 md:text-[length:var(--text-lg)]"
               >
-                <a href="#dealer">Trở thành đại lý</a>
-              </Button>
+                Trở thành đại lý
+              </DealerRegisterButton>
               <Button
                 asChild
                 variant="secondary"
