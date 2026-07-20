@@ -34,7 +34,7 @@ export const COMPANY = {
 
 export const NAV_LINKS = [
   { label: "Giới thiệu", href: "#about" },
-  { label: "Sản phẩm", href: "#products" },
+  { label: "Sản phẩm", href: "/products" },
   { label: "Quy trình", href: "#process" },
   { label: "Đại lý", href: "#dealer" },
   { label: "Tin tức", href: "#news" },
@@ -335,7 +335,7 @@ export const ABOUT_CONTENT = {
 export const FOOTER_LINKS = {
   company: [
     { label: "Giới thiệu", href: "#about" },
-    { label: "Sản phẩm", href: "#products" },
+    { label: "Sản phẩm", href: "/products" },
     { label: "Quy trình", href: "#process" },
     { label: "Tại sao chọn chúng tôi", href: "#why-choose" },
   ],

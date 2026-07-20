@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { NAV_LINKS, COMPANY } from "@/lib/constants";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -14,9 +15,17 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
+function resolveNavHref(href: string) {
+  return href.startsWith("#") ? `/${href}` : href;
+}
+
 export function Header() {
+  const pathname = usePathname();
+  const isSolidHeaderPage =
+    pathname.startsWith("/products") || pathname.startsWith("/news/");
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const useSolidStyle = scrolled || isSolidHeaderPage;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -29,8 +38,8 @@ export function Header() {
     <header
       className={cn(
         "fixed inset-x-0 top-0 z-50 bg-transparent transition-all duration-[400ms]",
-        scrolled &&
-        "lg:bg-[var(--color-surface-glass)] lg:shadow-[var(--shadow-glass)] lg:backdrop-blur-[16px] lg:[-webkit-backdrop-filter:blur(16px)] lg:border-b lg:border-white/40"
+        useSolidStyle &&
+          "bg-[var(--color-surface-glass)] shadow-[var(--shadow-glass)] backdrop-blur-[16px] [-webkit-backdrop-filter:blur(16px)] border-b border-[var(--color-border-subtle)] lg:border-white/40"
       )}
     >
 
@@ -45,7 +54,7 @@ export function Header() {
             <span
               className={cn(
                 "block text-[length:var(--text-lg)] font-semibold transition-colors duration-[400ms]",
-                scrolled ? "text-[var(--color-text-primary)]" : "text-white"
+                useSolidStyle ? "text-[var(--color-text-primary)]" : "text-white"
               )}
             >
               {COMPANY.shortName}
@@ -53,7 +62,7 @@ export function Header() {
             <span
               className={cn(
                 "block text-[length:var(--text-xs)] font-normal transition-colors duration-[400ms]",
-                scrolled ? "text-[var(--color-text-inverse)]" : "text-white/80"
+                useSolidStyle ? "text-[var(--color-text-inverse)]" : "text-white/80"
               )}
             >
               Bảo Vệ Thực Vật
@@ -65,10 +74,10 @@ export function Header() {
           {NAV_LINKS.map((link) => (
             <a
               key={link.href}
-              href={link.href}
+              href={resolveNavHref(link.href)}
               className={cn(
                 "text-[length:var(--text-sm)] font-semibold transition-colors duration-[400ms] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)] focus-visible:ring-offset-2 rounded-sm",
-                scrolled
+                useSolidStyle
                   ? "text-[var(--color-text-primary)] hover:text-[var(--color-text-secondary)]"
                   : "text-white hover:text-white/80"
               )}
@@ -84,7 +93,7 @@ export function Header() {
             size="sm"
             className="bg-[var(--color-text-secondary)] text-white hover:bg-[#016502]"
           >
-            <a href="#dealer">Trở thành đại lý</a>
+            <a href={resolveNavHref("#dealer")}>Trở thành đại lý</a>
           </Button>
         </div>
 
@@ -95,7 +104,7 @@ export function Header() {
               size="icon"
               aria-label="Mở menu điều hướng"
               className={cn(
-                scrolled
+                useSolidStyle
                   ? "text-[var(--color-text-primary)]"
                   : "text-white hover:bg-white/10 hover:text-white"
               )}
@@ -112,7 +121,7 @@ export function Header() {
               {NAV_LINKS.map((link) => (
                 <a
                   key={link.href}
-                  href={link.href}
+                  href={resolveNavHref(link.href)}
                   onClick={() => setOpen(false)}
                   className="text-[var(--text-lg)] font-semibold py-2 transition-colors hover:text-[var(--color-text-secondary)]"
                 >
@@ -120,7 +129,7 @@ export function Header() {
                 </a>
               ))}
               <Button asChild className="mt-4 text-text-tertiary">
-                <a href="#dealer" onClick={() => setOpen(false)}>
+                <a href={resolveNavHref("#dealer")} onClick={() => setOpen(false)}>
                   Trở thành đại lý
                 </a>
               </Button>

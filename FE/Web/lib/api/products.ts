@@ -1,4 +1,4 @@
-import { apiRequest, getImageUrl } from "@/lib/api/client";
+import { apiRequest, getImageUrl, ApiClientError } from "@/lib/api/client";
 
 export type ApiProduct = {
   id: string;
@@ -12,6 +12,9 @@ export type ApiProduct = {
   activeIngredient?: string;
   image?: string;
   images?: string[];
+  price?: number;
+  unit?: string;
+  unitsPerCase?: number;
   displayOrder?: number;
   status: "active" | "inactive";
 };
@@ -53,14 +56,57 @@ export function mapProductToCard(product: ApiProduct): FeaturedProductCard {
 }
 
 export async function getFeaturedProducts(limit = 12): Promise<FeaturedProductCard[]> {
+  const result = await getProducts({ page: 1, limit });
+  return result.items.sort(
+    (a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name, "vi")
+  );
+}
+
+export async function getProducts(params?: {
+  search?: string;
+  categoryId?: string;
+  page?: number;
+  limit?: number;
+}) {
   const query = new URLSearchParams({
     status: "active",
-    page: "1",
-    limit: String(limit),
+    page: String(params?.page ?? 1),
+    limit: String(params?.limit ?? 12),
   });
 
+  if (params?.search?.trim()) {
+    query.set("search", params.search.trim());
+  }
+  if (params?.categoryId) {
+    query.set("categoryId", params.categoryId);
+  }
+
   const result = await apiRequest<PaginatedProducts>(`/products?${query.toString()}`);
-  return (result.items || [])
-    .map(mapProductToCard)
-    .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name, "vi"));
+  return {
+    ...result,
+    items: (result.items || []).map(mapProductToCard),
+  };
+}
+
+export async function getProductById(id: string): Promise<ApiProduct | null> {
+  try {
+    const product = await apiRequest<ApiProduct>(`/products/${id}`);
+    if (product.status !== "active") return null;
+    return product;
+  } catch (error) {
+    if (error instanceof ApiClientError && error.statusCode === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export function getProductImages(product: ApiProduct) {
+  const paths = product.images?.length
+    ? product.images
+    : product.image
+      ? [product.image]
+      : [];
+
+  return paths.map((path) => getImageUrl(path)).filter(Boolean);
 }

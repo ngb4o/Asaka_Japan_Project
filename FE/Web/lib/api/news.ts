@@ -1,4 +1,5 @@
-import { apiRequest, getImageUrl } from "@/lib/api/client";
+import { apiRequest, getImageUrl, ApiClientError } from "@/lib/api/client";
+import { formatDate } from "@/lib/format";
 
 export type ApiNews = {
   id: string;
@@ -39,26 +40,6 @@ function stripMarkdown(text: string) {
     .trim();
 }
 
-function formatDate(value?: string) {
-  if (!value) {
-    return { display: "", iso: "" };
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return { display: "", iso: "" };
-  }
-
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-
-  return {
-    display: `${day}/${month}/${year}`,
-    iso: `${year}-${month}-${day}`,
-  };
-}
-
 export function mapNewsToCard(item: ApiNews): NewsCard {
   const excerpt = stripMarkdown(item.content || "").slice(0, 160);
   const { display, iso } = formatDate(item.createdAt);
@@ -91,4 +72,17 @@ export async function getLatestNews(limit = 6): Promise<NewsCard[]> {
       (a, b) =>
         a.displayOrder - b.displayOrder || a.title.localeCompare(b.title, "vi")
     );
+}
+
+export async function getNewsById(id: string): Promise<ApiNews | null> {
+  try {
+    const article = await apiRequest<ApiNews>(`/news/${id}`);
+    if (article.status !== "active") return null;
+    return article;
+  } catch (error) {
+    if (error instanceof ApiClientError && error.statusCode === 404) {
+      return null;
+    }
+    throw error;
+  }
 }
