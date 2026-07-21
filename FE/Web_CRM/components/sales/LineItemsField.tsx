@@ -4,6 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { VndInput } from "@/components/ui/vnd-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import type { Product } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
@@ -97,15 +98,9 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
                 }
                 placeholder="SL"
               />
-              <Input
-                type="number"
-                min={0}
+              <VndInput
                 value={item.unitPrice}
-                onChange={(e) =>
-                  updateRow(index, {
-                    unitPrice: e.target.value === "" ? "" : Number(e.target.value),
-                  })
-                }
+                onValueChange={(unitPrice) => updateRow(index, { unitPrice })}
                 placeholder="Đơn giá"
               />
               <Button

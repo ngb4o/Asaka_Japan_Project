@@ -12,7 +12,7 @@ const createNew = async (reqBody, userId) => {
 
   const existingCode = await warehouseModel.findOneByCode(code)
   if (existingCode) {
-    throw new ApiError(StatusCodes.CONFLICT, 'Warehouse code already exists!')
+    throw new ApiError(StatusCodes.CONFLICT, 'Mã kho đã tồn tại!')
   }
 
   const created = await warehouseModel.createNew({
@@ -65,7 +65,7 @@ const getDetails = async (warehouseId) => {
   const warehouse = await warehouseModel.findOneById(warehouseId)
 
   if (!warehouse) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Warehouse not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy kho hàng!')
   }
 
   return formatDocument(warehouse)
@@ -75,7 +75,7 @@ const update = async (warehouseId, updateData) => {
   const warehouse = await warehouseModel.findOneById(warehouseId)
 
   if (!warehouse) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Warehouse not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy kho hàng!')
   }
 
   const dataToUpdate = {}
@@ -93,7 +93,7 @@ const update = async (warehouseId, updateData) => {
     const existingCode = await warehouseModel.findOneByCode(nextCode, warehouseId)
 
     if (existingCode) {
-      throw new ApiError(StatusCodes.CONFLICT, 'Warehouse code already exists!')
+      throw new ApiError(StatusCodes.CONFLICT, 'Mã kho đã tồn tại!')
     }
 
     dataToUpdate.code = nextCode
@@ -108,20 +108,20 @@ const deleteOne = async (warehouseId) => {
   const warehouse = await warehouseModel.findOneById(warehouseId)
 
   if (!warehouse) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Warehouse not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy kho hàng!')
   }
 
   const stockCount = await warehouseStockModel.countByWarehouseId(warehouseId)
   if (stockCount > 0) {
     throw new ApiError(
       StatusCodes.CONFLICT,
-      'Cannot delete warehouse that still has stock!'
+      'Không thể xóa kho còn tồn sản phẩm!'
     )
   }
 
   await warehouseModel.deleteOne(warehouseId)
 
-  return { message: 'Warehouse deleted successfully!' }
+  return { message: 'Đã xóa kho hàng thành công!' }
 }
 
 export const warehouseService = {

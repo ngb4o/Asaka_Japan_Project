@@ -8,12 +8,16 @@ export type AuthResult = {
   token: string;
 };
 
+export type UserRole = "admin" | "sales" | "warehouse" | "accountant";
+
 export type UserProfile = {
   id: string;
   email: string;
   username: string;
   avatar: string | null;
+  role: UserRole;
   createdAt: string;
+  updatedAt?: string | null;
 };
 
 export type ProductCategory = {
@@ -297,6 +301,19 @@ export type Order = {
   status: "pending" | "confirmed" | "delivering" | "completed" | "cancelled";
   note: string;
   inventoryExported: boolean;
+  paymentStatus: "unpaid" | "partial" | "paid";
+  paidAmount: number;
+  remainingAmount?: number;
+  paymentNote: string;
+  shippingAddress: string;
+  shippingContactName: string;
+  shippingPhone: string;
+  carrier: string;
+  trackingCode: string;
+  shippingDate: string | null;
+  deliveredAt: string | null;
+  shippingFee: number;
+  shippingNote: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string | null;
@@ -313,6 +330,18 @@ export type OrderInput = {
   discount?: number;
   status?: Order["status"];
   note?: string;
+  paymentStatus?: Order["paymentStatus"];
+  paidAmount?: number;
+  paymentNote?: string;
+  shippingAddress?: string;
+  shippingContactName?: string;
+  shippingPhone?: string;
+  carrier?: string;
+  trackingCode?: string;
+  shippingDate?: string | null;
+  deliveredAt?: string | null;
+  shippingFee?: number;
+  shippingNote?: string;
 };
 
 export type DashboardSummary = {

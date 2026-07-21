@@ -6,7 +6,7 @@ const createNew = async (req, res, next) => {
     const result = await warehouseService.createNew(req.body, req.userId)
 
     res.status(StatusCodes.CREATED).json({
-      message: 'Warehouse created successfully!',
+      message: 'Đã tạo kho hàng thành công!',
       data: result
     })
   } catch (error) {
@@ -19,7 +19,7 @@ const getList = async (req, res, next) => {
     const result = await warehouseService.getList(req.query)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get warehouses successfully!',
+      message: 'Lấy danh sách kho thành công!',
       data: result
     })
   } catch (error) {
@@ -32,7 +32,7 @@ const getDetails = async (req, res, next) => {
     const result = await warehouseService.getDetails(req.params.id)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get warehouse details successfully!',
+      message: 'Lấy chi tiết kho thành công!',
       data: result
     })
   } catch (error) {
@@ -45,7 +45,7 @@ const update = async (req, res, next) => {
     const result = await warehouseService.update(req.params.id, req.body)
 
     res.status(StatusCodes.OK).json({
-      message: 'Warehouse updated successfully!',
+      message: 'Đã cập nhật kho hàng thành công!',
       data: result
     })
   } catch (error) {

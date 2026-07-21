@@ -6,7 +6,7 @@ const getSummary = async (req, res, next) => {
     const result = await dashboardService.getSummary()
 
     res.status(StatusCodes.OK).json({
-      message: 'Get dashboard summary successfully!',
+      message: 'Lấy tổng quan dashboard thành công!',
       data: result
     })
   } catch (error) {

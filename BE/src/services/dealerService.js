@@ -61,7 +61,7 @@ const getDetails = async (dealerId) => {
   const dealer = await dealerModel.findOneById(dealerId)
 
   if (!dealer) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Dealer not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy đại lý!')
   }
 
   return formatDocument(dealer)
@@ -71,7 +71,7 @@ const update = async (dealerId, updateData) => {
   const dealer = await dealerModel.findOneById(dealerId)
 
   if (!dealer) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Dealer not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy đại lý!')
   }
 
   const dataToUpdate = {}
@@ -98,12 +98,12 @@ const deleteOne = async (dealerId) => {
   const dealer = await dealerModel.findOneById(dealerId)
 
   if (!dealer) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Dealer not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy đại lý!')
   }
 
   await dealerModel.deleteOne(dealerId)
 
-  return { message: 'Dealer deleted successfully!' }
+  return { message: 'Đã xóa đại lý thành công!' }
 }
 
 export const dealerService = {

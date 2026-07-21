@@ -6,7 +6,7 @@ const importStock = async (req, res, next) => {
     const result = await inventoryService.importStock(req.body, req.userId)
 
     res.status(StatusCodes.CREATED).json({
-      message: 'Stock imported successfully!',
+      message: 'Nhập kho thành công!',
       data: result
     })
   } catch (error) {
@@ -19,7 +19,7 @@ const exportStock = async (req, res, next) => {
     const result = await inventoryService.exportStock(req.body, req.userId)
 
     res.status(StatusCodes.CREATED).json({
-      message: 'Stock exported successfully!',
+      message: 'Xuất kho thành công!',
       data: result
     })
   } catch (error) {
@@ -32,7 +32,7 @@ const getStocks = async (req, res, next) => {
     const result = await inventoryService.getStocks(req.query)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get warehouse stocks successfully!',
+      message: 'Lấy tồn kho thành công!',
       data: result
     })
   } catch (error) {
@@ -45,7 +45,7 @@ const getTransactions = async (req, res, next) => {
     const result = await inventoryService.getTransactions(req.query)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get inventory transactions successfully!',
+      message: 'Lấy lịch sử kho thành công!',
       data: result
     })
   } catch (error) {

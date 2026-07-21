@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { VndInput } from "@/components/ui/vnd-input";
 import { ImageUpload } from "@/components/products/ImageUpload";
 import { ProductDescriptionField } from "@/components/products/ProductDescriptionField";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
@@ -36,11 +37,7 @@ import { getImageUrl } from "@/lib/api/uploads";
 import type { Product, ProductCategory } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE, shouldReloadPreviousPage } from "@/lib/pagination";
-import {
-  formatCurrency,
-  formatVndInput,
-  parseVndInput,
-} from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { formatStockDisplay } from "@/lib/inventoryUnits";
 import {
   buildProductPayload,
@@ -444,34 +441,20 @@ export default function ProductsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="price">Giá bán (VND) *</Label>
-              <Input
+              <VndInput
                 id="price"
-                type="text"
-                inputMode="numeric"
                 placeholder="0"
-                value={formatVndInput(form.price)}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    price: parseVndInput(e.target.value),
-                  })
-                }
+                value={form.price}
+                onValueChange={(price) => setForm({ ...form, price })}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="costPrice">Giá vốn (VND)</Label>
-              <Input
+              <VndInput
                 id="costPrice"
-                type="text"
-                inputMode="numeric"
                 placeholder="0"
-                value={formatVndInput(form.costPrice ?? "")}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    costPrice: parseVndInput(e.target.value),
-                  })
-                }
+                value={form.costPrice ?? ""}
+                onValueChange={(costPrice) => setForm({ ...form, costPrice })}
               />
             </div>
             <div className="space-y-2">

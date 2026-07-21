@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, Pencil, Plus, Printer, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +25,8 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { canManageQuotes } from "@/lib/auth/permissions";
 import { getDealers } from "@/lib/api/dealers";
 import { getProducts } from "@/lib/api/products";
 import {
@@ -35,6 +37,7 @@ import {
   updateQuote,
 } from "@/lib/api/quotes";
 import { getWarehouses } from "@/lib/api/warehouses";
+import { printSalesDocument } from "@/lib/print/salesDocument";
 import type { Dealer, Product, Quote } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE, shouldReloadPreviousPage } from "@/lib/pagination";
@@ -71,6 +74,8 @@ const STATUS_LABELS: Record<Quote["status"], string> = {
 export default function QuotesPage() {
   const confirm = useConfirm();
   const toast = useToast();
+  const { user } = useAuth();
+  const canEdit = canManageQuotes(user?.role);
   const [items, setItems] = useState<Quote[]>([]);
   const [dealers, setDealers] = useState<Dealer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -224,6 +229,40 @@ export default function QuotesPage() {
     }
   }
 
+  function handlePrint(item: Quote) {
+    try {
+      printSalesDocument({
+        title: "BÁO GIÁ",
+        code: item.code,
+        meta: [
+          { label: "Trạng thái", value: STATUS_LABELS[item.status] },
+          {
+            label: "Ngày tạo",
+            value: new Date(item.createdAt).toLocaleDateString("vi-VN"),
+          },
+          {
+            label: "Hiệu lực",
+            value: item.validUntil
+              ? new Date(item.validUntil).toLocaleDateString("vi-VN")
+              : "—",
+          },
+        ],
+        customer: [
+          { label: "Đại lý/Khách", value: item.dealerName || item.customerName || "—" },
+          { label: "SĐT", value: item.customerPhone || "—" },
+          { label: "Email", value: item.customerEmail || "—" },
+        ],
+        items: item.items,
+        subtotal: item.subtotal,
+        discount: item.discount,
+        total: item.total,
+        note: item.note,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Không in được báo giá");
+    }
+  }
+
   if (loading && items.length === 0) {
     return <PageSkeleton {...PAGE_SKELETONS.warehouses} />;
   }
@@ -242,10 +281,12 @@ export default function QuotesPage() {
             Tạo và quản lý báo giá cho khách hàng/đại lý
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4" />
-          Tạo báo giá
-        </Button>
+        {canEdit ? (
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+            Tạo báo giá
+          </Button>
+        ) : null}
       </div>
 
       <Card>
@@ -297,7 +338,15 @@ export default function QuotesPage() {
                         </td>
                         <td className="px-2 py-3">
                           <div className="flex justify-end gap-2">
-                            {!item.orderId ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePrint(item)}
+                              title="In / PDF"
+                            >
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            {!item.orderId && canEdit ? (
                               <>
                                 <Button
                                   variant="outline"
@@ -321,9 +370,11 @@ export default function QuotesPage() {
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </>
-                            ) : (
-                              <Badge variant="success">Đã có đơn</Badge>
-                            )}
+                            ) : item.orderId ? (
+                              <span className="text-xs text-[var(--color-text-inverse)]">
+                                Đã tạo đơn
+                              </span>
+                            ) : null}
                           </div>
                         </td>
                       </tr>

@@ -6,14 +6,64 @@ import { inventoryService } from '~/services/inventoryService'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
-import { formatDocument, formatDocuments } from '~/utils/formatters'
+import { formatDocument } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { generateDocumentCode } from '~/utils/documentCode'
 import { UNIT_TYPE } from '~/utils/inventoryUnits'
 
+const parseOptionalDate = (value) => {
+  if (value === undefined) return undefined
+  if (value === null || value === '') return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Ngày không hợp lệ!')
+  }
+  return date
+}
+
+const resolvePaymentStatus = (paidAmount, total, explicitStatus) => {
+  const paid = Math.max(0, Number(paidAmount) || 0)
+  const orderTotal = Math.max(0, Number(total) || 0)
+
+  if (explicitStatus === orderModel.PAYMENT_STATUS.PAID && paid <= 0 && orderTotal > 0) {
+    return { paymentStatus: orderModel.PAYMENT_STATUS.PAID, paidAmount: orderTotal }
+  }
+
+  if (paid <= 0) {
+    return { paymentStatus: orderModel.PAYMENT_STATUS.UNPAID, paidAmount: 0 }
+  }
+  if (orderTotal > 0 && paid >= orderTotal) {
+    return { paymentStatus: orderModel.PAYMENT_STATUS.PAID, paidAmount: paid }
+  }
+  return { paymentStatus: orderModel.PAYMENT_STATUS.PARTIAL, paidAmount: paid }
+}
+
+const withPaymentDefaults = (order) => {
+  const total = Number(order.total) || 0
+  const paidAmount = Number(order.paidAmount) || 0
+  const resolved = resolvePaymentStatus(paidAmount, total, order.paymentStatus)
+
+  return {
+    ...order,
+    paymentStatus: order.paymentStatus || resolved.paymentStatus,
+    paidAmount: order.paidAmount ?? resolved.paidAmount,
+    remainingAmount: Math.max(0, total - (Number(order.paidAmount) || 0)),
+    paymentNote: order.paymentNote || '',
+    shippingAddress: order.shippingAddress || '',
+    shippingContactName: order.shippingContactName || '',
+    shippingPhone: order.shippingPhone || '',
+    carrier: order.carrier || '',
+    trackingCode: order.trackingCode || '',
+    shippingDate: order.shippingDate || null,
+    deliveredAt: order.deliveredAt || null,
+    shippingFee: Number(order.shippingFee) || 0,
+    shippingNote: order.shippingNote || ''
+  }
+}
+
 const buildLineItems = async (items = []) => {
   if (!Array.isArray(items) || !items.length) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Order must have at least one item!')
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Đơn hàng phải có ít nhất một sản phẩm!')
   }
 
   const lineItems = []
@@ -22,7 +72,7 @@ const buildLineItems = async (items = []) => {
     const product = await productModel.findOneById(item.productId)
 
     if (!product) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Product not found in order items!')
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Không tìm thấy sản phẩm trong đơn hàng!')
     }
 
     const quantity = Math.max(1, Math.floor(Number(item.quantity) || 0))
@@ -80,7 +130,7 @@ const enrichOrders = async (orders) => {
   }
 
   return orders.map((order) => {
-    const formatted = formatDocument(order)
+    const formatted = withPaymentDefaults(formatDocument(order))
     return {
       ...formatted,
       dealerName: formatted.dealerId ? dealerMap.get(formatted.dealerId) || '' : '',
@@ -95,7 +145,7 @@ const exportInventoryForOrder = async (order, userId) => {
   if (!order.warehouseId) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      'Warehouse is required before confirming order!'
+      'Vui lòng chọn kho trước khi xác nhận đơn hàng!'
     )
   }
 
@@ -113,10 +163,45 @@ const exportInventoryForOrder = async (order, userId) => {
   }
 }
 
+const applyShippingFields = (dataToUpdate, updateData) => {
+  const textFields = [
+    'shippingAddress',
+    'shippingContactName',
+    'shippingPhone',
+    'carrier',
+    'trackingCode',
+    'shippingNote'
+  ]
+
+  for (const field of textFields) {
+    if (updateData[field] !== undefined) {
+      dataToUpdate[field] = updateData[field] || ''
+    }
+  }
+
+  if (updateData.shippingFee !== undefined) {
+    dataToUpdate.shippingFee = Math.max(0, Number(updateData.shippingFee) || 0)
+  }
+
+  if (updateData.shippingDate !== undefined) {
+    dataToUpdate.shippingDate = parseOptionalDate(updateData.shippingDate)
+  }
+
+  if (updateData.deliveredAt !== undefined) {
+    dataToUpdate.deliveredAt = parseOptionalDate(updateData.deliveredAt)
+  }
+}
+
 const createNew = async (reqBody, userId) => {
   const totals = await buildLineItems(reqBody.items)
   const code = await generateDocumentCode(orderModel.ORDER_COLLECTION_NAME, 'O')
   const discount = reqBody.discount ?? 0
+  const total = Math.max(0, totals.subtotal - discount)
+  const payment = resolvePaymentStatus(
+    reqBody.paidAmount ?? 0,
+    total,
+    reqBody.paymentStatus
+  )
 
   const created = await orderModel.createNew({
     code,
@@ -129,10 +214,22 @@ const createNew = async (reqBody, userId) => {
     items: totals.items,
     subtotal: totals.subtotal,
     discount,
-    total: Math.max(0, totals.subtotal - discount),
+    total,
     status: reqBody.status || orderModel.ORDER_STATUS.PENDING,
     note: reqBody.note || '',
     inventoryExported: false,
+    paymentStatus: payment.paymentStatus,
+    paidAmount: payment.paidAmount,
+    paymentNote: reqBody.paymentNote || '',
+    shippingAddress: reqBody.shippingAddress || '',
+    shippingContactName: reqBody.shippingContactName || '',
+    shippingPhone: reqBody.shippingPhone || '',
+    carrier: reqBody.carrier || '',
+    trackingCode: reqBody.trackingCode || '',
+    shippingDate: parseOptionalDate(reqBody.shippingDate) ?? null,
+    deliveredAt: parseOptionalDate(reqBody.deliveredAt) ?? null,
+    shippingFee: Math.max(0, Number(reqBody.shippingFee) || 0),
+    shippingNote: reqBody.shippingNote || '',
     createdBy: userId
   })
 
@@ -145,13 +242,15 @@ const getList = async (query) => {
   const findQuery = {}
 
   if (query.status) findQuery.status = query.status
+  if (query.paymentStatus) findQuery.paymentStatus = query.paymentStatus
   if (query.dealerId) findQuery.dealerId = new ObjectId(query.dealerId)
 
   if (query.search) {
     findQuery.$or = [
       { code: { $regex: query.search, $options: 'i' } },
       { customerName: { $regex: query.search, $options: 'i' } },
-      { customerPhone: { $regex: query.search, $options: 'i' } }
+      { customerPhone: { $regex: query.search, $options: 'i' } },
+      { trackingCode: { $regex: query.search, $options: 'i' } }
     ]
   }
 
@@ -176,7 +275,7 @@ const getDetails = async (orderId) => {
   const order = await orderModel.findOneById(orderId)
 
   if (!order) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy đơn hàng!')
   }
 
   const [formatted] = await enrichOrders([order])
@@ -187,11 +286,11 @@ const update = async (orderId, updateData, userId) => {
   const order = await orderModel.findOneById(orderId)
 
   if (!order) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy đơn hàng!')
   }
 
   if (order.status === orderModel.ORDER_STATUS.CANCELLED) {
-    throw new ApiError(StatusCodes.CONFLICT, 'Cannot update cancelled order!')
+    throw new ApiError(StatusCodes.CONFLICT, 'Không thể cập nhật đơn hàng đã hủy!')
   }
 
   const dataToUpdate = {}
@@ -214,11 +313,15 @@ const update = async (orderId, updateData, userId) => {
   }
   if (updateData.note !== undefined) dataToUpdate.note = updateData.note
 
+  applyShippingFields(dataToUpdate, updateData)
+
+  let nextTotal = order.total
+
   if (Array.isArray(updateData.items)) {
     if (order.inventoryExported) {
       throw new ApiError(
         StatusCodes.CONFLICT,
-        'Cannot change items after inventory export!'
+        'Không thể sửa sản phẩm sau khi đã xuất kho!'
       )
     }
 
@@ -227,20 +330,58 @@ const update = async (orderId, updateData, userId) => {
     dataToUpdate.subtotal = totals.subtotal
     dataToUpdate.discount = updateData.discount ?? order.discount ?? 0
     dataToUpdate.total = Math.max(0, totals.subtotal - dataToUpdate.discount)
+    nextTotal = dataToUpdate.total
   } else if (updateData.discount !== undefined) {
     if (order.inventoryExported) {
       throw new ApiError(
         StatusCodes.CONFLICT,
-        'Cannot change discount after inventory export!'
+        'Không thể sửa chiết khấu sau khi đã xuất kho!'
       )
     }
 
     dataToUpdate.discount = updateData.discount
     dataToUpdate.total = Math.max(0, order.subtotal - updateData.discount)
+    nextTotal = dataToUpdate.total
+  }
+
+  if (
+    updateData.paidAmount !== undefined ||
+    updateData.paymentStatus !== undefined ||
+    updateData.paymentNote !== undefined ||
+    dataToUpdate.total !== undefined
+  ) {
+    const payment = resolvePaymentStatus(
+      updateData.paidAmount !== undefined ? updateData.paidAmount : order.paidAmount,
+      nextTotal,
+      updateData.paymentStatus !== undefined
+        ? updateData.paymentStatus
+        : order.paymentStatus
+    )
+    dataToUpdate.paymentStatus = payment.paymentStatus
+    dataToUpdate.paidAmount = payment.paidAmount
+    if (updateData.paymentNote !== undefined) {
+      dataToUpdate.paymentNote = updateData.paymentNote || ''
+    }
   }
 
   if (updateData.status !== undefined) {
     dataToUpdate.status = updateData.status
+
+    if (
+      updateData.status === orderModel.ORDER_STATUS.DELIVERING &&
+      updateData.shippingDate === undefined &&
+      !order.shippingDate
+    ) {
+      dataToUpdate.shippingDate = new Date()
+    }
+
+    if (
+      updateData.status === orderModel.ORDER_STATUS.COMPLETED &&
+      updateData.deliveredAt === undefined &&
+      !order.deliveredAt
+    ) {
+      dataToUpdate.deliveredAt = new Date()
+    }
   }
 
   const shouldExportInventory =
@@ -264,23 +405,46 @@ const update = async (orderId, updateData, userId) => {
   return await getDetails(orderId)
 }
 
+const recordPayment = async (orderId, { amount, note }) => {
+  const order = await orderModel.findOneById(orderId)
+
+  if (!order) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy đơn hàng!')
+  }
+
+  if (order.status === orderModel.ORDER_STATUS.CANCELLED) {
+    throw new ApiError(StatusCodes.CONFLICT, 'Không thể ghi nhận thanh toán cho đơn đã hủy!')
+  }
+
+  const nextPaid = Math.max(0, Number(order.paidAmount) || 0) + Math.max(0, Number(amount) || 0)
+  const payment = resolvePaymentStatus(nextPaid, order.total)
+
+  await orderModel.update(orderId, {
+    paidAmount: payment.paidAmount,
+    paymentStatus: payment.paymentStatus,
+    paymentNote: note !== undefined ? note || '' : order.paymentNote || ''
+  })
+
+  return await getDetails(orderId)
+}
+
 const deleteOne = async (orderId) => {
   const order = await orderModel.findOneById(orderId)
 
   if (!order) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Order not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy đơn hàng!')
   }
 
   if (order.inventoryExported) {
     throw new ApiError(
       StatusCodes.CONFLICT,
-      'Cannot delete order after inventory export!'
+      'Không thể xóa đơn hàng sau khi đã xuất kho!'
     )
   }
 
   await orderModel.deleteOne(orderId)
 
-  return { message: 'Order deleted successfully!' }
+  return { message: 'Đã xóa đơn hàng thành công!' }
 }
 
 export const orderService = {
@@ -288,5 +452,6 @@ export const orderService = {
   getList,
   getDetails,
   update,
+  recordPayment,
   deleteOne
 }

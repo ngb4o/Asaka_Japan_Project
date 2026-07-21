@@ -6,7 +6,7 @@ const getList = async (req, res, next) => {
     const result = await notificationService.getList(req.userId)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get notifications successfully!',
+      message: 'Lấy thông báo thành công!',
       data: result
     })
   } catch (error) {
@@ -19,7 +19,7 @@ const markAllRead = async (req, res, next) => {
     const result = await notificationService.markAllRead(req.userId)
 
     res.status(StatusCodes.OK).json({
-      message: 'Notifications marked as read!',
+      message: 'Đã đánh dấu thông báo đã đọc!',
       data: result
     })
   } catch (error) {

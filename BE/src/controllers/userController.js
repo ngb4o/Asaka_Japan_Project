@@ -6,7 +6,7 @@ const register = async (req, res, next) => {
     const result = await userService.register(req.body)
 
     res.status(StatusCodes.CREATED).json({
-      message: 'Register successfully!',
+      message: 'Đăng ký thành công!',
       data: result
     })
   } catch (error) {
@@ -19,7 +19,7 @@ const login = async (req, res, next) => {
     const result = await userService.login(req.body)
 
     res.status(StatusCodes.OK).json({
-      message: 'Login successfully!',
+      message: 'Đăng nhập thành công!',
       data: result
     })
   } catch (error) {
@@ -37,7 +37,7 @@ const logout = async (req, res, next) => {
     const result = await userService.logout(token, req.userId)
 
     res.status(StatusCodes.OK).json({
-      message: 'Logout successfully!',
+      message: 'Đăng xuất thành công!',
       data: result
     })
   } catch (error) {
@@ -51,7 +51,7 @@ const getProfile = async (req, res, next) => {
     const result = await userService.getProfile(req.userId)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get profile successfully!',
+      message: 'Lấy thông tin tài khoản thành công!',
       data: result
     })
   } catch (error) {
@@ -61,15 +61,41 @@ const getProfile = async (req, res, next) => {
 
 const getUserById = async (req, res, next) => {
   try {
-    // Lấy userId từ route params
     const targetUserId = req.params.id
-
-    // req.userId được set bởi verifyToken middleware (user đang đăng nhập)
-    // Có thể xem profile của user khác nếu đã đăng nhập
     const result = await userService.getUserById(targetUserId)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get user profile successfully!',
+      message: 'Lấy hồ sơ người dùng thành công!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const getList = async (req, res, next) => {
+  try {
+    const result = await userService.getList()
+
+    res.status(StatusCodes.OK).json({
+      message: 'Lấy danh sách người dùng thành công!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const updateRole = async (req, res, next) => {
+  try {
+    const result = await userService.updateRole(
+      req.params.id,
+      req.body.role,
+      req.userId
+    )
+
+    res.status(StatusCodes.OK).json({
+      message: 'Cập nhật quyền người dùng thành công!',
       data: result
     })
   } catch (error) {
@@ -82,5 +108,7 @@ export const userController = {
   login,
   logout,
   getProfile,
-  getUserById
+  getUserById,
+  getList,
+  updateRole
 }

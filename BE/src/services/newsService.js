@@ -32,7 +32,7 @@ const ensureSlugUnique = async (slug, excludeId = null) => {
   const existing = await newsModel.findOneBySlug(slug, excludeId)
 
   if (existing) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'News slug already exists!')
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Slug tin tức đã tồn tại!')
   }
 }
 
@@ -84,7 +84,7 @@ const getDetails = async (newsId) => {
   const news = await newsModel.findOneById(newsId)
 
   if (!news) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'News not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy tin tức!')
   }
 
   return formatNews(news)
@@ -94,7 +94,7 @@ const update = async (newsId, updateData) => {
   const news = await newsModel.findOneById(newsId)
 
   if (!news) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'News not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy tin tức!')
   }
 
   const allowedFields = ['title', 'slug', 'content', 'image', 'displayOrder', 'status']
@@ -128,12 +128,12 @@ const deleteOne = async (newsId) => {
   const news = await newsModel.findOneById(newsId)
 
   if (!news) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'News not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy tin tức!')
   }
 
   await newsModel.deleteOne(newsId)
 
-  return { message: 'News deleted successfully!' }
+  return { message: 'Đã xóa tin tức thành công!' }
 }
 
 export const newsService = {

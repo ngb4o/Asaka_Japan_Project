@@ -13,7 +13,6 @@ import {
   getProfileRequest,
   loginRequest,
   logoutRequest,
-  registerRequest,
 } from "@/lib/api/auth";
 import { clearToken, setToken } from "@/lib/auth/session";
 import type { UserProfile } from "@/lib/types";
@@ -22,8 +21,7 @@ import { ApiClientError } from "@/lib/api/client";
 type AuthContextValue = {
   user: UserProfile | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, username: string) => Promise<void>;
+  login: (account: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -50,18 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshProfile]);
 
   const login = useCallback(
-    async (email: string, password: string) => {
-      const result = await loginRequest(email, password);
-      setToken(result.token);
-      await refreshProfile();
-      router.push("/dashboard");
-    },
-    [refreshProfile, router]
-  );
-
-  const register = useCallback(
-    async (email: string, password: string, username: string) => {
-      const result = await registerRequest(email, password, username);
+    async (account: string, password: string) => {
+      const result = await loginRequest(account, password);
       setToken(result.token);
       await refreshProfile();
       router.push("/dashboard");
@@ -84,8 +72,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const value = useMemo(
-    () => ({ user, loading, login, register, logout, refreshProfile }),
-    [user, loading, login, register, logout, refreshProfile]
+    () => ({ user, loading, login, logout, refreshProfile }),
+    [user, loading, login, logout, refreshProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

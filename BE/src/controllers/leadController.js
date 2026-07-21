@@ -6,7 +6,7 @@ const createPublic = async (req, res, next) => {
     const result = await leadService.createPublic(req.body)
 
     res.status(StatusCodes.CREATED).json({
-      message: 'Lead submitted successfully!',
+      message: 'Gửi liên hệ thành công!',
       data: result
     })
   } catch (error) {
@@ -19,7 +19,7 @@ const getList = async (req, res, next) => {
     const result = await leadService.getList(req.query)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get leads successfully!',
+      message: 'Lấy danh sách liên hệ thành công!',
       data: result
     })
   } catch (error) {
@@ -32,7 +32,7 @@ const getDetails = async (req, res, next) => {
     const result = await leadService.getDetails(req.params.id)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get lead details successfully!',
+      message: 'Lấy chi tiết liên hệ thành công!',
       data: result
     })
   } catch (error) {
@@ -45,7 +45,7 @@ const update = async (req, res, next) => {
     const result = await leadService.update(req.params.id, req.body)
 
     res.status(StatusCodes.OK).json({
-      message: 'Lead updated successfully!',
+      message: 'Đã cập nhật liên hệ thành công!',
       data: result
     })
   } catch (error) {
@@ -71,7 +71,7 @@ const convertToDealer = async (req, res, next) => {
     const result = await leadService.convertToDealer(req.params.id, req.userId)
 
     res.status(StatusCodes.CREATED).json({
-      message: 'Lead converted to dealer successfully!',
+      message: 'Đã chuyển liên hệ thành đại lý thành công!',
       data: result
     })
   } catch (error) {

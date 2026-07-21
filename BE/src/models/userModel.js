@@ -15,10 +15,21 @@ const USER_COLLECTION_SCHEMA = Joi.object({
 
   avatar: Joi.string().default(null),
 
+  role: Joi.string()
+    .valid('admin', 'sales', 'warehouse', 'accountant')
+    .default('sales'),
+
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(null),
   _destroy: Joi.boolean().default(false)
 })
+
+const USER_ROLES = {
+  ADMIN: 'admin',
+  SALES: 'sales',
+  WAREHOUSE: 'warehouse',
+  ACCOUNTANT: 'accountant'
+}
 
 /**
  * Validate dữ liệu trước khi tạo user mới
@@ -64,6 +75,14 @@ const findOneByEmail = async (email) => {
   }
 }
 
+const findOneByUsername = async (username) => {
+  try {
+    return await GET_DB().collection(USER_COLLECTION_NAME).findOne({ username })
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 /**
  * Tìm user theo ID
  * @param {string} id - User ID cần tìm
@@ -93,11 +112,51 @@ const checkEmailExists = async (email) => {
   }
 }
 
+const findMany = async (options = {}) => {
+  const { limit = 100, skip = 0, sort = { createdAt: -1 } } = options
+
+  const findQuery = { _destroy: { $ne: true } }
+
+  const items = await GET_DB()
+    .collection(USER_COLLECTION_NAME)
+    .find(findQuery, { projection: { password: 0 } })
+    .sort(sort)
+    .limit(limit)
+    .skip(skip)
+    .toArray()
+
+  const total = await GET_DB()
+    .collection(USER_COLLECTION_NAME)
+    .countDocuments(findQuery)
+
+  return { items, total, limit, skip }
+}
+
+const updateRole = async (id, role) => {
+  return await GET_DB()
+    .collection(USER_COLLECTION_NAME)
+    .updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { role, updatedAt: new Date() } }
+    )
+}
+
+const countActive = async () => {
+  return await GET_DB()
+    .collection(USER_COLLECTION_NAME)
+    .countDocuments({ _destroy: { $ne: true } })
+}
+
 export const userModel = {
   USER_COLLECTION_NAME,
   USER_COLLECTION_SCHEMA,
+  USER_ROLES,
   createNew,
   findOneByEmail,
+  findOneByUsername,
   findOneById,
-  checkEmailExists
+  checkEmailExists,
+  findMany,
+  updateRole,
+  countActive
 }

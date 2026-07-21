@@ -12,13 +12,13 @@ export const toUnitsPerCase = (value) => {
 export const toBaseQuantity = (quantity, unitType, unitsPerCase) => {
   const qty = Number(quantity)
   if (!Number.isFinite(qty) || qty <= 0) {
-    throw new Error('Quantity must be greater than 0')
+    throw new Error('Số lượng phải lớn hơn 0')
   }
 
   if (unitType === UNIT_TYPE.CASE) {
     const perCase = toUnitsPerCase(unitsPerCase)
     if (perCase < 1) {
-      throw new Error('unitsPerCase must be at least 1')
+      throw new Error('Số lượng mỗi thùng phải từ 1 trở lên')
     }
     return Math.floor(qty) * perCase
   }

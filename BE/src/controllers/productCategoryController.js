@@ -6,7 +6,7 @@ const createNew = async (req, res, next) => {
     const result = await productCategoryService.createNew(req.body, req.userId)
 
     res.status(StatusCodes.CREATED).json({
-      message: 'Product category created successfully!',
+      message: 'Đã tạo loại sản phẩm thành công!',
       data: result
     })
   } catch (error) {
@@ -19,7 +19,7 @@ const getList = async (req, res, next) => {
     const result = await productCategoryService.getList(req.query)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get product categories successfully!',
+      message: 'Lấy danh sách loại sản phẩm thành công!',
       data: result
     })
   } catch (error) {
@@ -32,7 +32,7 @@ const getDetails = async (req, res, next) => {
     const result = await productCategoryService.getDetails(req.params.id)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get product category details successfully!',
+      message: 'Lấy chi tiết loại sản phẩm thành công!',
       data: result
     })
   } catch (error) {
@@ -45,7 +45,7 @@ const update = async (req, res, next) => {
     const result = await productCategoryService.update(req.params.id, req.body)
 
     res.status(StatusCodes.OK).json({
-      message: 'Product category updated successfully!',
+      message: 'Đã cập nhật loại sản phẩm thành công!',
       data: result
     })
   } catch (error) {

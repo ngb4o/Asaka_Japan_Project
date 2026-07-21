@@ -13,6 +13,12 @@ const ORDER_STATUS = {
   CANCELLED: 'cancelled'
 }
 
+const PAYMENT_STATUS = {
+  UNPAID: 'unpaid',
+  PARTIAL: 'partial',
+  PAID: 'paid'
+}
+
 const optionalText = (max) => Joi.string().trim().allow('').max(max)
 
 const ORDER_ITEM_SCHEMA = Joi.object({
@@ -58,6 +64,20 @@ const ORDER_COLLECTION_SCHEMA = Joi.object({
     .default(ORDER_STATUS.PENDING),
   note: optionalText(1000).default(''),
   inventoryExported: Joi.boolean().default(false),
+  paymentStatus: Joi.string()
+    .valid(PAYMENT_STATUS.UNPAID, PAYMENT_STATUS.PARTIAL, PAYMENT_STATUS.PAID)
+    .default(PAYMENT_STATUS.UNPAID),
+  paidAmount: Joi.number().min(0).default(0),
+  paymentNote: optionalText(1000).default(''),
+  shippingAddress: optionalText(500).default(''),
+  shippingContactName: optionalText(150).default(''),
+  shippingPhone: optionalText(20).default(''),
+  carrier: optionalText(150).default(''),
+  trackingCode: optionalText(100).default(''),
+  shippingDate: Joi.date().allow(null).default(null),
+  deliveredAt: Joi.date().allow(null).default(null),
+  shippingFee: Joi.number().min(0).default(0),
+  shippingNote: optionalText(1000).default(''),
   createdBy: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(null),
@@ -196,6 +216,7 @@ const sumCompletedTotal = async () => {
 export const orderModel = {
   ORDER_COLLECTION_NAME,
   ORDER_STATUS,
+  PAYMENT_STATUS,
   createNew,
   findOneById,
   findMany,

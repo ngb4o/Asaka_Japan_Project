@@ -247,4 +247,14 @@ export const STATUS_OPTIONS = {
     { value: "completed", label: "Hoàn tất" },
     { value: "cancelled", label: "Hủy" },
   ] as SelectOption[],
+  payment: [
+    { value: "unpaid", label: "Chưa thanh toán" },
+    { value: "partial", label: "Thanh toán một phần" },
+    { value: "paid", label: "Đã thanh toán" },
+  ] as SelectOption[],
+  userRole: [
+    { value: "sales", label: "Kinh doanh" },
+    { value: "warehouse", label: "Kho" },
+    { value: "accountant", label: "Kế toán" },
+  ] as SelectOption[],
 };

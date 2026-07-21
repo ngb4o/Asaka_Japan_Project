@@ -3,12 +3,33 @@ import { validateRequest } from '~/validations/validateRequest'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 
 const optionalText = Joi.string().trim().allow('', null).optional()
+const optionalDate = Joi.alternatives()
+  .try(Joi.date().iso(), Joi.string().isoDate(), Joi.valid(null, ''))
+  .optional()
 
 const lineItemSchema = Joi.object({
   productId: Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE).required(),
   quantity: Joi.number().integer().min(1).required(),
   unitPrice: Joi.number().min(0).optional()
 })
+
+const shippingFields = {
+  shippingAddress: optionalText.max(500),
+  shippingContactName: optionalText.max(150),
+  shippingPhone: optionalText.max(20),
+  carrier: optionalText.max(150),
+  trackingCode: optionalText.max(100),
+  shippingDate: optionalDate,
+  deliveredAt: optionalDate,
+  shippingFee: Joi.number().min(0).optional(),
+  shippingNote: optionalText.max(1000)
+}
+
+const paymentFields = {
+  paymentStatus: Joi.string().valid('unpaid', 'partial', 'paid').optional(),
+  paidAmount: Joi.number().min(0).optional(),
+  paymentNote: optionalText.max(1000)
+}
 
 const createSchema = Joi.object({
   dealerId: Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE).optional(),
@@ -22,7 +43,9 @@ const createSchema = Joi.object({
   status: Joi.string()
     .valid('pending', 'confirmed', 'delivering', 'completed', 'cancelled')
     .optional(),
-  note: optionalText.max(1000)
+  note: optionalText.max(1000),
+  ...paymentFields,
+  ...shippingFields
 })
 
 const updateSchema = Joi.object({
@@ -36,10 +59,18 @@ const updateSchema = Joi.object({
   status: Joi.string()
     .valid('pending', 'confirmed', 'delivering', 'completed', 'cancelled')
     .optional(),
-  note: optionalText.max(1000)
+  note: optionalText.max(1000),
+  ...paymentFields,
+  ...shippingFields
 }).min(1)
+
+const recordPaymentSchema = Joi.object({
+  amount: Joi.number().min(0).required(),
+  note: optionalText.max(1000)
+})
 
 export const orderValidation = {
   createNew: validateRequest(createSchema),
-  update: validateRequest(updateSchema)
+  update: validateRequest(updateSchema),
+  recordPayment: validateRequest(recordPaymentSchema)
 }

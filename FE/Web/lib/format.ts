@@ -1,10 +1,8 @@
 export function formatCurrency(value?: number | null) {
   if (value == null || Number.isNaN(value)) return "";
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
+  return `${new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(value)} ₫`;
 }
 
 export function formatDate(value?: string) {

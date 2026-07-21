@@ -6,7 +6,7 @@ const createNew = async (req, res, next) => {
     const result = await dealerService.createNew(req.body, req.userId)
 
     res.status(StatusCodes.CREATED).json({
-      message: 'Dealer created successfully!',
+      message: 'Đã tạo đại lý thành công!',
       data: result
     })
   } catch (error) {
@@ -19,7 +19,7 @@ const getList = async (req, res, next) => {
     const result = await dealerService.getList(req.query)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get dealers successfully!',
+      message: 'Lấy danh sách đại lý thành công!',
       data: result
     })
   } catch (error) {
@@ -32,7 +32,7 @@ const getDetails = async (req, res, next) => {
     const result = await dealerService.getDetails(req.params.id)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get dealer details successfully!',
+      message: 'Lấy chi tiết đại lý thành công!',
       data: result
     })
   } catch (error) {
@@ -45,7 +45,7 @@ const update = async (req, res, next) => {
     const result = await dealerService.update(req.params.id, req.body)
 
     res.status(StatusCodes.OK).json({
-      message: 'Dealer updated successfully!',
+      message: 'Đã cập nhật đại lý thành công!',
       data: result
     })
   } catch (error) {

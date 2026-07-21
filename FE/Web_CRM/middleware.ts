@@ -12,12 +12,17 @@ const PROTECTED_PREFIXES = [
   "/warehouses",
   "/inventory",
   "/news",
+  "/users",
 ];
-const AUTH_PAGES = ["/login", "/register"];
+const AUTH_PAGES = ["/login"];
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("crm_token")?.value;
   const { pathname } = request.nextUrl;
+
+  if (pathname.startsWith("/register")) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 
   const isProtected = PROTECTED_PREFIXES.some((prefix) =>
     pathname.startsWith(prefix)
@@ -47,6 +52,7 @@ export const config = {
     "/warehouses/:path*",
     "/inventory/:path*",
     "/news/:path*",
+    "/users/:path*",
     "/login",
     "/register",
   ],

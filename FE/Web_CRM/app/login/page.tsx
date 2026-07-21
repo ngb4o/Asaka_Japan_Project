@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,7 @@ import { ApiClientError } from "@/lib/api/client";
 export default function LoginPage() {
   const { login } = useAuth();
   const toast = useToast();
-  const [email, setEmail] = useState("");
+  const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -22,7 +21,7 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      await login(email, password);
+      await login(account, password);
       toast.success("Đăng nhập thành công");
     } catch (err) {
       toast.error(
@@ -40,14 +39,14 @@ export default function LoginPage() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="account">Tài khoản</Label>
           <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@asaka-japan.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            id="account"
+            type="text"
+            autoComplete="username"
+            placeholder="admin"
+            value={account}
+            onChange={(e) => setAccount(e.target.value)}
             required
           />
         </div>
@@ -67,15 +66,6 @@ export default function LoginPage() {
           {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
         </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-[var(--color-text-inverse)]">
-        Chưa có tài khoản?{" "}
-        <Link
-          href="/register"
-          className="font-semibold text-[var(--color-text-secondary)] transition-colors hover:underline"
-        >
-          Đăng ký
-        </Link>
-      </p>
     </AuthShell>
   );
 }

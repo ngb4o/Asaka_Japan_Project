@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Printer, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { VndInput } from "@/components/ui/vnd-input";
 import {
   LineItemsField,
   buildLineItemsPayload,
@@ -25,15 +26,24 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import {
+  canEditOrderItems,
+  canManageOrders,
+  canManagePayments,
+  canManageShipping,
+} from "@/lib/auth/permissions";
 import { getDealers } from "@/lib/api/dealers";
 import {
   createOrder,
   deleteOrder,
   getOrders,
+  recordOrderPayment,
   updateOrder,
 } from "@/lib/api/orders";
 import { getProducts } from "@/lib/api/products";
 import { getWarehouses } from "@/lib/api/warehouses";
+import { printSalesDocument } from "@/lib/print/salesDocument";
 import type { Dealer, Order, Product } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE, shouldReloadPreviousPage } from "@/lib/pagination";
@@ -47,6 +57,18 @@ type OrderFormValues = {
   customerEmail: string;
   status: Order["status"];
   note: string;
+  paymentStatus: Order["paymentStatus"];
+  paidAmount: number | "";
+  paymentNote: string;
+  shippingAddress: string;
+  shippingContactName: string;
+  shippingPhone: string;
+  carrier: string;
+  trackingCode: string;
+  shippingDate: string;
+  deliveredAt: string;
+  shippingFee: number | "";
+  shippingNote: string;
   items: LineItemFormRow[];
 };
 
@@ -58,6 +80,18 @@ const EMPTY_FORM: OrderFormValues = {
   customerEmail: "",
   status: "pending",
   note: "",
+  paymentStatus: "unpaid",
+  paidAmount: 0,
+  paymentNote: "",
+  shippingAddress: "",
+  shippingContactName: "",
+  shippingPhone: "",
+  carrier: "",
+  trackingCode: "",
+  shippingDate: "",
+  deliveredAt: "",
+  shippingFee: 0,
+  shippingNote: "",
   items: [],
 };
 
@@ -69,9 +103,24 @@ const STATUS_LABELS: Record<Order["status"], string> = {
   cancelled: "Hủy",
 };
 
+const PAYMENT_LABELS: Record<Order["paymentStatus"], string> = {
+  unpaid: "Chưa TT",
+  partial: "Một phần",
+  paid: "Đã TT",
+};
+
+function toDateInput(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
 export default function OrdersPage() {
   const confirm = useConfirm();
   const toast = useToast();
+  const { user } = useAuth();
+  const role = user?.role;
   const [items, setItems] = useState<Order[]>([]);
   const [dealers, setDealers] = useState<Dealer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -79,6 +128,10 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [payingOrder, setPayingOrder] = useState<Order | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState<number | "">("");
+  const [paymentNote, setPaymentNote] = useState("");
   const [editing, setEditing] = useState<Order | null>(null);
   const [form, setForm] = useState<OrderFormValues>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
@@ -142,6 +195,18 @@ export default function OrdersPage() {
       customerEmail: item.customerEmail,
       status: item.status,
       note: item.note,
+      paymentStatus: item.paymentStatus || "unpaid",
+      paidAmount: item.paidAmount || 0,
+      paymentNote: item.paymentNote || "",
+      shippingAddress: item.shippingAddress || "",
+      shippingContactName: item.shippingContactName || "",
+      shippingPhone: item.shippingPhone || "",
+      carrier: item.carrier || "",
+      trackingCode: item.trackingCode || "",
+      shippingDate: toDateInput(item.shippingDate),
+      deliveredAt: toDateInput(item.deliveredAt),
+      shippingFee: item.shippingFee || 0,
+      shippingNote: item.shippingNote || "",
       items: item.items.map((line) => ({
         productId: line.productId,
         quantity: line.quantity,
@@ -151,12 +216,49 @@ export default function OrdersPage() {
     setDialogOpen(true);
   }
 
+  function handlePrint(item: Order) {
+    try {
+      printSalesDocument({
+        title: "ĐƠN HÀNG",
+        code: item.code,
+        meta: [
+          { label: "Trạng thái", value: STATUS_LABELS[item.status] },
+          {
+            label: "Thanh toán",
+            value: `${PAYMENT_LABELS[item.paymentStatus || "unpaid"]} (${formatCurrency(item.paidAmount || 0)})`,
+          },
+          { label: "Kho", value: item.warehouseName || "—" },
+          { label: "Ngày tạo", value: new Date(item.createdAt).toLocaleDateString("vi-VN") },
+        ],
+        customer: [
+          { label: "Đại lý/Khách", value: item.dealerName || item.customerName || "—" },
+          { label: "SĐT", value: item.customerPhone || item.shippingPhone || "—" },
+          { label: "Địa chỉ giao", value: item.shippingAddress || "—" },
+          { label: "ĐVVC", value: item.carrier || "—" },
+          { label: "Mã vận đơn", value: item.trackingCode || "—" },
+        ],
+        items: item.items,
+        subtotal: item.subtotal,
+        discount: item.discount,
+        total: item.total,
+        extraRows: item.shippingFee
+          ? [{ label: "Phí giao hàng", value: formatCurrency(item.shippingFee) }]
+          : [],
+        note: item.note,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Không in được đơn");
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const lineError = validateLineItems(form.items);
-    if (lineError) {
-      toast.warning(lineError);
-      return;
+    if (canEditOrderItems(role)) {
+      const lineError = validateLineItems(form.items);
+      if (lineError) {
+        toast.warning(lineError);
+        return;
+      }
     }
 
     if (form.status === "confirmed" && !form.warehouseId) {
@@ -174,12 +276,32 @@ export default function OrdersPage() {
         customerEmail: form.customerEmail.trim(),
         status: form.status,
         note: form.note.trim(),
+        ...(canManagePayments(role)
+          ? {
+              paymentStatus: form.paymentStatus,
+              paidAmount: Number(form.paidAmount) || 0,
+              paymentNote: form.paymentNote.trim(),
+            }
+          : {}),
+        ...(canManageShipping(role)
+          ? {
+              shippingAddress: form.shippingAddress.trim(),
+              shippingContactName: form.shippingContactName.trim(),
+              shippingPhone: form.shippingPhone.trim(),
+              carrier: form.carrier.trim(),
+              trackingCode: form.trackingCode.trim(),
+              shippingDate: form.shippingDate || null,
+              deliveredAt: form.deliveredAt || null,
+              shippingFee: Number(form.shippingFee) || 0,
+              shippingNote: form.shippingNote.trim(),
+            }
+          : {}),
       };
 
       if (editing) {
         await updateOrder(editing.id, {
           ...basePayload,
-          ...(editing.inventoryExported
+          ...(editing.inventoryExported || !canEditOrderItems(role)
             ? {}
             : { items: buildLineItemsPayload(form.items) }),
         });
@@ -219,6 +341,33 @@ export default function OrdersPage() {
     }
   }
 
+  async function handleRecordPayment(event: React.FormEvent) {
+    event.preventDefault();
+    if (!payingOrder) return;
+    if (!paymentAmount || Number(paymentAmount) <= 0) {
+      toast.warning("Nhập số tiền thanh toán");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await recordOrderPayment(payingOrder.id, {
+        amount: Number(paymentAmount),
+        note: paymentNote.trim() || undefined,
+      });
+      toast.success("Đã ghi nhận thanh toán");
+      setPaymentOpen(false);
+      setPayingOrder(null);
+      setPaymentAmount("");
+      setPaymentNote("");
+      await loadData();
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Ghi nhận thất bại");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   if (loading && items.length === 0) {
     return <PageSkeleton {...PAGE_SKELETONS.warehouses} />;
   }
@@ -235,13 +384,15 @@ export default function OrdersPage() {
         <div>
           <h1 className="text-2xl font-semibold">Đơn hàng</h1>
           <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-            Quản lý đơn hàng và xuất kho khi xác nhận
+            Công nợ, giao hàng và xuất kho khi xác nhận
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4" />
-          Tạo đơn hàng
-        </Button>
+        {canManageOrders(role) && canEditOrderItems(role) ? (
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+            Tạo đơn hàng
+          </Button>
+        ) : null}
       </div>
 
       <Card>
@@ -250,7 +401,7 @@ export default function OrdersPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Input
-            placeholder="Tìm theo mã, khách hàng..."
+            placeholder="Tìm theo mã, khách hàng, mã vận đơn..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -263,48 +414,113 @@ export default function OrdersPage() {
           ) : (
             <div className="space-y-4">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[980px] text-left text-sm">
+                <table className="w-full min-w-[1100px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
                       <th className="px-2 py-3 font-medium">Mã</th>
                       <th className="px-2 py-3 font-medium">Khách/Đại lý</th>
-                      <th className="px-2 py-3 font-medium">Kho</th>
-                      <th className="px-2 py-3 font-medium">Tổng</th>
+                      <th className="px-2 py-3 font-medium">Tổng / Còn nợ</th>
+                      <th className="px-2 py-3 font-medium">Thanh toán</th>
+                      <th className="px-2 py-3 font-medium">Giao hàng</th>
                       <th className="px-2 py-3 font-medium">Trạng thái</th>
                       <th className="px-2 py-3 font-medium text-right">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((item) => (
-                      <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                        <td className="px-2 py-3 font-medium">{item.code}</td>
-                        <td className="px-2 py-3">
-                          <p>{item.dealerName || item.customerName || "—"}</p>
-                        </td>
-                        <td className="px-2 py-3">{item.warehouseName || "—"}</td>
-                        <td className="px-2 py-3">{formatCurrency(item.total)}</td>
-                        <td className="px-2 py-3">
-                          <Badge variant={item.status === "completed" ? "success" : "muted"}>
-                            {STATUS_LABELS[item.status]}
-                          </Badge>
-                          {item.inventoryExported ? (
-                            <p className="text-xs text-[var(--color-text-inverse)]">Đã xuất kho</p>
-                          ) : null}
-                        </td>
-                        <td className="px-2 py-3">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            {!item.inventoryExported ? (
-                              <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                    {items.map((item) => {
+                      const remaining =
+                        item.remainingAmount ??
+                        Math.max(0, (item.total || 0) - (item.paidAmount || 0));
+                      return (
+                        <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
+                          <td className="px-2 py-3 font-medium">{item.code}</td>
+                          <td className="px-2 py-3">
+                            <p>{item.dealerName || item.customerName || "—"}</p>
+                            {item.warehouseName ? (
+                              <p className="text-xs text-[var(--color-text-inverse)]">
+                                Kho: {item.warehouseName}
+                              </p>
                             ) : null}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-2 py-3">
+                            <p>{formatCurrency(item.total)}</p>
+                            <p className="text-xs text-[var(--color-text-inverse)]">
+                              Còn: {formatCurrency(remaining)}
+                            </p>
+                          </td>
+                          <td className="px-2 py-3">
+                            <Badge
+                              variant={
+                                item.paymentStatus === "paid"
+                                  ? "success"
+                                  : item.paymentStatus === "partial"
+                                    ? "muted"
+                                    : "muted"
+                              }
+                            >
+                              {PAYMENT_LABELS[item.paymentStatus || "unpaid"]}
+                            </Badge>
+                          </td>
+                          <td className="px-2 py-3">
+                            <p>{item.carrier || "—"}</p>
+                            <p className="text-xs text-[var(--color-text-inverse)]">
+                              {item.trackingCode || item.shippingPhone || "Chưa có VC"}
+                            </p>
+                          </td>
+                          <td className="px-2 py-3">
+                            <Badge variant={item.status === "completed" ? "success" : "muted"}>
+                              {STATUS_LABELS[item.status]}
+                            </Badge>
+                            {item.inventoryExported ? (
+                              <p className="text-xs text-[var(--color-text-inverse)]">Đã xuất kho</p>
+                            ) : null}
+                          </td>
+                          <td className="px-2 py-3">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePrint(item)}
+                                title="In / PDF"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              {canManagePayments(role) && item.paymentStatus !== "paid" ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setPayingOrder(item);
+                                    setPaymentAmount(
+                                      Math.max(
+                                        0,
+                                        (item.total || 0) - (item.paidAmount || 0)
+                                      ) || ""
+                                    );
+                                    setPaymentNote("");
+                                    setPaymentOpen(true);
+                                  }}
+                                >
+                                  Thu
+                                </Button>
+                              ) : null}
+                              <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              {!item.inventoryExported && canEditOrderItems(role) ? (
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() => handleDelete(item)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              ) : null}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -374,13 +590,26 @@ export default function OrdersPage() {
                 />
               </div>
             </div>
-            <LineItemsField
-              items={form.items}
-              products={products}
-              onChange={(items) => setForm({ ...form, items })}
-            />
+
+            {canEditOrderItems(role) ? (
+              <LineItemsField
+                items={form.items}
+                products={products}
+                onChange={(items) => setForm({ ...form, items })}
+              />
+            ) : editing ? (
+              <div className="rounded-lg border border-[var(--color-border-subtle)] p-3 text-sm">
+                <p className="mb-2 font-medium">Sản phẩm</p>
+                {editing.items.map((line, index) => (
+                  <p key={`${line.productId}-${index}`} className="text-[var(--color-text-inverse)]">
+                    {line.productName} × {line.quantity} — {formatCurrency(line.lineTotal)}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+
             <div className="space-y-2">
-              <Label>Trạng thái</Label>
+              <Label>Trạng thái đơn</Label>
               <SearchableSelect
                 options={STATUS_OPTIONS.order}
                 value={form.status}
@@ -388,6 +617,143 @@ export default function OrdersPage() {
                 searchable={false}
               />
             </div>
+
+            {canManagePayments(role) ? (
+              <div className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4">
+                <p className="text-sm font-semibold">Công nợ / Thanh toán</p>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>Trạng thái TT</Label>
+                    <SearchableSelect
+                      options={STATUS_OPTIONS.payment}
+                      value={form.paymentStatus}
+                      onChange={(value) =>
+                        setForm({
+                          ...form,
+                          paymentStatus: value as Order["paymentStatus"],
+                        })
+                      }
+                      searchable={false}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="paidAmount">Đã thu</Label>
+                    <VndInput
+                      id="paidAmount"
+                      value={form.paidAmount}
+                      onValueChange={(paidAmount) => setForm({ ...form, paidAmount })}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="paymentNote">Ghi chú TT</Label>
+                    <Input
+                      id="paymentNote"
+                      value={form.paymentNote}
+                      onChange={(e) => setForm({ ...form, paymentNote: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {canManageShipping(role) ? (
+              <div className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4">
+                <p className="text-sm font-semibold">Giao hàng</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="shippingAddress">Địa chỉ giao</Label>
+                    <Input
+                      id="shippingAddress"
+                      value={form.shippingAddress}
+                      onChange={(e) =>
+                        setForm({ ...form, shippingAddress: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="shippingContactName">Người nhận</Label>
+                    <Input
+                      id="shippingContactName"
+                      value={form.shippingContactName}
+                      onChange={(e) =>
+                        setForm({ ...form, shippingContactName: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="shippingPhone">SĐT nhận</Label>
+                    <Input
+                      id="shippingPhone"
+                      value={form.shippingPhone}
+                      onChange={(e) =>
+                        setForm({ ...form, shippingPhone: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="carrier">Đơn vị vận chuyển</Label>
+                    <Input
+                      id="carrier"
+                      value={form.carrier}
+                      onChange={(e) => setForm({ ...form, carrier: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="trackingCode">Mã vận đơn</Label>
+                    <Input
+                      id="trackingCode"
+                      value={form.trackingCode}
+                      onChange={(e) =>
+                        setForm({ ...form, trackingCode: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="shippingDate">Ngày giao</Label>
+                    <Input
+                      id="shippingDate"
+                      type="date"
+                      value={form.shippingDate}
+                      onChange={(e) =>
+                        setForm({ ...form, shippingDate: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="deliveredAt">Ngày nhận</Label>
+                    <Input
+                      id="deliveredAt"
+                      type="date"
+                      value={form.deliveredAt}
+                      onChange={(e) =>
+                        setForm({ ...form, deliveredAt: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="shippingFee">Phí giao hàng</Label>
+                    <VndInput
+                      id="shippingFee"
+                      value={form.shippingFee}
+                      onValueChange={(shippingFee) => setForm({ ...form, shippingFee })}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="shippingNote">Ghi chú giao hàng</Label>
+                    <Textarea
+                      id="shippingNote"
+                      value={form.shippingNote}
+                      onChange={(e) =>
+                        setForm({ ...form, shippingNote: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             {editing?.inventoryExported ? (
               <p className="text-sm text-[var(--color-text-inverse)]">
                 Đơn đã xuất kho — không thể sửa sản phẩm/số lượng.
@@ -407,6 +773,45 @@ export default function OrdersPage() {
               </Button>
               <Button type="submit" disabled={submitting}>
                 {submitting ? "Đang lưu..." : "Lưu"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ghi nhận thanh toán {payingOrder?.code}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleRecordPayment} className="space-y-4">
+            <p className="text-sm text-[var(--color-text-inverse)]">
+              Tổng đơn: {formatCurrency(payingOrder?.total || 0)} · Đã thu:{" "}
+              {formatCurrency(payingOrder?.paidAmount || 0)}
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="payAmount">Số tiền thu thêm</Label>
+              <VndInput
+                id="payAmount"
+                value={paymentAmount}
+                onValueChange={setPaymentAmount}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="payNote">Ghi chú</Label>
+              <Input
+                id="payNote"
+                value={paymentNote}
+                onChange={(e) => setPaymentNote(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setPaymentOpen(false)}>
+                Hủy
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Đang lưu..." : "Ghi nhận"}
               </Button>
             </div>
           </form>

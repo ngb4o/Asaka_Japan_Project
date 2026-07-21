@@ -89,7 +89,7 @@ const getDetails = async (leadId) => {
   const lead = await leadModel.findOneById(leadId)
 
   if (!lead) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Lead not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy liên hệ!')
   }
 
   let dealerMap = new Map()
@@ -108,7 +108,7 @@ const update = async (leadId, updateData) => {
   const lead = await leadModel.findOneById(leadId)
 
   if (!lead) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Lead not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy liên hệ!')
   }
 
   const dataToUpdate = {}
@@ -126,23 +126,23 @@ const deleteOne = async (leadId) => {
   const lead = await leadModel.findOneById(leadId)
 
   if (!lead) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Lead not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy liên hệ!')
   }
 
   await leadModel.deleteOne(leadId)
 
-  return { message: 'Lead deleted successfully!' }
+  return { message: 'Đã xóa liên hệ thành công!' }
 }
 
 const convertToDealer = async (leadId, userId) => {
   const lead = await leadModel.findOneById(leadId)
 
   if (!lead) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Lead not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy liên hệ!')
   }
 
   if (lead.dealerId) {
-    throw new ApiError(StatusCodes.CONFLICT, 'Lead already converted to dealer!')
+    throw new ApiError(StatusCodes.CONFLICT, 'Liên hệ đã được chuyển thành đại lý!')
   }
 
   const created = await dealerModel.createNew({

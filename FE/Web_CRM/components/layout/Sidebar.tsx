@@ -18,6 +18,7 @@ import {
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { canAccessPath, ROLE_LABELS } from "@/lib/auth/permissions";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -51,6 +52,8 @@ export function Sidebar() {
     }
   }
 
+  const visibleNav = NAV_ITEMS.filter((item) => canAccessPath(user?.role, item.href));
+
   return (
     <aside className="sticky top-0 flex h-screen w-64 flex-col border-r border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]">
       <div className="flex shrink-0 items-center gap-3 border-b border-[var(--color-border-subtle)] px-5 py-5">
@@ -71,7 +74,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {NAV_ITEMS.map((item) => {
+        {visibleNav.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
           const badgeCount = item.badgeKey ? counts[item.badgeKey] : 0;
@@ -105,6 +108,11 @@ export function Sidebar() {
             {user?.username}
           </p>
           <p className="truncate text-xs text-[var(--color-text-inverse)]">{user?.email}</p>
+          {user?.role && user.role !== "admin" ? (
+            <p className="mt-1 text-xs font-medium text-[var(--color-text-secondary)]">
+              {ROLE_LABELS[user.role]}
+            </p>
+          ) : null}
         </div>
         <ThemeToggle className="w-full" />
         <Button

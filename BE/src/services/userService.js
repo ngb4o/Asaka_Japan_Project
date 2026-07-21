@@ -5,57 +5,50 @@ import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { jwtHelper } from '~/utils/jwt'
 
-const register = async (reqBody) => {
-  const emailExists = await userModel.checkEmailExists(reqBody.email)
-  if (emailExists) {
-    throw new ApiError(StatusCodes.CONFLICT, 'Email already exists!')
-  }
+const resolveRole = (user) => user.role || userModel.USER_ROLES.ADMIN
 
-  // Hash password trước khi lưu vào database
-  const hashedPassword = await bcrypt.hash(reqBody.password, 10)
+const toPublicUser = (user) => ({
+  id: user._id.toString(),
+  email: user.email,
+  username: user.username,
+  avatar: user.avatar ?? null,
+  role: resolveRole(user),
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt ?? null
+})
 
-  const newUser = {
-    email: reqBody.email,
-    password: hashedPassword,
-    username: reqBody.username
-  }
-
-  const createdUser = await userModel.createNew(newUser)
-
-  const getUser = await userModel.findOneById(createdUser.insertedId)
-
-  // MongoDB trả về _id, không phải id
-  const token = jwtHelper.generateToken({
-    userId: getUser._id.toString(),
-    email: getUser.email
-  })
-
-  // Chỉ trả về userId và token
-  return {
-    userId: getUser._id.toString(),
-    token
-  }
+const register = async () => {
+  throw new ApiError(
+    StatusCodes.FORBIDDEN,
+    'Đăng ký công khai đã bị tắt. Vui lòng liên hệ quản trị viên.'
+  )
 }
 
 const login = async (reqBody) => {
-  const user = await userModel.findOneByEmail(reqBody.email)
-  if (!user) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Email or password is incorrect!')
+  const account = String(reqBody.account || reqBody.email || '').trim()
+  if (!account) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản hoặc mật khẩu không đúng!')
   }
 
-  // So sánh password người dùng nhập với password đã hash trong database
+  const user =
+    (await userModel.findOneByUsername(account)) ||
+    (await userModel.findOneByEmail(account))
+
+  if (!user || user._destroy) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản hoặc mật khẩu không đúng!')
+  }
+
   const isPasswordValid = await bcrypt.compare(reqBody.password, user.password)
   if (!isPasswordValid) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Email or password is incorrect!')
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Tài khoản hoặc mật khẩu không đúng!')
   }
 
-  // MongoDB trả về _id, không phải id
   const token = jwtHelper.generateToken({
     userId: user._id.toString(),
-    email: user.email
+    email: user.email,
+    role: resolveRole(user)
   })
 
-  // Chỉ trả về userId và token
   return {
     userId: user._id.toString(),
     token
@@ -63,7 +56,6 @@ const login = async (reqBody) => {
 }
 
 const logout = async (token, userId) => {
-  // Lưu token vào blacklist để không thể sử dụng lại
   await tokenBlacklistModel.addToken({
     token,
     userId
@@ -75,37 +67,48 @@ const logout = async (token, userId) => {
 const getProfile = async (userId) => {
   const user = await userModel.findOneById(userId)
   if (!user) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy người dùng!')
   }
 
-  // Trả về thông tin user (không có password)
-  const userResponse = {
-    id: user._id.toString(),
-    email: user.email,
-    username: user.username,
-    avatar: user.avatar,
-    createdAt: user.createdAt
-  }
-
-  return userResponse
+  return toPublicUser(user)
 }
 
 const getUserById = async (targetUserId) => {
   const user = await userModel.findOneById(targetUserId)
   if (!user) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy người dùng!')
   }
 
-  // Trả về thông tin user (không có password)
-  const userResponse = {
-    id: user._id.toString(),
-    email: user.email,
-    username: user.username,
-    avatar: user.avatar,
-    createdAt: user.createdAt
+  return toPublicUser(user)
+}
+
+const getList = async () => {
+  const result = await userModel.findMany({ limit: 200, skip: 0 })
+  return {
+    items: result.items.map((user) => toPublicUser(user)),
+    total: result.total
+  }
+}
+
+const updateRole = async (targetUserId, role, actorUserId) => {
+  if (!Object.values(userModel.USER_ROLES).includes(role)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Vai trò không hợp lệ!')
   }
 
-  return userResponse
+  const user = await userModel.findOneById(targetUserId)
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy người dùng!')
+  }
+
+  if (targetUserId === actorUserId && role !== userModel.USER_ROLES.ADMIN) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Không thể tự gỡ quyền quản trị của chính bạn!'
+    )
+  }
+
+  await userModel.updateRole(targetUserId, role)
+  return await getUserById(targetUserId)
 }
 
 export const userService = {
@@ -113,5 +116,7 @@ export const userService = {
   login,
   logout,
   getProfile,
-  getUserById
+  getUserById,
+  getList,
+  updateRole
 }

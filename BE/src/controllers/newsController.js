@@ -6,7 +6,7 @@ const createNew = async (req, res, next) => {
     const result = await newsService.createNew(req.body, req.userId)
 
     res.status(StatusCodes.CREATED).json({
-      message: 'News created successfully!',
+      message: 'Đã tạo tin tức thành công!',
       data: result
     })
   } catch (error) {
@@ -19,7 +19,7 @@ const getList = async (req, res, next) => {
     const result = await newsService.getList(req.query)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get news successfully!',
+      message: 'Lấy danh sách tin tức thành công!',
       data: result
     })
   } catch (error) {
@@ -32,7 +32,7 @@ const getDetails = async (req, res, next) => {
     const result = await newsService.getDetails(req.params.id)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get news details successfully!',
+      message: 'Lấy chi tiết tin tức thành công!',
       data: result
     })
   } catch (error) {
@@ -45,7 +45,7 @@ const update = async (req, res, next) => {
     const result = await newsService.update(req.params.id, req.body)
 
     res.status(StatusCodes.OK).json({
-      message: 'News updated successfully!',
+      message: 'Đã cập nhật tin tức thành công!',
       data: result
     })
   } catch (error) {

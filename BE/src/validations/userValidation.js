@@ -1,35 +1,21 @@
 import Joi from 'joi'
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
+import { validateRequest } from '~/validations/validateRequest'
 
 const register = async (req, res, next) => {
-  const correctCondition = Joi.object({
-    email: Joi.string().required().email().trim().strict(),
-
-    password: Joi.string().required().min(6).max(50).trim().strict(),
-
-    username: Joi.string().required().min(3).max(50).trim().strict()
-  })
-
-  try {
-    await correctCondition.validateAsync(req.body, { abortEarly: false })
-
-    next()
-  } catch (error) {
-    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, error.message))
-  }
+  next(new ApiError(StatusCodes.FORBIDDEN, 'Public registration is disabled!'))
 }
 
 const login = async (req, res, next) => {
   const correctCondition = Joi.object({
-    email: Joi.string().required().email().trim().strict(),
-
+    account: Joi.string().trim().optional(),
+    email: Joi.string().trim().optional(),
     password: Joi.string().required().trim().strict()
-  })
+  }).or('account', 'email')
 
   try {
     await correctCondition.validateAsync(req.body, { abortEarly: false })
-
     next()
   } catch (error) {
     next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, error.message))
@@ -43,15 +29,19 @@ const getUserById = async (req, res, next) => {
 
   try {
     await correctCondition.validateAsync(req.params, { abortEarly: false })
-
     next()
   } catch (error) {
     next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, error.message))
   }
 }
 
+const updateRoleSchema = Joi.object({
+  role: Joi.string().valid('admin', 'sales', 'warehouse', 'accountant').required()
+})
+
 export const userValidation = {
   register,
   login,
-  getUserById
+  getUserById,
+  updateRole: validateRequest(updateRoleSchema)
 }

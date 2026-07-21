@@ -56,7 +56,7 @@ const buildNotifications = async () => {
     notifications.push({
       id: `lead:${lead.id}`,
       type: isDealerLead ? 'dealer_lead' : 'lead',
-      title: isDealerLead ? 'Đăng ký đại lý mới' : 'Lead liên hệ mới',
+      title: isDealerLead ? 'Đăng ký đại lý mới' : 'Liên hệ mới',
       message: `${lead.name}${lead.phone ? ` · ${lead.phone}` : ''}`,
       href: '/leads',
       createdAt: lead.createdAt
@@ -137,7 +137,7 @@ const getList = async (userId) => {
 
 const markAllRead = async (userId) => {
   const result = await userNotificationStateModel.markAllRead(userId)
-  return { message: 'All notifications marked as read', lastReadAt: result.lastReadAt }
+  return { message: 'Đã đánh dấu tất cả thông báo là đã đọc', lastReadAt: result.lastReadAt }
 }
 
 export const notificationService = {

@@ -69,7 +69,7 @@ const uploadProductImage = async (req, res, next) => {
     const data = await persistImage(req.file, 'products')
 
     res.status(StatusCodes.CREATED).json({
-      message: 'Image uploaded successfully!',
+      message: 'Tải ảnh lên thành công!',
       data
     })
   } catch (error) {
@@ -82,7 +82,7 @@ const uploadNewsImage = async (req, res, next) => {
     const data = await persistImage(req.file, 'news')
 
     res.status(StatusCodes.CREATED).json({
-      message: 'Image uploaded successfully!',
+      message: 'Tải ảnh lên thành công!',
       data
     })
   } catch (error) {

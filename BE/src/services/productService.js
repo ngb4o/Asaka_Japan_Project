@@ -74,7 +74,7 @@ const ensureCategoryExists = async (categoryId) => {
   const category = await productCategoryModel.findOneById(categoryId)
 
   if (!category) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Product category not found!')
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Không tìm thấy loại sản phẩm!')
   }
 
   return category
@@ -153,7 +153,7 @@ const getDetails = async (productId) => {
   const product = await productModel.findOneById(productId)
 
   if (!product) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy sản phẩm!')
   }
 
   const formatted = formatProduct(product)
@@ -169,7 +169,7 @@ const update = async (productId, updateData) => {
   const product = await productModel.findOneById(productId)
 
   if (!product) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy sản phẩm!')
   }
 
   if (updateData.categoryId) {
@@ -217,20 +217,20 @@ const deleteOne = async (productId) => {
   const product = await productModel.findOneById(productId)
 
   if (!product) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy sản phẩm!')
   }
 
   const totalStock = await warehouseStockModel.getTotalByProductId(productId)
   if (totalStock > 0) {
     throw new ApiError(
       StatusCodes.CONFLICT,
-      'Cannot delete product that still has stock in warehouses!'
+      'Không thể xóa sản phẩm còn tồn trong kho!'
     )
   }
 
   await productModel.deleteOne(productId)
 
-  return { message: 'Product deleted successfully!' }
+  return { message: 'Đã xóa sản phẩm thành công!' }
 }
 
 export const productService = {

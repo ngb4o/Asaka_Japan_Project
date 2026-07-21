@@ -9,7 +9,7 @@ const createNew = async (reqBody, userId) => {
 
   const existingSlug = await productCategoryModel.findOneBySlug(slug)
   if (existingSlug) {
-    throw new ApiError(StatusCodes.CONFLICT, 'Category slug already exists!')
+    throw new ApiError(StatusCodes.CONFLICT, 'Slug loại sản phẩm đã tồn tại!')
   }
 
   const created = await productCategoryModel.createNew({
@@ -63,7 +63,7 @@ const getDetails = async (categoryId) => {
   const category = await productCategoryModel.findOneById(categoryId)
 
   if (!category) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Product category not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy loại sản phẩm!')
   }
 
   return formatDocument(category)
@@ -73,7 +73,7 @@ const update = async (categoryId, updateData) => {
   const category = await productCategoryModel.findOneById(categoryId)
 
   if (!category) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Product category not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy loại sản phẩm!')
   }
 
   const dataToUpdate = {}
@@ -91,7 +91,7 @@ const update = async (categoryId, updateData) => {
     const existingSlug = await productCategoryModel.findOneBySlug(nextSlug)
 
     if (existingSlug && existingSlug._id.toString() !== categoryId) {
-      throw new ApiError(StatusCodes.CONFLICT, 'Category slug already exists!')
+      throw new ApiError(StatusCodes.CONFLICT, 'Slug loại sản phẩm đã tồn tại!')
     }
 
     dataToUpdate.name = updateData.name
@@ -108,20 +108,20 @@ const deleteOne = async (categoryId) => {
   const category = await productCategoryModel.findOneById(categoryId)
 
   if (!category) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Product category not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy loại sản phẩm!')
   }
 
   const productCount = await productCategoryModel.countProductsByCategoryId(categoryId)
   if (productCount > 0) {
     throw new ApiError(
       StatusCodes.CONFLICT,
-      'Cannot delete category that still has products!'
+      'Không thể xóa loại sản phẩm còn chứa sản phẩm!'
     )
   }
 
   await productCategoryModel.deleteOne(categoryId)
 
-  return { message: 'Product category deleted successfully!' }
+  return { message: 'Đã xóa loại sản phẩm thành công!' }
 }
 
 export const productCategoryService = {

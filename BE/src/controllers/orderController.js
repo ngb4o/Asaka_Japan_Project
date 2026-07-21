@@ -6,7 +6,7 @@ const createNew = async (req, res, next) => {
     const result = await orderService.createNew(req.body, req.userId)
 
     res.status(StatusCodes.CREATED).json({
-      message: 'Order created successfully!',
+      message: 'Đã tạo đơn hàng thành công!',
       data: result
     })
   } catch (error) {
@@ -19,7 +19,7 @@ const getList = async (req, res, next) => {
     const result = await orderService.getList(req.query)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get orders successfully!',
+      message: 'Lấy danh sách đơn hàng thành công!',
       data: result
     })
   } catch (error) {
@@ -32,7 +32,7 @@ const getDetails = async (req, res, next) => {
     const result = await orderService.getDetails(req.params.id)
 
     res.status(StatusCodes.OK).json({
-      message: 'Get order details successfully!',
+      message: 'Lấy chi tiết đơn hàng thành công!',
       data: result
     })
   } catch (error) {
@@ -45,7 +45,7 @@ const update = async (req, res, next) => {
     const result = await orderService.update(req.params.id, req.body, req.userId)
 
     res.status(StatusCodes.OK).json({
-      message: 'Order updated successfully!',
+      message: 'Đã cập nhật đơn hàng thành công!',
       data: result
     })
   } catch (error) {
@@ -66,10 +66,24 @@ const deleteOne = async (req, res, next) => {
   }
 }
 
+const recordPayment = async (req, res, next) => {
+  try {
+    const result = await orderService.recordPayment(req.params.id, req.body)
+
+    res.status(StatusCodes.OK).json({
+      message: 'Đã ghi nhận thanh toán thành công!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const orderController = {
   createNew,
   getList,
   getDetails,
   update,
+  recordPayment,
   deleteOne
 }

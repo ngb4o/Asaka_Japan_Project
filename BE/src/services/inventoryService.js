@@ -14,11 +14,11 @@ const ensureWarehouseExists = async (warehouseId) => {
   const warehouse = await warehouseModel.findOneById(warehouseId)
 
   if (!warehouse) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Warehouse not found!')
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Không tìm thấy kho hàng!')
   }
 
   if (warehouse.status !== warehouseModel.WAREHOUSE_STATUS.ACTIVE) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Warehouse is inactive!')
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Kho hàng đang ngưng hoạt động!')
   }
 
   return warehouse
@@ -28,7 +28,7 @@ const ensureProductExists = async (productId) => {
   const product = await productModel.findOneById(productId)
 
   if (!product) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Product not found!')
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Không tìm thấy sản phẩm!')
   }
 
   return product
@@ -63,11 +63,11 @@ const createTransaction = async (type, reqBody, userId) => {
   const product = await ensureProductExists(productId)
 
   if (!Number.isFinite(quantity) || quantity <= 0) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Quantity must be greater than 0!')
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Số lượng phải lớn hơn 0!')
   }
 
   if (![UNIT_TYPE.BOTTLE, UNIT_TYPE.CASE].includes(unitType)) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid unit type!')
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Đơn vị không hợp lệ!')
   }
 
   const unitsPerCase = toUnitsPerCase(product.unitsPerCase)
@@ -75,7 +75,7 @@ const createTransaction = async (type, reqBody, userId) => {
   if (unitType === UNIT_TYPE.CASE && unitsPerCase <= 1) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
-      'Product does not have case packaging configured (unitsPerCase)!'
+      'Sản phẩm chưa cấu hình số lượng mỗi thùng!'
     )
   }
 
@@ -105,12 +105,12 @@ const createTransaction = async (type, reqBody, userId) => {
       )
 
       if (!stockResult) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, 'Insufficient stock for export!')
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Tồn kho không đủ để xuất!')
       }
     }
 
     if (!stockResult || typeof stockResult.quantity !== 'number') {
-      throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to update warehouse stock!')
+      throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Cập nhật tồn kho thất bại!')
     }
 
     const balanceAfter = stockResult.quantity

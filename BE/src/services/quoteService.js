@@ -12,7 +12,7 @@ import { generateDocumentCode } from '~/utils/documentCode'
 
 const buildLineItems = async (items = []) => {
   if (!Array.isArray(items) || !items.length) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Quote must have at least one item!')
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Báo giá phải có ít nhất một sản phẩm!')
   }
 
   const lineItems = []
@@ -21,7 +21,7 @@ const buildLineItems = async (items = []) => {
     const product = await productModel.findOneById(item.productId)
 
     if (!product) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Product not found in quote items!')
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Không tìm thấy sản phẩm trong báo giá!')
     }
 
     const quantity = Math.max(1, Math.floor(Number(item.quantity) || 0))
@@ -137,7 +137,7 @@ const getDetails = async (quoteId) => {
   const quote = await quoteModel.findOneById(quoteId)
 
   if (!quote) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Quote not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy báo giá!')
   }
 
   const [formatted] = await enrichQuotes([quote])
@@ -148,11 +148,11 @@ const update = async (quoteId, updateData) => {
   const quote = await quoteModel.findOneById(quoteId)
 
   if (!quote) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Quote not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy báo giá!')
   }
 
   if (quote.orderId) {
-    throw new ApiError(StatusCodes.CONFLICT, 'Cannot update quote that was converted to order!')
+    throw new ApiError(StatusCodes.CONFLICT, 'Không thể sửa báo giá đã chuyển thành đơn hàng!')
   }
 
   const dataToUpdate = {}
@@ -191,27 +191,27 @@ const deleteOne = async (quoteId) => {
   const quote = await quoteModel.findOneById(quoteId)
 
   if (!quote) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Quote not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy báo giá!')
   }
 
   if (quote.orderId) {
-    throw new ApiError(StatusCodes.CONFLICT, 'Cannot delete quote linked to an order!')
+    throw new ApiError(StatusCodes.CONFLICT, 'Không thể xóa báo giá đã gắn với đơn hàng!')
   }
 
   await quoteModel.deleteOne(quoteId)
 
-  return { message: 'Quote deleted successfully!' }
+  return { message: 'Đã xóa báo giá thành công!' }
 }
 
 const convertToOrder = async (quoteId, reqBody, userId) => {
   const quote = await quoteModel.findOneById(quoteId)
 
   if (!quote) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Quote not found!')
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy báo giá!')
   }
 
   if (quote.orderId) {
-    throw new ApiError(StatusCodes.CONFLICT, 'Quote already converted to order!')
+    throw new ApiError(StatusCodes.CONFLICT, 'Báo giá đã được chuyển thành đơn hàng!')
   }
 
   const order = await orderService.createNew(

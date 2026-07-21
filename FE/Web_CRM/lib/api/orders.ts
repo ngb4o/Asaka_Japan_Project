@@ -36,3 +36,13 @@ export async function deleteOrder(id: string) {
     method: "DELETE",
   });
 }
+
+export async function recordOrderPayment(
+  id: string,
+  data: { amount: number; note?: string }
+) {
+  return apiRequest<Order>(`/orders/${id}/payments`, {
+    method: "POST",
+    body: data,
+  });
+}

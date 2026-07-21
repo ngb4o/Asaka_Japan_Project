@@ -18,7 +18,7 @@ export const verifyToken = async (req, res, next) => {
 
     // Kiểm tra có header Authorization không
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new ApiError(StatusCodes.UNAUTHORIZED, 'Authorization header is missing or invalid!')
+      throw new ApiError(StatusCodes.UNAUTHORIZED, 'Thiếu hoặc sai header xác thực!')
     }
 
     // Lấy token (bỏ phần "Bearer ")
@@ -27,7 +27,7 @@ export const verifyToken = async (req, res, next) => {
     // Kiểm tra token có trong blacklist không (đã logout)
     const isBlacklisted = await tokenBlacklistModel.isTokenBlacklisted(token)
     if (isBlacklisted) {
-      throw new ApiError(StatusCodes.UNAUTHORIZED, 'Token has been revoked!')
+      throw new ApiError(StatusCodes.UNAUTHORIZED, 'Phiên đăng nhập đã bị thu hồi!')
     }
 
     // Verify token và lấy payload
@@ -35,13 +35,14 @@ export const verifyToken = async (req, res, next) => {
 
     // Lưu userId vào req để các controller/service sử dụng
     req.userId = decoded.userId
+    req.userRole = decoded.role || null
 
     // Chuyển sang middleware/controller tiếp theo
     next()
   } catch (error) {
     // Nếu token không hợp lệ hoặc hết hạn
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      next(new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid or expired token!'))
+      next(new ApiError(StatusCodes.UNAUTHORIZED, 'Token không hợp lệ hoặc đã hết hạn!'))
     } else {
       next(error)
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DealerDetailDialog } from "@/components/dealers/DealerDetailDialog";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
@@ -68,6 +69,8 @@ export default function DealersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [viewing, setViewing] = useState<Dealer | null>(null);
   const [editing, setEditing] = useState<Dealer | null>(null);
   const [form, setForm] = useState<DealerFormValues>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
@@ -108,6 +111,11 @@ export default function DealersPage() {
     setEditing(null);
     setForm(EMPTY_FORM);
     setDialogOpen(true);
+  }
+
+  function openDetail(item: Dealer) {
+    setViewing(item);
+    setDetailOpen(true);
   }
 
   function openEdit(item: Dealer) {
@@ -198,7 +206,7 @@ export default function DealersPage() {
         <div>
           <h1 className="text-2xl font-semibold">Đại lý</h1>
           <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-            Quản lý hệ thống đại lý phân phối
+            Quản lý đại lý — xem sản phẩm, số lượng và giá theo báo giá/đơn hàng
           </p>
         </div>
         <Button onClick={openCreate}>
@@ -258,6 +266,14 @@ export default function DealersPage() {
                         </td>
                         <td className="px-2 py-3">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openDetail(item)}
+                              title="Xem sản phẩm / đơn hàng"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -284,6 +300,15 @@ export default function DealersPage() {
           )}
         </CardContent>
       </Card>
+
+      <DealerDetailDialog
+        dealer={viewing}
+        open={detailOpen}
+        onOpenChange={(next) => {
+          setDetailOpen(next);
+          if (!next) setViewing(null);
+        }}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
