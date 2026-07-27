@@ -21,7 +21,7 @@ import { ApiClientError } from "@/lib/api/client";
 type AuthContextValue = {
   user: UserProfile | null;
   loading: boolean;
-  login: (account: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -48,8 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshProfile]);
 
   const login = useCallback(
-    async (account: string, password: string) => {
-      const result = await loginRequest(account, password);
+    async (email: string, password: string) => {
+      const result = await loginRequest(email, password);
       setToken(result.token);
       await refreshProfile();
       router.push("/dashboard");

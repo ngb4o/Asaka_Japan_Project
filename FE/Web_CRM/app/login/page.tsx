@@ -12,7 +12,7 @@ import { ApiClientError } from "@/lib/api/client";
 export default function LoginPage() {
   const { login } = useAuth();
   const toast = useToast();
-  const [account, setAccount] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -21,7 +21,7 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      await login(account, password);
+      await login(email.trim(), password);
       toast.success("Đăng nhập thành công");
     } catch (err) {
       toast.error(
@@ -39,14 +39,13 @@ export default function LoginPage() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="account">Tài khoản</Label>
+          <Label htmlFor="email">Email</Label>
           <Input
-            id="account"
-            type="text"
-            autoComplete="username"
-            placeholder="admin"
-            value={account}
-            onChange={(e) => setAccount(e.target.value)}
+            id="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
@@ -56,14 +55,13 @@ export default function LoginPage() {
             id="password"
             type="password"
             autoComplete="current-password"
-            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
         </div>
-        <Button type="submit" className="w-full" disabled={submitting}>
-          {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
+        <Button type="submit" className="w-full" loading={submitting}>
+          Đăng nhập
         </Button>
       </form>
     </AuthShell>

@@ -38,17 +38,20 @@ export function buildProductPayload(form: ProductFormValues): ProductInput {
   };
 
   if (form.sku?.trim()) payload.sku = form.sku.trim();
-  if (form.unit?.trim()) payload.unit = form.unit.trim();
+  payload.unit = "chai";
   if (form.unitsPerCase !== "" && form.unitsPerCase !== undefined) {
     payload.unitsPerCase = Number(form.unitsPerCase) || 1;
+  } else {
+    payload.unitsPerCase = 1;
   }
+  payload.packaging =
+    payload.unitsPerCase > 1 ? `Thùng ${payload.unitsPerCase} chai` : "";
   if (form.costPrice !== "" && form.costPrice !== undefined) {
     payload.costPrice = Number(form.costPrice);
   }
   if (form.activeIngredient?.trim()) {
     payload.activeIngredient = form.activeIngredient.trim();
   }
-  if (form.packaging?.trim()) payload.packaging = form.packaging.trim();
   if (form.shortDescription !== undefined) {
     payload.shortDescription = form.shortDescription.trim().slice(0, 300);
   }

@@ -23,8 +23,34 @@ Router.get(
   '/',
   verifyToken,
   attachUserRole,
-  requireRoles('admin'),
+  requireRoles('admin', 'accountant'),
   userController.getList
+)
+
+Router.post(
+  '/',
+  verifyToken,
+  attachUserRole,
+  requireRoles('admin'),
+  userValidation.createByAdmin,
+  userController.createByAdmin
+)
+
+Router.put(
+  '/me/password',
+  verifyToken,
+  attachUserRole,
+  userValidation.changeOwnPassword,
+  userController.changeOwnPassword
+)
+
+Router.put(
+  '/:id/password',
+  verifyToken,
+  attachUserRole,
+  requireRoles('admin'),
+  userValidation.updatePassword,
+  userController.updatePassword
 )
 
 Router.put(

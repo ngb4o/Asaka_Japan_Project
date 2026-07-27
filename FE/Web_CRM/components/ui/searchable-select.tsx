@@ -79,7 +79,7 @@ export function SearchableSelect({
   }
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Root open={open} onOpenChange={setOpen} modal>
       <div className={cn("relative w-full", className)}>
         <Popover.Trigger asChild disabled={disabled}>
           <button
@@ -89,7 +89,7 @@ export function SearchableSelect({
             aria-expanded={open}
             aria-controls={listId}
             className={cn(
-              "flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 text-left text-sm text-[var(--color-text-primary)] transition-colors",
+              "flex h-10 w-full items-center justify-between gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 text-left text-sm text-[var(--color-text-primary)] shadow-sm transition-colors",
               "hover:border-[var(--color-text-secondary)]/40",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)]",
               "disabled:cursor-not-allowed disabled:opacity-50",
@@ -128,11 +128,15 @@ export function SearchableSelect({
           <Popover.Content
             align="start"
             sideOffset={6}
+            collisionPadding={12}
             className={cn(
-              "z-[60] w-[var(--radix-popover-trigger-width)] overflow-hidden rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-elevated)]",
+              "z-[80] w-[var(--radix-popover-trigger-width)] overflow-hidden rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-elevated)]",
               "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
             )}
             onOpenAutoFocus={(event) => event.preventDefault()}
+            onCloseAutoFocus={(event) => event.preventDefault()}
+            onWheel={(event) => event.stopPropagation()}
+            onTouchMove={(event) => event.stopPropagation()}
           >
             {searchable && (
               <div className="border-b border-[var(--color-border-subtle)] p-2">
@@ -152,7 +156,9 @@ export function SearchableSelect({
             <div
               id={listId}
               role="listbox"
-              className="max-h-60 overflow-y-auto p-1"
+              className="max-h-60 overflow-y-auto overscroll-contain p-1"
+              onWheel={(event) => event.stopPropagation()}
+              onTouchMove={(event) => event.stopPropagation()}
             >
               {filtered.length === 0 ? (
                 <p className="px-3 py-6 text-center text-sm text-[var(--color-text-inverse)]">
@@ -212,6 +218,10 @@ export const STATUS_OPTIONS = {
     { value: "active", label: "Hoạt động" },
     { value: "inactive", label: "Ngưng" },
   ] as SelectOption[],
+  employee: [
+    { value: "active", label: "Đang làm" },
+    { value: "inactive", label: "Ngưng" },
+  ] as SelectOption[],
   news: [
     { value: "active", label: "Hiển thị" },
     { value: "inactive", label: "Ẩn" },
@@ -233,13 +243,6 @@ export const STATUS_OPTIONS = {
     { value: "silver", label: "Bạc" },
     { value: "gold", label: "Vàng" },
   ] as SelectOption[],
-  quote: [
-    { value: "draft", label: "Nháp" },
-    { value: "sent", label: "Đã gửi" },
-    { value: "accepted", label: "Chấp nhận" },
-    { value: "rejected", label: "Từ chối" },
-    { value: "expired", label: "Hết hạn" },
-  ] as SelectOption[],
   order: [
     { value: "pending", label: "Chờ xử lý" },
     { value: "confirmed", label: "Đã xác nhận" },
@@ -253,6 +256,7 @@ export const STATUS_OPTIONS = {
     { value: "paid", label: "Đã thanh toán" },
   ] as SelectOption[],
   userRole: [
+    { value: "admin", label: "Quản trị" },
     { value: "sales", label: "Kinh doanh" },
     { value: "warehouse", label: "Kho" },
     { value: "accountant", label: "Kế toán" },

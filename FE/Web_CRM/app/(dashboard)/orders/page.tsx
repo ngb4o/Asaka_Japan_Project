@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, Printer, Trash2 } from "lucide-react";
+import Image from "next/image";
+import { AlertTriangle, PackageCheck, Pencil, Plus, Printer, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VndInput } from "@/components/ui/vnd-input";
@@ -26,6 +28,7 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import {
   canEditOrderItems,
@@ -42,12 +45,14 @@ import {
   updateOrder,
 } from "@/lib/api/orders";
 import { getProducts } from "@/lib/api/products";
+import { getWarehouseStocks } from "@/lib/api/inventory";
 import { getWarehouses } from "@/lib/api/warehouses";
+import { getImageUrl } from "@/lib/api/uploads";
 import { printSalesDocument } from "@/lib/print/salesDocument";
 import type { Dealer, Order, Product } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE, shouldReloadPreviousPage } from "@/lib/pagination";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, toDateValue } from "@/lib/utils";
 
 type OrderFormValues = {
   dealerId: string;
@@ -70,6 +75,14 @@ type OrderFormValues = {
   shippingFee: number | "";
   shippingNote: string;
   items: LineItemFormRow[];
+};
+
+type ConfirmationStockRow = {
+  productId: string;
+  productName: string;
+  productImage: string;
+  required: number;
+  available: number;
 };
 
 const EMPTY_FORM: OrderFormValues = {
@@ -104,16 +117,27 @@ const STATUS_LABELS: Record<Order["status"], string> = {
 };
 
 const PAYMENT_LABELS: Record<Order["paymentStatus"], string> = {
-  unpaid: "Chưa TT",
+  unpaid: "Chưa thanh toán",
   partial: "Một phần",
-  paid: "Đã TT",
+  paid: "Đã thanh toán",
 };
 
+function getAllowedStatusOptions(order: Order) {
+  const allowed: Record<Order["status"], Order["status"][]> = {
+    pending: ["pending", "confirmed", "cancelled"],
+    confirmed: ["confirmed", "delivering", "completed", "cancelled"],
+    delivering: ["delivering", "completed", "cancelled"],
+    completed: ["completed"],
+    cancelled: ["cancelled"],
+  };
+
+  return STATUS_OPTIONS.order.filter((option) =>
+    allowed[order.status].includes(option.value as Order["status"])
+  );
+}
+
 function toDateInput(value?: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
+  return toDateValue(value);
 }
 
 export default function OrdersPage() {
@@ -135,6 +159,10 @@ export default function OrdersPage() {
   const [editing, setEditing] = useState<Order | null>(null);
   const [form, setForm] = useState<OrderFormValues>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [confirmingOrder, setConfirmingOrder] = useState<Order | null>(null);
+  const [confirmationStocks, setConfirmationStocks] = useState<ConfirmationStockRow[]>([]);
+  const [loadingConfirmation, setLoadingConfirmation] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -216,23 +244,66 @@ export default function OrdersPage() {
     setDialogOpen(true);
   }
 
-  function handlePrint(item: Order) {
+  async function handlePrint(item: Order) {
     try {
-      printSalesDocument({
+      const paid = item.paidAmount || 0;
+      const remaining =
+        item.remainingAmount ?? Math.max(0, (item.total || 0) - paid);
+      const paymentStatus = item.paymentStatus || "unpaid";
+
+      const paymentMeta = [
+        {
+          label: "Thanh toán",
+          value: PAYMENT_LABELS[paymentStatus],
+        },
+        {
+          label: "Đã thu",
+          value: formatCurrency(paid),
+        },
+      ];
+
+      if (paymentStatus === "partial") {
+        paymentMeta.push({
+          label: "Còn lại",
+          value: formatCurrency(remaining),
+        });
+      }
+
+      const hasDebt = remaining > 0;
+
+      const extraRows = [
+        ...(item.shippingFee
+          ? [{ label: "Phí giao hàng", value: formatCurrency(item.shippingFee) }]
+          : []),
+        ...(hasDebt && paid > 0
+          ? [{ label: "Tổng đơn", value: formatCurrency(item.total) }]
+          : []),
+        ...(paid > 0
+          ? [{ label: "Đã thu", value: formatCurrency(paid) }]
+          : []),
+      ];
+
+      await printSalesDocument({
         title: "ĐƠN HÀNG",
         code: item.code,
         meta: [
           { label: "Trạng thái", value: STATUS_LABELS[item.status] },
-          {
-            label: "Thanh toán",
-            value: `${PAYMENT_LABELS[item.paymentStatus || "unpaid"]} (${formatCurrency(item.paidAmount || 0)})`,
-          },
+          ...paymentMeta,
           { label: "Kho", value: item.warehouseName || "—" },
-          { label: "Ngày tạo", value: new Date(item.createdAt).toLocaleDateString("vi-VN") },
+          {
+            label: "Ngày tạo",
+            value: new Date(item.createdAt).toLocaleDateString("vi-VN"),
+          },
         ],
         customer: [
-          { label: "Đại lý/Khách", value: item.dealerName || item.customerName || "—" },
-          { label: "SĐT", value: item.customerPhone || item.shippingPhone || "—" },
+          {
+            label: "Đại lý/Khách",
+            value: item.dealerName || item.customerName || "—",
+          },
+          {
+            label: "SĐT",
+            value: item.customerPhone || item.shippingPhone || "—",
+          },
           { label: "Địa chỉ giao", value: item.shippingAddress || "—" },
           { label: "ĐVVC", value: item.carrier || "—" },
           { label: "Mã vận đơn", value: item.trackingCode || "—" },
@@ -241,9 +312,9 @@ export default function OrdersPage() {
         subtotal: item.subtotal,
         discount: item.discount,
         total: item.total,
-        extraRows: item.shippingFee
-          ? [{ label: "Phí giao hàng", value: formatCurrency(item.shippingFee) }]
-          : [],
+        grandLabel: hasDebt ? "Còn lại" : "Tổng cộng",
+        grandAmount: hasDebt ? remaining : item.total,
+        extraRows,
         note: item.note,
       });
     } catch (err) {
@@ -341,6 +412,91 @@ export default function OrdersPage() {
     }
   }
 
+  async function handleStatusChange(item: Order, nextStatus: Order["status"]) {
+    if (nextStatus === item.status) return;
+
+    if (nextStatus === "confirmed" && !item.inventoryExported) {
+      if (!item.warehouseId) {
+        toast.warning("Vui lòng chọn kho trước khi xác nhận đơn hàng");
+        openEdit(item);
+        return;
+      }
+
+      setConfirmingOrder(item);
+      setConfirmationStocks([]);
+      setLoadingConfirmation(true);
+      try {
+        const rows = await Promise.all(
+          item.items.map(async (line) => {
+            const result = await getWarehouseStocks({
+              warehouseId: item.warehouseId || undefined,
+              productId: line.productId,
+              page: 1,
+              limit: 1,
+            });
+            const product = products.find((entry) => entry.id === line.productId);
+            return {
+              productId: line.productId,
+              productName: line.productName || product?.name || "Sản phẩm",
+              productImage: product?.image || product?.images?.[0] || "",
+              required: line.quantity,
+              available: result.items[0]?.quantity || 0,
+            };
+          })
+        );
+        setConfirmationStocks(rows);
+      } catch (err) {
+        setConfirmingOrder(null);
+        toast.error(
+          err instanceof ApiClientError ? err.message : "Không kiểm tra được tồn kho"
+        );
+      } finally {
+        setLoadingConfirmation(false);
+      }
+      return;
+    }
+
+    setUpdatingStatusId(item.id);
+    try {
+      await updateOrder(item.id, { status: nextStatus });
+      toast.success(
+        nextStatus === "confirmed" && !item.inventoryExported
+          ? "Đã xác nhận đơn và xuất kho"
+          : "Đã cập nhật trạng thái"
+      );
+      await loadData();
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không cập nhật được trạng thái"
+      );
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  }
+
+  async function confirmOrderAndExport() {
+    if (!confirmingOrder) return;
+    if (confirmationStocks.some((row) => row.available < row.required)) {
+      toast.warning("Sản phẩm trong kho không đủ");
+      return;
+    }
+
+    setUpdatingStatusId(confirmingOrder.id);
+    try {
+      await updateOrder(confirmingOrder.id, { status: "confirmed" });
+      toast.success("Đã xác nhận đơn và xuất kho");
+      setConfirmingOrder(null);
+      setConfirmationStocks([]);
+      await loadData();
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không xác nhận được đơn hàng"
+      );
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  }
+
   async function handleRecordPayment(event: React.FormEvent) {
     event.preventDefault();
     if (!payingOrder) return;
@@ -377,23 +533,51 @@ export default function OrdersPage() {
     ...dealers.map((dealer) => ({ value: dealer.id, label: dealer.name })),
   ];
   const warehouseOptions = warehouses.map((w) => ({ value: w.id, label: w.name }));
+  const confirmationHasInsufficient = confirmationStocks.some(
+    (row) => row.available < row.required
+  );
+  const confirmationSubmitting =
+    confirmingOrder !== null && updatingStatusId === confirmingOrder.id;
+
+  function handleDealerChange(dealerId: string) {
+    if (!dealerId) {
+      setForm((prev) => ({ ...prev, dealerId: "" }));
+      return;
+    }
+
+    const dealer = dealers.find((item) => item.id === dealerId);
+    if (!dealer) {
+      setForm((prev) => ({ ...prev, dealerId }));
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      dealerId,
+      customerName: dealer.contactName || dealer.name || "",
+      customerPhone: dealer.phone || "",
+      customerEmail: dealer.email || "",
+      shippingAddress: prev.shippingAddress || dealer.address || "",
+      shippingContactName:
+        prev.shippingContactName || dealer.contactName || dealer.name || "",
+      shippingPhone: prev.shippingPhone || dealer.phone || "",
+    }));
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Đơn hàng</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-            Công nợ, giao hàng và xuất kho khi xác nhận
-          </p>
-        </div>
-        {canManageOrders(role) && canEditOrderItems(role) ? (
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Tạo đơn hàng
-          </Button>
-        ) : null}
-      </div>
+      <PageHeader
+        title="Đơn hàng"
+        description="Công nợ, giao hàng và xuất kho khi xác nhận"
+        actions={
+          canManageOrders(role) && canEditOrderItems(role) ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Tạo đơn hàng
+            </Button>
+          ) : null
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -441,6 +625,11 @@ export default function OrdersPage() {
                                 Kho: {item.warehouseName}
                               </p>
                             ) : null}
+                            {item.tripCode ? (
+                              <p className="text-xs text-[var(--color-text-secondary)]">
+                                Chuyến: {item.tripCode}
+                              </p>
+                            ) : null}
                           </td>
                           <td className="px-2 py-3">
                             <p>{formatCurrency(item.total)}</p>
@@ -468,12 +657,21 @@ export default function OrdersPage() {
                             </p>
                           </td>
                           <td className="px-2 py-3">
-                            <Badge variant={item.status === "completed" ? "success" : "muted"}>
-                              {STATUS_LABELS[item.status]}
-                            </Badge>
-                            {item.inventoryExported ? (
-                              <p className="text-xs text-[var(--color-text-inverse)]">Đã xuất kho</p>
-                            ) : null}
+                            <div className="w-[150px]">
+                              <SearchableSelect
+                                options={getAllowedStatusOptions(item)}
+                                value={item.status}
+                                onChange={(value) =>
+                                  handleStatusChange(item, value as Order["status"])
+                                }
+                                searchable={false}
+                                disabled={
+                                  item.status === "cancelled" ||
+                                  updatingStatusId === item.id
+                                }
+                                triggerClassName="h-8 text-xs"
+                              />
+                            </div>
                           </td>
                           <td className="px-2 py-3">
                             <div className="flex justify-end gap-2">
@@ -550,7 +748,7 @@ export default function OrdersPage() {
                 <SearchableSelect
                   options={dealerOptions}
                   value={form.dealerId}
-                  onChange={(value) => setForm({ ...form, dealerId: value })}
+                  onChange={handleDealerChange}
                   searchable
                 />
               </div>
@@ -607,16 +805,6 @@ export default function OrdersPage() {
                 ))}
               </div>
             ) : null}
-
-            <div className="space-y-2">
-              <Label>Trạng thái đơn</Label>
-              <SearchableSelect
-                options={STATUS_OPTIONS.order}
-                value={form.status}
-                onChange={(value) => setForm({ ...form, status: value as Order["status"] })}
-                searchable={false}
-              />
-            </div>
 
             {canManagePayments(role) ? (
               <div className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4">
@@ -711,23 +899,21 @@ export default function OrdersPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="shippingDate">Ngày giao</Label>
-                    <Input
+                    <DateInput
                       id="shippingDate"
-                      type="date"
                       value={form.shippingDate}
-                      onChange={(e) =>
-                        setForm({ ...form, shippingDate: e.target.value })
+                      onChange={(shippingDate) =>
+                        setForm({ ...form, shippingDate })
                       }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="deliveredAt">Ngày nhận</Label>
-                    <Input
+                    <DateInput
                       id="deliveredAt"
-                      type="date"
                       value={form.deliveredAt}
-                      onChange={(e) =>
-                        setForm({ ...form, deliveredAt: e.target.value })
+                      onChange={(deliveredAt) =>
+                        setForm({ ...form, deliveredAt })
                       }
                     />
                   </div>
@@ -756,7 +942,7 @@ export default function OrdersPage() {
 
             {editing?.inventoryExported ? (
               <p className="text-sm text-[var(--color-text-inverse)]">
-                Đơn đã xuất kho — không thể sửa sản phẩm/số lượng.
+                Không thể sửa sản phẩm/số lượng sau khi xác nhận đơn.
               </p>
             ) : null}
             <div className="space-y-2">
@@ -771,11 +957,155 @@ export default function OrdersPage() {
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? "Đang lưu..." : "Lưu"}
+              <Button type="submit" loading={submitting}>
+                Lưu
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(confirmingOrder)}
+        onOpenChange={(open) => {
+          if (!open && !confirmationSubmitting) {
+            setConfirmingOrder(null);
+            setConfirmationStocks([]);
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-hidden p-0">
+          <div className="border-b border-[var(--color-border-subtle)] px-6 py-5">
+            <DialogHeader className="mb-0">
+              <DialogTitle className="flex items-center gap-3 text-xl">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                  <PackageCheck className="h-5 w-5" />
+                </span>
+                Xác nhận đơn hàng và xuất kho
+              </DialogTitle>
+            </DialogHeader>
+            <div className="mt-4 grid gap-3 rounded-xl border border-[var(--color-border-subtle)] p-4 text-sm sm:grid-cols-3">
+              <div>
+                <p className="text-xs text-[var(--color-text-inverse)]">Mã đơn</p>
+                <p className="mt-1 font-semibold">{confirmingOrder?.code}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--color-text-inverse)]">Khách hàng</p>
+                <p className="mt-1 font-semibold">
+                  {confirmingOrder?.dealerName || confirmingOrder?.customerName || "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--color-text-inverse)]">Kho xuất</p>
+                <p className="mt-1 font-semibold">{confirmingOrder?.warehouseName || "—"}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="max-h-[50vh] space-y-3 overflow-y-auto px-6 py-5">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold">Sản phẩm xuất kho</p>
+              <p className="text-xs text-[var(--color-text-inverse)]">
+                {confirmingOrder?.items.length || 0} sản phẩm
+              </p>
+            </div>
+
+            {loadingConfirmation ? (
+              <div className="space-y-3">
+                {confirmingOrder?.items.map((line) => (
+                  <div
+                    key={line.productId}
+                    className="h-24 animate-pulse rounded-xl bg-[var(--color-surface-muted)]"
+                  />
+                ))}
+              </div>
+            ) : (
+              confirmationStocks.map((row) => {
+                const enough = row.available >= row.required;
+                return (
+                  <div
+                    key={row.productId}
+                    className={`flex gap-4 rounded-xl border p-4 ${
+                      enough
+                        ? "border-[var(--color-border-subtle)]"
+                        : "border-red-300 bg-red-50/50"
+                    }`}
+                  >
+                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-white">
+                      {row.productImage ? (
+                        <Image
+                          src={getImageUrl(row.productImage)}
+                          alt={row.productName}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <PackageCheck className="h-7 w-7 text-[var(--color-text-inverse)]" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{row.productName}</p>
+                      <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                        <div>
+                          <p className="text-xs text-[var(--color-text-inverse)]">Cần xuất</p>
+                          <p className="font-semibold">{row.required}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[var(--color-text-inverse)]">Tồn hiện tại</p>
+                          <p className={`font-semibold ${enough ? "" : "text-red-600"}`}>
+                            {row.available}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[var(--color-text-inverse)]">Còn lại</p>
+                          <p className={`font-semibold ${enough ? "text-emerald-700" : "text-red-600"}`}>
+                            {Math.max(0, row.available - row.required)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    {!enough ? <AlertTriangle className="h-5 w-5 shrink-0 text-red-600" /> : null}
+                  </div>
+                );
+              })
+            )}
+
+            {confirmationHasInsufficient ? (
+              <div className="flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+                <div>
+                  <p className="font-semibold">Sản phẩm trong kho không đủ</p>
+                  <p className="mt-1">Vui lòng nhập thêm hàng trước khi xác nhận đơn.</p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex items-center justify-between gap-3 border-t border-[var(--color-border-subtle)] px-6 py-4">
+            <div className="ml-auto flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={confirmationSubmitting}
+                onClick={() => {
+                  setConfirmingOrder(null);
+                  setConfirmationStocks([]);
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="button"
+                loading={confirmationSubmitting}
+                disabled={loadingConfirmation || confirmationHasInsufficient}
+                onClick={confirmOrderAndExport}
+              >
+                {!confirmationSubmitting ? <PackageCheck className="h-4 w-4" /> : null}
+                Xác nhận & xuất kho
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -786,7 +1116,7 @@ export default function OrdersPage() {
           </DialogHeader>
           <form onSubmit={handleRecordPayment} className="space-y-4">
             <p className="text-sm text-[var(--color-text-inverse)]">
-              Tổng đơn: {formatCurrency(payingOrder?.total || 0)} · Đã thu:{" "}
+              Tổng đơn: {formatCurrency(payingOrder?.total || 0)} - Đã thu:{" "}
               {formatCurrency(payingOrder?.paidAmount || 0)}
             </p>
             <div className="space-y-2">
@@ -810,8 +1140,8 @@ export default function OrdersPage() {
               <Button type="button" variant="outline" onClick={() => setPaymentOpen(false)}>
                 Hủy
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? "Đang lưu..." : "Ghi nhận"}
+              <Button type="submit" loading={submitting}>
+                Ghi nhận
               </Button>
             </div>
           </form>

@@ -76,8 +76,7 @@ const increaseStock = async (warehouseId, productId, quantity, session = null) =
     }
   )
 
-  // MongoDB Node driver v5 returns { value: document }
-  return result?.value ?? result
+  return unwrapFindOneAndUpdate(result)
 }
 
 const decreaseStock = async (warehouseId, productId, quantity, session = null) => {
@@ -100,7 +99,16 @@ const decreaseStock = async (warehouseId, productId, quantity, session = null) =
     }
   )
 
-  return result?.value ?? result
+  return unwrapFindOneAndUpdate(result)
+}
+
+/** Mongo driver may return the doc directly or `{ value: doc|null }`. */
+function unwrapFindOneAndUpdate(result) {
+  if (result == null) return null
+  if (Object.prototype.hasOwnProperty.call(result, 'value') && !('quantity' in result)) {
+    return result.value ?? null
+  }
+  return result
 }
 
 const getTotalByProductId = async (productId) => {

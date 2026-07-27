@@ -86,6 +86,49 @@ const getList = async (req, res, next) => {
   }
 }
 
+const createByAdmin = async (req, res, next) => {
+  try {
+    const result = await userService.createByAdmin(req.body)
+
+    res.status(StatusCodes.CREATED).json({
+      message: 'Tạo tài khoản thành công!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const updatePassword = async (req, res, next) => {
+  try {
+    await userService.updatePassword(req.params.id, req.body.password)
+
+    res.status(StatusCodes.OK).json({
+      message: 'Đặt lại mật khẩu thành công!',
+      data: true
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const changeOwnPassword = async (req, res, next) => {
+  try {
+    await userService.changeOwnPassword(
+      req.userId,
+      req.body.currentPassword,
+      req.body.newPassword
+    )
+
+    res.status(StatusCodes.OK).json({
+      message: 'Đổi mật khẩu thành công!',
+      data: true
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 const updateRole = async (req, res, next) => {
   try {
     const result = await userService.updateRole(
@@ -110,5 +153,8 @@ export const userController = {
   getProfile,
   getUserById,
   getList,
+  createByAdmin,
+  updatePassword,
+  changeOwnPassword,
   updateRole
 }

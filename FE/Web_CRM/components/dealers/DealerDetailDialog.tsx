@@ -8,25 +8,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getOrders } from "@/lib/api/orders";
-import { getQuotes } from "@/lib/api/quotes";
 import { ApiClientError } from "@/lib/api/client";
-import type { Dealer, LineItem, Order, Quote } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import type { Dealer, LineItem, Order } from "@/lib/types";
+import { formatCurrency, formatDateDisplay } from "@/lib/utils";
 import { useToast } from "@/components/providers/ToastProvider";
 
 type DealerDetailDialogProps = {
   dealer: Dealer | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-};
-
-const QUOTE_STATUS: Record<Quote["status"], string> = {
-  draft: "Nháp",
-  sent: "Đã gửi",
-  accepted: "Đã chấp nhận",
-  rejected: "Từ chối",
-  expired: "Hết hạn",
 };
 
 const ORDER_STATUS: Record<Order["status"], string> = {
@@ -44,10 +36,7 @@ const TIER_LABELS: Record<Dealer["tier"], string> = {
 };
 
 function formatDate(value?: string | null) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("vi-VN");
+  return formatDateDisplay(value) || "—";
 }
 
 function LineItemsTable({ items }: { items: LineItem[] }) {
@@ -143,24 +132,35 @@ export function DealerDetailDialog({
 }: DealerDetailDialogProps) {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
-  const [quotes, setQuotes] = useState<Quote[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [loadedDealerId, setLoadedDealerId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open || !dealer) return;
+    if (!open || !dealer) {
+      setOrders([]);
+      setLoadedDealerId(null);
+      setLoading(false);
+      return;
+    }
 
     let cancelled = false;
+    const dealerId = dealer.id;
+
+    // Clear previous dealer's data immediately so UI shows loading, not stale orders
+    setOrders([]);
+    setLoadedDealerId(null);
+    setLoading(true);
 
     async function loadHistory() {
-      setLoading(true);
       try {
-        const [quotesResult, ordersResult] = await Promise.all([
-          getQuotes({ dealerId: dealer!.id, page: 1, limit: 50 }),
-          getOrders({ dealerId: dealer!.id, page: 1, limit: 50 }),
-        ]);
+        const ordersResult = await getOrders({
+          dealerId,
+          page: 1,
+          limit: 50,
+        });
         if (cancelled) return;
-        setQuotes(quotesResult.items);
         setOrders(ordersResult.items);
+        setLoadedDealerId(dealerId);
       } catch (err) {
         if (cancelled) return;
         toast.error(
@@ -168,8 +168,8 @@ export function DealerDetailDialog({
             ? err.message
             : "Không tải được lịch sử giao dịch"
         );
-        setQuotes([]);
         setOrders([]);
+        setLoadedDealerId(dealerId);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -179,9 +179,9 @@ export function DealerDetailDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, dealer, toast]);
+  }, [open, dealer?.id, toast]);
 
-  const quoteTotal = quotes.reduce((sum, item) => sum + (item.total || 0), 0);
+  const showContent = Boolean(dealer) && !loading && loadedDealerId === dealer?.id;
   const orderTotal = orders.reduce((sum, item) => sum + (item.total || 0), 0);
 
   return (
@@ -200,7 +200,7 @@ export function DealerDetailDialog({
                     {dealer.name}
                   </h3>
                   <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-                    {[dealer.contactName, dealer.phone].filter(Boolean).join(" · ") ||
+                    {[dealer.contactName, dealer.phone].filter(Boolean).join(" - ") ||
                       "Chưa có liên hệ"}
                   </p>
                   {dealer.region ? (
@@ -220,88 +220,59 @@ export function DealerDetailDialog({
                   </Badge>
                 </div>
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2">
                   <p className="text-xs text-[var(--color-text-inverse)]">Chiết khấu</p>
                   <p className="mt-1 font-semibold">{dealer.discountPercent || 0}%</p>
                 </div>
                 <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2">
-                  <p className="text-xs text-[var(--color-text-inverse)]">Báo giá</p>
-                  <p className="mt-1 font-semibold">
-                    {quotes.length} · {formatCurrency(quoteTotal)}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2">
                   <p className="text-xs text-[var(--color-text-inverse)]">Đơn hàng</p>
-                  <p className="mt-1 font-semibold">
-                    {orders.length} · {formatCurrency(orderTotal)}
-                  </p>
+                  {showContent ? (
+                    <p className="mt-1 font-semibold">
+                      {orders.length} - {formatCurrency(orderTotal)}
+                    </p>
+                  ) : (
+                    <Skeleton className="mt-2 h-5 w-32" />
+                  )}
                 </div>
               </div>
             </div>
 
-            {loading ? (
-              <p className="text-sm text-[var(--color-text-inverse)]">
-                Đang tải lịch sử giao dịch...
-              </p>
+            {!showContent ? (
+              <div className="space-y-3" aria-busy="true" aria-label="Đang tải lịch sử">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-28 w-full rounded-xl" />
+                <Skeleton className="h-28 w-full rounded-xl" />
+              </div>
             ) : (
-              <>
-                <section className="space-y-3">
-                  <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
-                    Báo giá ({quotes.length})
-                  </h4>
-                  {quotes.length === 0 ? (
-                    <p className="text-sm text-[var(--color-text-inverse)]">
-                      Chưa có báo giá gắn với đại lý này
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {quotes.map((quote) => (
-                        <DocumentCard
-                          key={quote.id}
-                          code={quote.code}
-                          statusLabel={QUOTE_STATUS[quote.status]}
-                          statusSuccess={quote.status === "accepted"}
-                          date={quote.createdAt}
-                          subtotal={quote.subtotal}
-                          discount={quote.discount}
-                          total={quote.total}
-                          items={quote.items || []}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </section>
-
-                <section className="space-y-3">
-                  <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
-                    Đơn hàng ({orders.length})
-                  </h4>
-                  {orders.length === 0 ? (
-                    <p className="text-sm text-[var(--color-text-inverse)]">
-                      Chưa có đơn hàng gắn với đại lý này
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {orders.map((order) => (
-                        <DocumentCard
-                          key={order.id}
-                          code={order.code}
-                          statusLabel={ORDER_STATUS[order.status]}
-                          statusSuccess={
-                            order.status === "completed" || order.status === "confirmed"
-                          }
-                          date={order.createdAt}
-                          subtotal={order.subtotal}
-                          discount={order.discount}
-                          total={order.total}
-                          items={order.items || []}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </section>
-              </>
+              <section className="space-y-3">
+                <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                  Đơn hàng ({orders.length})
+                </h4>
+                {orders.length === 0 ? (
+                  <p className="text-sm text-[var(--color-text-inverse)]">
+                    Chưa có đơn hàng gắn với đại lý này
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {orders.map((order) => (
+                      <DocumentCard
+                        key={order.id}
+                        code={order.code}
+                        statusLabel={ORDER_STATUS[order.status]}
+                        statusSuccess={
+                          order.status === "completed" || order.status === "confirmed"
+                        }
+                        date={order.createdAt}
+                        subtotal={order.subtotal}
+                        discount={order.discount}
+                        total={order.total}
+                        items={order.items || []}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
             )}
           </div>
         ) : null}

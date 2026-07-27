@@ -24,6 +24,7 @@ import {
   SearchableSelect,
   STATUS_OPTIONS,
 } from "@/components/ui/searchable-select";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { createNews, deleteNews, getNews, updateNews } from "@/lib/api/news";
 import { getImageUrl, uploadNewsImage } from "@/lib/api/uploads";
 import type { News } from "@/lib/types";
@@ -217,18 +218,16 @@ export default function NewsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Tin tức</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-            Quản lý bài viết tin tức
-          </p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4" />
-          Thêm tin tức
-        </Button>
-      </div>
+      <PageHeader
+        title="Tin tức"
+        description="Quản lý bài viết tin tức"
+        actions={
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+            Thêm tin tức
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -383,8 +382,8 @@ export default function NewsPage() {
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? "Đang lưu..." : "Lưu"}
+              <Button type="submit" loading={submitting}>
+                Lưu
               </Button>
             </div>
           </form>

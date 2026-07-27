@@ -9,8 +9,10 @@ import { inventoryRoute } from '~/routes/v1/inventoryRoute'
 import { uploadRoute } from '~/routes/v1/uploadRoute'
 import { leadRoute } from '~/routes/v1/leadRoute'
 import { dealerRoute } from '~/routes/v1/dealerRoute'
-import { quoteRoute } from '~/routes/v1/quoteRoute'
 import { orderRoute } from '~/routes/v1/orderRoute'
+import { employeeRoute } from '~/routes/v1/employeeRoute'
+import { tripRoute } from '~/routes/v1/tripRoute'
+import { payrollRoute } from '~/routes/v1/payrollRoute'
 import { dashboardRoute } from '~/routes/v1/dashboardRoute'
 import { notificationRoute } from '~/routes/v1/notificationRoute'
 
@@ -37,8 +39,10 @@ Router.use('/inventory', inventoryRoute)
 Router.use('/uploads', uploadRoute)
 Router.use('/leads', leadRoute)
 Router.use('/dealers', dealerRoute)
-Router.use('/quotes', quoteRoute)
 Router.use('/orders', orderRoute)
+Router.use('/employees', employeeRoute)
+Router.use('/trips', tripRoute)
+Router.use('/payroll', payrollRoute)
 Router.use('/dashboard', dashboardRoute)
 Router.use('/notifications', notificationRoute)
 

@@ -15,7 +15,8 @@
     "start": "cross-env BUILD_MODE=production node ./build/src/server.js",
     "production": "npm run build && npm start",
     "dev": "cross-env BUILD_MODE=dev nodemon --exec babel-node ./src/server.js",
-    "reset-ops": "node scripts/reset-ops-data.js"
+    "reset-ops": "node scripts/reset-ops-data.js",
+    "seed-demo": "node scripts/seed-demo-workflow.js"
   },
   "dependencies": {
     "@babel/runtime": "^7.22.10",

@@ -16,6 +16,10 @@ export type UserProfile = {
   username: string;
   avatar: string | null;
   role: UserRole;
+  employeeId?: string | null;
+  employeeName?: string | null;
+  employeeCode?: string | null;
+  temporaryPassword?: string;
   createdAt: string;
   updatedAt?: string | null;
 };
@@ -250,39 +254,6 @@ export type LineItemInput = {
   unitPrice?: number;
 };
 
-export type Quote = {
-  id: string;
-  code: string;
-  dealerId: string | null;
-  dealerName?: string;
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string;
-  items: LineItem[];
-  subtotal: number;
-  discount: number;
-  total: number;
-  status: "draft" | "sent" | "accepted" | "rejected" | "expired";
-  note: string;
-  validUntil: string | null;
-  orderId: string | null;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string | null;
-};
-
-export type QuoteInput = {
-  dealerId?: string;
-  customerName?: string;
-  customerPhone?: string;
-  customerEmail?: string;
-  items: LineItemInput[];
-  discount?: number;
-  status?: Quote["status"];
-  note?: string;
-  validUntil?: string | null;
-};
-
 export type Order = {
   id: string;
   code: string;
@@ -291,6 +262,8 @@ export type Order = {
   quoteId: string | null;
   warehouseId: string | null;
   warehouseName?: string;
+  tripId?: string | null;
+  tripCode?: string;
   customerName: string;
   customerPhone: string;
   customerEmail: string;
@@ -350,16 +323,246 @@ export type DashboardSummary = {
     totalLeads: number;
     activeDealers: number;
     totalDealers: number;
-    draftQuotes: number;
     pendingOrders: number;
     completedOrders: number;
     totalProducts: number;
     revenue: number;
     lowStockCount: number;
+    monthRevenue: number;
+    monthPaid: number;
+    monthDebt: number;
+    monthOrders: number;
+    revenueChangePercent: number;
+    orderChangePercent: number;
   };
+  revenueSeries: ReportSeriesPoint[];
+  statusBreakdown: ReportStatusItem[];
+  paymentBreakdown: ReportPaymentItem[];
   recentLeads: Lead[];
-  recentOrders: Pick<Order, "id" | "code" | "customerName" | "total" | "status" | "createdAt">[];
+  recentOrders: Pick<
+    Order,
+    "id" | "code" | "customerName" | "total" | "status" | "paymentStatus" | "createdAt"
+  >[];
   lowStock: { productId: string; productName: string; quantity: number }[];
+};
+
+export type ReportSeriesPoint = {
+  key: string;
+  label: string;
+  revenue: number;
+  paidAmount: number;
+  orderCount: number;
+};
+
+export type ReportStatusItem = {
+  status: Order["status"];
+  count: number;
+  revenue: number;
+};
+
+export type ReportPaymentItem = {
+  status: Order["paymentStatus"];
+  count: number;
+  total: number;
+  paidAmount: number;
+};
+
+export type ReportKpis = {
+  orderCount: number;
+  revenue: number;
+  paidAmount: number;
+  debt: number;
+  completedCount: number;
+  completedRevenue: number;
+  avgOrderValue: number;
+  revenueChangePercent: number;
+  orderChangePercent: number;
+  paidChangePercent: number;
+};
+
+export type SalesReport = {
+  period: {
+    preset: string;
+    groupBy: string;
+    from: string;
+    to: string;
+  };
+  kpis: ReportKpis;
+  series: ReportSeriesPoint[];
+  statusBreakdown: ReportStatusItem[];
+  paymentBreakdown: ReportPaymentItem[];
+  topDealers: {
+    dealerId: string;
+    dealerName: string;
+    region: string;
+    revenue: number;
+    paidAmount: number;
+    orderCount: number;
+  }[];
+  topProducts: {
+    productId: string;
+    productName: string;
+    quantity: number;
+    revenue: number;
+  }[];
+  topStaff: {
+    userId: string;
+    staffName: string;
+    employeeCode: string;
+    revenue: number;
+    paidAmount: number;
+    orderCount: number;
+  }[];
+};
+
+export type Employee = {
+  id: string;
+  code: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  title: string;
+  department: string;
+  userId: string | null;
+  userName?: string;
+  baseSalary: number;
+  commissionPercent: number;
+  allowance: number;
+  bankAccount: string;
+  bankName: string;
+  bankQrImage: string;
+  status: "active" | "inactive";
+  note: string;
+  createdAt: string;
+  updatedAt: string | null;
+};
+
+export type EmployeeInput = {
+  code?: string;
+  fullName: string;
+  phone?: string;
+  email?: string;
+  title?: string;
+  department?: string;
+  userId?: string | null;
+  baseSalary?: number;
+  commissionPercent?: number;
+  allowance?: number;
+  bankAccount?: string;
+  bankName?: string;
+  bankQrImage?: string;
+  status?: Employee["status"];
+  note?: string;
+};
+
+export type TripStop = {
+  id: string;
+  date: string;
+  dealerId: string | null;
+  dealerName?: string;
+  location: string;
+  purpose: "delivery" | "collection" | "meeting" | "other";
+  note: string;
+};
+
+export type TripAdvance = {
+  id: string;
+  amount: number;
+  note: string;
+  createdBy: string;
+  createdAt: string;
+};
+
+export type TripExpense = {
+  id: string;
+  category: "fuel" | "food" | "lodging" | "toll" | "parking" | "other";
+  amount: number;
+  date: string;
+  funding: "advance" | "reimburse";
+  receiptUrl: string;
+  note: string;
+  status: "pending" | "approved" | "rejected";
+  createdBy: string | null;
+  createdAt: string;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+};
+
+export type TripSettlementPreview = {
+  advanceTotal: number;
+  expenseAdvanceTotal: number;
+  expenseReimburseTotal: number;
+  employeeReturn: number;
+  companyPay: number;
+  balance: number;
+};
+
+export type Trip = {
+  id: string;
+  code: string;
+  title: string;
+  region: string;
+  startDate: string;
+  endDate: string;
+  status: "draft" | "in_progress" | "settlement" | "closed" | "cancelled";
+  memberIds: string[];
+  orderIds: string[];
+  members: { id: string; fullName: string }[];
+  orders: {
+    id: string;
+    code: string;
+    total: number;
+    status: string;
+    customerName: string;
+  }[];
+  stops: TripStop[];
+  advances: TripAdvance[];
+  expenses: TripExpense[];
+  settlementPreview: TripSettlementPreview;
+  settlement: (TripSettlementPreview & {
+    note: string;
+    settledAt: string;
+    settledBy: string;
+  }) | null;
+  note: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string | null;
+};
+
+export type TripInput = {
+  title?: string;
+  region?: string;
+  startDate: string;
+  endDate: string;
+  status?: Trip["status"];
+  memberIds: string[];
+  orderIds?: string[];
+  note?: string;
+};
+
+export type PayrollLine = {
+  employeeId: string;
+  employeeCode: string;
+  employeeName: string;
+  baseSalary: number;
+  allowance: number;
+  commissionPercent: number;
+  salesTotal: number;
+  commission: number;
+  tripReimburse: number;
+  net: number;
+};
+
+export type PayrollPeriod = {
+  id: string;
+  period: string;
+  status: "draft" | "locked";
+  lines: PayrollLine[];
+  note: string;
+  createdAt: string;
+  updatedAt: string | null;
+  lockedAt: string | null;
 };
 
 export type AppNotification = {

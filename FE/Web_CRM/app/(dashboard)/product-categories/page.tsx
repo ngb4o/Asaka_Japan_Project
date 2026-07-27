@@ -22,6 +22,7 @@ import {
   SearchableSelect,
   STATUS_OPTIONS,
 } from "@/components/ui/searchable-select";
+import { PageHeader } from "@/components/layout/PageHeader";
 import {
   createProductCategory,
   deleteProductCategory,
@@ -159,18 +160,16 @@ export default function ProductCategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Loại sản phẩm</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-            Quản lý nhóm sản phẩm BVTV
-          </p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4" />
-          Thêm loại
-        </Button>
-      </div>
+      <PageHeader
+        title="Loại sản phẩm"
+        description="Quản lý nhóm sản phẩm BVTV"
+        actions={
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+            Thêm loại
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -292,8 +291,8 @@ export default function ProductCategoriesPage() {
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? "Đang lưu..." : "Lưu"}
+              <Button type="submit" loading={submitting}>
+                Lưu
               </Button>
             </div>
           </form>

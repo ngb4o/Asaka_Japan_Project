@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Pagination } from "@/components/ui/pagination";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useToast } from "@/components/providers/ToastProvider";
 import {
   exportStock,
@@ -209,24 +210,22 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Tồn kho</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-            Quản lý nhập xuất và theo dõi tồn kho theo từng kho
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => openMovement("import")}>
-            <ArrowDownToLine className="h-4 w-4" />
-            Nhập kho
-          </Button>
-          <Button variant="outline" onClick={() => openMovement("export")}>
-            <ArrowUpFromLine className="h-4 w-4" />
-            Xuất kho
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Tồn kho"
+        description="Quản lý nhập xuất và theo dõi tồn kho theo từng kho"
+        actions={
+          <>
+            <Button onClick={() => openMovement("import")}>
+              <ArrowDownToLine className="h-4 w-4" />
+              Nhập kho
+            </Button>
+            <Button variant="outline" onClick={() => openMovement("export")}>
+              <ArrowUpFromLine className="h-4 w-4" />
+              Xuất kho
+            </Button>
+          </>
+        }
+      />
 
       {activeWarehouses.length === 0 && (
         <p className="text-sm text-amber-700">
@@ -508,8 +507,8 @@ export default function InventoryPage() {
               <Button type="button" variant="outline" onClick={closeMovement}>
                 Hủy
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? "Đang xử lý..." : movementType === "import" ? "Nhập kho" : "Xuất kho"}
+              <Button type="submit" loading={submitting}>
+                {movementType === "import" ? "Nhập kho" : "Xuất kho"}
               </Button>
             </div>
           </form>

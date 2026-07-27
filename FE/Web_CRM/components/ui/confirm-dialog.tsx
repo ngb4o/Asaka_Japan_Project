@@ -80,9 +80,9 @@ export function ConfirmDialog({
               type="button"
               variant={variant === "danger" ? "danger" : "default"}
               onClick={onConfirm}
-              disabled={loading}
+              loading={loading}
             >
-              {loading ? "Đang xử lý..." : confirmText}
+              {confirmText}
             </Button>
           </div>
         </DialogPrimitive.Content>

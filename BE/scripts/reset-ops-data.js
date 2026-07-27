@@ -51,7 +51,7 @@ async function main() {
     _destroy: false
   })
 
-  console.log('Seeded admin account: admin / 123123')
+  console.log('Seeded admin account: admin@asaka.local / 123123')
   await client.close()
 }
 

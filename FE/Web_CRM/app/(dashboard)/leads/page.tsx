@@ -19,6 +19,7 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
+import { PageHeader } from "@/components/layout/PageHeader";
 import {
   convertLeadToDealer,
   deleteLead,
@@ -151,12 +152,10 @@ export default function LeadsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Lead liên hệ</h1>
-        <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-          Quản lý yêu cầu liên hệ và đăng ký đại lý từ website
-        </p>
-      </div>
+      <PageHeader
+        title="Lead liên hệ"
+        description="Quản lý yêu cầu liên hệ và đăng ký đại lý từ website"
+      />
 
       <Card>
         <CardHeader>
@@ -309,8 +308,8 @@ export default function LeadsPage() {
                 <Button variant="outline" onClick={() => setSelected(null)}>
                   Đóng
                 </Button>
-                <Button onClick={handleSave} disabled={submitting}>
-                  {submitting ? "Đang lưu..." : "Lưu"}
+                <Button onClick={handleSave} loading={submitting}>
+                  Lưu
                 </Button>
               </div>
             </div>

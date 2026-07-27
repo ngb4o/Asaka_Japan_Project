@@ -25,25 +25,43 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-card)] bg-[var(--color-surface-elevated)] p-6 text-[var(--color-text-primary)] shadow-[var(--shadow-elevated)]",
-        className
-      )}
-      {...props}
-    >
-      {children}
-      <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100">
-        <X className="h-4 w-4" />
-        <span className="sr-only">Đóng</span>
-      </DialogClose>
-    </DialogPrimitive.Content>
-  </DialogPortal>
-));
+>(({ className, children, onPointerDownOutside, onInteractOutside, ...props }, ref) => {
+  function isPopoverTarget(target: EventTarget | null) {
+    return target instanceof Element && Boolean(target.closest("[data-radix-popover-content]"));
+  }
+
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        ref={ref}
+        className={cn(
+          "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-6 text-[var(--color-text-primary)] shadow-[var(--shadow-elevated)]",
+          className
+        )}
+        onPointerDownOutside={(event) => {
+          if (isPopoverTarget(event.target)) {
+            event.preventDefault();
+          }
+          onPointerDownOutside?.(event);
+        }}
+        onInteractOutside={(event) => {
+          if (isPopoverTarget(event.target)) {
+            event.preventDefault();
+          }
+          onInteractOutside?.(event);
+        }}
+        {...props}
+      >
+        {children}
+        <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100">
+          <X className="h-4 w-4" />
+          <span className="sr-only">Đóng</span>
+        </DialogClose>
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  );
+});
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({

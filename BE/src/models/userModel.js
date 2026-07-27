@@ -1,13 +1,14 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
+import { EMAIL_JOI_OPTIONS } from '~/utils/validators'
 
 // Tên collection trong MongoDB
 const USER_COLLECTION_NAME = 'users'
 
 // Schema validation cho User (dùng Joi để validate dữ liệu trước khi lưu vào DB)
 const USER_COLLECTION_SCHEMA = Joi.object({
-  email: Joi.string().required().email().trim().strict(),
+  email: Joi.string().required().email(EMAIL_JOI_OPTIONS).trim().strict(),
 
   password: Joi.string().required().min(6).trim().strict(),
 
@@ -141,6 +142,15 @@ const updateRole = async (id, role) => {
     )
 }
 
+const updatePassword = async (id, password) => {
+  return await GET_DB()
+    .collection(USER_COLLECTION_NAME)
+    .updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { password, updatedAt: new Date() } }
+    )
+}
+
 const countActive = async () => {
   return await GET_DB()
     .collection(USER_COLLECTION_NAME)
@@ -158,5 +168,6 @@ export const userModel = {
   checkEmailExists,
   findMany,
   updateRole,
+  updatePassword,
   countActive
 }

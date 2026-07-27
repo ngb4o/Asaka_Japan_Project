@@ -2,6 +2,7 @@ import { orderModel } from '~/models/orderModel'
 import { dealerModel } from '~/models/dealerModel'
 import { productModel } from '~/models/productModel'
 import { warehouseModel } from '~/models/warehouseModel'
+import { warehouseStockModel } from '~/models/warehouseStockModel'
 import { inventoryService } from '~/services/inventoryService'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
@@ -109,9 +110,15 @@ const enrichOrders = async (orders) => {
       orders.filter((item) => item.warehouseId).map((item) => item.warehouseId.toString())
     )
   ]
+  const tripIds = [
+    ...new Set(
+      orders.filter((item) => item.tripId).map((item) => item.tripId.toString())
+    )
+  ]
 
   let dealerMap = new Map()
   let warehouseMap = new Map()
+  let tripMap = new Map()
 
   if (dealerIds.length) {
     const dealers = await dealerModel.findMany(
@@ -129,14 +136,25 @@ const enrichOrders = async (orders) => {
     warehouseMap = new Map(warehouses.items.map((item) => [item._id.toString(), item.name]))
   }
 
+  if (tripIds.length) {
+    const { tripModel } = await import('~/models/tripModel')
+    const trips = await tripModel.findMany(
+      { _id: { $in: tripIds.map((id) => new ObjectId(id)) } },
+      { limit: tripIds.length, skip: 0 }
+    )
+    tripMap = new Map(trips.items.map((item) => [item._id.toString(), item.code]))
+  }
+
   return orders.map((order) => {
     const formatted = withPaymentDefaults(formatDocument(order))
     return {
       ...formatted,
+      tripId: order.tripId ? order.tripId.toString() : null,
       dealerName: formatted.dealerId ? dealerMap.get(formatted.dealerId) || '' : '',
       warehouseName: formatted.warehouseId
         ? warehouseMap.get(formatted.warehouseId) || ''
-        : ''
+        : '',
+      tripCode: order.tripId ? tripMap.get(order.tripId.toString()) || '' : ''
     }
   })
 }
@@ -149,17 +167,38 @@ const exportInventoryForOrder = async (order, userId) => {
     )
   }
 
+  const stockChecks = await Promise.all(
+    order.items.map(async (item) => {
+      const stock = await warehouseStockModel.findOneByWarehouseAndProduct(
+        order.warehouseId.toString(),
+        item.productId.toString()
+      )
+      return (stock?.quantity || 0) >= item.quantity
+    })
+  )
+
+  if (stockChecks.some((isEnough) => !isEnough)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Sản phẩm trong kho không đủ')
+  }
+
   for (const item of order.items) {
-    await inventoryService.exportStock(
-      {
-        warehouseId: order.warehouseId.toString(),
-        productId: item.productId.toString(),
-        quantity: item.quantity,
-        unitType: UNIT_TYPE.BOTTLE,
-        note: `Xuất kho cho đơn hàng ${order.code}`
-      },
-      userId
-    )
+    try {
+      await inventoryService.exportStock(
+        {
+          warehouseId: order.warehouseId.toString(),
+          productId: item.productId.toString(),
+          quantity: item.quantity,
+          unitType: UNIT_TYPE.BOTTLE,
+          note: `Xuất kho cho đơn hàng ${order.code}`
+        },
+        userId
+      )
+    } catch (error) {
+      if (error instanceof ApiError && error.statusCode === StatusCodes.BAD_REQUEST) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Sản phẩm trong kho không đủ')
+      }
+      throw error
+    }
   }
 }
 
@@ -193,6 +232,16 @@ const applyShippingFields = (dataToUpdate, updateData) => {
 }
 
 const createNew = async (reqBody, userId) => {
+  if (
+    reqBody.status !== undefined &&
+    reqBody.status !== orderModel.ORDER_STATUS.PENDING
+  ) {
+    throw new ApiError(
+      StatusCodes.CONFLICT,
+      'Hãy tạo đơn ở trạng thái Chờ xử lý, sau đó xác nhận để xuất kho!'
+    )
+  }
+
   const totals = await buildLineItems(reqBody.items)
   const code = await generateDocumentCode(orderModel.ORDER_COLLECTION_NAME, 'O')
   const discount = reqBody.discount ?? 0
@@ -299,6 +348,27 @@ const update = async (orderId, updateData, userId) => {
     updateData.warehouseId !== undefined
       ? updateData.warehouseId || null
       : order.warehouseId?.toString() || null
+
+  if (
+    order.status === orderModel.ORDER_STATUS.PENDING &&
+    ![
+      orderModel.ORDER_STATUS.PENDING,
+      orderModel.ORDER_STATUS.CONFIRMED,
+      orderModel.ORDER_STATUS.CANCELLED
+    ].includes(nextStatus)
+  ) {
+    throw new ApiError(
+      StatusCodes.CONFLICT,
+      'Đơn hàng phải được xác nhận và xuất kho trước khi chuyển trạng thái tiếp theo!'
+    )
+  }
+
+  if (
+    order.status !== orderModel.ORDER_STATUS.PENDING &&
+    nextStatus === orderModel.ORDER_STATUS.PENDING
+  ) {
+    throw new ApiError(StatusCodes.CONFLICT, 'Không thể chuyển đơn hàng về Chờ xử lý!')
+  }
 
   if (updateData.dealerId !== undefined) dataToUpdate.dealerId = updateData.dealerId || null
   if (updateData.warehouseId !== undefined) {

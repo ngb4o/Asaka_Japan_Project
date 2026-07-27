@@ -3,9 +3,9 @@ import type { NextRequest } from "next/server";
 
 const PROTECTED_PREFIXES = [
   "/dashboard",
+  "/reports",
   "/leads",
   "/dealers",
-  "/quotes",
   "/orders",
   "/product-categories",
   "/products",
@@ -13,6 +13,9 @@ const PROTECTED_PREFIXES = [
   "/inventory",
   "/news",
   "/users",
+  "/employees",
+  "/trips",
+  "/payroll",
 ];
 const AUTH_PAGES = ["/login"];
 
@@ -43,9 +46,9 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/reports/:path*",
     "/leads/:path*",
     "/dealers/:path*",
-    "/quotes/:path*",
     "/orders/:path*",
     "/product-categories/:path*",
     "/products/:path*",
@@ -53,6 +56,9 @@ export const config = {
     "/inventory/:path*",
     "/news/:path*",
     "/users/:path*",
+    "/employees/:path*",
+    "/trips/:path*",
+    "/payroll/:path*",
     "/login",
     "/register",
   ],

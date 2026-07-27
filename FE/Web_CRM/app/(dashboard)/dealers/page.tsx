@@ -20,6 +20,7 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
+import { PageHeader } from "@/components/layout/PageHeader";
 import {
   createDealer,
   deleteDealer,
@@ -202,18 +203,16 @@ export default function DealersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Đại lý</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-            Quản lý đại lý — xem sản phẩm, số lượng và giá theo báo giá/đơn hàng
-          </p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4" />
-          Thêm đại lý
-        </Button>
-      </div>
+      <PageHeader
+        title="Đại lý"
+        description="Quản lý đại lý — xem sản phẩm, số lượng và giá theo đơn hàng"
+        actions={
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+            Thêm đại lý
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -419,8 +418,8 @@ export default function DealersPage() {
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? "Đang lưu..." : "Lưu"}
+              <Button type="submit" loading={submitting}>
+                Lưu
               </Button>
             </div>
           </form>

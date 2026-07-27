@@ -162,7 +162,7 @@ export function ImageUpload({
             {uploading ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Đang tải...
+                Thêm ảnh
               </>
             ) : (
               <>
@@ -176,8 +176,8 @@ export function ImageUpload({
 
       <p className="text-xs text-[var(--color-text-inverse)]">
         {isMulti
-          ? `JPEG, PNG, WEBP, GIF · tối đa ${max} ảnh · mỗi ảnh ≤ 20MB`
-          : "JPEG, PNG, WEBP, GIF · tối đa 20MB"}
+          ? `JPEG, PNG, WEBP, GIF - tối đa ${max} ảnh - mỗi ảnh ≤ 20MB`
+          : "JPEG, PNG, WEBP, GIF - tối đa 20MB"}
       </p>
 
       <input

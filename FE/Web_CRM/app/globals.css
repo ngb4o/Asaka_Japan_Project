@@ -19,59 +19,77 @@
   --color-badge-muted-bg: var(--crm-badge-muted-bg);
   --color-badge-muted-fg: var(--crm-badge-muted-fg);
   --color-danger-soft-bg: var(--crm-danger-soft-bg);
+  --color-sidebar-bg: var(--crm-sidebar-bg);
+  --color-sidebar-fg: var(--crm-sidebar-fg);
+  --color-sidebar-muted: var(--crm-sidebar-muted);
+  --color-sidebar-border: var(--crm-sidebar-border);
+  --color-sidebar-active-bg: var(--crm-sidebar-active-bg);
+  --color-sidebar-active-fg: var(--crm-sidebar-active-fg);
 
-  --text-xs: 14px;
-  --text-sm: 16px;
-  --text-md: 18px;
-  --text-lg: 20px;
-  --text-xl: 22px;
-  --text-2xl: 24px;
-  --text-3xl: 30px;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 15px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 22px;
+  --text-3xl: 28px;
 
-  --radius-card: 16px;
-  --radius-button: 9999px;
-  --motion-instant: 400ms;
+  --radius-card: 14px;
+  --radius-button: 10px;
+  --motion-instant: 200ms;
 
   --shadow-soft: var(--crm-shadow-soft);
   --shadow-elevated: var(--crm-shadow-elevated);
 }
 
 :root {
-  --crm-text-primary: #080809;
+  --crm-text-primary: #0f172a;
   --crm-text-secondary: #017d03;
   --crm-text-tertiary: #ffffff;
-  --crm-text-inverse: #333333;
-  --crm-surface-base: #000000;
+  --crm-text-inverse: #64748b;
+  --crm-surface-base: #020617;
   --crm-surface-elevated: #ffffff;
-  --crm-surface-muted: #f4f7f4;
-  --crm-surface-glass: rgb(255 255 255 / 0.72);
-  --crm-border-subtle: rgb(8 8 9 / 0.08);
+  --crm-surface-muted: #f1f5f9;
+  --crm-surface-glass: rgb(255 255 255 / 0.8);
+  --crm-border-subtle: #e2e8f0;
   --crm-badge-success-bg: #dcfce7;
   --crm-badge-success-fg: #15803d;
-  --crm-badge-muted-bg: #f3f4f6;
-  --crm-badge-muted-fg: #4b5563;
+  --crm-badge-muted-bg: #f1f5f9;
+  --crm-badge-muted-fg: #475569;
   --crm-danger-soft-bg: #fef2f2;
-  --crm-shadow-soft: 0 4px 24px rgb(8 8 9 / 0.06);
-  --crm-shadow-elevated: 0 12px 40px rgb(8 8 9 / 0.12);
+  --crm-shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.04);
+  --crm-shadow-elevated: 0 10px 30px rgb(15 23 42 / 0.1);
+  --crm-sidebar-bg: #0b1220;
+  --crm-sidebar-fg: #e2e8f0;
+  --crm-sidebar-muted: #94a3b8;
+  --crm-sidebar-border: rgb(148 163 184 / 0.14);
+  --crm-sidebar-active-bg: rgb(1 125 3 / 0.18);
+  --crm-sidebar-active-fg: #4ade80;
 }
 
 .dark {
-  --crm-text-primary: #f2f5f2;
-  --crm-text-secondary: #3ecf5a;
-  --crm-text-tertiary: #0b0f0b;
-  --crm-text-inverse: #9aa69a;
-  --crm-surface-base: #050705;
-  --crm-surface-elevated: #121812;
-  --crm-surface-muted: #0c110c;
-  --crm-surface-glass: rgb(18 24 18 / 0.82);
-  --crm-border-subtle: rgb(242 245 242 / 0.1);
+  --crm-text-primary: #f8fafc;
+  --crm-text-secondary: #4ade80;
+  --crm-text-tertiary: #052e16;
+  --crm-text-inverse: #94a3b8;
+  --crm-surface-base: #020617;
+  --crm-surface-elevated: #0f172a;
+  --crm-surface-muted: #020617;
+  --crm-surface-glass: rgb(15 23 42 / 0.86);
+  --crm-border-subtle: rgb(148 163 184 / 0.16);
   --crm-badge-success-bg: rgb(22 101 52 / 0.35);
   --crm-badge-success-fg: #86efac;
-  --crm-badge-muted-bg: rgb(242 245 242 / 0.08);
-  --crm-badge-muted-fg: #a8b5a8;
+  --crm-badge-muted-bg: rgb(148 163 184 / 0.12);
+  --crm-badge-muted-fg: #cbd5e1;
   --crm-danger-soft-bg: rgb(127 29 29 / 0.35);
-  --crm-shadow-soft: 0 4px 24px rgb(0 0 0 / 0.35);
-  --crm-shadow-elevated: 0 16px 48px rgb(0 0 0 / 0.45);
+  --crm-shadow-soft: 0 1px 2px rgb(0 0 0 / 0.35), 0 8px 24px rgb(0 0 0 / 0.25);
+  --crm-shadow-elevated: 0 16px 40px rgb(0 0 0 / 0.4);
+  --crm-sidebar-bg: #020617;
+  --crm-sidebar-fg: #e2e8f0;
+  --crm-sidebar-muted: #94a3b8;
+  --crm-sidebar-border: rgb(148 163 184 / 0.12);
+  --crm-sidebar-active-bg: rgb(74 222 128 / 0.14);
+  --crm-sidebar-active-fg: #4ade80;
 }
 
 @layer base {
@@ -93,25 +111,42 @@
     font-family: var(--font-barlow), var(--font-primary);
     font-size: var(--text-md);
     font-weight: 500;
-    line-height: 1.4;
+    line-height: 1.5;
     color: var(--color-text-primary);
     background-color: var(--color-surface-muted);
     -webkit-font-smoothing: antialiased;
-    transition: background-color 250ms ease, color 250ms ease;
+    transition: background-color 200ms ease, color 200ms ease;
   }
 
   :focus-visible {
     outline: 2px solid var(--color-text-secondary);
     outline-offset: 2px;
   }
+
+  table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  thead th {
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
 }
 
 @layer utilities {
   .container-crm {
     width: 100%;
-    max-width: 1280px;
     margin-inline: auto;
-    padding-inline: 20px;
+    padding-inline: 16px;
+  }
+
+  .crm-panel {
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-card);
+    background: var(--color-surface-elevated);
+    box-shadow: var(--shadow-soft);
   }
 
   .auth-fade-in {

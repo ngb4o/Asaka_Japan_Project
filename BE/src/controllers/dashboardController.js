@@ -14,6 +14,20 @@ const getSummary = async (req, res, next) => {
   }
 }
 
+const getReports = async (req, res, next) => {
+  try {
+    const result = await dashboardService.getReports(req.query)
+
+    res.status(StatusCodes.OK).json({
+      message: 'Lấy báo cáo thành công!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const dashboardController = {
-  getSummary
+  getSummary,
+  getReports
 }

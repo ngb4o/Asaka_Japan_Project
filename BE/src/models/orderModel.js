@@ -46,6 +46,11 @@ const ORDER_COLLECTION_SCHEMA = Joi.object({
     .pattern(OBJECT_ID_RULE)
     .message(OBJECT_ID_RULE_MESSAGE)
     .default(null),
+  tripId: Joi.string()
+    .allow(null, '')
+    .pattern(OBJECT_ID_RULE)
+    .message(OBJECT_ID_RULE_MESSAGE)
+    .default(null),
   customerName: optionalText(150).default(''),
   customerPhone: optionalText(20).default(''),
   customerEmail: optionalText(150).default(''),
@@ -94,6 +99,7 @@ const normalizeRefs = (data) => {
   next.dealerId = next.dealerId ? new ObjectId(next.dealerId) : null
   next.quoteId = next.quoteId ? new ObjectId(next.quoteId) : null
   next.warehouseId = next.warehouseId ? new ObjectId(next.warehouseId) : null
+  next.tripId = next.tripId ? new ObjectId(next.tripId) : null
   next.createdBy = new ObjectId(next.createdBy)
   next.items = next.items.map((item) => ({
     ...item,
@@ -157,6 +163,10 @@ const update = async (id, updateData) => {
 
   if (dataToUpdate.warehouseId) {
     dataToUpdate.warehouseId = new ObjectId(dataToUpdate.warehouseId)
+  }
+
+  if (dataToUpdate.tripId !== undefined) {
+    dataToUpdate.tripId = dataToUpdate.tripId ? new ObjectId(dataToUpdate.tripId) : null
   }
 
   if (Array.isArray(dataToUpdate.items)) {

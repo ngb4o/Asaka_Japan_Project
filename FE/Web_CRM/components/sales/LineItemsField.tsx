@@ -79,7 +79,7 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
           {items.map((item, index) => (
             <div
               key={index}
-              className="grid gap-3 rounded-lg border border-[var(--color-border-subtle)] p-3 md:grid-cols-[1fr_100px_140px_auto]"
+              className="grid items-center gap-3 rounded-lg border border-[var(--color-border-subtle)] p-3 md:grid-cols-[minmax(0,1fr)_100px_140px_2.5rem]"
             >
               <SearchableSelect
                 options={productOptions}
@@ -107,11 +107,11 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
                 type="button"
                 variant="danger"
                 size="sm"
-                className="h-10 w-10 shrink-0 px-0"
+                className="h-10 w-10 shrink-0 justify-self-end gap-0 p-0"
                 onClick={() => removeRow(index)}
                 aria-label="Xóa dòng"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-4 shrink-0" />
               </Button>
             </div>
           ))}

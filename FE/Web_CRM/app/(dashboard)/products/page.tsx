@@ -26,6 +26,7 @@ import {
   SearchableSelect,
   STATUS_OPTIONS,
 } from "@/components/ui/searchable-select";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { getProductCategories } from "@/lib/api/product-categories";
 import {
   createProduct,
@@ -251,18 +252,16 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Sản phẩm</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-            Quản lý danh mục thuốc bảo vệ thực vật
-          </p>
-        </div>
-        <Button onClick={openCreate} disabled={categories.length === 0}>
-          <Plus className="h-4 w-4" />
-          Thêm sản phẩm
-        </Button>
-      </div>
+      <PageHeader
+        title="Sản phẩm"
+        description="Quản lý danh mục thuốc bảo vệ thực vật"
+        actions={
+          <Button onClick={openCreate} disabled={categories.length === 0}>
+            <Plus className="h-4 w-4" />
+            Thêm sản phẩm
+          </Button>
+        }
+      />
 
       {categories.length === 0 && (
         <p className="text-sm text-amber-700">
@@ -439,58 +438,42 @@ export default function ProductsPage() {
                 searchPlaceholder="Tìm loại sản phẩm..."
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="price">Giá bán (VND) *</Label>
-              <VndInput
-                id="price"
-                placeholder="0"
-                value={form.price}
-                onValueChange={(price) => setForm({ ...form, price })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="costPrice">Giá vốn (VND)</Label>
-              <VndInput
-                id="costPrice"
-                placeholder="0"
-                value={form.costPrice ?? ""}
-                onValueChange={(costPrice) => setForm({ ...form, costPrice })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="unit">Đơn vị gốc</Label>
-              <Input
-                id="unit"
-                value={form.unit || ""}
-                onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                placeholder="chai"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="unitsPerCase">Số chai / 1 thùng</Label>
-              <Input
-                id="unitsPerCase"
-                type="number"
-                min={1}
-                value={form.unitsPerCase ?? ""}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    unitsPerCase:
-                      e.target.value === "" ? "" : Number(e.target.value),
-                  })
-                }
-                placeholder="VD: 20"
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="packaging">Quy cách (hiển thị)</Label>
-              <Input
-                id="packaging"
-                value={form.packaging || ""}
-                onChange={(e) => setForm({ ...form, packaging: e.target.value })}
-                placeholder="VD: Thùng 20 chai"
-              />
+            <div className="grid gap-4 md:col-span-2 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="price">Giá bán (VND) *</Label>
+                <VndInput
+                  id="price"
+                  placeholder="0"
+                  value={form.price}
+                  onValueChange={(price) => setForm({ ...form, price })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="costPrice">Giá vốn (VND)</Label>
+                <VndInput
+                  id="costPrice"
+                  placeholder="0"
+                  value={form.costPrice ?? ""}
+                  onValueChange={(costPrice) => setForm({ ...form, costPrice })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unitsPerCase">Số chai / 1 thùng</Label>
+                <Input
+                  id="unitsPerCase"
+                  type="number"
+                  min={1}
+                  value={form.unitsPerCase ?? ""}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      unitsPerCase:
+                        e.target.value === "" ? "" : Number(e.target.value),
+                    })
+                  }
+                  placeholder="VD: 20"
+                />
+              </div>
             </div>
             <div className="space-y-2 md:col-span-2">
               <div className="flex items-center justify-between gap-2">
@@ -549,8 +532,8 @@ export default function ProductsPage() {
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? "Đang lưu..." : "Lưu"}
+              <Button type="submit" loading={submitting}>
+                Lưu
               </Button>
             </div>
           </form>

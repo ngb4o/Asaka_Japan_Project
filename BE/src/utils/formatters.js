@@ -21,6 +21,7 @@ export const formatDocument = (doc) => {
     ...(rest.categoryId && { categoryId: rest.categoryId.toString() }),
     ...(rest.warehouseId && { warehouseId: rest.warehouseId.toString() }),
     ...(rest.productId && { productId: rest.productId.toString() }),
+    ...(rest.tripId && { tripId: rest.tripId.toString() }),
     ...(rest.createdBy && { createdBy: rest.createdBy.toString() })
   }
 }
