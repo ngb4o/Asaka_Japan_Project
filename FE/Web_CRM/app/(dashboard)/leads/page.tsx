@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Trash2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -35,14 +34,6 @@ const LEAD_TYPE_LABELS: Record<Lead["type"], string> = {
   dealer: "Đăng ký đại lý",
 };
 
-const LEAD_STATUS_LABELS: Record<Lead["status"], string> = {
-  new: "Mới",
-  contacted: "Đã liên hệ",
-  qualified: "Tiềm năng",
-  converted: "Đã chuyển đổi",
-  closed: "Đóng",
-};
-
 export default function LeadsPage() {
   const confirm = useConfirm();
   const toast = useToast();
@@ -57,6 +48,7 @@ export default function LeadsPage() {
   const [note, setNote] = useState("");
   const [status, setStatus] = useState<Lead["status"]>("new");
   const [submitting, setSubmitting] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -106,6 +98,39 @@ export default function LeadsPage() {
       toast.error(err instanceof ApiClientError ? err.message : "Lưu thất bại");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleQuickStatus(item: Lead, nextStatus: Lead["status"]) {
+    if (nextStatus === item.status) return;
+
+    setUpdatingId(item.id);
+    setItems((prev) =>
+      prev.map((row) =>
+        row.id === item.id ? { ...row, status: nextStatus } : row
+      )
+    );
+    if (selected?.id === item.id) {
+      setStatus(nextStatus);
+      setSelected({ ...item, status: nextStatus });
+    }
+
+    try {
+      await updateLead(item.id, { status: nextStatus });
+      toast.success("Đã cập nhật trạng thái");
+    } catch (err) {
+      setItems((prev) =>
+        prev.map((row) => (row.id === item.id ? item : row))
+      );
+      if (selected?.id === item.id) {
+        setStatus(item.status);
+        setSelected(item);
+      }
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Cập nhật thất bại"
+      );
+    } finally {
+      setUpdatingId(null);
     }
   }
 
@@ -214,9 +239,18 @@ export default function LeadsPage() {
                         <td className="px-2 py-3">{item.phone}</td>
                         <td className="px-2 py-3">{LEAD_TYPE_LABELS[item.type]}</td>
                         <td className="px-2 py-3">
-                          <Badge variant={item.status === "new" ? "success" : "muted"}>
-                            {LEAD_STATUS_LABELS[item.status]}
-                          </Badge>
+                          <div className="w-[160px]">
+                            <SearchableSelect
+                              options={STATUS_OPTIONS.lead}
+                              value={item.status}
+                              onChange={(value) =>
+                                handleQuickStatus(item, value as Lead["status"])
+                              }
+                              searchable={false}
+                              disabled={updatingId === item.id}
+                              triggerClassName="h-8 text-xs"
+                            />
+                          </div>
                         </td>
                         <td className="px-2 py-3 text-[var(--color-text-inverse)]">
                           {new Date(item.createdAt).toLocaleDateString("vi-VN")}

@@ -39,6 +39,7 @@ const NAV_BY_ROLE: Record<UserRole, string[]> = {
     "/trips",
     "/payroll",
     "/users",
+    "/settings/telegram",
   ],
   sales: [
     "/dashboard",
@@ -109,6 +110,10 @@ export function canManageShipping(role?: UserRole | null) {
 }
 
 export function canManageUsers(role?: UserRole | null) {
+  return role === "admin";
+}
+
+export function canManageTelegram(role?: UserRole | null) {
   return role === "admin";
 }
 

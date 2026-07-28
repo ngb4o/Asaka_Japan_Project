@@ -3,6 +3,7 @@ import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
+import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
 
 const createNew = async (reqBody, userId) => {
   const created = await dealerModel.createNew({
@@ -21,7 +22,9 @@ const createNew = async (reqBody, userId) => {
   })
 
   const dealer = await dealerModel.findOneById(created.insertedId)
-  return formatDocument(dealer)
+  const formatted = formatDocument(dealer)
+  telegramNotifyService.onDealerCreated(formatted)
+  return formatted
 }
 
 const getList = async (query) => {
@@ -91,7 +94,9 @@ const update = async (dealerId, updateData) => {
 
   await dealerModel.update(dealerId, dataToUpdate)
 
-  return await getDetails(dealerId)
+  const formatted = await getDetails(dealerId)
+  telegramNotifyService.onDealerStatusChanged(dealer.status, formatted)
+  return formatted
 }
 
 const deleteOne = async (dealerId) => {

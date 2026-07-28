@@ -11,6 +11,7 @@ import { formatDocument } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { generateDocumentCode } from '~/utils/documentCode'
 import { UNIT_TYPE } from '~/utils/inventoryUnits'
+import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
 
 const parseOptionalDate = (value) => {
   if (value === undefined) return undefined
@@ -284,6 +285,7 @@ const createNew = async (reqBody, userId) => {
 
   const order = await orderModel.findOneById(created.insertedId)
   const [formatted] = await enrichOrders([order])
+  telegramNotifyService.onOrderCreated(formatted)
   return formatted
 }
 
@@ -472,7 +474,17 @@ const update = async (orderId, updateData, userId) => {
 
   await orderModel.update(orderId, dataToUpdate)
 
-  return await getDetails(orderId)
+  const formatted = await getDetails(orderId)
+  telegramNotifyService.onOrderStatusChanged(order.status, formatted)
+
+  if (
+    dataToUpdate.paymentStatus !== undefined &&
+    dataToUpdate.paymentStatus !== order.paymentStatus
+  ) {
+    telegramNotifyService.onPaymentUpdated(formatted)
+  }
+
+  return formatted
 }
 
 const recordPayment = async (orderId, { amount, note }) => {
@@ -495,7 +507,9 @@ const recordPayment = async (orderId, { amount, note }) => {
     paymentNote: note !== undefined ? note || '' : order.paymentNote || ''
   })
 
-  return await getDetails(orderId)
+  const formatted = await getDetails(orderId)
+  telegramNotifyService.onPaymentUpdated(formatted)
+  return formatted
 }
 
 const deleteOne = async (orderId) => {

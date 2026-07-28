@@ -67,7 +67,6 @@ export function DealerRegisterProvider({
           <DialogTitle>Đăng ký trở thành đại lý</DialogTitle>
           <ContactForm
             type="dealer"
-            title="Điền thông tin đăng ký"
             submitLabel="Gửi đăng ký"
             theme="light"
             onSuccess={handleSuccess}

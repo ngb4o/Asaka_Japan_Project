@@ -6,6 +6,11 @@ import { CONNECT_DB, CLOSE_DB } from '~/config/mongodb'
 import { env } from '~/config/environment'
 import { APIs_V1 } from '~/routes/v1'
 import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware'
+import { telegramService } from '~/services/telegram/telegramService'
+import {
+  startTelegramPolling,
+  stopTelegramPolling
+} from '~/services/telegram/telegramPolling'
 
 const START_SERVER = () => {
   const app = express()
@@ -40,9 +45,35 @@ const START_SERVER = () => {
 
   app.listen(port, host, () => {
     console.log(`Hi ${env.AUTHOR}, CRM API running at http://${host}:${port}/api`)
+
+    if (env.TELEGRAM_WEBHOOK_URL) {
+      telegramService.ensureWebhookConfigured().then((result) => {
+        if (result?.skipped) {
+          console.log(`[telegram] webhook setup skipped (${result.reason})`)
+          return
+        }
+
+        if (result?.ok) {
+          console.log('[telegram] webhook configured and commands registered')
+        } else {
+          console.warn('[telegram] webhook setup incomplete', {
+            webhook: result?.webhook,
+            commands: result?.commands
+          })
+        }
+      }).catch((error) => {
+        console.error('[telegram] failed to setup webhook', error)
+      })
+      return
+    }
+
+    startTelegramPolling().catch((error) => {
+      console.error('[telegram] failed to start polling', error)
+    })
   })
 
   exitHook(() => {
+    stopTelegramPolling()
     CLOSE_DB()
   })
 }

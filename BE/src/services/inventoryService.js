@@ -9,6 +9,7 @@ import { StatusCodes } from 'http-status-codes'
 import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { toBaseQuantity, toUnitsPerCase, UNIT_TYPE } from '~/utils/inventoryUnits'
+import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
 
 const ensureWarehouseExists = async (warehouseId) => {
   const warehouse = await warehouseModel.findOneById(warehouseId)
@@ -135,16 +136,39 @@ const createTransaction = async (type, reqBody, userId) => {
       .collection(inventoryTransactionModel.INVENTORY_TRANSACTION_COLLECTION_NAME)
       .findOne({ _id: created.insertedId }, { session })
 
-    return formatDocument(transaction)
+    return {
+      formatted: formatDocument(transaction),
+      balanceAfter
+    }
   })
 }
 
 const importStock = async (reqBody, userId) => {
-  return await createTransaction(inventoryTransactionModel.TRANSACTION_TYPE.IMPORT, reqBody, userId)
+  const result = await createTransaction(
+    inventoryTransactionModel.TRANSACTION_TYPE.IMPORT,
+    reqBody,
+    userId
+  )
+  telegramNotifyService.onStockChanged({
+    productId: reqBody.productId,
+    warehouseId: reqBody.warehouseId,
+    quantity: result.balanceAfter
+  })
+  return result.formatted
 }
 
 const exportStock = async (reqBody, userId) => {
-  return await createTransaction(inventoryTransactionModel.TRANSACTION_TYPE.EXPORT, reqBody, userId)
+  const result = await createTransaction(
+    inventoryTransactionModel.TRANSACTION_TYPE.EXPORT,
+    reqBody,
+    userId
+  )
+  telegramNotifyService.onStockChanged({
+    productId: reqBody.productId,
+    warehouseId: reqBody.warehouseId,
+    quantity: result.balanceAfter
+  })
+  return result.formatted
 }
 
 const getStocks = async (query) => {

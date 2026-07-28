@@ -123,6 +123,15 @@ const findOneById = async (id) => {
   })
 }
 
+const findOneByCode = async (code) => {
+  if (!code) return null
+  const normalized = String(code).trim()
+  return await GET_DB().collection(ORDER_COLLECTION_NAME).findOne({
+    code: { $regex: `^${normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' },
+    _destroy: false
+  })
+}
+
 const findMany = async (query = {}, options = {}) => {
   const {
     limit = 50,
@@ -229,6 +238,7 @@ export const orderModel = {
   PAYMENT_STATUS,
   createNew,
   findOneById,
+  findOneByCode,
   findMany,
   update,
   deleteOne,

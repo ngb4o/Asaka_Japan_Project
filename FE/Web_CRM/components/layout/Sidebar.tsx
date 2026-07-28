@@ -16,6 +16,7 @@ import {
   Package,
   ChartColumn,
   Route,
+  Send,
   Settings,
   ShoppingCart,
   Tags,
@@ -142,6 +143,12 @@ const NAV_GROUPS: NavGroup[] = [
     icon: Settings,
     items: [
       { href: "/users", label: "Tài khoản CRM", icon: Users, badgeKey: null },
+      {
+        href: "/settings/telegram",
+        label: "Thông báo Telegram",
+        icon: Send,
+        badgeKey: null,
+      },
     ],
   },
 ];

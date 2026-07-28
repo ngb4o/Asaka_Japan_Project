@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -57,12 +56,6 @@ const EMPTY_FORM: DealerFormValues = {
   note: "",
 };
 
-const TIER_LABELS: Record<Dealer["tier"], string> = {
-  standard: "Tiêu chuẩn",
-  silver: "Bạc",
-  gold: "Vàng",
-};
-
 export default function DealersPage() {
   const confirm = useConfirm();
   const toast = useToast();
@@ -78,6 +71,7 @@ export default function DealersPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -178,6 +172,39 @@ export default function DealersPage() {
     }
   }
 
+  async function handleQuickUpdate(
+    item: Dealer,
+    patch: Partial<Pick<Dealer, "tier" | "status">>
+  ) {
+    const nextTier = patch.tier ?? item.tier;
+    const nextStatus = patch.status ?? item.status;
+    if (nextTier === item.tier && nextStatus === item.status) return;
+
+    setUpdatingId(item.id);
+    setItems((prev) =>
+      prev.map((row) =>
+        row.id === item.id ? { ...row, tier: nextTier, status: nextStatus } : row
+      )
+    );
+
+    try {
+      await updateDealer(item.id, {
+        tier: nextTier,
+        status: nextStatus,
+      } as Parameters<typeof updateDealer>[1]);
+      toast.success("Đã cập nhật đại lý");
+    } catch (err) {
+      setItems((prev) =>
+        prev.map((row) => (row.id === item.id ? item : row))
+      );
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Cập nhật thất bại"
+      );
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
   async function handleDelete(item: Dealer) {
     const confirmed = await confirm({
       title: "Xóa đại lý",
@@ -253,15 +280,37 @@ export default function DealersPage() {
                           <p className="text-xs text-[var(--color-text-inverse)]">{item.phone}</p>
                         </td>
                         <td className="px-2 py-3">{item.region || "—"}</td>
-                        <td className="px-2 py-3">{TIER_LABELS[item.tier]}</td>
                         <td className="px-2 py-3">
-                          <Badge variant={item.status === "active" ? "success" : "muted"}>
-                            {item.status === "active"
-                              ? "Hoạt động"
-                              : item.status === "pending"
-                                ? "Chờ duyệt"
-                                : "Ngưng"}
-                          </Badge>
+                          <div className="w-[140px]">
+                            <SearchableSelect
+                              options={STATUS_OPTIONS.dealerTier}
+                              value={item.tier}
+                              onChange={(value) =>
+                                handleQuickUpdate(item, {
+                                  tier: value as Dealer["tier"],
+                                })
+                              }
+                              searchable={false}
+                              disabled={updatingId === item.id}
+                              triggerClassName="h-8 text-xs"
+                            />
+                          </div>
+                        </td>
+                        <td className="px-2 py-3">
+                          <div className="w-[140px]">
+                            <SearchableSelect
+                              options={STATUS_OPTIONS.dealer}
+                              value={item.status}
+                              onChange={(value) =>
+                                handleQuickUpdate(item, {
+                                  status: value as Dealer["status"],
+                                })
+                              }
+                              searchable={false}
+                              disabled={updatingId === item.id}
+                              triggerClassName="h-8 text-xs"
+                            />
+                          </div>
                         </td>
                         <td className="px-2 py-3">
                           <div className="flex justify-end gap-2">
