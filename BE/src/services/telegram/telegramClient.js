@@ -13,6 +13,7 @@ const DEFAULT_TIMEOUT_MS = 30000
 const SEND_TIMEOUT_MS = 30000
 const GET_ME_TIMEOUT_MS = 10000
 const GET_ME_CACHE_MS = 5 * 60 * 1000
+const MESSAGE_SEPARATOR = '---------------------------------------'
 
 let getMeCache = {
   at: 0,
@@ -23,6 +24,20 @@ const apiUrl = (method) =>
   `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/${method}`
 
 const isEnabled = () => Boolean(env.TELEGRAM_ENABLED && env.TELEGRAM_BOT_TOKEN)
+
+const wrapMessageText = (text) => {
+  const content = String(text || '').trim()
+  if (!content) return ''
+
+  const startsWrapped = content.startsWith(MESSAGE_SEPARATOR)
+  const endsWrapped = content.endsWith(MESSAGE_SEPARATOR)
+
+  if (startsWrapped && endsWrapped) {
+    return content
+  }
+
+  return [MESSAGE_SEPARATOR, content, MESSAGE_SEPARATOR].join('\n')
+}
 
 const callApi = async (method, body = {}, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) => {
   if (!isEnabled()) {
@@ -74,7 +89,7 @@ const sendTextMessage = async (chatId, text, { replyMarkup } = {}) => {
 
   const body = {
     chat_id: String(chatId),
-    text: String(text).trim(),
+    text: wrapMessageText(text),
     disable_web_page_preview: true
   }
 
@@ -111,7 +126,7 @@ const editMessageText = async ({
   }
 
   const body = {
-    text: String(text).trim(),
+    text: wrapMessageText(text),
     disable_web_page_preview: true
   }
 
