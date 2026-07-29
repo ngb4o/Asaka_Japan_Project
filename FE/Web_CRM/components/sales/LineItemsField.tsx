@@ -64,7 +64,7 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Label>Sản phẩm *</Label>
         <Button type="button" variant="outline" size="sm" onClick={addRow}>
           <Plus className="h-4 w-4" />
@@ -76,45 +76,78 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
         <p className="text-sm text-[var(--color-text-inverse)]">Chưa có sản phẩm</p>
       ) : (
         <div className="space-y-3">
-          {items.map((item, index) => (
-            <div
-              key={index}
-              className="grid items-center gap-3 rounded-lg border border-[var(--color-border-subtle)] p-3 md:grid-cols-[minmax(0,1fr)_100px_140px_2.5rem]"
-            >
-              <SearchableSelect
-                options={productOptions}
-                value={item.productId}
-                onChange={(value) => updateRow(index, { productId: value })}
-                placeholder="Chọn sản phẩm"
-              />
-              <Input
-                type="number"
-                min={1}
-                value={item.quantity}
-                onChange={(e) =>
-                  updateRow(index, {
-                    quantity: e.target.value === "" ? "" : Number(e.target.value),
-                  })
-                }
-                placeholder="SL"
-              />
-              <VndInput
-                value={item.unitPrice}
-                onValueChange={(unitPrice) => updateRow(index, { unitPrice })}
-                placeholder="Đơn giá"
-              />
-              <Button
-                type="button"
-                variant="danger"
-                size="sm"
-                className="h-10 w-10 shrink-0 justify-self-end gap-0 p-0"
-                onClick={() => removeRow(index)}
-                aria-label="Xóa dòng"
+          {items.map((item, index) => {
+            const lineTotal =
+              (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
+
+            return (
+              <div
+                key={index}
+                className="space-y-3 rounded-lg border border-[var(--color-border-subtle)] p-3 md:grid md:grid-cols-[minmax(0,1fr)_5.5rem_8.5rem_2.5rem] md:items-end md:gap-3 md:space-y-0"
               >
-                <Trash2 className="h-4 w-4 shrink-0" />
-              </Button>
-            </div>
-          ))}
+                <div className="min-w-0 space-y-1.5">
+                  <Label className="text-xs text-[var(--color-text-inverse)] md:sr-only">
+                    Sản phẩm
+                  </Label>
+                  <SearchableSelect
+                    options={productOptions}
+                    value={item.productId}
+                    onChange={(value) => updateRow(index, { productId: value })}
+                    placeholder="Chọn sản phẩm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-[1fr_1.4fr_auto] items-end gap-2 md:contents">
+                  <div className="min-w-0 space-y-1.5">
+                    <Label className="text-xs text-[var(--color-text-inverse)] md:sr-only">
+                      SL
+                    </Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      inputMode="numeric"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        updateRow(index, {
+                          quantity: e.target.value === "" ? "" : Number(e.target.value),
+                        })
+                      }
+                      placeholder="SL"
+                    />
+                  </div>
+
+                  <div className="min-w-0 space-y-1.5">
+                    <Label className="text-xs text-[var(--color-text-inverse)] md:sr-only">
+                      Đơn giá
+                    </Label>
+                    <VndInput
+                      value={item.unitPrice}
+                      onValueChange={(unitPrice) => updateRow(index, { unitPrice })}
+                      placeholder="Đơn giá"
+                    />
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    className="h-10 w-10 shrink-0 gap-0 p-0"
+                    onClick={() => removeRow(index)}
+                    aria-label="Xóa dòng"
+                  >
+                    <Trash2 className="h-4 w-4 shrink-0" />
+                  </Button>
+                </div>
+
+                <p className="text-right text-xs text-[var(--color-text-inverse)] md:hidden">
+                  Thành tiền:{" "}
+                  <span className="font-medium text-[var(--color-text-primary)]">
+                    {formatCurrency(lineTotal)}
+                  </span>
+                </p>
+              </div>
+            );
+          })}
         </div>
       )}
 

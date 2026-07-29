@@ -18,6 +18,13 @@ import { VndInput } from "@/components/ui/vnd-input";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
+import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
+import {
+  MobileMetaChip,
+  MobileRecordActions,
+  MobileRecordCard,
+  MobileStatTile,
+} from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
 import { ImageUpload } from "@/components/products/ImageUpload";
@@ -33,8 +40,10 @@ import {
 import { getUsers } from "@/lib/api/users";
 import type { Employee, UserProfile } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
-import { DEFAULT_PAGE_SIZE, shouldReloadPreviousPage } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
 import { formatCurrency } from "@/lib/utils";
+import { statusBadgeVariant } from "@/lib/status-badge";
 
 type FormValues = {
   code: string;
@@ -78,48 +87,68 @@ export default function EmployeesPage() {
   const { user } = useAuth();
   const canEdit = canManageEmployees(user?.role);
   const allowed = canViewEmployeesPage(user?.role);
-  const [items, setItems] = useState<Employee[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [form, setForm] = useState<FormValues>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [result, usersResult] = await Promise.all([
-        getEmployees({ search: search || undefined, page, limit: DEFAULT_PAGE_SIZE }),
-        canEdit ? getUsers().catch(() => ({ items: [], total: 0 })) : Promise.resolve({ items: [], total: 0 }),
-      ]);
-      setItems(result.items);
-      setUsers(usersResult.items || []);
-      if (shouldReloadPreviousPage(result, page)) {
-        setPage(result.totalPages);
-        return;
-      }
-      setPage(result.page);
-      setTotal(result.total);
-      setTotalPages(result.totalPages);
-    } catch (err) {
+  const fetchPage = useCallback(
+    (pageNum: number) =>
+      getEmployees({
+        search: search || undefined,
+        page: pageNum,
+        limit: DEFAULT_PAGE_SIZE,
+      }),
+    [search]
+  );
+
+  const onError = useCallback(
+    (err: unknown) => {
       toast.error(err instanceof ApiClientError ? err.message : "Không tải được dữ liệu");
-    } finally {
-      setLoading(false);
-    }
-  }, [search, page, toast, canEdit]);
+    },
+    [toast]
+  );
 
-  useEffect(() => {
-    if (!allowed) {
-      setLoading(false);
+  const {
+    items,
+    page,
+    total,
+    totalPages,
+    loading,
+    loadingMore,
+    hasMore,
+    reload,
+    refresh,
+    loadMore,
+    goToPage,
+  } = useMobilePagedList<Employee>({ fetchPage, onError });
+
+  const loadUsers = useCallback(async () => {
+    if (!canEdit) {
+      setUsers([]);
       return;
     }
-    loadData();
-  }, [allowed, loadData]);
+    try {
+      const usersResult = await getUsers().catch(() => ({ items: [], total: 0 }));
+      setUsers(usersResult.items || []);
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Không tải được dữ liệu");
+    }
+  }, [canEdit, toast]);
+
+  useEffect(() => {
+    if (!allowed) return;
+    void reload();
+    // Reload when filter query changes (fetchPage identity).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowed, fetchPage]);
+
+  useEffect(() => {
+    if (!allowed) return;
+    void loadUsers();
+  }, [allowed, loadUsers]);
 
   function openCreate() {
     setEditing(null);
@@ -182,7 +211,7 @@ export default function EmployeesPage() {
         toast.success("Đã tạo nhân viên");
       }
       setDialogOpen(false);
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Lưu thất bại");
     } finally {
@@ -201,7 +230,7 @@ export default function EmployeesPage() {
     try {
       await deleteEmployee(item.id);
       toast.success("Đã xóa nhân viên");
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
     }
@@ -235,6 +264,9 @@ export default function EmployeesPage() {
             </Button>
           ) : null
         }
+        fab={
+          canEdit ? { onClick: openCreate, label: "Thêm nhân viên" } : null
+        }
       />
 
       <Card>
@@ -245,15 +277,76 @@ export default function EmployeesPage() {
           <Input
             placeholder="Tìm theo tên, mã, SĐT..."
             value={search}
-            onChange={(e) => {
-              setPage(1);
-              setSearch(e.target.value);
-            }}
+            onChange={(e) => setSearch(e.target.value)}
           />
           {items.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có nhân viên</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              <MobileInfiniteList
+                onRefresh={refresh}
+                onLoadMore={loadMore}
+                hasMore={hasMore}
+                loadingMore={loadingMore}
+                disabled={loading}
+              >
+                <div className="flex flex-col gap-3">
+                {items.map((item) => (
+                  <MobileRecordCard key={item.id} className="p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                          {item.fullName}
+                        </p>
+                        <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                          {item.code}
+                          {item.email ? ` · ${item.email}` : ""}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={statusBadgeVariant(item.status)}
+                        className="shrink-0"
+                      >
+                        {item.status === "active" ? "Đang làm" : "Ngưng"}
+                      </Badge>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <MobileStatTile label="Lương cứng">
+                        {formatCurrency(item.baseSalary)}
+                      </MobileStatTile>
+                      <MobileStatTile label="HH / Phụ cấp">
+                        {item.commissionPercent}% · {formatCurrency(item.allowance)}
+                      </MobileStatTile>
+                    </div>
+
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      {item.phone ? <MobileMetaChip>{item.phone}</MobileMetaChip> : null}
+                      {item.title ? <MobileMetaChip>{item.title}</MobileMetaChip> : null}
+                      {item.department ? (
+                        <MobileMetaChip>{item.department}</MobileMetaChip>
+                      ) : null}
+                      {item.userName ? (
+                        <MobileMetaChip>TK: {item.userName}</MobileMetaChip>
+                      ) : null}
+                    </div>
+
+                    {canEdit ? (
+                      <MobileRecordActions>
+                        <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleDelete(item)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </MobileRecordActions>
+                    ) : null}
+                  </MobileRecordCard>
+                ))}
+                </div>
+              </MobileInfiniteList>
+
+              <div className="crm-table-scroll hidden md:block">
               <table className="w-full min-w-[900px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
@@ -311,13 +404,14 @@ export default function EmployeesPage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
           <Pagination
             page={page}
             totalPages={totalPages}
             total={total}
             limit={DEFAULT_PAGE_SIZE}
-            onPageChange={setPage}
+            onPageChange={goToPage}
             disabled={loading}
           />
         </CardContent>

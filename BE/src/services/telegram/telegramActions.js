@@ -151,7 +151,8 @@ const confirmOrder = async (orderId, chatId) => {
   const updated = await orderService.update(
     orderId,
     { status: orderModel.ORDER_STATUS.CONFIRMED },
-    userId
+    userId,
+    { silentTelegram: true }
   )
 
   return {
@@ -193,10 +194,14 @@ const markPaidFull = async (orderId) => {
     throw new ApiError(409, 'Không còn số tiền cần thu')
   }
 
-  const updated = await orderService.recordPayment(orderId, {
-    amount: remaining,
-    note: 'Ghi nhận đủ qua Telegram bot'
-  })
+  const updated = await orderService.recordPayment(
+    orderId,
+    {
+      amount: remaining,
+      note: 'Ghi nhận đủ qua Telegram bot'
+    },
+    { silentTelegram: true }
+  )
 
   return {
     toast: 'Đã ghi nhận thu đủ',
@@ -246,7 +251,12 @@ const transitionOrderStatus = async (orderId, nextStatus, chatId, { toast, label
     throw new ApiError(400, 'Không xác định được tài khoản CRM. Thêm SĐT staff hoặc user admin.')
   }
 
-  const updated = await orderService.update(orderId, { status: nextStatus }, userId)
+  const updated = await orderService.update(
+    orderId,
+    { status: nextStatus },
+    userId,
+    { silentTelegram: true }
+  )
   const terminal = [
     orderModel.ORDER_STATUS.COMPLETED,
     orderModel.ORDER_STATUS.CANCELLED
@@ -378,9 +388,11 @@ const approveDealer = async (dealerId) => {
     throw new ApiError(409, 'Đại lý đang ngưng — mở CRM để kích hoạt lại')
   }
 
-  const updated = await dealerService.update(dealerId, {
-    status: dealerModel.DEALER_STATUS.ACTIVE
-  })
+  const updated = await dealerService.update(
+    dealerId,
+    { status: dealerModel.DEALER_STATUS.ACTIVE },
+    { silentTelegram: true }
+  )
 
   return {
     toast: 'Đã duyệt đại lý',

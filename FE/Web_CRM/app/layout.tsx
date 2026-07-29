@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Barlow } from "next/font/google";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -15,6 +15,21 @@ const barlow = Barlow({
 export const metadata: Metadata = {
   title: "ASAKA CRM",
   description: "Hệ thống quản lý sản phẩm ASAKA JAPAN",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ASAKA CRM",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f1f5f9" },
+    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+  ],
 };
 
 const themeInitScript = `

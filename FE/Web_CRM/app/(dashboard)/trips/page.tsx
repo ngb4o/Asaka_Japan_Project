@@ -20,6 +20,12 @@ import { VndInput } from "@/components/ui/vnd-input";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
+import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
+import {
+  MobileMetaChip,
+  MobileRecordActions,
+  MobileRecordCard,
+} from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -43,8 +49,10 @@ import {
 } from "@/lib/api/trips";
 import type { Dealer, Employee, Order, Trip } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
-import { DEFAULT_PAGE_SIZE, shouldReloadPreviousPage } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
 import { formatCurrency, formatDateDisplay, toDateValue, cn } from "@/lib/utils";
+import { statusBadgeVariant } from "@/lib/status-badge";
 
 const TRIP_STATUS_LABEL: Record<Trip["status"], string> = {
   draft: "Nháp",
@@ -92,15 +100,10 @@ export default function TripsPage() {
   const { user } = useAuth();
   const canFinance = canManageTripsFinance(user?.role);
 
-  const [items, setItems] = useState<Trip[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [dealers, setDealers] = useState<Dealer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -135,37 +138,61 @@ export default function TripsPage() {
     note: "",
   });
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const fetchPage = useCallback(
+    (pageNum: number) =>
+      getTrips({
+        search: search || undefined,
+        page: pageNum,
+        limit: DEFAULT_PAGE_SIZE,
+      }),
+    [search]
+  );
+
+  const onError = useCallback(
+    (err: unknown) => {
+      toast.error(err instanceof ApiClientError ? err.message : "Không tải được chuyến");
+    },
+    [toast]
+  );
+
+  const {
+    items,
+    page,
+    total,
+    totalPages,
+    loading,
+    loadingMore,
+    hasMore,
+    reload,
+    refresh,
+    loadMore,
+    goToPage,
+  } = useMobilePagedList<Trip>({ fetchPage, onError });
+
+  const loadAuxData = useCallback(async () => {
     try {
-      const [tripsResult, employeesResult, dealersResult, ordersResult] =
-        await Promise.all([
-          getTrips({ search: search || undefined, page, limit: DEFAULT_PAGE_SIZE }),
-          getEmployees({ status: "active", limit: 100, page: 1 }),
-          getDealers({ limit: 100, page: 1 }),
-          getOrders({ limit: 100, page: 1 }),
-        ]);
-      setItems(tripsResult.items);
+      const [employeesResult, dealersResult, ordersResult] = await Promise.all([
+        getEmployees({ status: "active", limit: 100, page: 1 }),
+        getDealers({ limit: 100, page: 1 }),
+        getOrders({ limit: 100, page: 1 }),
+      ]);
       setEmployees(employeesResult.items);
       setDealers(dealersResult.items);
       setOrders(ordersResult.items);
-      if (shouldReloadPreviousPage(tripsResult, page)) {
-        setPage(tripsResult.totalPages);
-        return;
-      }
-      setPage(tripsResult.page);
-      setTotal(tripsResult.total);
-      setTotalPages(tripsResult.totalPages);
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Không tải được chuyến");
-    } finally {
-      setLoading(false);
     }
-  }, [search, page, toast]);
+  }, [toast]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    void reload();
+    // Reload when filter query changes (fetchPage identity).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchPage]);
+
+  useEffect(() => {
+    void loadAuxData();
+  }, [loadAuxData]);
 
   const employeeOptions = useMemo(
     () => employees.map((item) => ({ value: item.id, label: item.fullName })),
@@ -175,7 +202,7 @@ export default function TripsPage() {
   async function refreshSelected(id: string) {
     const detail = await getTrip(id);
     setSelected(detail);
-    await loadData();
+    await reload();
   }
 
   function openCreate() {
@@ -230,7 +257,7 @@ export default function TripsPage() {
       setCreateOpen(false);
       setSelected(trip);
       setDetailOpen(true);
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Tạo chuyến thất bại");
     } finally {
@@ -249,7 +276,7 @@ export default function TripsPage() {
     try {
       await deleteTrip(item.id);
       toast.success("Đã xóa chuyến");
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
     }
@@ -398,6 +425,7 @@ export default function TripsPage() {
             Tạo chuyến
           </Button>
         }
+        fab={{ onClick: openCreate, label: "Tạo chuyến" }}
       />
 
       <Card>
@@ -408,15 +436,75 @@ export default function TripsPage() {
           <Input
             placeholder="Tìm mã / tiêu đề / khu vực..."
             value={search}
-            onChange={(e) => {
-              setPage(1);
-              setSearch(e.target.value);
-            }}
+            onChange={(e) => setSearch(e.target.value)}
           />
           {items.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có chuyến công tác</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              <MobileInfiniteList
+                onRefresh={refresh}
+                onLoadMore={loadMore}
+                hasMore={hasMore}
+                loadingMore={loadingMore}
+                disabled={loading}
+              >
+                <div className="flex flex-col gap-3">
+                {items.map((item) => {
+                  const memberNames =
+                    item.members.map((member) => member.fullName).join(", ") || "";
+                  return (
+                    <MobileRecordCard key={item.id} className="p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                            {item.code}
+                          </p>
+                          <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                            {item.title || item.region || "—"}
+                          </p>
+                        </div>
+                        <Badge
+                          variant={statusBadgeVariant(item.status)}
+                          className="shrink-0"
+                        >
+                          {TRIP_STATUS_LABEL[item.status]}
+                        </Badge>
+                      </div>
+
+                      <div className="mt-2.5 flex flex-wrap gap-1.5">
+                        <MobileMetaChip>
+                          {formatDateDisplay(item.startDate)} →{" "}
+                          {formatDateDisplay(item.endDate)}
+                        </MobileMetaChip>
+                        {memberNames ? (
+                          <MobileMetaChip>{memberNames}</MobileMetaChip>
+                        ) : null}
+                        <MobileMetaChip>
+                          {item.stops.length} điểm dừng
+                        </MobileMetaChip>
+                        {item.orders.length > 0 ? (
+                          <MobileMetaChip>{item.orders.length} đơn</MobileMetaChip>
+                        ) : null}
+                      </div>
+
+                      <MobileRecordActions>
+                        <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
+                          Chi tiết
+                        </Button>
+                        {canFinance && item.status !== "closed" ? (
+                          <Button variant="outline" size="sm" onClick={() => handleDelete(item)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        ) : null}
+                      </MobileRecordActions>
+                    </MobileRecordCard>
+                  );
+                })}
+                </div>
+              </MobileInfiniteList>
+
+              <div className="crm-table-scroll hidden md:block">
               <table className="w-full min-w-[900px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
@@ -482,13 +570,14 @@ export default function TripsPage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
           <Pagination
             page={page}
             totalPages={totalPages}
             total={total}
             limit={DEFAULT_PAGE_SIZE}
-            onPageChange={setPage}
+            onPageChange={goToPage}
             disabled={loading}
           />
         </CardContent>

@@ -333,7 +333,7 @@ const getDetails = async (orderId) => {
   return formatted
 }
 
-const update = async (orderId, updateData, userId) => {
+const update = async (orderId, updateData, userId, options = {}) => {
   const order = await orderModel.findOneById(orderId)
 
   if (!order) {
@@ -475,19 +475,23 @@ const update = async (orderId, updateData, userId) => {
   await orderModel.update(orderId, dataToUpdate)
 
   const formatted = await getDetails(orderId)
-  telegramNotifyService.onOrderStatusChanged(order.status, formatted)
 
-  if (
-    dataToUpdate.paymentStatus !== undefined &&
-    dataToUpdate.paymentStatus !== order.paymentStatus
-  ) {
-    telegramNotifyService.onPaymentUpdated(formatted)
+  // Telegram inline actions already edit the tracked message — skip broadcasting a duplicate.
+  if (!options.silentTelegram) {
+    telegramNotifyService.onOrderStatusChanged(order.status, formatted)
+
+    if (
+      dataToUpdate.paymentStatus !== undefined &&
+      dataToUpdate.paymentStatus !== order.paymentStatus
+    ) {
+      telegramNotifyService.onPaymentUpdated(formatted)
+    }
   }
 
   return formatted
 }
 
-const recordPayment = async (orderId, { amount, note }) => {
+const recordPayment = async (orderId, { amount, note }, options = {}) => {
   const order = await orderModel.findOneById(orderId)
 
   if (!order) {
@@ -508,7 +512,9 @@ const recordPayment = async (orderId, { amount, note }) => {
   })
 
   const formatted = await getDetails(orderId)
-  telegramNotifyService.onPaymentUpdated(formatted)
+  if (!options.silentTelegram) {
+    telegramNotifyService.onPaymentUpdated(formatted)
+  }
   return formatted
 }
 

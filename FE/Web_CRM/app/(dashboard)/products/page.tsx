@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { ImageIcon, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,11 @@ import { ProductDescriptionField } from "@/components/products/ProductDescriptio
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
+import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
+import {
+  MobileMediaCard,
+  MobileMetaChip,
+} from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import {
   SearchableSelect,
@@ -37,9 +42,11 @@ import {
 import { getImageUrl } from "@/lib/api/uploads";
 import type { Product, ProductCategory } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
-import { DEFAULT_PAGE_SIZE, shouldReloadPreviousPage } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
 import { formatCurrency } from "@/lib/utils";
 import { formatStockDisplay } from "@/lib/inventoryUnits";
+import { statusBadgeVariant } from "@/lib/status-badge";
 import {
   buildProductPayload,
   validateProductForm,
@@ -59,55 +66,74 @@ const EMPTY_FORM: ProductFormValues = {
 export default function ProductsPage() {
   const confirm = useConfirm();
   const toast = useToast();
-  const [items, setItems] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductFormValues>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
   const [orderDrafts, setOrderDrafts] = useState<Record<string, string>>({});
   const [savingOrderId, setSavingOrderId] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const fetchPage = useCallback(
+    async (pageNum: number) => {
+      const result = await getProducts({
+        search: search || undefined,
+        categoryId: categoryFilter || undefined,
+        page: pageNum,
+        limit: DEFAULT_PAGE_SIZE,
+      });
+      if (pageNum === 1) setOrderDrafts({});
+      return result;
+    },
+    [search, categoryFilter]
+  );
+
+  const onError = useCallback(
+    (err: unknown) => {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không tải được dữ liệu"
+      );
+    },
+    [toast]
+  );
+
+  const {
+    items,
+    setItems,
+    page,
+    total,
+    totalPages,
+    loading,
+    loadingMore,
+    hasMore,
+    reload,
+    refresh,
+    loadMore,
+    goToPage,
+  } = useMobilePagedList<Product>({ fetchPage, onError });
+
+  const loadCategories = useCallback(async () => {
     try {
-      const [productsResult, categoriesResult] = await Promise.all([
-        getProducts({
-          search: search || undefined,
-          categoryId: categoryFilter || undefined,
-          page,
-          limit: DEFAULT_PAGE_SIZE,
-        }),
-        getProductCategories({ limit: 100, page: 1 }),
-      ]);
-      setItems(productsResult.items);
-      setOrderDrafts({});
-      if (shouldReloadPreviousPage(productsResult, page)) {
-        setPage(productsResult.totalPages);
-        return;
-      }
-      setPage(productsResult.page);
-      setTotal(productsResult.total);
-      setTotalPages(productsResult.totalPages);
+      const categoriesResult = await getProductCategories({ limit: 100, page: 1 });
       setCategories(categoriesResult.items);
     } catch (err) {
       toast.error(
         err instanceof ApiClientError ? err.message : "Không tải được dữ liệu"
       );
-    } finally {
-      setLoading(false);
     }
-  }, [search, categoryFilter, page, toast]);
+  }, [toast]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    void reload();
+    // Reload when filter query changes (fetchPage identity).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchPage]);
+
+  useEffect(() => {
+    void loadCategories();
+  }, [loadCategories]);
 
   function openCreate() {
     setEditing(null);
@@ -166,7 +192,7 @@ export default function ProductsPage() {
         toast.success("Đã thêm sản phẩm");
       }
       setDialogOpen(false);
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Lưu thất bại");
     } finally {
@@ -240,7 +266,7 @@ export default function ProductsPage() {
     try {
       await deleteProduct(item.id);
       toast.success(`Đã xóa sản phẩm "${item.name}"`);
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
     }
@@ -261,6 +287,11 @@ export default function ProductsPage() {
             Thêm sản phẩm
           </Button>
         }
+        fab={{
+          onClick: openCreate,
+          label: "Thêm sản phẩm",
+          disabled: categories.length === 0,
+        }}
       />
 
       {categories.length === 0 && (
@@ -278,10 +309,7 @@ export default function ProductsPage() {
             <Input
               placeholder="Tìm theo tên sản phẩm..."
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => setSearch(e.target.value)}
             />
             <SearchableSelect
               options={[
@@ -292,10 +320,7 @@ export default function ProductsPage() {
                 })),
               ]}
               value={categoryFilter}
-              onChange={(next) => {
-                setCategoryFilter(next);
-                setPage(1);
-              }}
+              onChange={setCategoryFilter}
               placeholder="Tất cả loại"
               searchPlaceholder="Tìm loại sản phẩm..."
               clearable
@@ -306,7 +331,86 @@ export default function ProductsPage() {
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có sản phẩm</p>
           ) : (
             <div className="space-y-4">
-              <div className="overflow-x-auto">
+              <MobileInfiniteList
+                onRefresh={refresh}
+                onLoadMore={loadMore}
+                hasMore={hasMore}
+                loadingMore={loadingMore}
+                disabled={loading}
+              >
+                <div className="flex flex-col gap-3">
+                {items.map((item) => {
+                  const thumb = item.image || item.images?.[0];
+                  return (
+                    <MobileMediaCard
+                      key={item.id}
+                      media={
+                        thumb ? (
+                          <Image
+                            src={getImageUrl(thumb)}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[var(--color-text-inverse)]">
+                            <ImageIcon className="h-6 w-6" />
+                          </div>
+                        )
+                      }
+                      title={item.name}
+                      subtitle={item.categoryName || "Chưa phân loại"}
+                      badge={
+                        <Badge variant={statusBadgeVariant(item.status)}>
+                          {item.status === "active" ? "Đang bán" : "Ngưng"}
+                        </Badge>
+                      }
+                      meta={
+                        <>
+                          <MobileMetaChip>{formatCurrency(item.price)}</MobileMetaChip>
+                          <MobileMetaChip>
+                            Tồn {formatStockDisplay(item.totalStock ?? 0, item.unitsPerCase)}
+                          </MobileMetaChip>
+                        </>
+                      }
+                      actions={
+                        <>
+                          <div className="mr-auto flex items-center gap-2">
+                            <span className="text-xs text-[var(--color-text-inverse)]">STT</span>
+                            <Input
+                              type="number"
+                              min={0}
+                              className="h-8 w-16 px-2 text-center"
+                              disabled={savingOrderId === item.id}
+                              value={
+                                orderDrafts[item.id] ?? String(item.displayOrder ?? 0)
+                              }
+                              onChange={(e) =>
+                                setOrderDrafts((prev) => ({
+                                  ...prev,
+                                  [item.id]: e.target.value,
+                                }))
+                              }
+                              onBlur={() => void saveDisplayOrder(item)}
+                              aria-label={`Thứ tự hiển thị ${item.name}`}
+                            />
+                          </div>
+                          <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      }
+                    />
+                  );
+                })}
+                </div>
+              </MobileInfiniteList>
+
+              <div className="crm-table-scroll hidden md:block">
               <table className="w-full min-w-[780px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
@@ -399,7 +503,7 @@ export default function ProductsPage() {
                 totalPages={totalPages}
                 total={total}
                 limit={DEFAULT_PAGE_SIZE}
-                onPageChange={setPage}
+                onPageChange={goToPage}
                 disabled={loading}
               />
             </div>

@@ -1,11 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Cho phép mở CRM qua IP LAN trên thiết bị thật (Next.js 15+)
+  allowedDevOrigins: ["192.168.1.167"],
   images: {
+    qualities: [75, 100],
     remotePatterns: [
       {
         protocol: "http",
         hostname: "localhost",
+        port: "8017",
+        pathname: "/uploads/**",
+      },
+      {
+        protocol: "http",
+        hostname: "192.168.1.167",
         port: "8017",
         pathname: "/uploads/**",
       },

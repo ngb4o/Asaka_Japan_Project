@@ -159,7 +159,13 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function Sidebar() {
+export function Sidebar({
+  mobileOpen = false,
+  onMobileOpenChange,
+}: {
+  mobileOpen?: boolean;
+  onMobileOpenChange?: (open: boolean) => void;
+} = {}) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const toast = useToast();
@@ -223,8 +229,13 @@ export function Sidebar() {
     }
   }
 
-  return (
-    <aside className="sticky top-0 flex h-screen w-[272px] shrink-0 flex-col border-r border-[var(--color-sidebar-border)] bg-[var(--color-sidebar-bg)] text-[var(--color-sidebar-fg)]">
+  const closeMobile = () => onMobileOpenChange?.(false);
+
+  const panelClassName =
+    "flex h-full w-[min(100vw-2.5rem,288px)] shrink-0 flex-col border-r border-[var(--color-sidebar-border)] bg-[var(--color-sidebar-bg)] text-[var(--color-sidebar-fg)]";
+
+  const navPanel = (
+    <>
       <div className="flex shrink-0 items-center gap-3 px-5 py-5">
         <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1 shadow-sm">
           <Image
@@ -306,6 +317,7 @@ export function Sidebar() {
                         <Link
                           key={item.href}
                           href={item.href}
+                          onClick={closeMobile}
                           className={cn(
                             "relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                             active
@@ -367,7 +379,37 @@ export function Sidebar() {
           Đăng xuất
         </Button>
       </div>
+    </>
+  );
+
+  return (
+    <>
+      <aside
+        className={cn(
+          panelClassName,
+          "sticky top-0 hidden h-screen w-[272px] lg:flex"
+        )}
+      >
+        {navPanel}
+      </aside>
+
+      {mobileOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50"
+            aria-label="Đóng menu"
+            onClick={closeMobile}
+          />
+          <aside
+            className={cn(panelClassName, "relative z-10 h-full shadow-2xl")}
+            style={{ paddingTop: "env(safe-area-inset-top)" }}
+          >
+            {navPanel}
+          </aside>
+        </div>
+      ) : null}
       <ChangePasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
-    </aside>
+    </>
   );
 }

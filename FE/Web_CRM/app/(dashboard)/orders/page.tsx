@@ -26,6 +26,11 @@ import {
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
+import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
+import {
+  MobileMetaChip,
+  MobileRecordCard,
+} from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -51,8 +56,10 @@ import { getImageUrl } from "@/lib/api/uploads";
 import { printSalesDocument } from "@/lib/print/salesDocument";
 import type { Dealer, Order, Product } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
-import { DEFAULT_PAGE_SIZE, shouldReloadPreviousPage } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
 import { formatCurrency, toDateValue } from "@/lib/utils";
+import { statusBadgeVariant } from "@/lib/status-badge";
 
 type OrderFormValues = {
   dealerId: string;
@@ -122,6 +129,12 @@ const PAYMENT_LABELS: Record<Order["paymentStatus"], string> = {
   paid: "Đã thanh toán",
 };
 
+const PAYMENT_LABELS_SHORT: Record<Order["paymentStatus"], string> = {
+  unpaid: "Chưa TT",
+  partial: "Một phần",
+  paid: "Đã TT",
+};
+
 function getAllowedStatusOptions(order: Order) {
   const allowed: Record<Order["status"], Order["status"][]> = {
     pending: ["pending", "confirmed", "cancelled"],
@@ -145,11 +158,9 @@ export default function OrdersPage() {
   const toast = useToast();
   const { user } = useAuth();
   const role = user?.role;
-  const [items, setItems] = useState<Order[]>([]);
   const [dealers, setDealers] = useState<Dealer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -163,43 +174,66 @@ export default function OrdersPage() {
   const [confirmingOrder, setConfirmingOrder] = useState<Order | null>(null);
   const [confirmationStocks, setConfirmationStocks] = useState<ConfirmationStockRow[]>([]);
   const [loadingConfirmation, setLoadingConfirmation] = useState(false);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const fetchPage = useCallback(
+    (pageNum: number) =>
+      getOrders({
+        search: search || undefined,
+        page: pageNum,
+        limit: DEFAULT_PAGE_SIZE,
+      }),
+    [search]
+  );
+
+  const onError = useCallback(
+    (err: unknown) => {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không tải được dữ liệu"
+      );
+    },
+    [toast]
+  );
+
+  const {
+    items,
+    page,
+    total,
+    totalPages,
+    loading,
+    loadingMore,
+    hasMore,
+    reload,
+    refresh,
+    loadMore,
+    goToPage,
+  } = useMobilePagedList<Order>({ fetchPage, onError });
+
+  const loadAuxData = useCallback(async () => {
     try {
-      const [ordersResult, dealersResult, productsResult, warehousesResult] =
-        await Promise.all([
-          getOrders({ search: search || undefined, page, limit: DEFAULT_PAGE_SIZE }),
-          getDealers({ limit: 100, page: 1 }),
-          getProducts({ limit: 100, page: 1, status: "active" }),
-          getWarehouses({ limit: 100, page: 1 }),
-        ]);
-      setItems(ordersResult.items);
+      const [dealersResult, productsResult, warehousesResult] = await Promise.all([
+        getDealers({ limit: 100, page: 1 }),
+        getProducts({ limit: 100, page: 1, status: "active" }),
+        getWarehouses({ limit: 100, page: 1 }),
+      ]);
       setDealers(dealersResult.items);
       setProducts(productsResult.items);
       setWarehouses(warehousesResult.items);
-      if (shouldReloadPreviousPage(ordersResult, page)) {
-        setPage(ordersResult.totalPages);
-        return;
-      }
-      setPage(ordersResult.page);
-      setTotal(ordersResult.total);
-      setTotalPages(ordersResult.totalPages);
     } catch (err) {
       toast.error(
         err instanceof ApiClientError ? err.message : "Không tải được dữ liệu"
       );
-    } finally {
-      setLoading(false);
     }
-  }, [search, page, toast]);
+  }, [toast]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    void reload();
+    // Reload when filter query changes (fetchPage identity).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchPage]);
+
+  useEffect(() => {
+    void loadAuxData();
+  }, [loadAuxData]);
 
   function openCreate() {
     setEditing(null);
@@ -385,7 +419,7 @@ export default function OrdersPage() {
         toast.success("Đã tạo đơn hàng");
       }
       setDialogOpen(false);
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Lưu thất bại");
     } finally {
@@ -406,7 +440,7 @@ export default function OrdersPage() {
     try {
       await deleteOrder(item.id);
       toast.success("Đã xóa đơn hàng");
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
     }
@@ -464,7 +498,7 @@ export default function OrdersPage() {
           ? "Đã xác nhận đơn và xuất kho"
           : "Đã cập nhật trạng thái"
       );
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(
         err instanceof ApiClientError ? err.message : "Không cập nhật được trạng thái"
@@ -487,7 +521,7 @@ export default function OrdersPage() {
       toast.success("Đã xác nhận đơn và xuất kho");
       setConfirmingOrder(null);
       setConfirmationStocks([]);
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(
         err instanceof ApiClientError ? err.message : "Không xác nhận được đơn hàng"
@@ -516,7 +550,7 @@ export default function OrdersPage() {
       setPayingOrder(null);
       setPaymentAmount("");
       setPaymentNote("");
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Ghi nhận thất bại");
     } finally {
@@ -577,6 +611,11 @@ export default function OrdersPage() {
             </Button>
           ) : null
         }
+        fab={
+          canManageOrders(role) && canEditOrderItems(role)
+            ? { onClick: openCreate, label: "Tạo đơn hàng" }
+            : null
+        }
       />
 
       <Card>
@@ -587,17 +626,147 @@ export default function OrdersPage() {
           <Input
             placeholder="Tìm theo mã, khách hàng, mã vận đơn..."
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => setSearch(e.target.value)}
           />
 
           {items.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có đơn hàng</p>
           ) : (
             <div className="space-y-4">
-              <div className="overflow-x-auto">
+              <MobileInfiniteList
+                onRefresh={refresh}
+                onLoadMore={loadMore}
+                hasMore={hasMore}
+                loadingMore={loadingMore}
+                disabled={loading}
+              >
+                <div className="flex flex-col gap-3">
+                {items.map((item) => {
+                  const remaining =
+                    item.remainingAmount ??
+                    Math.max(0, (item.total || 0) - (item.paidAmount || 0));
+                  const customer = item.dealerName || item.customerName || "—";
+                  const statusLabel =
+                    STATUS_OPTIONS.order.find((o) => o.value === item.status)?.label ||
+                    item.status;
+                  const paymentKey = item.paymentStatus || "unpaid";
+                  const shipping =
+                    item.trackingCode || item.shippingPhone || item.carrier || "";
+
+                  return (
+                    <MobileRecordCard key={item.id} className="p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                            {item.code}
+                          </p>
+                          <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                            {customer}
+                          </p>
+                        </div>
+                        <Badge
+                          variant={statusBadgeVariant(item.status)}
+                          className="shrink-0"
+                        >
+                          {statusLabel}
+                        </Badge>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <div className="rounded-xl bg-[var(--color-surface-muted)] px-3 py-2">
+                          <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
+                            Tổng đơn
+                          </p>
+                          <p className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--color-text-primary)]">
+                            {formatCurrency(item.total)}
+                          </p>
+                        </div>
+                        <div className="rounded-xl bg-[var(--color-surface-muted)] px-3 py-2">
+                          <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
+                            Còn nợ
+                          </p>
+                          <p
+                            className={`mt-0.5 text-sm font-semibold tabular-nums ${
+                              remaining > 0
+                                ? "text-amber-700 dark:text-amber-300"
+                                : "text-[var(--color-text-primary)]"
+                            }`}
+                          >
+                            {formatCurrency(remaining)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                        <Badge
+                          variant={statusBadgeVariant(paymentKey)}
+                          className="px-2 py-0.5 text-[10px]"
+                        >
+                          {PAYMENT_LABELS_SHORT[paymentKey]}
+                        </Badge>
+                        {item.warehouseName ? (
+                          <MobileMetaChip>Kho: {item.warehouseName}</MobileMetaChip>
+                        ) : null}
+                        {item.tripCode ? (
+                          <MobileMetaChip>Chuyến: {item.tripCode}</MobileMetaChip>
+                        ) : null}
+                        {item.carrier ? (
+                          <MobileMetaChip>{item.carrier}</MobileMetaChip>
+                        ) : null}
+                      </div>
+
+                      {shipping ? (
+                        <p className="mt-2 truncate text-xs text-[var(--color-text-inverse)]">
+                          VC: {shipping}
+                        </p>
+                      ) : null}
+
+                      <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePrint(item)}
+                          title="In / PDF"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                        {canManagePayments(role) && item.paymentStatus !== "paid" ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setPayingOrder(item);
+                              setPaymentAmount(
+                                Math.max(0, (item.total || 0) - (item.paidAmount || 0)) ||
+                                  ""
+                              );
+                              setPaymentNote("");
+                              setPaymentOpen(true);
+                            }}
+                          >
+                            Thu
+                          </Button>
+                        ) : null}
+                        <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        {!item.inventoryExported && canEditOrderItems(role) ? (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDelete(item)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        ) : null}
+                      </div>
+                    </MobileRecordCard>
+                  );
+                })}
+                </div>
+              </MobileInfiniteList>
+
+              <div className="crm-table-scroll hidden md:block">
                 <table className="w-full min-w-[1100px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
@@ -728,7 +897,7 @@ export default function OrdersPage() {
                 totalPages={totalPages}
                 total={total}
                 limit={DEFAULT_PAGE_SIZE}
-                onPageChange={setPage}
+                onPageChange={goToPage}
                 disabled={loading}
               />
             </div>
@@ -737,7 +906,7 @@ export default function OrdersPage() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-3xl">
           <DialogHeader>
             <DialogTitle>{editing ? "Sửa đơn hàng" : "Tạo đơn hàng"}</DialogTitle>
           </DialogHeader>
@@ -974,17 +1143,13 @@ export default function OrdersPage() {
           }
         }}
       >
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-hidden p-0">
-          <div className="border-b border-[var(--color-border-subtle)] px-6 py-5">
-            <DialogHeader className="mb-0">
-              <DialogTitle className="flex items-center gap-3 text-xl">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                  <PackageCheck className="h-5 w-5" />
-                </span>
-                Xác nhận đơn hàng và xuất kho
-              </DialogTitle>
-            </DialogHeader>
-            <div className="mt-4 grid gap-3 rounded-xl border border-[var(--color-border-subtle)] p-4 text-sm sm:grid-cols-3">
+        <DialogContent bodyScroll={false} className="max-h-[90vh] max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Xác nhận đơn hàng và xuất kho</DialogTitle>
+          </DialogHeader>
+
+          <div className="shrink-0 border-b border-[var(--color-border-subtle)] px-4 pb-4 sm:px-6">
+            <div className="grid gap-3 rounded-xl border border-[var(--color-border-subtle)] p-3 text-sm sm:grid-cols-3 sm:p-4">
               <div>
                 <p className="text-xs text-[var(--color-text-inverse)]">Mã đơn</p>
                 <p className="mt-1 font-semibold">{confirmingOrder?.code}</p>
@@ -1002,7 +1167,7 @@ export default function OrdersPage() {
             </div>
           </div>
 
-          <div className="max-h-[50vh] space-y-3 overflow-y-auto px-6 py-5">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
             <div className="flex items-center justify-between">
               <p className="font-semibold">Sản phẩm xuất kho</p>
               <p className="text-xs text-[var(--color-text-inverse)]">
@@ -1025,13 +1190,13 @@ export default function OrdersPage() {
                 return (
                   <div
                     key={row.productId}
-                    className={`flex gap-4 rounded-xl border p-4 ${
+                    className={`flex gap-3 rounded-xl border p-3 sm:gap-4 sm:p-4 ${
                       enough
                         ? "border-[var(--color-border-subtle)]"
                         : "border-red-300 bg-red-50/50"
                     }`}
                   >
-                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-white">
+                    <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-white sm:h-16 sm:w-16">
                       {row.productImage ? (
                         <Image
                           src={getImageUrl(row.productImage)}
@@ -1045,27 +1210,43 @@ export default function OrdersPage() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium">{row.productName}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-medium leading-snug">{row.productName}</p>
+                        {!enough ? (
+                          <AlertTriangle className="h-5 w-5 shrink-0 text-red-600" />
+                        ) : null}
+                      </div>
                       <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
-                        <div>
-                          <p className="text-xs text-[var(--color-text-inverse)]">Cần xuất</p>
-                          <p className="font-semibold">{row.required}</p>
+                        <div className="min-w-0">
+                          <p className="text-[10px] text-[var(--color-text-inverse)] sm:text-xs">
+                            Cần xuất
+                          </p>
+                          <p className="truncate font-semibold">{row.required}</p>
                         </div>
-                        <div>
-                          <p className="text-xs text-[var(--color-text-inverse)]">Tồn hiện tại</p>
-                          <p className={`font-semibold ${enough ? "" : "text-red-600"}`}>
+                        <div className="min-w-0">
+                          <p className="text-[10px] text-[var(--color-text-inverse)] sm:text-xs">
+                            Tồn hiện tại
+                          </p>
+                          <p
+                            className={`truncate font-semibold ${enough ? "" : "text-red-600"}`}
+                          >
                             {row.available}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-xs text-[var(--color-text-inverse)]">Còn lại</p>
-                          <p className={`font-semibold ${enough ? "text-emerald-700" : "text-red-600"}`}>
+                        <div className="min-w-0">
+                          <p className="text-[10px] text-[var(--color-text-inverse)] sm:text-xs">
+                            Còn lại
+                          </p>
+                          <p
+                            className={`truncate font-semibold ${
+                              enough ? "text-emerald-700" : "text-red-600"
+                            }`}
+                          >
                             {Math.max(0, row.available - row.required)}
                           </p>
                         </div>
                       </div>
                     </div>
-                    {!enough ? <AlertTriangle className="h-5 w-5 shrink-0 text-red-600" /> : null}
                   </div>
                 );
               })
@@ -1082,11 +1263,12 @@ export default function OrdersPage() {
             ) : null}
           </div>
 
-          <div className="flex items-center justify-between gap-3 border-t border-[var(--color-border-subtle)] px-6 py-4">
-            <div className="ml-auto flex gap-2">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[var(--color-border-subtle)] px-4 py-4 sm:px-6">
+            <div className="ml-auto flex w-full gap-2 sm:w-auto">
               <Button
                 type="button"
                 variant="outline"
+                className="flex-1 sm:flex-none"
                 disabled={confirmationSubmitting}
                 onClick={() => {
                   setConfirmingOrder(null);
@@ -1097,6 +1279,7 @@ export default function OrdersPage() {
               </Button>
               <Button
                 type="button"
+                className="flex-1 sm:flex-none"
                 loading={confirmationSubmitting}
                 disabled={loadingConfirmation || confirmationHasInsufficient}
                 onClick={confirmOrderAndExport}

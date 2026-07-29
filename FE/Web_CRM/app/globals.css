@@ -149,6 +149,21 @@
     box-shadow: var(--shadow-soft);
   }
 
+  /** Bảng rộng: cuộn ngang trên mobile */
+  .crm-table-scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: auto;
+    margin-inline: -0.25rem;
+    padding-inline: 0.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .crm-table-scroll {
+      margin-inline: 0;
+      padding-inline: 0;
+    }
+  }
+
   .auth-fade-in {
     animation: auth-fade-in 700ms ease-out both;
   }
@@ -159,6 +174,18 @@
 
   .auth-delay {
     animation-delay: 120ms;
+  }
+}
+
+/**
+ * iOS Safari zooms the page when focusing inputs with font-size < 16px.
+ * Force 16px on small screens even if a utility (text-sm / text-xs) is applied.
+ */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  textarea,
+  select {
+    font-size: 16px !important;
   }
 }
 

@@ -16,6 +16,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
+import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
+import {
+  MobileMetaChip,
+  MobileRecordActions,
+  MobileRecordCard,
+} from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -27,7 +33,10 @@ import {
 } from "@/lib/api/leads";
 import type { Lead } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
-import { DEFAULT_PAGE_SIZE, shouldReloadPreviousPage } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { leadStatusBadgeVariant } from "@/lib/status-badge";
+import { Badge } from "@/components/ui/badge";
 
 const LEAD_TYPE_LABELS: Record<Lead["type"], string> = {
   contact: "Liên hệ",
@@ -37,48 +46,54 @@ const LEAD_TYPE_LABELS: Record<Lead["type"], string> = {
 export default function LeadsPage() {
   const confirm = useConfirm();
   const toast = useToast();
-  const [items, setItems] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
   const [selected, setSelected] = useState<Lead | null>(null);
   const [note, setNote] = useState("");
   const [status, setStatus] = useState<Lead["status"]>("new");
   const [submitting, setSubmitting] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await getLeads({
+  const fetchPage = useCallback(
+    (pageNum: number) =>
+      getLeads({
         search: search || undefined,
         status: statusFilter || undefined,
-        page,
+        page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
-      });
-      setItems(result.items);
-      if (shouldReloadPreviousPage(result, page)) {
-        setPage(result.totalPages);
-        return;
-      }
-      setPage(result.page);
-      setTotal(result.total);
-      setTotalPages(result.totalPages);
-    } catch (err) {
+      }),
+    [search, statusFilter]
+  );
+
+  const onError = useCallback(
+    (err: unknown) => {
       toast.error(
         err instanceof ApiClientError ? err.message : "Không tải được dữ liệu"
       );
-    } finally {
-      setLoading(false);
-    }
-  }, [search, statusFilter, page, toast]);
+    },
+    [toast]
+  );
+
+  const {
+    items,
+    setItems,
+    page,
+    total,
+    totalPages,
+    loading,
+    loadingMore,
+    hasMore,
+    reload,
+    refresh,
+    loadMore,
+    goToPage,
+  } = useMobilePagedList<Lead>({ fetchPage, onError });
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    void reload();
+    // Reload when filter query changes (fetchPage identity).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchPage]);
 
   function openDetail(lead: Lead) {
     setSelected(lead);
@@ -93,7 +108,7 @@ export default function LeadsPage() {
       await updateLead(selected.id, { status, note });
       toast.success("Đã cập nhật lead");
       setSelected(null);
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Lưu thất bại");
     } finally {
@@ -146,7 +161,7 @@ export default function LeadsPage() {
     try {
       await convertLeadToDealer(lead.id);
       toast.success("Đã tạo đại lý từ lead");
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Chuyển đổi thất bại");
     }
@@ -165,7 +180,7 @@ export default function LeadsPage() {
     try {
       await deleteLead(lead.id);
       toast.success("Đã xóa lead");
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
     }
@@ -191,10 +206,7 @@ export default function LeadsPage() {
             <Input
               placeholder="Tìm theo tên, SĐT, email..."
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => setSearch(e.target.value)}
             />
             <SearchableSelect
               options={[{ value: "", label: "Tất cả trạng thái" }, ...STATUS_OPTIONS.lead]}
@@ -209,7 +221,66 @@ export default function LeadsPage() {
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có lead</p>
           ) : (
             <div className="space-y-4">
-              <div className="overflow-x-auto">
+              <MobileInfiniteList
+                onRefresh={refresh}
+                onLoadMore={loadMore}
+                hasMore={hasMore}
+                loadingMore={loadingMore}
+                disabled={loading}
+              >
+                <div className="flex flex-col gap-3">
+                  {items.map((item) => (
+                    <MobileRecordCard key={item.id} className="p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <button
+                            type="button"
+                            className="font-semibold tracking-tight text-[var(--color-text-primary)] hover:text-[var(--color-text-secondary)]"
+                            onClick={() => openDetail(item)}
+                          >
+                            {item.name}
+                          </button>
+                          {item.company ? (
+                            <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                              {item.company}
+                            </p>
+                          ) : null}
+                        </div>
+                        <Badge
+                          variant={leadStatusBadgeVariant(item.status)}
+                          className="shrink-0"
+                        >
+                          {STATUS_OPTIONS.lead.find((o) => o.value === item.status)?.label ||
+                            item.status}
+                        </Badge>
+                      </div>
+
+                      <div className="mt-2.5 flex flex-wrap gap-1.5">
+                        {item.phone ? <MobileMetaChip>{item.phone}</MobileMetaChip> : null}
+                        <MobileMetaChip>{LEAD_TYPE_LABELS[item.type]}</MobileMetaChip>
+                        <MobileMetaChip>
+                          {new Date(item.createdAt).toLocaleDateString("vi-VN")}
+                        </MobileMetaChip>
+                        {item.email ? <MobileMetaChip>{item.email}</MobileMetaChip> : null}
+                        {item.region ? <MobileMetaChip>{item.region}</MobileMetaChip> : null}
+                      </div>
+
+                      <MobileRecordActions>
+                        {!item.dealerId && item.type === "dealer" ? (
+                          <Button variant="outline" size="sm" onClick={() => handleConvert(item)}>
+                            <UserPlus className="h-4 w-4" />
+                          </Button>
+                        ) : null}
+                        <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </MobileRecordActions>
+                    </MobileRecordCard>
+                  ))}
+                </div>
+              </MobileInfiniteList>
+
+              <div className="crm-table-scroll hidden md:block">
                 <table className="w-full min-w-[900px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
@@ -282,7 +353,7 @@ export default function LeadsPage() {
                 totalPages={totalPages}
                 total={total}
                 limit={DEFAULT_PAGE_SIZE}
-                onPageChange={setPage}
+                onPageChange={goToPage}
                 disabled={loading}
               />
             </div>

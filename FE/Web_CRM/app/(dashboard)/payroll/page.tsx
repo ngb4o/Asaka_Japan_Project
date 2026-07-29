@@ -11,11 +11,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
+import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
+import {
+  MobileCardList,
+  MobileMetaChip,
+  MobileRecordActions,
+  MobileRecordCard,
+  MobileStatTile,
+} from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -29,8 +37,10 @@ import {
 } from "@/lib/api/payroll";
 import type { PayrollPeriod } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
-import { DEFAULT_PAGE_SIZE, shouldReloadPreviousPage } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
 import { formatCurrency } from "@/lib/utils";
+import { statusBadgeVariant } from "@/lib/status-badge";
 
 function currentPeriod() {
   const now = new Date();
@@ -42,42 +52,44 @@ export default function PayrollPage() {
   const toast = useToast();
   const { user } = useAuth();
   const canEdit = canManagePayroll(user?.role);
-  const [items, setItems] = useState<PayrollPeriod[]>([]);
   const [selected, setSelected] = useState<PayrollPeriod | null>(null);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [period, setPeriod] = useState(currentPeriod());
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
 
-  const loadData = useCallback(async () => {
-    if (!canEdit) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const result = await getPayrollPeriods({ page, limit: DEFAULT_PAGE_SIZE });
-      setItems(result.items);
-      if (shouldReloadPreviousPage(result, page)) {
-        setPage(result.totalPages);
-        return;
-      }
-      setPage(result.page);
-      setTotal(result.total);
-      setTotalPages(result.totalPages);
-    } catch (err) {
-      toast.error(err instanceof ApiClientError ? err.message : "Không tải được bảng lương");
-    } finally {
-      setLoading(false);
-    }
-  }, [page, toast, canEdit]);
+  const fetchPage = useCallback(
+    (pageNum: number) => getPayrollPeriods({ page: pageNum, limit: DEFAULT_PAGE_SIZE }),
+    []
+  );
+
+  const onError = useCallback(
+    (err: unknown) => {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không tải được bảng lương"
+      );
+    },
+    [toast]
+  );
+
+  const {
+    items,
+    page,
+    total,
+    totalPages,
+    loading,
+    loadingMore,
+    hasMore,
+    reload,
+    refresh,
+    loadMore,
+    goToPage,
+  } = useMobilePagedList<PayrollPeriod>({ fetchPage, onError });
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (!canEdit) return;
+    void reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchPage, canEdit]);
 
   async function handleGenerate() {
     setSubmitting(true);
@@ -86,7 +98,7 @@ export default function PayrollPage() {
       toast.success("Đã tạo/cập nhật bảng lương");
       setSelected(result);
       setDialogOpen(true);
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Tạo bảng lương thất bại");
     } finally {
@@ -114,7 +126,7 @@ export default function PayrollPage() {
     try {
       await lockPayroll(item.id);
       toast.success("Đã khóa bảng lương");
-      await loadData();
+      await reload();
       if (selected?.id === item.id) {
         setSelected(await getPayrollPeriod(item.id));
       }
@@ -134,7 +146,7 @@ export default function PayrollPage() {
     try {
       await deletePayroll(item.id);
       toast.success("Đã xóa bảng lương");
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
     }
@@ -161,11 +173,12 @@ export default function PayrollPage() {
           <div className="flex flex-wrap items-end gap-2">
             <div className="space-y-1">
               <Label htmlFor="period">Kỳ lương</Label>
-              <Input
+              <DateInput
                 id="period"
-                type="month"
+                mode="month"
                 value={period}
-                onChange={(e) => setPeriod(e.target.value)}
+                onChange={setPeriod}
+                clearable={false}
                 className="w-[160px]"
               />
             </div>
@@ -175,7 +188,26 @@ export default function PayrollPage() {
             </Button>
           </div>
         }
+        fab={{
+          onClick: handleGenerate,
+          label: "Tạo / cập nhật bảng lương",
+          loading: submitting,
+          icon: <RefreshCw className="h-5 w-5" />,
+        }}
       />
+
+      <div className="md:hidden">
+        <Label htmlFor="period-mobile" className="sr-only">
+          Kỳ lương
+        </Label>
+        <DateInput
+          id="period-mobile"
+          mode="month"
+          value={period}
+          onChange={setPeriod}
+          clearable={false}
+        />
+      </div>
 
       <Card>
         <CardHeader>
@@ -185,7 +217,64 @@ export default function PayrollPage() {
           {items.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có bảng lương</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              <MobileInfiniteList
+                onRefresh={refresh}
+                onLoadMore={loadMore}
+                hasMore={hasMore}
+                loadingMore={loadingMore}
+                disabled={loading}
+              >
+                <div className="flex flex-col gap-3">
+                  {items.map((item) => {
+                    const net = item.lines.reduce((sum, line) => sum + (line.net || 0), 0);
+                    return (
+                      <MobileRecordCard key={item.id} className="p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                              {item.period}
+                            </p>
+                          </div>
+                          <Badge
+                            variant={statusBadgeVariant(item.status)}
+                            className="shrink-0"
+                          >
+                            {item.status === "locked" ? "Đã khóa" : "Nháp"}
+                          </Badge>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          <MobileStatTile label="Nhân viên">
+                            {item.lines.length}
+                          </MobileStatTile>
+                          <MobileStatTile label="Tổng thực nhận">
+                            {formatCurrency(net)}
+                          </MobileStatTile>
+                        </div>
+
+                        <MobileRecordActions>
+                          <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
+                            Xem
+                          </Button>
+                          {item.status !== "locked" ? (
+                            <>
+                              <Button variant="outline" size="sm" onClick={() => handleLock(item)}>
+                                <Lock className="h-4 w-4" />
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => handleDelete(item)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : null}
+                        </MobileRecordActions>
+                      </MobileRecordCard>
+                    );
+                  })}
+                </div>
+              </MobileInfiniteList>
+
+              <div className="crm-table-scroll hidden md:block">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
@@ -236,58 +325,117 @@ export default function PayrollPage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
           <Pagination
             page={page}
             totalPages={totalPages}
             total={total}
             limit={DEFAULT_PAGE_SIZE}
-            onPageChange={setPage}
+            onPageChange={goToPage}
             disabled={loading}
           />
         </CardContent>
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-4xl">
           <DialogHeader>
             <DialogTitle>Bảng lương {selected?.period}</DialogTitle>
           </DialogHeader>
           {selected ? (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                    <th className="px-2 py-2 font-medium">Nhân viên</th>
-                    <th className="px-2 py-2 font-medium text-right">Lương cứng</th>
-                    <th className="px-2 py-2 font-medium text-right">Phụ cấp</th>
-                    <th className="px-2 py-2 font-medium text-right">Doanh số</th>
-                    <th className="px-2 py-2 font-medium text-right">Hoa hồng</th>
-                    <th className="px-2 py-2 font-medium text-right">Hoàn CT</th>
-                    <th className="px-2 py-2 font-medium text-right">Thực nhận</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selected.lines.map((line) => (
-                    <tr key={line.employeeId} className="border-b border-[var(--color-border-subtle)]">
-                      <td className="px-2 py-2">
-                        <p className="font-medium">{line.employeeName}</p>
-                        <p className="text-xs text-[var(--color-text-inverse)]">
-                          {line.employeeCode} - HH {line.commissionPercent}%
+            <div className="space-y-3">
+              <MobileCardList>
+                {selected.lines.map((line) => (
+                  <MobileRecordCard key={line.employeeId} className="p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                          {line.employeeName}
                         </p>
-                      </td>
-                      <td className="px-2 py-2 text-right">{formatCurrency(line.baseSalary)}</td>
-                      <td className="px-2 py-2 text-right">{formatCurrency(line.allowance)}</td>
-                      <td className="px-2 py-2 text-right">{formatCurrency(line.salesTotal)}</td>
-                      <td className="px-2 py-2 text-right">{formatCurrency(line.commission)}</td>
-                      <td className="px-2 py-2 text-right">{formatCurrency(line.tripReimburse)}</td>
-                      <td className="px-2 py-2 text-right font-semibold">
+                        <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                          {line.employeeCode} · HH {line.commissionPercent}%
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-sm font-semibold tabular-nums text-[var(--color-text-secondary)]">
                         {formatCurrency(line.net)}
-                      </td>
+                      </span>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <MobileStatTile label="Lương cứng">
+                        {formatCurrency(line.baseSalary)}
+                      </MobileStatTile>
+                      <MobileStatTile label="Phụ cấp">
+                        {formatCurrency(line.allowance)}
+                      </MobileStatTile>
+                      <MobileStatTile label="Doanh số">
+                        {formatCurrency(line.salesTotal)}
+                      </MobileStatTile>
+                      <MobileStatTile label="Hoa hồng">
+                        {formatCurrency(line.commission)}
+                      </MobileStatTile>
+                    </div>
+
+                    {line.tripReimburse ? (
+                      <div className="mt-2.5 flex flex-wrap gap-1.5">
+                        <MobileMetaChip>
+                          Hoàn CT: {formatCurrency(line.tripReimburse)}
+                        </MobileMetaChip>
+                      </div>
+                    ) : null}
+                  </MobileRecordCard>
+                ))}
+              </MobileCardList>
+
+              <div className="crm-table-scroll hidden md:block">
+                <table className="w-full min-w-[800px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
+                      <th className="px-2 py-2 font-medium">Nhân viên</th>
+                      <th className="px-2 py-2 font-medium text-right">Lương cứng</th>
+                      <th className="px-2 py-2 font-medium text-right">Phụ cấp</th>
+                      <th className="px-2 py-2 font-medium text-right">Doanh số</th>
+                      <th className="px-2 py-2 font-medium text-right">Hoa hồng</th>
+                      <th className="px-2 py-2 font-medium text-right">Hoàn CT</th>
+                      <th className="px-2 py-2 font-medium text-right">Thực nhận</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {selected.lines.map((line) => (
+                      <tr
+                        key={line.employeeId}
+                        className="border-b border-[var(--color-border-subtle)]"
+                      >
+                        <td className="px-2 py-2">
+                          <p className="font-medium">{line.employeeName}</p>
+                          <p className="text-xs text-[var(--color-text-inverse)]">
+                            {line.employeeCode} - HH {line.commissionPercent}%
+                          </p>
+                        </td>
+                        <td className="px-2 py-2 text-right">
+                          {formatCurrency(line.baseSalary)}
+                        </td>
+                        <td className="px-2 py-2 text-right">
+                          {formatCurrency(line.allowance)}
+                        </td>
+                        <td className="px-2 py-2 text-right">
+                          {formatCurrency(line.salesTotal)}
+                        </td>
+                        <td className="px-2 py-2 text-right">
+                          {formatCurrency(line.commission)}
+                        </td>
+                        <td className="px-2 py-2 text-right">
+                          {formatCurrency(line.tripReimburse)}
+                        </td>
+                        <td className="px-2 py-2 text-right font-semibold">
+                          {formatCurrency(line.net)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ) : null}
         </DialogContent>

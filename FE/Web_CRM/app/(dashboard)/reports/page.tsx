@@ -412,7 +412,7 @@ function RankTable({
         {rows.length === 0 ? (
           <Empty />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="crm-table-scroll">
             <table className="w-full min-w-[280px] text-left text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">

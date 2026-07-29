@@ -70,7 +70,7 @@ const getDetails = async (dealerId) => {
   return formatDocument(dealer)
 }
 
-const update = async (dealerId, updateData) => {
+const update = async (dealerId, updateData, options = {}) => {
   const dealer = await dealerModel.findOneById(dealerId)
 
   if (!dealer) {
@@ -95,7 +95,10 @@ const update = async (dealerId, updateData) => {
   await dealerModel.update(dealerId, dataToUpdate)
 
   const formatted = await getDetails(dealerId)
-  telegramNotifyService.onDealerStatusChanged(dealer.status, formatted)
+  // Telegram inline approve already edits the tracked message — skip duplicate broadcast.
+  if (!options.silentTelegram) {
+    telegramNotifyService.onDealerStatusChanged(dealer.status, formatted)
+  }
   return formatted
 }
 

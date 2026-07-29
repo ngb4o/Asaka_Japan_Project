@@ -219,6 +219,13 @@ export default function TelegramSettingsPage() {
             </Button>
           </>
         }
+        fab={{
+          onClick: () => {
+            setForm(EMPTY_FORM);
+            setOpen(true);
+          },
+          label: "Thêm người nhận",
+        }}
       />
 
       <Card>

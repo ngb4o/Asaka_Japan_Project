@@ -147,7 +147,7 @@ export function SearchableSelect({
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder={searchPlaceholder}
-                    className="h-9 w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] py-2 pl-8 pr-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-inverse)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)]"
+                    className="h-10 w-full rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] py-2 pl-8 pr-3 text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-inverse)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)] md:h-9 md:text-sm"
                   />
                 </div>
               </div>

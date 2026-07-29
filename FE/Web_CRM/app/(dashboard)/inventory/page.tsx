@@ -15,6 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Pagination } from "@/components/ui/pagination";
+import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
+import {
+  MobileMetaChip,
+  MobileRecordCard,
+  MobileStatTile,
+} from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -34,12 +40,14 @@ import type {
   WarehouseStock,
 } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
-import { DEFAULT_PAGE_SIZE, shouldReloadPreviousPage } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
 import {
   formatMovementQuantity,
   formatStockDisplay,
   toUnitsPerCase,
 } from "@/lib/inventoryUnits";
+import { statusBadgeVariant } from "@/lib/status-badge";
 import {
   buildInventoryMovementPayload,
   validateInventoryMovementForm,
@@ -61,17 +69,8 @@ export default function InventoryPage() {
   const toast = useToast();
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [stocks, setStocks] = useState<WarehouseStock[]>([]);
-  const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
   const [warehouseFilter, setWarehouseFilter] = useState("");
   const [search, setSearch] = useState("");
-  const [stockPage, setStockPage] = useState(1);
-  const [stockTotal, setStockTotal] = useState(0);
-  const [stockTotalPages, setStockTotalPages] = useState(1);
-  const [transactionPage, setTransactionPage] = useState(1);
-  const [transactionTotal, setTransactionTotal] = useState(0);
-  const [transactionTotalPages, setTransactionTotalPages] = useState(1);
   const [movementType, setMovementType] = useState<"import" | "export" | null>(null);
   const [movementForm, setMovementForm] = useState<InventoryMovementFormValues>(
     EMPTY_MOVEMENT_FORM
@@ -80,67 +79,100 @@ export default function InventoryPage() {
 
   const activeWarehouses = warehouses.filter((item) => item.status === "active");
 
+  const onError = useCallback(
+    (err: unknown) => {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không tải được dữ liệu"
+      );
+    },
+    [toast]
+  );
+
+  const fetchStocksPage = useCallback(
+    (pageNum: number) =>
+      getWarehouseStocks({
+        warehouseId: warehouseFilter || undefined,
+        search: search || undefined,
+        page: pageNum,
+        limit: DEFAULT_PAGE_SIZE,
+      }),
+    [warehouseFilter, search]
+  );
+
+  const fetchTransactionsPage = useCallback(
+    (pageNum: number) =>
+      getInventoryTransactions({
+        warehouseId: warehouseFilter || undefined,
+        page: pageNum,
+        limit: DEFAULT_PAGE_SIZE,
+      }),
+    [warehouseFilter]
+  );
+
+  const {
+    items: stocks,
+    page: stockPage,
+    total: stockTotal,
+    totalPages: stockTotalPages,
+    loading: stockLoading,
+    loadingMore: stockLoadingMore,
+    hasMore: stockHasMore,
+    reload: reloadStocks,
+    refresh: refreshStocks,
+    loadMore: loadMoreStocks,
+    goToPage: goToStockPage,
+  } = useMobilePagedList<WarehouseStock>({
+    fetchPage: fetchStocksPage,
+    onError,
+  });
+
+  const {
+    items: transactions,
+    page: transactionPage,
+    total: transactionTotal,
+    totalPages: transactionTotalPages,
+    loading: transactionLoading,
+    loadingMore: transactionLoadingMore,
+    hasMore: transactionHasMore,
+    reload: reloadTransactions,
+    refresh: refreshTransactions,
+    loadMore: loadMoreTransactions,
+    goToPage: goToTransactionPage,
+  } = useMobilePagedList<InventoryTransaction>({
+    fetchPage: fetchTransactionsPage,
+    onError,
+  });
+
   const loadMasterData = useCallback(async () => {
-    const [warehousesResult, productsResult] = await Promise.all([
-      getWarehouses({ status: "active", limit: 100, page: 1 }),
-      getProducts({ limit: 100, page: 1 }),
-    ]);
-    setWarehouses(warehousesResult.items);
-    setProducts(productsResult.items);
-  }, []);
-
-  const loadStocks = useCallback(async () => {
-    const result = await getWarehouseStocks({
-      warehouseId: warehouseFilter || undefined,
-      search: search || undefined,
-      page: stockPage,
-      limit: DEFAULT_PAGE_SIZE,
-    });
-
-    setStocks(result.items);
-    if (shouldReloadPreviousPage(result, stockPage)) {
-      setStockPage(result.totalPages);
-      return;
-    }
-    setStockPage(result.page);
-    setStockTotal(result.total);
-    setStockTotalPages(result.totalPages);
-  }, [warehouseFilter, search, stockPage]);
-
-  const loadTransactions = useCallback(async () => {
-    const result = await getInventoryTransactions({
-      warehouseId: warehouseFilter || undefined,
-      page: transactionPage,
-      limit: DEFAULT_PAGE_SIZE,
-    });
-
-    setTransactions(result.items);
-    if (shouldReloadPreviousPage(result, transactionPage)) {
-      setTransactionPage(result.totalPages);
-      return;
-    }
-    setTransactionPage(result.page);
-    setTransactionTotal(result.total);
-    setTransactionTotalPages(result.totalPages);
-  }, [warehouseFilter, transactionPage]);
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
     try {
-      await loadMasterData();
-      await Promise.all([loadStocks(), loadTransactions()]);
+      const [warehousesResult, productsResult] = await Promise.all([
+        getWarehouses({ status: "active", limit: 100, page: 1 }),
+        getProducts({ limit: 100, page: 1 }),
+      ]);
+      setWarehouses(warehousesResult.items);
+      setProducts(productsResult.items);
     } catch (err) {
       toast.error(
         err instanceof ApiClientError ? err.message : "Không tải được dữ liệu"
       );
-    } finally {
-      setLoading(false);
     }
-  }, [loadMasterData, loadStocks, loadTransactions, toast]);
+  }, [toast]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    void loadMasterData();
+  }, [loadMasterData]);
+
+  useEffect(() => {
+    void reloadStocks();
+    // Reload when filter query changes (fetchPage identity).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchStocksPage]);
+
+  useEffect(() => {
+    void reloadTransactions();
+    // Reload when filter query changes (fetchPage identity).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchTransactionsPage]);
 
   function openMovement(type: "import" | "export") {
     if (activeWarehouses.length === 0) {
@@ -196,7 +228,7 @@ export default function InventoryPage() {
       }
 
       closeMovement();
-      await loadData();
+      await Promise.all([reloadStocks(), reloadTransactions()]);
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Thao tác thất bại");
     } finally {
@@ -204,7 +236,12 @@ export default function InventoryPage() {
     }
   }
 
-  if (loading && stocks.length === 0 && transactions.length === 0) {
+  if (
+    stockLoading &&
+    stocks.length === 0 &&
+    transactionLoading &&
+    transactions.length === 0
+  ) {
     return <PageSkeleton {...PAGE_SKELETONS.inventory} />;
   }
 
@@ -225,6 +262,18 @@ export default function InventoryPage() {
             </Button>
           </>
         }
+        fab={[
+          {
+            onClick: () => openMovement("import"),
+            label: "Nhập kho",
+            icon: <ArrowDownToLine className="h-5 w-5" />,
+          },
+          {
+            onClick: () => openMovement("export"),
+            label: "Xuất kho",
+            icon: <ArrowUpFromLine className="h-5 w-5" />,
+          },
+        ]}
       />
 
       {activeWarehouses.length === 0 && (
@@ -242,10 +291,7 @@ export default function InventoryPage() {
             <Input
               placeholder="Tìm theo tên sản phẩm, SKU..."
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setStockPage(1);
-              }}
+              onChange={(e) => setSearch(e.target.value)}
             />
             <SearchableSelect
               options={[
@@ -257,11 +303,7 @@ export default function InventoryPage() {
                 })),
               ]}
               value={warehouseFilter}
-              onChange={(next) => {
-                setWarehouseFilter(next);
-                setStockPage(1);
-                setTransactionPage(1);
-              }}
+              onChange={setWarehouseFilter}
               placeholder="Tất cả kho"
               searchPlaceholder="Tìm kho..."
               clearable
@@ -272,7 +314,47 @@ export default function InventoryPage() {
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có tồn kho</p>
           ) : (
             <div className="space-y-4">
-              <div className="overflow-x-auto">
+              <MobileInfiniteList
+                onRefresh={refreshStocks}
+                onLoadMore={loadMoreStocks}
+                hasMore={stockHasMore}
+                loadingMore={stockLoadingMore}
+                disabled={stockLoading}
+              >
+                <div className="flex flex-col gap-3">
+                {stocks.map((item) => (
+                  <MobileRecordCard key={item.id} className="p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                          {item.productName || "—"}
+                        </p>
+                        {item.productSku ? (
+                          <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                            {item.productSku}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <MobileStatTile label="Tồn kho">
+                        {formatStockDisplay(item.quantity, item.unitsPerCase)}
+                      </MobileStatTile>
+                    </div>
+
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      {item.warehouseName ? (
+                        <MobileMetaChip>Kho: {item.warehouseName}</MobileMetaChip>
+                      ) : null}
+                      <MobileMetaChip>{formatDate(item.updatedAt)}</MobileMetaChip>
+                    </div>
+                  </MobileRecordCard>
+                ))}
+                </div>
+              </MobileInfiniteList>
+
+              <div className="crm-table-scroll hidden md:block">
                 <table className="w-full min-w-[860px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
@@ -308,8 +390,8 @@ export default function InventoryPage() {
                 totalPages={stockTotalPages}
                 total={stockTotal}
                 limit={DEFAULT_PAGE_SIZE}
-                onPageChange={setStockPage}
-                disabled={loading}
+                onPageChange={goToStockPage}
+                disabled={stockLoading}
               />
             </div>
           )}
@@ -325,7 +407,62 @@ export default function InventoryPage() {
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có giao dịch</p>
           ) : (
             <div className="space-y-4">
-              <div className="overflow-x-auto">
+              <MobileInfiniteList
+                onRefresh={refreshTransactions}
+                onLoadMore={loadMoreTransactions}
+                hasMore={transactionHasMore}
+                loadingMore={transactionLoadingMore}
+                disabled={transactionLoading}
+              >
+                <div className="flex flex-col gap-3">
+                {transactions.map((item) => (
+                  <MobileRecordCard key={item.id} className="p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                          {item.productName || "—"}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={statusBadgeVariant(item.type)}
+                        className="shrink-0"
+                      >
+                        {item.type === "import" ? "Nhập" : "Xuất"}
+                      </Badge>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <MobileStatTile label="Số lượng">
+                        {formatMovementQuantity(
+                          item.quantity,
+                          item.unitType,
+                          item.quantityBase,
+                          item.unitsPerCase
+                        )}
+                      </MobileStatTile>
+                      <MobileStatTile label="Tồn sau">
+                        {formatStockDisplay(item.balanceAfter, item.unitsPerCase)}
+                      </MobileStatTile>
+                    </div>
+
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      {item.warehouseName ? (
+                        <MobileMetaChip>Kho: {item.warehouseName}</MobileMetaChip>
+                      ) : null}
+                      <MobileMetaChip>{formatDate(item.createdAt)}</MobileMetaChip>
+                    </div>
+
+                    {item.note ? (
+                      <p className="mt-2 truncate text-xs text-[var(--color-text-inverse)]">
+                        {item.note}
+                      </p>
+                    ) : null}
+                  </MobileRecordCard>
+                ))}
+                </div>
+              </MobileInfiniteList>
+
+              <div className="crm-table-scroll hidden md:block">
                 <table className="w-full min-w-[900px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
@@ -376,8 +513,8 @@ export default function InventoryPage() {
                 totalPages={transactionTotalPages}
                 total={transactionTotal}
                 limit={DEFAULT_PAGE_SIZE}
-                onPageChange={setTransactionPage}
-                disabled={loading}
+                onPageChange={goToTransactionPage}
+                disabled={transactionLoading}
               />
             </div>
           )}

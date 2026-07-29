@@ -18,7 +18,28 @@ const START_SERVER = () => {
   app.use((req, res, next) => {
     const origin = req.headers.origin
 
-    if (origin && env.CORS_ORIGINS.includes(origin)) {
+    const isAllowedOrigin = (() => {
+      if (!origin) return false
+      if (env.CORS_ORIGINS.includes(origin)) return true
+      // Dev: cho phép FE mở bằng IP LAN (điện thoại cùng Wi‑Fi)
+      if (env.BUILD_MODE === 'dev') {
+        try {
+          const { hostname } = new URL(origin)
+          return (
+            hostname === 'localhost' ||
+            hostname === '127.0.0.1' ||
+            /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+            /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+            /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)
+          )
+        } catch {
+          return false
+        }
+      }
+      return false
+    })()
+
+    if (isAllowedOrigin) {
       res.header('Access-Control-Allow-Origin', origin)
       res.header('Vary', 'Origin')
     }

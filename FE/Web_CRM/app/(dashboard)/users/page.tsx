@@ -14,11 +14,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
+import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
+import {
+  MobileRecordActions,
+  MobileRecordCard,
+} from "@/components/ui/mobile-record-card";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canManageUsers, ROLE_LABELS } from "@/lib/auth/permissions";
+import { statusBadgeVariant } from "@/lib/status-badge";
 import { getEmployees } from "@/lib/api/employees";
 import {
   createUser,
@@ -219,6 +225,7 @@ export default function UsersPage() {
             Cấp tài khoản
           </Button>
         }
+        fab={{ onClick: openCreate, label: "Cấp tài khoản" }}
       />
 
       <Card>
@@ -229,7 +236,73 @@ export default function UsersPage() {
           {items.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có user</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              <MobileInfiniteList
+                onRefresh={loadData}
+                onLoadMore={() => {}}
+                hasMore={false}
+                disabled={loading}
+              >
+                <div className="flex flex-col gap-3">
+                  {items.map((item) => (
+                    <MobileRecordCard key={item.id} className="p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                            {item.employeeName || "—"}
+                            {item.employeeCode ? (
+                              <span className="ml-2 text-xs font-normal text-[var(--color-text-inverse)]">
+                                {item.employeeCode}
+                              </span>
+                            ) : null}
+                            {item.id === user?.id ? (
+                              <span className="ml-2 text-xs font-normal text-[var(--color-text-inverse)]">
+                                (bạn)
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                            {item.email}
+                          </p>
+                        </div>
+                        <Badge
+                          variant={statusBadgeVariant(item.role)}
+                          className="shrink-0"
+                        >
+                          {ROLE_LABELS[item.role] || item.role}
+                        </Badge>
+                      </div>
+
+                      <div className="mt-2.5">
+                        <SearchableSelect
+                          options={STATUS_OPTIONS.userRole}
+                          value={item.role}
+                          onChange={(value) => handleRoleChange(item.id, value as UserRole)}
+                          searchable={false}
+                          disabled={updatingId === item.id}
+                          triggerClassName="h-9 w-full text-xs"
+                        />
+                      </div>
+
+                      <MobileRecordActions>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setPasswordTarget(item);
+                            setNewPassword(randomPassword());
+                          }}
+                        >
+                          <KeyRound className="h-4 w-4" />
+                          Đặt lại MK
+                        </Button>
+                      </MobileRecordActions>
+                    </MobileRecordCard>
+                  ))}
+                </div>
+              </MobileInfiniteList>
+
+              <div className="crm-table-scroll hidden md:block">
               <table className="w-full min-w-[820px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
@@ -296,6 +369,7 @@ export default function UsersPage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>

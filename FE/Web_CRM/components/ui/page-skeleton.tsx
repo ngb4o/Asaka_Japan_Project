@@ -54,6 +54,41 @@ function TableRowSkeleton({ columns }: { columns: ColumnPreset[] }) {
   );
 }
 
+function MobileRecordCardSkeleton({
+  hasImage,
+  fieldCount,
+}: {
+  hasImage: boolean;
+  fieldCount: number;
+}) {
+  return (
+    <article className="rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-soft)]">
+      <div className="flex items-start justify-between gap-3 border-b border-[var(--color-border-subtle)] pb-3">
+        <div className="min-w-0 flex-1 space-y-2">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-3 w-28" />
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <Skeleton className="h-5 w-16 rounded-full" />
+          {hasImage ? <Skeleton className="h-12 w-12 rounded-lg" /> : null}
+        </div>
+      </div>
+
+      {Array.from({ length: fieldCount }).map((_, index) => (
+        <div key={index} className="grid gap-1 py-2.5 sm:grid-cols-[7rem_1fr] sm:items-center sm:gap-3">
+          <Skeleton className="h-3 w-14" />
+          <Skeleton className="h-4 w-full max-w-[12rem]" />
+        </div>
+      ))}
+
+      <div className="mt-1 flex justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3">
+        <Skeleton className="h-9 w-9 rounded-lg" />
+        <Skeleton className="h-9 w-9 rounded-lg" />
+      </div>
+    </article>
+  );
+}
+
 function TableCardSkeleton({
   filters,
   columns,
@@ -65,6 +100,13 @@ function TableCardSkeleton({
   rows: number;
   minWidth: string;
 }) {
+  const hasImage = columns.includes("image");
+  const fieldCount = Math.max(
+    2,
+    columns.filter((column) => column !== "actions" && column !== "image").length
+  );
+  const mobileRows = Math.min(rows, 4);
+
   return (
     <Card>
       <CardHeader>
@@ -83,7 +125,17 @@ function TableCardSkeleton({
           </div>
         )}
 
-        <div className="overflow-x-auto">
+        <div className="flex flex-col gap-3 md:hidden">
+          {Array.from({ length: mobileRows }).map((_, index) => (
+            <MobileRecordCardSkeleton
+              key={index}
+              hasImage={hasImage}
+              fieldCount={fieldCount}
+            />
+          ))}
+        </div>
+
+        <div className="crm-table-scroll hidden md:block">
           <table className="w-full text-left text-sm" style={{ minWidth }}>
             <thead>
               <tr className="border-b border-[var(--color-border-subtle)]">
@@ -125,7 +177,7 @@ export function PageSkeleton({
 }: PageSkeletonProps) {
   return (
     <div className="space-y-6" aria-busy="true" aria-label={label}>
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="hidden flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-4">
         <div className="space-y-2">
           <Skeleton className="h-8 w-36" />
           <Skeleton className="h-4 w-64" />

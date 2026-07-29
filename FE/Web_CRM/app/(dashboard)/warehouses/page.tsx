@@ -17,6 +17,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
+import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
+import {
+  MobileRecordActions,
+  MobileRecordCard,
+} from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import {
   SearchableSelect,
@@ -31,7 +36,9 @@ import {
 } from "@/lib/api/warehouses";
 import type { Warehouse } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
-import { DEFAULT_PAGE_SIZE, shouldReloadPreviousPage } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { statusBadgeVariant } from "@/lib/status-badge";
 import {
   buildWarehousePayload,
   validateWarehouseForm,
@@ -46,45 +53,49 @@ const EMPTY_FORM: WarehouseFormValues = {
 export default function WarehousesPage() {
   const confirm = useConfirm();
   const toast = useToast();
-  const [items, setItems] = useState<Warehouse[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Warehouse | null>(null);
   const [form, setForm] = useState<WarehouseFormValues>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await getWarehouses({
+  const fetchPage = useCallback(
+    (pageNum: number) =>
+      getWarehouses({
         search: search || undefined,
-        page,
+        page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
-      });
-      setItems(result.items);
-      if (shouldReloadPreviousPage(result, page)) {
-        setPage(result.totalPages);
-        return;
-      }
-      setPage(result.page);
-      setTotal(result.total);
-      setTotalPages(result.totalPages);
-    } catch (err) {
+      }),
+    [search]
+  );
+
+  const onError = useCallback(
+    (err: unknown) => {
       toast.error(
         err instanceof ApiClientError ? err.message : "Không tải được dữ liệu"
       );
-    } finally {
-      setLoading(false);
-    }
-  }, [search, page, toast]);
+    },
+    [toast]
+  );
+
+  const {
+    items,
+    page,
+    total,
+    totalPages,
+    loading,
+    loadingMore,
+    hasMore,
+    reload,
+    refresh,
+    loadMore,
+    goToPage,
+  } = useMobilePagedList<Warehouse>({ fetchPage, onError });
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    void reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchPage]);
 
   function openCreate() {
     setEditing(null);
@@ -126,7 +137,7 @@ export default function WarehousesPage() {
         toast.success("Đã thêm kho");
       }
       setDialogOpen(false);
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Lưu thất bại");
     } finally {
@@ -147,7 +158,7 @@ export default function WarehousesPage() {
     try {
       await deleteWarehouse(item.id);
       toast.success(`Đã xóa kho "${item.name}"`);
-      await loadData();
+      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
     }
@@ -168,6 +179,7 @@ export default function WarehousesPage() {
             Thêm kho
           </Button>
         }
+        fab={{ onClick: openCreate, label: "Thêm kho" }}
       />
 
       <Card>
@@ -178,17 +190,60 @@ export default function WarehousesPage() {
           <Input
             placeholder="Tìm theo tên, mã, địa chỉ..."
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => setSearch(e.target.value)}
           />
 
           {items.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có kho</p>
           ) : (
             <div className="space-y-4">
-              <div className="overflow-x-auto">
+              <MobileInfiniteList
+                onRefresh={refresh}
+                onLoadMore={loadMore}
+                hasMore={hasMore}
+                loadingMore={loadingMore}
+                disabled={loading}
+              >
+                <div className="flex flex-col gap-3">
+                  {items.map((item) => (
+                    <MobileRecordCard key={item.id} className="p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                            {item.name}
+                          </p>
+                          <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                            {item.code}
+                          </p>
+                        </div>
+                        <Badge
+                          variant={statusBadgeVariant(item.status)}
+                          className="shrink-0"
+                        >
+                          {item.status === "active" ? "Hoạt động" : "Ngưng"}
+                        </Badge>
+                      </div>
+
+                      {item.address ? (
+                        <p className="mt-2 truncate text-xs text-[var(--color-text-inverse)]">
+                          {item.address}
+                        </p>
+                      ) : null}
+
+                      <MobileRecordActions>
+                        <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </MobileRecordActions>
+                    </MobileRecordCard>
+                  ))}
+                </div>
+              </MobileInfiniteList>
+
+              <div className="crm-table-scroll hidden md:block">
                 <table className="w-full min-w-[760px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
@@ -233,7 +288,7 @@ export default function WarehousesPage() {
                 totalPages={totalPages}
                 total={total}
                 limit={DEFAULT_PAGE_SIZE}
-                onPageChange={setPage}
+                onPageChange={goToPage}
                 disabled={loading}
               />
             </div>
