@@ -752,10 +752,12 @@ async function main() {
       }
     ],
     settlement: {
-      totalAdvance: 3000000,
-      totalExpenseAdvance: 1850000,
-      totalExpenseReimburse: 900000,
-      returnAmount: 1150000,
+      advanceTotal: 3000000,
+      expenseAdvanceTotal: 1850000,
+      expenseReimburseTotal: 900000,
+      employeeReturn: 1150000,
+      companyPay: 900000,
+      balance: -250000,
       settledAt: daysAgo(9),
       settledBy: accountantUser._id.toString(),
       note: 'Quyết toán đủ'

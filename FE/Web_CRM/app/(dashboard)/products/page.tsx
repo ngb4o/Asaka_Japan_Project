@@ -32,6 +32,8 @@ import {
   STATUS_OPTIONS,
 } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { canManageProducts } from "@/lib/auth/permissions";
 import { getProductCategories } from "@/lib/api/product-categories";
 import {
   createProduct,
@@ -66,6 +68,8 @@ const EMPTY_FORM: ProductFormValues = {
 export default function ProductsPage() {
   const confirm = useConfirm();
   const toast = useToast();
+  const { user } = useAuth();
+  const canEdit = canManageProducts(user?.role);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -280,21 +284,31 @@ export default function ProductsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Sản phẩm"
-        description="Quản lý danh mục thuốc bảo vệ thực vật"
-        actions={
-          <Button onClick={openCreate} disabled={categories.length === 0}>
-            <Plus className="h-4 w-4" />
-            Thêm sản phẩm
-          </Button>
+        description={
+          canEdit
+            ? "Quản lý danh mục thuốc bảo vệ thực vật"
+            : "Danh mục sản phẩm (chỉ xem)"
         }
-        fab={{
-          onClick: openCreate,
-          label: "Thêm sản phẩm",
-          disabled: categories.length === 0,
-        }}
+        actions={
+          canEdit ? (
+            <Button onClick={openCreate} disabled={categories.length === 0}>
+              <Plus className="h-4 w-4" />
+              Thêm sản phẩm
+            </Button>
+          ) : null
+        }
+        fab={
+          canEdit
+            ? {
+                onClick: openCreate,
+                label: "Thêm sản phẩm",
+                disabled: categories.length === 0,
+              }
+            : null
+        }
       />
 
-      {categories.length === 0 && (
+      {canEdit && categories.length === 0 && (
         <p className="text-sm text-amber-700">
           Vui lòng tạo ít nhất một loại sản phẩm trước khi thêm sản phẩm.
         </p>
@@ -375,6 +389,7 @@ export default function ProductsPage() {
                         </>
                       }
                       actions={
+                        canEdit ? (
                         <>
                           <div className="mr-auto flex items-center gap-2">
                             <span className="text-xs text-[var(--color-text-inverse)]">STT</span>
@@ -403,6 +418,7 @@ export default function ProductsPage() {
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </>
+                        ) : undefined
                       }
                     />
                   );
@@ -421,13 +437,16 @@ export default function ProductsPage() {
                     <th className="px-2 py-3 font-medium">Giá bán</th>
                     <th className="px-2 py-3 font-medium">Tồn kho</th>
                     <th className="px-2 py-3 font-medium">Trạng thái</th>
-                    <th className="px-2 py-3 font-medium text-right">Thao tác</th>
+                    {canEdit ? (
+                      <th className="px-2 py-3 font-medium text-right">Thao tác</th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item) => (
                     <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
                       <td className="px-2 py-3">
+                        {canEdit ? (
                         <Input
                           type="number"
                           min={0}
@@ -450,6 +469,11 @@ export default function ProductsPage() {
                           }}
                           aria-label={`Thứ tự hiển thị ${item.name}`}
                         />
+                        ) : (
+                          <span className="tabular-nums text-[var(--color-text-inverse)]">
+                            {item.displayOrder ?? 0}
+                          </span>
+                        )}
                       </td>
                       <td className="px-2 py-3">
                         {item.image || item.images?.[0] ? (
@@ -482,6 +506,7 @@ export default function ProductsPage() {
                           {item.status === "active" ? "Đang bán" : "Ngưng"}
                         </Badge>
                       </td>
+                      {canEdit ? (
                       <td className="px-2 py-3">
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
@@ -492,6 +517,7 @@ export default function ProductsPage() {
                           </Button>
                         </div>
                       </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ArrowLeftRight,
   BriefcaseBusiness,
   ChevronDown,
   Handshake,
@@ -103,15 +102,9 @@ const NAV_GROUPS: NavGroup[] = [
       },
       { href: "/products", label: "Sản phẩm", icon: Package, badgeKey: null },
       {
-        href: "/warehouses",
+        href: "/inventory",
         label: "Kho hàng",
         icon: Warehouse,
-        badgeKey: null,
-      },
-      {
-        href: "/inventory",
-        label: "Tồn kho",
-        icon: ArrowLeftRight,
         badgeKey: "stock",
       },
     ],

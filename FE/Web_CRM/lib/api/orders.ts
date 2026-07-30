@@ -5,12 +5,28 @@ import type { Order, OrderInput, PaginatedResult } from "@/lib/types";
 export async function getOrders(params?: {
   search?: string;
   status?: string;
+  paymentStatus?: string;
+  /** unpaid + partial (và không lấy đơn hủy nếu không lọc status) */
+  hasDebt?: boolean;
   dealerId?: string;
+  deliveryEmployeeIds?: string;
+  /** all = đơn phải gắn đủ mọi NV; any = ít nhất 1 NV */
+  deliveryEmployeeMatch?: "all" | "any";
+  withoutTrip?: boolean;
 } & PaginationParams) {
   const query = new URLSearchParams();
   if (params?.search) query.set("search", params.search);
   if (params?.status) query.set("status", params.status);
+  if (params?.paymentStatus) query.set("paymentStatus", params.paymentStatus);
+  if (params?.hasDebt) query.set("hasDebt", "true");
   if (params?.dealerId) query.set("dealerId", params.dealerId);
+  if (params?.deliveryEmployeeIds) {
+    query.set("deliveryEmployeeIds", params.deliveryEmployeeIds);
+  }
+  if (params?.deliveryEmployeeMatch) {
+    query.set("deliveryEmployeeMatch", params.deliveryEmployeeMatch);
+  }
+  if (params?.withoutTrip) query.set("withoutTrip", "true");
   appendPaginationParams(query, params);
 
   const suffix = query.toString() ? `?${query.toString()}` : "";

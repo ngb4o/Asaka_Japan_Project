@@ -3,7 +3,7 @@ import { payrollService } from '~/services/payrollService'
 
 const getList = async (req, res, next) => {
   try {
-    const result = await payrollService.getList(req.query)
+    const result = await payrollService.getList(req.query, req.userId, req.userRole)
     res.status(StatusCodes.OK).json({
       message: 'Lấy danh sách bảng lương thành công!',
       data: result
@@ -15,7 +15,11 @@ const getList = async (req, res, next) => {
 
 const getDetails = async (req, res, next) => {
   try {
-    const result = await payrollService.getDetails(req.params.id)
+    const result = await payrollService.getDetails(
+      req.params.id,
+      req.userId,
+      req.userRole
+    )
     res.status(StatusCodes.OK).json({
       message: 'Lấy chi tiết bảng lương thành công!',
       data: result

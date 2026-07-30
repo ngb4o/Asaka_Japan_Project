@@ -2,6 +2,7 @@ import express from 'express'
 import { newsValidation } from '~/validations/newsValidation'
 import { newsController } from '~/controllers/newsController'
 import { verifyToken } from '~/middlewares/jwtMiddleware'
+import { attachUserRole, requireRoles } from '~/middlewares/roleMiddleware'
 
 const Router = express.Router()
 
@@ -9,9 +10,10 @@ const Router = express.Router()
 Router.get('/', newsController.getList)
 Router.get('/:id', newsController.getDetails)
 
-// Authenticated writes for CRM
-Router.post('/', verifyToken, newsValidation.createNew, newsController.createNew)
-Router.put('/:id', verifyToken, newsValidation.update, newsController.update)
-Router.delete('/:id', verifyToken, newsController.deleteOne)
+Router.use(verifyToken, attachUserRole)
+
+Router.post('/', requireRoles('sales', 'warehouse'), newsValidation.createNew, newsController.createNew)
+Router.put('/:id', requireRoles('sales', 'warehouse'), newsValidation.update, newsController.update)
+Router.delete('/:id', requireRoles('sales', 'warehouse'), newsController.deleteOne)
 
 export const newsRoute = Router

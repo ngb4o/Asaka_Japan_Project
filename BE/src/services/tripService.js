@@ -250,15 +250,42 @@ const createNew = async (reqBody, userId) => {
   return await getDetails(created.insertedId.toString())
 }
 
-const getList = async (query) => {
+const getList = async (query, actorUserId, actorRole) => {
   const findQuery = {}
   if (query.status) findQuery.status = query.status
-  if (query.search) {
-    findQuery.$or = [
-      { code: { $regex: query.search, $options: 'i' } },
-      { title: { $regex: query.search, $options: 'i' } },
-      { region: { $regex: query.search, $options: 'i' } }
-    ]
+
+  const searchFilter = query.search
+    ? {
+        $or: [
+          { code: { $regex: query.search, $options: 'i' } },
+          { title: { $regex: query.search, $options: 'i' } },
+          { region: { $regex: query.search, $options: 'i' } }
+        ]
+      }
+    : null
+
+  // Sales/warehouse: chỉ thấy chuyến mình tạo hoặc mình là người đi
+  let scopeFilter = null
+  if (actorRole !== 'admin' && actorRole !== 'accountant') {
+    const employeeResult = await employeeModel.findMany(
+      { userId: new ObjectId(actorUserId) },
+      { limit: 20, skip: 0 }
+    )
+    const employeeIds = employeeResult.items.map((item) => item._id)
+    scopeFilter = {
+      $or: [
+        { createdBy: new ObjectId(actorUserId) },
+        ...(employeeIds.length ? [{ memberIds: { $in: employeeIds } }] : [])
+      ]
+    }
+  }
+
+  if (scopeFilter && searchFilter) {
+    findQuery.$and = [scopeFilter, searchFilter]
+  } else if (scopeFilter) {
+    Object.assign(findQuery, scopeFilter)
+  } else if (searchFilter) {
+    Object.assign(findQuery, searchFilter)
   }
 
   const pagination = parsePaginationQuery(query)
@@ -283,10 +310,13 @@ const getList = async (query) => {
   )
 }
 
-const getDetails = async (tripId) => {
+const getDetails = async (tripId, actorUserId = null, actorRole = null) => {
   const trip = await tripModel.findOneById(tripId)
   if (!trip) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy chuyến công tác!')
+  }
+  if (actorUserId) {
+    await assertCanOperateTrip(trip, actorUserId, actorRole)
   }
   return await formatTrip(trip)
 }

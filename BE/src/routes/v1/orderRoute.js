@@ -10,7 +10,7 @@ Router.use(verifyToken, attachUserRole)
 
 Router.post(
   '/',
-  requireRoles('sales', 'accountant'),
+  requireRoles('sales', 'warehouse', 'accountant'),
   orderValidation.createNew,
   orderController.createNew
 )
@@ -28,10 +28,10 @@ Router.put(
 )
 Router.post(
   '/:id/payments',
-  requireRoles('sales', 'accountant'),
+  requireRoles('sales', 'warehouse', 'accountant'),
   orderValidation.recordPayment,
   orderController.recordPayment
 )
-Router.delete('/:id', requireRoles('sales'), orderController.deleteOne)
+Router.delete('/:id', requireRoles('sales', 'warehouse'), orderController.deleteOne)
 
 export const orderRoute = Router

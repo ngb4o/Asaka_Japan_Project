@@ -8,8 +8,8 @@ const Router = express.Router()
 
 Router.use(verifyToken, attachUserRole)
 
-Router.get('/', requireRoles('accountant'), payrollController.getList)
-Router.get('/:id', requireRoles('accountant'), payrollController.getDetails)
+Router.get('/', requireRoles('sales', 'warehouse', 'accountant'), payrollController.getList)
+Router.get('/:id', requireRoles('sales', 'warehouse', 'accountant'), payrollController.getDetails)
 Router.post('/generate', requireRoles('accountant'), payrollValidation.generate, payrollController.generate)
 Router.post('/:id/lock', requireRoles('accountant'), payrollController.lock)
 Router.delete('/:id', requireRoles('accountant'), payrollController.deleteOne)

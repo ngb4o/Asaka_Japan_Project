@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { AlertTriangle, PackageCheck, Pencil, Plus, Printer, Trash2 } from "lucide-react";
+import { AlertTriangle, Filter, PackageCheck, Pencil, Plus, Printer, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { DateInput } from "@/components/ui/date-input";
+import { DateRangeInput } from "@/components/ui/date-range-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VndInput } from "@/components/ui/vnd-input";
@@ -41,6 +41,7 @@ import {
   canManagePayments,
   canManageShipping,
 } from "@/lib/auth/permissions";
+import { getEmployees } from "@/lib/api/employees";
 import { getDealers } from "@/lib/api/dealers";
 import {
   createOrder,
@@ -54,11 +55,11 @@ import { getWarehouseStocks } from "@/lib/api/inventory";
 import { getWarehouses } from "@/lib/api/warehouses";
 import { getImageUrl } from "@/lib/api/uploads";
 import { printSalesDocument } from "@/lib/print/salesDocument";
-import type { Dealer, Order, Product } from "@/lib/types";
+import type { Dealer, Employee, Order, Product } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
-import { formatCurrency, toDateValue } from "@/lib/utils";
+import { cn, formatCurrency, toDateValue } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
 
 type OrderFormValues = {
@@ -75,6 +76,7 @@ type OrderFormValues = {
   shippingAddress: string;
   shippingContactName: string;
   shippingPhone: string;
+  deliveryEmployeeIds: string[];
   carrier: string;
   trackingCode: string;
   shippingDate: string;
@@ -106,6 +108,7 @@ const EMPTY_FORM: OrderFormValues = {
   shippingAddress: "",
   shippingContactName: "",
   shippingPhone: "",
+  deliveryEmployeeIds: [],
   carrier: "",
   trackingCode: "",
   shippingDate: "",
@@ -153,6 +156,26 @@ function toDateInput(value?: string | null) {
   return toDateValue(value);
 }
 
+function orderRecipientName(order: Order) {
+  return order.customerName?.trim() || order.dealerName || "—";
+}
+
+function orderRecipientPhone(order: Order) {
+  return order.customerPhone?.trim() || "";
+}
+
+function orderDeliveryPerson(order: Order) {
+  if (order.deliveryEmployeeNames?.length) {
+    return order.deliveryEmployeeNames.join(", ");
+  }
+  return order.deliveryEmployeeName?.trim() || order.carrier?.trim() || "—";
+}
+
+function orderDeliveryEmployeeIds(order: Order) {
+  if (order.deliveryEmployeeIds?.length) return order.deliveryEmployeeIds;
+  return order.deliveryEmployeeId ? [order.deliveryEmployeeId] : [];
+}
+
 export default function OrdersPage() {
   const confirm = useConfirm();
   const toast = useToast();
@@ -161,7 +184,12 @@ export default function OrdersPage() {
   const [dealers, setDealers] = useState<Dealer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [paymentFilter, setPaymentFilter] = useState("");
+  const [dealerFilter, setDealerFilter] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [payingOrder, setPayingOrder] = useState<Order | null>(null);
@@ -179,11 +207,20 @@ export default function OrdersPage() {
     (pageNum: number) =>
       getOrders({
         search: search || undefined,
+        status: statusFilter || undefined,
+        paymentStatus:
+          paymentFilter && paymentFilter !== "debt" ? paymentFilter : undefined,
+        hasDebt: paymentFilter === "debt" ? true : undefined,
+        dealerId: dealerFilter || undefined,
         page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
       }),
-    [search]
+    [search, statusFilter, paymentFilter, dealerFilter]
   );
+
+  const activeFilterCount = [statusFilter, paymentFilter, dealerFilter].filter(
+    Boolean
+  ).length;
 
   const onError = useCallback(
     (err: unknown) => {
@@ -210,14 +247,17 @@ export default function OrdersPage() {
 
   const loadAuxData = useCallback(async () => {
     try {
-      const [dealersResult, productsResult, warehousesResult] = await Promise.all([
+      const [dealersResult, productsResult, warehousesResult, employeesResult] =
+        await Promise.all([
         getDealers({ limit: 100, page: 1 }),
         getProducts({ limit: 100, page: 1, status: "active" }),
         getWarehouses({ limit: 100, page: 1 }),
+        getEmployees({ status: "active", limit: 100, page: 1 }),
       ]);
       setDealers(dealersResult.items);
       setProducts(productsResult.items);
       setWarehouses(warehousesResult.items);
+      setEmployees(employeesResult.items);
     } catch (err) {
       toast.error(
         err instanceof ApiClientError ? err.message : "Không tải được dữ liệu"
@@ -263,6 +303,7 @@ export default function OrdersPage() {
       shippingAddress: item.shippingAddress || "",
       shippingContactName: item.shippingContactName || "",
       shippingPhone: item.shippingPhone || "",
+      deliveryEmployeeIds: orderDeliveryEmployeeIds(item),
       carrier: item.carrier || "",
       trackingCode: item.trackingCode || "",
       shippingDate: toDateInput(item.shippingDate),
@@ -391,8 +432,9 @@ export default function OrdersPage() {
         ...(canManageShipping(role)
           ? {
               shippingAddress: form.shippingAddress.trim(),
-              shippingContactName: form.shippingContactName.trim(),
-              shippingPhone: form.shippingPhone.trim(),
+              shippingContactName: form.customerName.trim(),
+              shippingPhone: form.customerPhone.trim(),
+              deliveryEmployeeIds: form.deliveryEmployeeIds,
               carrier: form.carrier.trim(),
               trackingCode: form.trackingCode.trim(),
               shippingDate: form.shippingDate || null,
@@ -567,11 +609,25 @@ export default function OrdersPage() {
     ...dealers.map((dealer) => ({ value: dealer.id, label: dealer.name })),
   ];
   const warehouseOptions = warehouses.map((w) => ({ value: w.id, label: w.name }));
+  const employeeOptions = employees.map((employee) => ({
+    value: employee.id,
+    label: employee.fullName,
+    description: employee.phone || undefined,
+  }));
   const confirmationHasInsufficient = confirmationStocks.some(
     (row) => row.available < row.required
   );
   const confirmationSubmitting =
     confirmingOrder !== null && updatingStatusId === confirmingOrder.id;
+
+  function toggleDeliveryEmployee(id: string) {
+    setForm((prev) => ({
+      ...prev,
+      deliveryEmployeeIds: prev.deliveryEmployeeIds.includes(id)
+        ? prev.deliveryEmployeeIds.filter((item) => item !== id)
+        : [...prev.deliveryEmployeeIds, id],
+    }));
+  }
 
   function handleDealerChange(dealerId: string) {
     if (!dealerId) {
@@ -592,9 +648,6 @@ export default function OrdersPage() {
       customerPhone: dealer.phone || "",
       customerEmail: dealer.email || "",
       shippingAddress: prev.shippingAddress || dealer.address || "",
-      shippingContactName:
-        prev.shippingContactName || dealer.contactName || dealer.name || "",
-      shippingPhone: prev.shippingPhone || dealer.phone || "",
     }));
   }
 
@@ -623,11 +676,98 @@ export default function OrdersPage() {
           <CardTitle>Danh sách đơn hàng</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input
-            placeholder="Tìm theo mã, khách hàng, mã vận đơn..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="flex gap-2">
+            <Input
+              placeholder="Tìm theo mã, khách hàng, mã vận đơn..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1"
+            />
+            <button
+              type="button"
+              aria-label="Bộ lọc"
+              aria-expanded={filterOpen}
+              onClick={() => setFilterOpen((open) => !open)}
+              className={cn(
+                "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]",
+                filterOpen && "border-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]"
+              )}
+            >
+              <Filter className="h-4 w-4" />
+              {activeFilterCount > 0 ? (
+                <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-text-secondary)] px-1 text-[10px] font-bold text-white">
+                  {activeFilterCount}
+                </span>
+              ) : null}
+            </button>
+          </div>
+
+          {filterOpen ? (
+            <div className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/40 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                  Bộ lọc
+                </p>
+                {activeFilterCount > 0 ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setStatusFilter("");
+                      setPaymentFilter("");
+                      setDealerFilter("");
+                    }}
+                  >
+                    Xóa lọc
+                  </Button>
+                ) : null}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label>Trạng thái</Label>
+                  <SearchableSelect
+                    options={[
+                      { value: "", label: "Tất cả trạng thái" },
+                      ...STATUS_OPTIONS.order,
+                    ]}
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                    searchable={false}
+                    clearable
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Thanh toán / nợ</Label>
+                  <SearchableSelect
+                    options={[
+                      { value: "", label: "Tất cả thanh toán" },
+                      { value: "debt", label: "Còn nợ" },
+                      ...STATUS_OPTIONS.payment,
+                    ]}
+                    value={paymentFilter}
+                    onChange={setPaymentFilter}
+                    searchable={false}
+                    clearable
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Đại lý</Label>
+                  <SearchableSelect
+                    options={[
+                      { value: "", label: "Tất cả đại lý" },
+                      ...dealers.map((d) => ({ value: d.id, label: d.name })),
+                    ]}
+                    value={dealerFilter}
+                    onChange={setDealerFilter}
+                    searchable
+                    clearable
+                    placeholder="Chọn đại lý"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           {items.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có đơn hàng</p>
@@ -645,13 +785,13 @@ export default function OrdersPage() {
                   const remaining =
                     item.remainingAmount ??
                     Math.max(0, (item.total || 0) - (item.paidAmount || 0));
-                  const customer = item.dealerName || item.customerName || "—";
+                  const recipientName = orderRecipientName(item);
+                  const recipientPhone = orderRecipientPhone(item);
+                  const deliveryPerson = orderDeliveryPerson(item);
                   const statusLabel =
                     STATUS_OPTIONS.order.find((o) => o.value === item.status)?.label ||
                     item.status;
                   const paymentKey = item.paymentStatus || "unpaid";
-                  const shipping =
-                    item.trackingCode || item.shippingPhone || item.carrier || "";
 
                   return (
                     <MobileRecordCard key={item.id} className="p-3">
@@ -660,9 +800,14 @@ export default function OrdersPage() {
                           <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
                             {item.code}
                           </p>
-                          <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
-                            {customer}
+                          <p className="mt-0.5 text-sm font-medium text-[var(--color-text-primary)]">
+                            {recipientName}
                           </p>
+                          {recipientPhone ? (
+                            <p className="mt-0.5 text-sm text-[var(--color-text-inverse)]">
+                              {recipientPhone}
+                            </p>
+                          ) : null}
                         </div>
                         <Badge
                           variant={statusBadgeVariant(item.status)}
@@ -704,20 +849,17 @@ export default function OrdersPage() {
                         >
                           {PAYMENT_LABELS_SHORT[paymentKey]}
                         </Badge>
-                        {item.warehouseName ? (
-                          <MobileMetaChip>Kho: {item.warehouseName}</MobileMetaChip>
+                        {deliveryPerson !== "—" ? (
+                          <MobileMetaChip>Giao: {deliveryPerson}</MobileMetaChip>
                         ) : null}
                         {item.tripCode ? (
                           <MobileMetaChip>Chuyến: {item.tripCode}</MobileMetaChip>
                         ) : null}
-                        {item.carrier ? (
-                          <MobileMetaChip>{item.carrier}</MobileMetaChip>
-                        ) : null}
                       </div>
 
-                      {shipping ? (
+                      {item.trackingCode ? (
                         <p className="mt-2 truncate text-xs text-[var(--color-text-inverse)]">
-                          VC: {shipping}
+                          Mã VC: {item.trackingCode}
                         </p>
                       ) : null}
 
@@ -771,10 +913,10 @@ export default function OrdersPage() {
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
                       <th className="px-2 py-3 font-medium">Mã</th>
-                      <th className="px-2 py-3 font-medium">Khách/Đại lý</th>
+                      <th className="px-2 py-3 font-medium">Người nhận</th>
                       <th className="px-2 py-3 font-medium">Tổng / Còn nợ</th>
                       <th className="px-2 py-3 font-medium">Thanh toán</th>
-                      <th className="px-2 py-3 font-medium">Giao hàng</th>
+                      <th className="px-2 py-3 font-medium">Người giao</th>
                       <th className="px-2 py-3 font-medium">Trạng thái</th>
                       <th className="px-2 py-3 font-medium text-right">Thao tác</th>
                     </tr>
@@ -788,15 +930,15 @@ export default function OrdersPage() {
                         <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
                           <td className="px-2 py-3 font-medium">{item.code}</td>
                           <td className="px-2 py-3">
-                            <p>{item.dealerName || item.customerName || "—"}</p>
-                            {item.warehouseName ? (
-                              <p className="text-xs text-[var(--color-text-inverse)]">
-                                Kho: {item.warehouseName}
+                            <p className="font-medium">{orderRecipientName(item)}</p>
+                            {orderRecipientPhone(item) ? (
+                              <p className="text-sm text-[var(--color-text-inverse)]">
+                                {orderRecipientPhone(item)}
                               </p>
                             ) : null}
-                            {item.tripCode ? (
-                              <p className="text-xs text-[var(--color-text-secondary)]">
-                                Chuyến: {item.tripCode}
+                            {item.dealerName ? (
+                              <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+                                Đại lý: {item.dealerName}
                               </p>
                             ) : null}
                           </td>
@@ -820,10 +962,12 @@ export default function OrdersPage() {
                             </Badge>
                           </td>
                           <td className="px-2 py-3">
-                            <p>{item.carrier || "—"}</p>
-                            <p className="text-xs text-[var(--color-text-inverse)]">
-                              {item.trackingCode || item.shippingPhone || "Chưa có VC"}
-                            </p>
+                            <p>{orderDeliveryPerson(item)}</p>
+                            {item.trackingCode ? (
+                              <p className="text-xs text-[var(--color-text-inverse)]">
+                                {item.trackingCode}
+                              </p>
+                            ) : null}
                           </td>
                           <td className="px-2 py-3">
                             <div className="w-[150px]">
@@ -1019,6 +1163,32 @@ export default function OrdersPage() {
                 <p className="text-sm font-semibold">Giao hàng</p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">
+                    <Label>Nhân viên giao hàng</Label>
+                    
+                    <div className="grid max-h-40 gap-2 overflow-y-auto rounded-lg border border-[var(--color-border-subtle)] p-3 sm:grid-cols-2">
+                      {employeeOptions.length === 0 ? (
+                        <p className="text-sm text-[var(--color-text-inverse)] sm:col-span-2">
+                          Chưa có nhân viên
+                        </p>
+                      ) : (
+                        employeeOptions.map((option) => (
+                          <label
+                            key={option.value}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 accent-[var(--color-text-secondary)]"
+                              checked={form.deliveryEmployeeIds.includes(option.value)}
+                              onChange={() => toggleDeliveryEmployee(option.value)}
+                            />
+                            <span className="min-w-0 truncate">{option.label}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="shippingAddress">Địa chỉ giao</Label>
                     <Input
                       id="shippingAddress"
@@ -1026,34 +1196,6 @@ export default function OrdersPage() {
                       onChange={(e) =>
                         setForm({ ...form, shippingAddress: e.target.value })
                       }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="shippingContactName">Người nhận</Label>
-                    <Input
-                      id="shippingContactName"
-                      value={form.shippingContactName}
-                      onChange={(e) =>
-                        setForm({ ...form, shippingContactName: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="shippingPhone">SĐT nhận</Label>
-                    <Input
-                      id="shippingPhone"
-                      value={form.shippingPhone}
-                      onChange={(e) =>
-                        setForm({ ...form, shippingPhone: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="carrier">Đơn vị vận chuyển</Label>
-                    <Input
-                      id="carrier"
-                      value={form.carrier}
-                      onChange={(e) => setForm({ ...form, carrier: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1067,32 +1209,29 @@ export default function OrdersPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="shippingDate">Ngày giao</Label>
-                    <DateInput
-                      id="shippingDate"
-                      value={form.shippingDate}
-                      onChange={(shippingDate) =>
-                        setForm({ ...form, shippingDate })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="deliveredAt">Ngày nhận</Label>
-                    <DateInput
-                      id="deliveredAt"
-                      value={form.deliveredAt}
-                      onChange={(deliveredAt) =>
-                        setForm({ ...form, deliveredAt })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="shippingFee">Phí giao hàng</Label>
                     <VndInput
                       id="shippingFee"
                       value={form.shippingFee}
                       onValueChange={(shippingFee) => setForm({ ...form, shippingFee })}
                       placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Ngày giao → Ngày nhận</Label>
+                    <DateRangeInput
+                      from={form.shippingDate}
+                      to={form.deliveredAt}
+                      fromLabel="Ngày giao"
+                      toLabel="Ngày nhận"
+                      placeholder="Chọn ngày giao → ngày nhận"
+                      onChange={({ from, to }) =>
+                        setForm({
+                          ...form,
+                          shippingDate: from,
+                          deliveredAt: to,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">

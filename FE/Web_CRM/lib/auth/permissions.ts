@@ -10,8 +10,8 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 /** Mô tả ngắn dưới tên app trên sidebar */
 export const ROLE_WORKSPACE_SUBTITLE: Record<UserRole, string> = {
   admin: "Toàn hệ thống",
-  sales: "Lead · đại lý · đơn hàng",
-  warehouse: "Kho · tồn · xuất nhập",
+  sales: "Kinh doanh · kho · đơn hàng",
+  warehouse: "Kinh doanh · kho · đơn hàng",
   accountant: "Tài chính · nhân sự · lương",
 };
 
@@ -19,9 +19,22 @@ export const ROLE_WORKSPACE_SUBTITLE: Record<UserRole, string> = {
 export const DASHBOARD_HERO_SUBTITLE: Record<UserRole, string> = {
   admin: "Doanh số, thu chi và vận hành toàn công ty.",
   accountant: "Doanh số, công nợ, quyết toán chuyến và bảng lương.",
-  sales: "Lead, đại lý và đơn hàng trong phạm vi công việc của bạn.",
-  warehouse: "Đơn cần xử lý, tồn kho và chuyến giao hàng.",
+  sales: "Lead, đại lý, đơn hàng, kho và chuyến giao hàng.",
+  warehouse: "Lead, đại lý, đơn hàng, kho và chuyến giao hàng.",
 };
+
+/** Sales & Kho dùng chung menu vận hành */
+const OPS_NAV = [
+  "/dashboard",
+  "/leads",
+  "/dealers",
+  "/orders",
+  "/products",
+  "/inventory",
+  "/news",
+  "/trips",
+  "/payroll",
+] as const;
 
 const NAV_BY_ROLE: Record<UserRole, string[]> = {
   admin: [
@@ -32,7 +45,6 @@ const NAV_BY_ROLE: Record<UserRole, string[]> = {
     "/orders",
     "/product-categories",
     "/products",
-    "/warehouses",
     "/inventory",
     "/news",
     "/employees",
@@ -41,23 +53,8 @@ const NAV_BY_ROLE: Record<UserRole, string[]> = {
     "/users",
     "/settings/telegram",
   ],
-  sales: [
-    "/dashboard",
-    "/leads",
-    "/dealers",
-    "/orders",
-    "/products",
-    "/news",
-    "/trips",
-  ],
-  warehouse: [
-    "/dashboard",
-    "/orders",
-    "/warehouses",
-    "/inventory",
-    "/products",
-    "/trips",
-  ],
+  sales: [...OPS_NAV],
+  warehouse: [...OPS_NAV],
   accountant: [
     "/dashboard",
     "/reports",
@@ -94,15 +91,15 @@ export function canViewEmployeesPage(role?: UserRole | null) {
 }
 
 export function canManageOrders(role?: UserRole | null) {
-  return role === "admin" || role === "sales" || role === "accountant";
+  return role === "admin" || role === "sales" || role === "warehouse" || role === "accountant";
 }
 
 export function canEditOrderItems(role?: UserRole | null) {
-  return role === "admin" || role === "sales";
+  return role === "admin" || role === "sales" || role === "warehouse";
 }
 
 export function canManagePayments(role?: UserRole | null) {
-  return role === "admin" || role === "sales" || role === "accountant";
+  return role === "admin" || role === "sales" || role === "warehouse" || role === "accountant";
 }
 
 export function canManageShipping(role?: UserRole | null) {
@@ -110,6 +107,11 @@ export function canManageShipping(role?: UserRole | null) {
 }
 
 export function canManageUsers(role?: UserRole | null) {
+  return role === "admin";
+}
+
+/** CRUD sản phẩm / loại sản phẩm — chỉ admin */
+export function canManageProducts(role?: UserRole | null) {
   return role === "admin";
 }
 

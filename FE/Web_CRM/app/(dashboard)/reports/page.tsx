@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowDownRight,
   ArrowUpRight,
+  Download,
   ShoppingCart,
   TrendingUp,
   Wallet,
@@ -11,7 +12,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DateInput } from "@/components/ui/date-input";
+import { DateRangeInput } from "@/components/ui/date-range-input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
@@ -24,6 +25,7 @@ import {
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canViewReports } from "@/lib/auth/permissions";
 import { getSalesReport } from "@/lib/api/dashboard";
+import { downloadSalesReportExcel } from "@/lib/export/salesReportExcel";
 import type { SalesReport } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -133,11 +135,35 @@ export default function ReportsPage() {
 
   const kpis = report?.kpis;
 
+  async function handleExportExcel() {
+    if (!report) {
+      toast.warning("Chưa có dữ liệu báo cáo để xuất");
+      return;
+    }
+    try {
+      await downloadSalesReportExcel(report);
+      toast.success("Đã tải file Excel");
+    } catch {
+      toast.error("Không xuất được file");
+    }
+  }
+
   return (
     <div className="space-y-5">
       <PageHeader
         title="Báo cáo doanh số"
         description="Doanh thu, thanh toán, công nợ, top đại lý / sản phẩm / nhân viên theo kỳ"
+        actions={
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void handleExportExcel()}
+            disabled={!report || loading}
+          >
+            <Download className="h-4 w-4" />
+            Xuất Excel
+          </Button>
+        }
       />
 
       <Card>
@@ -156,17 +182,32 @@ export default function ReportsPage() {
             ))}
           </div>
           {preset === "custom" ? (
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="space-y-1.5">
-                <Label>Từ ngày</Label>
-                <DateInput value={from} onChange={setFrom} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Đến ngày</Label>
-                <DateInput value={to} onChange={setTo} />
-              </div>
+            <div className="min-w-[260px] space-y-1.5">
+              <Label>Từ ngày → Đến ngày</Label>
+              <DateRangeInput
+                from={from}
+                to={to}
+                fromLabel="Từ ngày"
+                toLabel="Đến ngày"
+                placeholder="Chọn khoảng ngày báo cáo"
+                onChange={({ from: nextFrom, to: nextTo }) => {
+                  setFrom(nextFrom);
+                  setTo(nextTo);
+                }}
+              />
             </div>
           ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="ml-auto md:hidden"
+            onClick={() => void handleExportExcel()}
+            disabled={!report || loading}
+          >
+            <Download className="h-4 w-4" />
+            Xuất Excel
+          </Button>
         </CardContent>
       </Card>
 
@@ -304,7 +345,14 @@ export default function ReportsPage() {
           title="Bảng đại lý"
           headers={["Đại lý", "Đơn", "Doanh số", "Đã thu"]}
           rows={(report?.topDealers || []).map((item) => [
-            `${item.dealerName}${item.region ? ` - ${item.region}` : ""}`,
+            <div className="min-w-0">
+              <p className="truncate">{item.dealerName}</p>
+              {item.region ? (
+                <p className="truncate text-xs font-normal text-[var(--color-text-inverse)]">
+                  {item.region}
+                </p>
+              ) : null}
+            </div>,
             String(item.orderCount),
             formatCurrency(item.revenue),
             formatCurrency(item.paidAmount),
@@ -314,7 +362,7 @@ export default function ReportsPage() {
           title="Bảng sản phẩm"
           headers={["Sản phẩm", "SL", "Doanh số"]}
           rows={(report?.topProducts || []).map((item) => [
-            item.productName,
+            <span className="line-clamp-2">{item.productName}</span>,
             String(item.quantity),
             formatCurrency(item.revenue),
           ])}
@@ -323,7 +371,14 @@ export default function ReportsPage() {
           title="Bảng nhân viên"
           headers={["Nhân viên", "Đơn", "Doanh số", "Đã thu"]}
           rows={(report?.topStaff || []).map((item) => [
-            `${item.staffName}${item.employeeCode ? ` - ${item.employeeCode}` : ""}`,
+            <div className="min-w-0">
+              <p className="truncate">{item.staffName}</p>
+              {item.employeeCode ? (
+                <p className="truncate text-xs font-normal text-[var(--color-text-inverse)]">
+                  {item.employeeCode}
+                </p>
+              ) : null}
+            </div>,
             String(item.orderCount),
             formatCurrency(item.revenue),
             formatCurrency(item.paidAmount),
@@ -394,6 +449,18 @@ function Kpi({
   );
 }
 
+function rankTableColumnWidths(columnCount: number): string[] {
+  if (columnCount === 4) {
+    const numeric = "20.6667%";
+    return ["38%", numeric, numeric, numeric];
+  }
+  if (columnCount === 3) {
+    return ["44%", "16%", "40%"];
+  }
+  const each = `${100 / columnCount}%`;
+  return Array.from({ length: columnCount }, () => each);
+}
+
 function RankTable({
   title,
   headers,
@@ -401,8 +468,10 @@ function RankTable({
 }: {
   title: string;
   headers: string[];
-  rows: string[][];
+  rows: ReactNode[][];
 }) {
+  const colWidths = rankTableColumnWidths(headers.length);
+
   return (
     <Card>
       <CardHeader>
@@ -413,11 +482,22 @@ function RankTable({
           <Empty />
         ) : (
           <div className="crm-table-scroll">
-            <table className="w-full min-w-[280px] text-left text-sm">
+            <table className="w-full min-w-[300px] table-fixed text-left text-sm">
+              <colgroup>
+                {colWidths.map((width, index) => (
+                  <col key={`${headers[index]}-${index}`} style={{ width }} />
+                ))}
+              </colgroup>
               <thead>
                 <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                  {headers.map((header) => (
-                    <th key={header} className="px-2 py-2 font-medium">
+                  {headers.map((header, index) => (
+                    <th
+                      key={header}
+                      className={cn(
+                        "px-2 py-2 font-medium",
+                        index === 0 ? "text-left" : "text-right"
+                      )}
+                    >
                       {header}
                     </th>
                   ))}
@@ -430,8 +510,10 @@ function RankTable({
                       <td
                         key={cellIndex}
                         className={cn(
-                          "px-2 py-2",
-                          cellIndex === 0 ? "font-medium" : "text-[var(--color-text-inverse)]"
+                          "px-2 py-2 align-top",
+                          cellIndex === 0
+                            ? "max-w-0 font-medium"
+                            : "whitespace-nowrap text-right tabular-nums text-[var(--color-text-inverse)]"
                         )}
                       >
                         {cell}

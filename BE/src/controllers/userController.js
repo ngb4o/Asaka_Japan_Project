@@ -146,6 +146,19 @@ const updateRole = async (req, res, next) => {
   }
 }
 
+const deleteByAdmin = async (req, res, next) => {
+  try {
+    const result = await userService.deleteByAdmin(req.params.id, req.userId)
+
+    res.status(StatusCodes.OK).json({
+      message: 'Đã xóa tài khoản!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const userController = {
   register,
   login,
@@ -156,5 +169,6 @@ export const userController = {
   createByAdmin,
   updatePassword,
   changeOwnPassword,
-  updateRole
+  updateRole,
+  deleteByAdmin
 }

@@ -1,6 +1,8 @@
 import Joi from 'joi'
+import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
 import { normalizePhone } from '~/utils/phone'
+import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 
 const TELEGRAM_CONTACT_COLLECTION_NAME = 'telegram_contacts'
 
@@ -18,6 +20,16 @@ const SCHEMA = Joi.object({
   role: Joi.string()
     .valid(...Object.values(TELEGRAM_CONTACT_ROLE))
     .default(TELEGRAM_CONTACT_ROLE.CUSTOMER),
+  employeeId: Joi.string()
+    .pattern(OBJECT_ID_RULE)
+    .message(OBJECT_ID_RULE_MESSAGE)
+    .allow(null, '')
+    .optional(),
+  userId: Joi.string()
+    .pattern(OBJECT_ID_RULE)
+    .message(OBJECT_ID_RULE_MESSAGE)
+    .allow(null, '')
+    .optional(),
   lastInteractedAt: Joi.date().allow(null).default(null),
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(null)
@@ -28,6 +40,7 @@ const ensureIndexes = async () => {
   await collection.createIndex({ chatId: 1 }, { unique: true })
   await collection.createIndex({ phone: 1 })
   await collection.createIndex({ role: 1 })
+  await collection.createIndex({ employeeId: 1 })
 }
 
 const upsertByChatId = async ({
@@ -36,6 +49,8 @@ const upsertByChatId = async ({
   displayName = '',
   username = '',
   role = TELEGRAM_CONTACT_ROLE.CUSTOMER,
+  employeeId = null,
+  userId = null,
   lastInteractedAt = null
 }) => {
   const normalizedPhone = normalizePhone(phone)
@@ -47,11 +62,18 @@ const upsertByChatId = async ({
       displayName: displayName || '',
       username: username || '',
       role,
+      employeeId: employeeId || null,
+      userId: userId || null,
       lastInteractedAt: lastInteractedAt || now,
       updatedAt: now
     },
     { abortEarly: false }
   )
+
+  const employeeObjectId = payload.employeeId
+    ? new ObjectId(payload.employeeId)
+    : null
+  const userObjectId = payload.userId ? new ObjectId(payload.userId) : null
 
   await GET_DB()
     .collection(TELEGRAM_CONTACT_COLLECTION_NAME)
@@ -63,6 +85,8 @@ const upsertByChatId = async ({
           displayName: payload.displayName,
           username: payload.username,
           role: payload.role,
+          employeeId: employeeObjectId,
+          userId: userObjectId,
           lastInteractedAt: payload.lastInteractedAt,
           updatedAt: now
         },

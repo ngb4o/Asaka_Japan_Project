@@ -86,10 +86,9 @@ export default function PayrollPage() {
   } = useMobilePagedList<PayrollPeriod>({ fetchPage, onError });
 
   useEffect(() => {
-    if (!canEdit) return;
     void reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchPage, canEdit]);
+  }, [fetchPage]);
 
   async function handleGenerate() {
     setSubmitting(true);
@@ -152,14 +151,6 @@ export default function PayrollPage() {
     }
   }
 
-  if (!canEdit) {
-    return (
-      <div className="space-y-2">
-        <PageHeader title="Bảng lương" description="Chỉ kế toán/admin được truy cập." />
-      </div>
-    );
-  }
-
   if (loading && items.length === 0) {
     return <PageSkeleton {...PAGE_SKELETONS.warehouses} />;
   }
@@ -168,8 +159,13 @@ export default function PayrollPage() {
     <div className="space-y-6">
       <PageHeader
         title="Bảng lương"
-        description="Lương cứng + phụ cấp + hoa hồng đơn hoàn tất + hoàn chi phí chuyến"
+        description={
+          canEdit
+            ? "Lương cứng + phụ cấp + hoa hồng đơn hoàn tất + hoàn chi phí chuyến"
+            : "Xem lương theo tháng của bạn (sau khi kế toán tạo bảng lương)"
+        }
         actions={
+          canEdit ? (
           <div className="flex flex-wrap items-end gap-2">
             <div className="space-y-1">
               <Label htmlFor="period">Kỳ lương</Label>
@@ -187,15 +183,21 @@ export default function PayrollPage() {
               Tạo / cập nhật
             </Button>
           </div>
+          ) : null
         }
-        fab={{
-          onClick: handleGenerate,
-          label: "Tạo / cập nhật bảng lương",
-          loading: submitting,
-          icon: <RefreshCw className="h-5 w-5" />,
-        }}
+        fab={
+          canEdit
+            ? {
+                onClick: handleGenerate,
+                label: "Tạo / cập nhật bảng lương",
+                loading: submitting,
+                icon: <RefreshCw className="h-5 w-5" />,
+              }
+            : null
+        }
       />
 
+      {canEdit ? (
       <div className="md:hidden">
         <Label htmlFor="period-mobile" className="sr-only">
           Kỳ lương
@@ -208,6 +210,7 @@ export default function PayrollPage() {
           clearable={false}
         />
       </div>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -245,10 +248,16 @@ export default function PayrollPage() {
                         </div>
 
                         <div className="mt-3 grid grid-cols-2 gap-2">
-                          <MobileStatTile label="Nhân viên">
-                            {item.lines.length}
-                          </MobileStatTile>
-                          <MobileStatTile label="Tổng thực nhận">
+                          {canEdit ? (
+                            <MobileStatTile label="Nhân viên">
+                              {item.lines.length}
+                            </MobileStatTile>
+                          ) : (
+                            <MobileStatTile label="Họ tên">
+                              {item.lines[0]?.employeeName || "—"}
+                            </MobileStatTile>
+                          )}
+                          <MobileStatTile label={canEdit ? "Tổng thực nhận" : "Thực nhận"}>
                             {formatCurrency(net)}
                           </MobileStatTile>
                         </div>
@@ -257,7 +266,7 @@ export default function PayrollPage() {
                           <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
                             Xem
                           </Button>
-                          {item.status !== "locked" ? (
+                          {canEdit && item.status !== "locked" ? (
                             <>
                               <Button variant="outline" size="sm" onClick={() => handleLock(item)}>
                                 <Lock className="h-4 w-4" />
@@ -279,8 +288,12 @@ export default function PayrollPage() {
                 <thead>
                   <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
                     <th className="px-2 py-3 font-medium">Kỳ</th>
-                    <th className="px-2 py-3 font-medium">Nhân viên</th>
-                    <th className="px-2 py-3 font-medium">Tổng thực nhận</th>
+                    <th className="px-2 py-3 font-medium">
+                      {canEdit ? "Nhân viên" : "Họ tên"}
+                    </th>
+                    <th className="px-2 py-3 font-medium">
+                      {canEdit ? "Tổng thực nhận" : "Thực nhận"}
+                    </th>
                     <th className="px-2 py-3 font-medium">Trạng thái</th>
                     <th className="px-2 py-3 text-right font-medium">Thao tác</th>
                   </tr>
@@ -291,7 +304,11 @@ export default function PayrollPage() {
                     return (
                       <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
                         <td className="px-2 py-3 font-medium">{item.period}</td>
-                        <td className="px-2 py-3">{item.lines.length}</td>
+                        <td className="px-2 py-3">
+                          {canEdit
+                            ? item.lines.length
+                            : item.lines[0]?.employeeName || "—"}
+                        </td>
                         <td className="px-2 py-3">{formatCurrency(net)}</td>
                         <td className="px-2 py-3">
                           <Badge variant={item.status === "locked" ? "success" : "muted"}>
@@ -303,7 +320,7 @@ export default function PayrollPage() {
                             <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
                               Xem
                             </Button>
-                            {item.status !== "locked" ? (
+                            {canEdit && item.status !== "locked" ? (
                               <>
                                 <Button variant="outline" size="sm" onClick={() => handleLock(item)}>
                                   <Lock className="h-4 w-4" />

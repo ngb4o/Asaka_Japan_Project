@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Trash2, UserPlus } from "lucide-react";
+import { Pencil, Trash2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -37,11 +37,6 @@ import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
 import { leadStatusBadgeVariant } from "@/lib/status-badge";
 import { Badge } from "@/components/ui/badge";
-
-const LEAD_TYPE_LABELS: Record<Lead["type"], string> = {
-  contact: "Liên hệ",
-  dealer: "Đăng ký đại lý",
-};
 
 export default function LeadsPage() {
   const confirm = useConfirm();
@@ -257,7 +252,6 @@ export default function LeadsPage() {
 
                       <div className="mt-2.5 flex flex-wrap gap-1.5">
                         {item.phone ? <MobileMetaChip>{item.phone}</MobileMetaChip> : null}
-                        <MobileMetaChip>{LEAD_TYPE_LABELS[item.type]}</MobileMetaChip>
                         <MobileMetaChip>
                           {new Date(item.createdAt).toLocaleDateString("vi-VN")}
                         </MobileMetaChip>
@@ -266,6 +260,9 @@ export default function LeadsPage() {
                       </div>
 
                       <MobileRecordActions>
+                        <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         {!item.dealerId && item.type === "dealer" ? (
                           <Button variant="outline" size="sm" onClick={() => handleConvert(item)}>
                             <UserPlus className="h-4 w-4" />
@@ -286,7 +283,6 @@ export default function LeadsPage() {
                     <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
                       <th className="px-2 py-3 font-medium">Tên</th>
                       <th className="px-2 py-3 font-medium">SĐT</th>
-                      <th className="px-2 py-3 font-medium">Loại</th>
                       <th className="px-2 py-3 font-medium">Trạng thái</th>
                       <th className="px-2 py-3 font-medium">Ngày</th>
                       <th className="px-2 py-3 font-medium text-right">Thao tác</th>
@@ -308,7 +304,6 @@ export default function LeadsPage() {
                           ) : null}
                         </td>
                         <td className="px-2 py-3">{item.phone}</td>
-                        <td className="px-2 py-3">{LEAD_TYPE_LABELS[item.type]}</td>
                         <td className="px-2 py-3">
                           <div className="w-[160px]">
                             <SearchableSelect
@@ -328,6 +323,9 @@ export default function LeadsPage() {
                         </td>
                         <td className="px-2 py-3">
                           <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                             {!item.dealerId && item.type === "dealer" ? (
                               <Button
                                 variant="outline"

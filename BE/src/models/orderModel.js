@@ -25,6 +25,8 @@ const ORDER_ITEM_SCHEMA = Joi.object({
   productId: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
   productName: Joi.string().required().trim().max(200),
   quantity: Joi.number().integer().min(1).required(),
+  unitType: Joi.string().valid('chai', 'thung').default('chai'),
+  quantityBase: Joi.number().integer().min(1).optional(),
   unitPrice: Joi.number().min(0).required(),
   lineTotal: Joi.number().min(0).required()
 })
@@ -78,6 +80,16 @@ const ORDER_COLLECTION_SCHEMA = Joi.object({
   shippingContactName: optionalText(150).default(''),
   shippingPhone: optionalText(20).default(''),
   carrier: optionalText(150).default(''),
+  deliveryEmployeeIds: Joi.array()
+    .items(
+      Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
+    )
+    .default([]),
+  deliveryEmployeeId: Joi.string()
+    .allow(null, '')
+    .pattern(OBJECT_ID_RULE)
+    .message(OBJECT_ID_RULE_MESSAGE)
+    .optional(),
   trackingCode: optionalText(100).default(''),
   shippingDate: Joi.date().allow(null).default(null),
   deliveredAt: Joi.date().allow(null).default(null),
@@ -100,6 +112,17 @@ const normalizeRefs = (data) => {
   next.quoteId = next.quoteId ? new ObjectId(next.quoteId) : null
   next.warehouseId = next.warehouseId ? new ObjectId(next.warehouseId) : null
   next.tripId = next.tripId ? new ObjectId(next.tripId) : null
+  const deliveryIds = new Set()
+  if (Array.isArray(next.deliveryEmployeeIds)) {
+    for (const id of next.deliveryEmployeeIds) {
+      if (id) deliveryIds.add(String(id))
+    }
+  }
+  if (next.deliveryEmployeeId) {
+    deliveryIds.add(String(next.deliveryEmployeeId))
+  }
+  next.deliveryEmployeeIds = [...deliveryIds].map((id) => new ObjectId(id))
+  delete next.deliveryEmployeeId
   next.createdBy = new ObjectId(next.createdBy)
   next.items = next.items.map((item) => ({
     ...item,

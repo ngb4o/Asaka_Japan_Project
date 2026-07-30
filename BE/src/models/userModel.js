@@ -151,6 +151,30 @@ const updatePassword = async (id, password) => {
     )
 }
 
+const softDelete = async (id) => {
+  return await GET_DB()
+    .collection(USER_COLLECTION_NAME)
+    .updateOne(
+      { _id: new ObjectId(id), _destroy: { $ne: true } },
+      { $set: { _destroy: true, updatedAt: new Date() } }
+    )
+}
+
+const deleteOne = async (id) => {
+  return await GET_DB()
+    .collection(USER_COLLECTION_NAME)
+    .deleteOne({ _id: new ObjectId(id) })
+}
+
+const countByRole = async (role) => {
+  return await GET_DB()
+    .collection(USER_COLLECTION_NAME)
+    .countDocuments({
+      _destroy: { $ne: true },
+      role
+    })
+}
+
 const countActive = async () => {
   return await GET_DB()
     .collection(USER_COLLECTION_NAME)
@@ -169,5 +193,8 @@ export const userModel = {
   findMany,
   updateRole,
   updatePassword,
+  softDelete,
+  deleteOne,
+  countByRole,
   countActive
 }

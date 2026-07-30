@@ -244,6 +244,8 @@ export type LineItem = {
   productId: string;
   productName?: string;
   quantity: number;
+  unitType?: InventoryUnitType;
+  quantityBase?: number;
   unitPrice: number;
   lineTotal: number;
 };
@@ -251,6 +253,7 @@ export type LineItem = {
 export type LineItemInput = {
   productId: string;
   quantity: number;
+  unitType?: InventoryUnitType;
   unitPrice?: number;
 };
 
@@ -282,6 +285,10 @@ export type Order = {
   shippingContactName: string;
   shippingPhone: string;
   carrier: string;
+  deliveryEmployeeIds?: string[];
+  deliveryEmployeeNames?: string[];
+  deliveryEmployeeId?: string | null;
+  deliveryEmployeeName?: string;
   trackingCode: string;
   shippingDate: string | null;
   deliveredAt: string | null;
@@ -310,6 +317,8 @@ export type OrderInput = {
   shippingContactName?: string;
   shippingPhone?: string;
   carrier?: string;
+  deliveryEmployeeIds?: string[];
+  deliveryEmployeeId?: string | null;
   trackingCode?: string;
   shippingDate?: string | null;
   deliveredAt?: string | null;

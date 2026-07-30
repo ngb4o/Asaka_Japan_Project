@@ -26,6 +26,66 @@ function currencyTick(value: number) {
   return String(value);
 }
 
+function splitLabel(value: string, maxCharsPerLine = 18) {
+  const words = String(value || "").trim().split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    if (!current) {
+      current = word;
+      continue;
+    }
+
+    if (`${current} ${word}`.length <= maxCharsPerLine) {
+      current += ` ${word}`;
+      continue;
+    }
+
+    lines.push(current);
+    current = word;
+
+    if (lines.length === 1) break;
+  }
+
+  if (!lines.length) {
+    return [current];
+  }
+
+  const rest = [current, ...words.slice(words.indexOf(current) + 1)].filter(Boolean).join(" ");
+  lines.push(rest.length > maxCharsPerLine ? `${rest.slice(0, maxCharsPerLine - 1)}...` : rest);
+  return lines.slice(0, 2);
+}
+
+function RankingYAxisTick(props: {
+  x?: number;
+  y?: number;
+  payload?: { value?: string };
+}) {
+  const { x = 0, y = 0, payload } = props;
+  const lines = splitLabel(payload?.value || "");
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <title>{payload?.value || ""}</title>
+      <text
+        x={0}
+        y={0}
+        dy={4}
+        textAnchor="end"
+        fill="var(--color-text-inverse)"
+        fontSize={12}
+      >
+        {lines.map((line, index) => (
+          <tspan key={`${line}-${index}`} x={0} dy={index === 0 ? 0 : 14}>
+            {line}
+          </tspan>
+        ))}
+      </text>
+    </g>
+  );
+}
+
 export function RevenueAreaChart({
   data,
   height = 280,
@@ -200,13 +260,16 @@ export function RankingBarChart({
   data: { name: string; revenue: number; orderCount?: number }[];
   valueKey?: "revenue" | "orderCount";
 }) {
+  const chartHeight = Math.max(280, data.length * 54);
+
   return (
-    <div className="h-[280px] w-full">
+    <div className="w-full" style={{ height: chartHeight }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}
           layout="vertical"
-          margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
+          barCategoryGap={12}
+          margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-subtle)" horizontal={false} />
           <XAxis
@@ -217,8 +280,9 @@ export function RankingBarChart({
           <YAxis
             type="category"
             dataKey="name"
-            width={110}
-            tick={{ fontSize: 12, fill: "var(--color-text-inverse)" }}
+            width={120}
+            interval={0}
+            tick={<RankingYAxisTick />}
           />
           <Tooltip
             formatter={(value: number) => [

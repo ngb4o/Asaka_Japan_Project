@@ -2,6 +2,7 @@ import express from 'express'
 import { productValidation } from '~/validations/productValidation'
 import { productController } from '~/controllers/productController'
 import { verifyToken } from '~/middlewares/jwtMiddleware'
+import { attachUserRole, requireRoles } from '~/middlewares/roleMiddleware'
 
 const Router = express.Router()
 
@@ -9,9 +10,10 @@ const Router = express.Router()
 Router.get('/', productController.getList)
 Router.get('/:id', productController.getDetails)
 
-// Authenticated writes for CRM
-Router.post('/', verifyToken, productValidation.createNew, productController.createNew)
-Router.put('/:id', verifyToken, productValidation.update, productController.update)
-Router.delete('/:id', verifyToken, productController.deleteOne)
+Router.use(verifyToken, attachUserRole)
+
+Router.post('/', requireRoles('admin'), productValidation.createNew, productController.createNew)
+Router.put('/:id', requireRoles('admin'), productValidation.update, productController.update)
+Router.delete('/:id', requireRoles('admin'), productController.deleteOne)
 
 export const productRoute = Router

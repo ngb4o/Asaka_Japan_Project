@@ -62,4 +62,13 @@ Router.put(
   userController.updateRole
 )
 
+Router.delete(
+  '/:id',
+  verifyToken,
+  attachUserRole,
+  requireRoles('admin'),
+  userValidation.getUserById,
+  userController.deleteByAdmin
+)
+
 export const userRoute = Router

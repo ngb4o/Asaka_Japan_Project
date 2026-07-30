@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
+import { DateRangeInput } from "@/components/ui/date-range-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VndInput } from "@/components/ui/vnd-input";
@@ -102,7 +103,8 @@ export default function TripsPage() {
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [dealers, setDealers] = useState<Dealer[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [tripOrders, setTripOrders] = useState<Order[]>([]);
+  const [loadingTripOrders, setLoadingTripOrders] = useState(false);
   const [search, setSearch] = useState("");
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -171,18 +173,46 @@ export default function TripsPage() {
 
   const loadAuxData = useCallback(async () => {
     try {
-      const [employeesResult, dealersResult, ordersResult] = await Promise.all([
+      const [employeesResult, dealersResult] = await Promise.all([
         getEmployees({ status: "active", limit: 100, page: 1 }),
         getDealers({ limit: 100, page: 1 }),
-        getOrders({ limit: 100, page: 1 }),
       ]);
       setEmployees(employeesResult.items);
       setDealers(dealersResult.items);
-      setOrders(ordersResult.items);
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Không tải được chuyến");
     }
   }, [toast]);
+
+  const loadTripOrders = useCallback(
+    async (memberIds: string[]) => {
+      if (!memberIds.length) {
+        setTripOrders([]);
+        return;
+      }
+      setLoadingTripOrders(true);
+      try {
+        const ordersResult = await getOrders({
+          deliveryEmployeeIds: memberIds.join(","),
+          deliveryEmployeeMatch: "all",
+          withoutTrip: true,
+          limit: 100,
+          page: 1,
+        });
+        setTripOrders(
+          ordersResult.items.filter((order) => order.status !== "cancelled")
+        );
+      } catch (err) {
+        toast.error(
+          err instanceof ApiClientError ? err.message : "Không tải được đơn hàng"
+        );
+        setTripOrders([]);
+      } finally {
+        setLoadingTripOrders(false);
+      }
+    },
+    [toast]
+  );
 
   useEffect(() => {
     void reload();
@@ -193,6 +223,11 @@ export default function TripsPage() {
   useEffect(() => {
     void loadAuxData();
   }, [loadAuxData]);
+
+  useEffect(() => {
+    if (!createOpen) return;
+    void loadTripOrders(form.memberIds);
+  }, [createOpen, form.memberIds, loadTripOrders]);
 
   const employeeOptions = useMemo(
     () => employees.map((item) => ({ value: item.id, label: item.fullName })),
@@ -391,12 +426,16 @@ export default function TripsPage() {
   }
 
   function toggleMember(id: string) {
-    setForm((prev) => ({
-      ...prev,
-      memberIds: prev.memberIds.includes(id)
+    setForm((prev) => {
+      const memberIds = prev.memberIds.includes(id)
         ? prev.memberIds.filter((item) => item !== id)
-        : [...prev.memberIds, id],
-    }));
+        : [...prev.memberIds, id];
+      return {
+        ...prev,
+        memberIds,
+        orderIds: [],
+      };
+    });
   }
 
   function toggleOrder(id: string) {
@@ -598,20 +637,18 @@ export default function TripsPage() {
                   placeholder="VD: Giao hàng miền Trung"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Ngày đi *</Label>
-                <DateInput
-                  value={form.startDate}
-                  onChange={(startDate) => setForm({ ...form, startDate })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Ngày về *</Label>
-                <DateInput
-                  value={form.endDate}
-                  onChange={(endDate) => setForm({ ...form, endDate })}
-                  required
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Ngày đi → Ngày về *</Label>
+                <DateRangeInput
+                  from={form.startDate}
+                  to={form.endDate}
+                  fromLabel="Ngày đi"
+                  toLabel="Ngày về"
+                  placeholder="Chọn ngày đi → ngày về"
+                  clearable={false}
+                  onChange={({ from, to }) =>
+                    setForm({ ...form, startDate: from, endDate: to })
+                  }
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
@@ -639,6 +676,7 @@ export default function TripsPage() {
               </div>
             </div>
 
+            {form.memberIds.length > 0 && !loadingTripOrders && tripOrders.length > 0 ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <Label>Đơn hàng gắn chuyến</Label>
@@ -649,12 +687,7 @@ export default function TripsPage() {
                 ) : null}
               </div>
               <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/40 p-2">
-                {orders.length === 0 ? (
-                  <p className="px-2 py-6 text-center text-sm text-[var(--color-text-inverse)]">
-                    Chưa có đơn hàng để gắn
-                  </p>
-                ) : (
-                  orders.slice(0, 30).map((order) => {
+                {tripOrders.map((order) => {
                     const checked = form.orderIds.includes(order.id);
                     return (
                       <label
@@ -687,8 +720,13 @@ export default function TripsPage() {
                             </span>
                           </div>
                           <p className="truncate text-sm text-[var(--color-text-inverse)]">
-                            {order.customerName || "Khách lẻ"}
+                            {order.customerName || order.dealerName || "Khách lẻ"}
                           </p>
+                          {order.deliveryEmployeeName ? (
+                            <p className="text-xs text-[var(--color-text-secondary)]">
+                              NV giao: {order.deliveryEmployeeName}
+                            </p>
+                          ) : null}
                           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--color-text-inverse)]">
                             <span>
                               {order.paymentStatus === "paid"
@@ -704,10 +742,10 @@ export default function TripsPage() {
                         </div>
                       </label>
                     );
-                  })
-                )}
+                  })}
               </div>
             </div>
+            ) : null}
 
             <div className="space-y-2">
               <Label>Ghi chú</Label>

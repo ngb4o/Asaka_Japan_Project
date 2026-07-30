@@ -30,3 +30,9 @@ export async function updateUserRole(id: string, role: UserRole) {
     body: { role },
   });
 }
+
+export async function deleteUser(id: string) {
+  return apiRequest<{ message: string }>(`/users/${id}`, {
+    method: "DELETE",
+  });
+}

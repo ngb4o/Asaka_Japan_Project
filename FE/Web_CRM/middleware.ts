@@ -16,6 +16,8 @@ const PROTECTED_PREFIXES = [
   "/employees",
   "/trips",
   "/payroll",
+  "/settings",
+  "/quotes",
 ];
 const AUTH_PAGES = ["/login"];
 
@@ -59,6 +61,8 @@ export const config = {
     "/employees/:path*",
     "/trips/:path*",
     "/payroll/:path*",
+    "/settings/:path*",
+    "/quotes/:path*",
     "/login",
     "/register",
   ],

@@ -10,6 +10,7 @@ const optionalDate = Joi.alternatives()
 const lineItemSchema = Joi.object({
   productId: Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE).required(),
   quantity: Joi.number().integer().min(1).required(),
+  unitType: Joi.string().valid('chai', 'thung').optional(),
   unitPrice: Joi.number().min(0).optional()
 })
 
@@ -18,6 +19,14 @@ const shippingFields = {
   shippingContactName: optionalText.max(150),
   shippingPhone: optionalText.max(20),
   carrier: optionalText.max(150),
+  deliveryEmployeeIds: Joi.array()
+    .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
+    .optional(),
+  deliveryEmployeeId: Joi.string()
+    .pattern(OBJECT_ID_RULE)
+    .message(OBJECT_ID_RULE_MESSAGE)
+    .allow(null, '')
+    .optional(),
   trackingCode: optionalText.max(100),
   shippingDate: optionalDate,
   deliveredAt: optionalDate,

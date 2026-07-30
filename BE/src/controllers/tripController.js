@@ -15,7 +15,7 @@ const createNew = async (req, res, next) => {
 
 const getList = async (req, res, next) => {
   try {
-    const result = await tripService.getList(req.query)
+    const result = await tripService.getList(req.query, req.userId, req.userRole)
     res.status(StatusCodes.OK).json({
       message: 'Lấy danh sách chuyến công tác thành công!',
       data: result
@@ -27,7 +27,7 @@ const getList = async (req, res, next) => {
 
 const getDetails = async (req, res, next) => {
   try {
-    const result = await tripService.getDetails(req.params.id)
+    const result = await tripService.getDetails(req.params.id, req.userId, req.userRole)
     res.status(StatusCodes.OK).json({
       message: 'Lấy chi tiết chuyến công tác thành công!',
       data: result

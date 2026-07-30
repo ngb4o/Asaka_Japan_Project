@@ -9,6 +9,10 @@ export type TelegramContact = {
   displayName?: string;
   username?: string;
   role: TelegramContactRole;
+  employeeId?: string | null;
+  userId?: string | null;
+  employeeName?: string | null;
+  employeeCode?: string | null;
   fromEnv?: boolean;
   lastInteractedAt?: string | null;
   createdAt?: string;
@@ -56,6 +60,7 @@ export async function upsertTelegramContact(body: {
   phone?: string;
   username?: string;
   role?: TelegramContactRole;
+  employeeId?: string;
 }) {
   return apiRequest<TelegramContact>("/telegram/contacts", {
     method: "POST",

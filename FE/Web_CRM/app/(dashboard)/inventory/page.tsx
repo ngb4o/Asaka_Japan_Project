@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  ChevronDown,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,9 +29,14 @@ import {
   MobileStatTile,
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
-import { SearchableSelect } from "@/components/ui/searchable-select";
+import {
+  SearchableSelect,
+  STATUS_OPTIONS,
+} from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useAuth } from "@/lib/auth/AuthProvider";
 import {
   exportStock,
   getInventoryTransactions,
@@ -32,7 +44,12 @@ import {
   importStock,
 } from "@/lib/api/inventory";
 import { getProducts } from "@/lib/api/products";
-import { getWarehouses } from "@/lib/api/warehouses";
+import {
+  createWarehouse,
+  deleteWarehouse,
+  getWarehouses,
+  updateWarehouse,
+} from "@/lib/api/warehouses";
 import type {
   InventoryTransaction,
   Product,
@@ -48,10 +65,14 @@ import {
   toUnitsPerCase,
 } from "@/lib/inventoryUnits";
 import { statusBadgeVariant } from "@/lib/status-badge";
+import { cn } from "@/lib/utils";
 import {
   buildInventoryMovementPayload,
+  buildWarehousePayload,
   validateInventoryMovementForm,
+  validateWarehouseForm,
   type InventoryMovementFormValues,
+  type WarehouseFormValues,
 } from "@/lib/validation/payloads";
 
 const EMPTY_MOVEMENT_FORM: InventoryMovementFormValues = {
@@ -61,12 +82,21 @@ const EMPTY_MOVEMENT_FORM: InventoryMovementFormValues = {
   unitType: "chai",
 };
 
+const EMPTY_WAREHOUSE_FORM: WarehouseFormValues = {
+  name: "",
+  status: "active",
+};
+
 function formatDate(value: string) {
   return new Date(value).toLocaleString("vi-VN");
 }
 
 export default function InventoryPage() {
+  const { user } = useAuth();
+  const confirm = useConfirm();
   const toast = useToast();
+  const isAdmin = user?.role === "admin";
+
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [warehouseFilter, setWarehouseFilter] = useState("");
@@ -76,6 +106,13 @@ export default function InventoryPage() {
     EMPTY_MOVEMENT_FORM
   );
   const [submitting, setSubmitting] = useState(false);
+
+  // Warehouse management
+  const [warehouseSectionOpen, setWarehouseSectionOpen] = useState(false);
+  const [warehouseDialogOpen, setWarehouseDialogOpen] = useState(false);
+  const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
+  const [warehouseForm, setWarehouseForm] = useState<WarehouseFormValues>(EMPTY_WAREHOUSE_FORM);
+  const [warehouseSubmitting, setWarehouseSubmitting] = useState(false);
 
   const activeWarehouses = warehouses.filter((item) => item.status === "active");
 
@@ -161,6 +198,75 @@ export default function InventoryPage() {
   useEffect(() => {
     void loadMasterData();
   }, [loadMasterData]);
+
+  // ── Warehouse CRUD ──
+
+  function openCreateWarehouse() {
+    setEditingWarehouse(null);
+    setWarehouseForm(EMPTY_WAREHOUSE_FORM);
+    setWarehouseDialogOpen(true);
+  }
+
+  function openEditWarehouse(item: Warehouse) {
+    setEditingWarehouse(item);
+    setWarehouseForm({
+      name: item.name,
+      code: item.code,
+      address: item.address,
+      note: item.note,
+      status: item.status,
+    });
+    setWarehouseDialogOpen(true);
+  }
+
+  async function handleWarehouseSubmit(event: React.FormEvent) {
+    event.preventDefault();
+
+    const validationError = validateWarehouseForm(warehouseForm);
+    if (validationError) {
+      toast.warning(validationError);
+      return;
+    }
+
+    setWarehouseSubmitting(true);
+
+    try {
+      const payload = buildWarehousePayload(warehouseForm);
+
+      if (editingWarehouse) {
+        await updateWarehouse(editingWarehouse.id, payload);
+        toast.success("Đã cập nhật kho");
+      } else {
+        await createWarehouse(payload);
+        toast.success("Đã thêm kho");
+      }
+      setWarehouseDialogOpen(false);
+      await loadMasterData();
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Lưu thất bại");
+    } finally {
+      setWarehouseSubmitting(false);
+    }
+  }
+
+  async function handleDeleteWarehouse(item: Warehouse) {
+    const confirmed = await confirm({
+      title: "Xóa kho",
+      description: `Bạn có chắc muốn xóa "${item.name}"? Hành động này không thể hoàn tác.`,
+      confirmText: "Xóa",
+      cancelText: "Hủy",
+      variant: "danger",
+    });
+    if (!confirmed) return;
+
+    try {
+      await deleteWarehouse(item.id);
+      toast.success(`Đã xóa kho "${item.name}"`);
+      await loadMasterData();
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
+    }
+  }
 
   useEffect(() => {
     void reloadStocks();
@@ -248,8 +354,8 @@ export default function InventoryPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Tồn kho"
-        description="Quản lý nhập xuất và theo dõi tồn kho theo từng kho"
+        title="Kho hàng"
+        description="Quản lý kho, nhập xuất và theo dõi tồn kho"
         actions={
           <>
             <Button onClick={() => openMovement("import")}>
@@ -280,6 +386,120 @@ export default function InventoryPage() {
         <p className="text-sm text-amber-700">
           Vui lòng tạo ít nhất một kho đang hoạt động trước khi nhập/xuất hàng.
         </p>
+      )}
+
+      {/* ── Warehouse management (collapsible) ── */}
+      {isAdmin && (
+        <Card>
+          <CardHeader
+            className="cursor-pointer select-none"
+            onClick={() => setWarehouseSectionOpen((prev) => !prev)}
+          >
+            <div className="flex items-center justify-between">
+              <CardTitle>Quản lý kho</CardTitle>
+              <ChevronDown
+                className={cn(
+                  "h-5 w-5 text-[var(--color-text-inverse)] transition-transform",
+                  warehouseSectionOpen && "rotate-180"
+                )}
+              />
+            </div>
+          </CardHeader>
+          {warehouseSectionOpen && (
+            <CardContent className="space-y-4">
+              <div className="flex justify-end">
+                <Button size="sm" onClick={openCreateWarehouse}>
+                  <Plus className="h-4 w-4" />
+                  Thêm kho
+                </Button>
+              </div>
+
+              {warehouses.length === 0 ? (
+                <p className="text-sm text-[var(--color-text-inverse)]">Chưa có kho</p>
+              ) : (
+                <>
+                  {/* Mobile */}
+                  <div className="flex flex-col gap-3 md:hidden">
+                    {warehouses.map((item) => (
+                      <MobileRecordCard key={item.id} className="p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                              {item.name}
+                            </p>
+                            <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                              {item.code}
+                            </p>
+                          </div>
+                          <Badge
+                            variant={statusBadgeVariant(item.status)}
+                            className="shrink-0"
+                          >
+                            {item.status === "active" ? "Hoạt động" : "Ngưng"}
+                          </Badge>
+                        </div>
+                        {item.address ? (
+                          <p className="mt-2 truncate text-xs text-[var(--color-text-inverse)]">
+                            {item.address}
+                          </p>
+                        ) : null}
+                        <div className="mt-2 flex justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => openEditWarehouse(item)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDeleteWarehouse(item)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </MobileRecordCard>
+                    ))}
+                  </div>
+
+                  {/* Desktop */}
+                  <div className="crm-table-scroll hidden md:block">
+                    <table className="w-full min-w-[600px] text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
+                          <th className="px-2 py-3 font-medium">Tên kho</th>
+                          <th className="px-2 py-3 font-medium">Mã</th>
+                          <th className="px-2 py-3 font-medium">Địa chỉ</th>
+                          <th className="px-2 py-3 font-medium">Trạng thái</th>
+                          <th className="px-2 py-3 font-medium text-right">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {warehouses.map((item) => (
+                          <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
+                            <td className="px-2 py-3 font-medium">{item.name}</td>
+                            <td className="px-2 py-3 text-[var(--color-text-inverse)]">{item.code}</td>
+                            <td className="max-w-xs truncate px-2 py-3 text-[var(--color-text-inverse)]">
+                              {item.address || "—"}
+                            </td>
+                            <td className="px-2 py-3">
+                              <Badge variant={item.status === "active" ? "success" : "muted"}>
+                                {item.status === "active" ? "Hoạt động" : "Ngưng"}
+                              </Badge>
+                            </td>
+                            <td className="px-2 py-3">
+                              <div className="flex justify-end gap-2">
+                                <Button variant="outline" size="sm" onClick={() => openEditWarehouse(item)}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="danger" size="sm" onClick={() => handleDeleteWarehouse(item)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          )}
+        </Card>
       )}
 
       <Card>
@@ -521,6 +741,74 @@ export default function InventoryPage() {
         </CardContent>
       </Card>
 
+      {/* ── Warehouse dialog ── */}
+      <Dialog open={warehouseDialogOpen} onOpenChange={setWarehouseDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingWarehouse ? "Sửa kho" : "Thêm kho"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleWarehouseSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="wh-name">Tên kho *</Label>
+              <Input
+                id="wh-name"
+                value={warehouseForm.name}
+                onChange={(e) => setWarehouseForm({ ...warehouseForm, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wh-code">Mã kho</Label>
+              <Input
+                id="wh-code"
+                placeholder="Tự sinh từ tên nếu để trống"
+                value={warehouseForm.code || ""}
+                onChange={(e) => setWarehouseForm({ ...warehouseForm, code: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wh-address">Địa chỉ</Label>
+              <Input
+                id="wh-address"
+                value={warehouseForm.address || ""}
+                onChange={(e) => setWarehouseForm({ ...warehouseForm, address: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wh-note">Ghi chú</Label>
+              <Textarea
+                id="wh-note"
+                value={warehouseForm.note || ""}
+                onChange={(e) => setWarehouseForm({ ...warehouseForm, note: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wh-status">Trạng thái</Label>
+              <SearchableSelect
+                id="wh-status"
+                options={STATUS_OPTIONS.warehouse}
+                value={warehouseForm.status || "active"}
+                onChange={(next) =>
+                  setWarehouseForm({
+                    ...warehouseForm,
+                    status: next as "active" | "inactive",
+                  })
+                }
+                searchable={false}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setWarehouseDialogOpen(false)}>
+                Hủy
+              </Button>
+              <Button type="submit" loading={warehouseSubmitting}>
+                Lưu
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Movement dialog ── */}
       <Dialog open={movementType !== null} onOpenChange={(open) => !open && closeMovement()}>
         <DialogContent>
           <DialogHeader>

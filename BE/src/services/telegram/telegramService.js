@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { StatusCodes } from 'http-status-codes'
+import { ObjectId } from 'mongodb'
 import ApiError from '~/utils/ApiError'
 import { env } from '~/config/environment'
 import { telegramClient } from '~/services/telegram/telegramClient'
@@ -7,6 +8,7 @@ import { telegramContactModel } from '~/models/telegramContactModel'
 import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
 import { telegramCommands } from '~/services/telegram/telegramCommands'
 import { telegramActions } from '~/services/telegram/telegramActions'
+import { employeeModel } from '~/models/employeeModel'
 import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { normalizePhone } from '~/utils/phone'
 
@@ -46,10 +48,35 @@ const listContacts = async (query = {}) => {
   const result = await telegramContactModel.list({ limit, skip, role })
 
   const envStaffIds = new Set(env.TELEGRAM_STAFF_CHAT_IDS || [])
-  const items = formatDocuments(result.items).map((item) => ({
-    ...item,
-    fromEnv: envStaffIds.has(String(item.chatId))
-  }))
+  const employeeIds = [
+    ...new Set(
+      result.items
+        .map((item) => item.employeeId?.toString?.() || item.employeeId)
+        .filter(Boolean)
+    )
+  ]
+  const employeeMap = new Map()
+  if (employeeIds.length) {
+    const employees = await employeeModel.findMany(
+      { _id: { $in: employeeIds.map((id) => new ObjectId(id)) } },
+      { limit: employeeIds.length, skip: 0 }
+    )
+    for (const emp of employees.items || []) {
+      employeeMap.set(emp._id.toString(), emp)
+    }
+  }
+
+  const items = formatDocuments(result.items).map((item) => {
+    const employee = item.employeeId
+      ? employeeMap.get(String(item.employeeId))
+      : null
+    return {
+      ...item,
+      fromEnv: envStaffIds.has(String(item.chatId)),
+      employeeName: employee?.fullName || null,
+      employeeCode: employee?.code || null
+    }
+  })
 
   return {
     items,
@@ -71,15 +98,47 @@ const upsertContact = async (body) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Vai trò Telegram không hợp lệ!')
   }
 
+  let employeeId = body.employeeId || null
+  let userId = body.userId || null
+  let displayName = body.displayName || ''
+  let phone = body.phone || ''
+
+  if (employeeId) {
+    const employee = await employeeModel.findOneById(employeeId)
+    if (!employee) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Nhân viên không hợp lệ!')
+    }
+    if (!displayName.trim()) {
+      displayName = employee.fullName || ''
+    }
+    if (!phone.trim() && employee.phone) {
+      phone = employee.phone
+    }
+    if (employee.userId) {
+      userId = employee.userId.toString()
+    }
+  }
+
   const contact = await telegramContactModel.upsertByChatId({
     chatId: body.chatId,
-    phone: body.phone || '',
-    displayName: body.displayName || '',
+    phone,
+    displayName,
     username: body.username || '',
-    role
+    role,
+    employeeId,
+    userId
   })
 
-  return formatDocument(contact)
+  const formatted = formatDocument(contact)
+  if (employeeId) {
+    const employee = await employeeModel.findOneById(employeeId)
+    return {
+      ...formatted,
+      employeeName: employee?.fullName || null,
+      employeeCode: employee?.code || null
+    }
+  }
+  return formatted
 }
 
 const deleteContact = async (chatId) => {

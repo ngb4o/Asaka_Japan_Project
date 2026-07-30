@@ -262,6 +262,46 @@ const updateRole = async (targetUserId, role, actorUserId) => {
   return await getUserById(targetUserId)
 }
 
+const deleteByAdmin = async (targetUserId, actorUserId) => {
+  if (targetUserId === actorUserId) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Không thể xóa tài khoản đang đăng nhập!'
+    )
+  }
+
+  const user = await userModel.findOneById(targetUserId)
+  if (!user || user._destroy) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy người dùng!')
+  }
+
+  const role = resolveRole(user)
+  if (role === userModel.USER_ROLES.ADMIN) {
+    const adminCount = await userModel.countByRole(userModel.USER_ROLES.ADMIN)
+    if (adminCount <= 1) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Không thể xóa admin duy nhất còn lại!'
+      )
+    }
+  }
+
+  await userModel.deleteOne(targetUserId)
+
+  // Gỡ liên kết nhân viên để có thể cấp lại tài khoản sau
+  const linked = await GET_DB()
+    .collection(employeeModel.EMPLOYEE_COLLECTION_NAME)
+    .findOne({
+      userId: new ObjectId(targetUserId),
+      _destroy: false
+    })
+  if (linked) {
+    await employeeModel.update(linked._id.toString(), { userId: null })
+  }
+
+  return { message: 'Đã xóa tài khoản CRM!' }
+}
+
 export const userService = {
   register,
   createByAdmin,
@@ -272,5 +312,6 @@ export const userService = {
   getProfile,
   getUserById,
   getList,
-  updateRole
+  updateRole,
+  deleteByAdmin
 }

@@ -9,7 +9,6 @@ import {
   Menu,
   MessageSquare,
   Package,
-  Route,
   ShoppingCart,
   Wallet,
 } from "lucide-react";
@@ -42,14 +41,14 @@ const TABS_BY_ROLE: Record<UserRole, TabDef[]> = {
     { href: "/dashboard", label: "Tổng quan", icon: LayoutDashboard },
     { href: "/orders", label: "Đơn", icon: ShoppingCart, badgeKey: "orders" },
     { href: "/leads", label: "Lead", icon: MessageSquare, badgeKey: "leads" },
-    { href: "/dealers", label: "Đại lý", icon: Handshake, badgeKey: "dealers" },
+    { href: "/inventory", label: "Kho", icon: Package },
     { label: "Menu", icon: Menu, action: "menu" },
   ],
   warehouse: [
     { href: "/dashboard", label: "Tổng quan", icon: LayoutDashboard },
     { href: "/orders", label: "Đơn", icon: ShoppingCart, badgeKey: "orders" },
-    { href: "/inventory", label: "Tồn", icon: Package },
-    { href: "/trips", label: "Chuyến", icon: Route },
+    { href: "/leads", label: "Lead", icon: MessageSquare, badgeKey: "leads" },
+    { href: "/inventory", label: "Kho", icon: Package },
     { label: "Menu", icon: Menu, action: "menu" },
   ],
   accountant: [

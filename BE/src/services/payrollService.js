@@ -1,3 +1,4 @@
+import { ObjectId } from 'mongodb'
 import { payrollModel } from '~/models/payrollModel'
 import { employeeModel } from '~/models/employeeModel'
 import { orderModel } from '~/models/orderModel'
@@ -7,6 +8,29 @@ import { StatusCodes } from 'http-status-codes'
 import { formatDocument } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 
+const canViewAllPayroll = (role) => role === 'admin' || role === 'accountant'
+
+const findEmployeeIdsForUser = async (userId) => {
+  if (!userId) return []
+  const result = await employeeModel.findMany(
+    { userId: new ObjectId(userId) },
+    { limit: 20, skip: 0 }
+  )
+  return result.items.map((item) => item._id.toString())
+}
+
+const scopePayrollForViewer = (payroll, employeeIds) => {
+  if (!payroll) return null
+  if (!employeeIds?.length) {
+    return { ...payroll, lines: [] }
+  }
+  const idSet = new Set(employeeIds)
+  return {
+    ...payroll,
+    lines: (payroll.lines || []).filter((line) => idSet.has(String(line.employeeId)))
+  }
+}
+
 const periodBounds = (period) => {
   if (!/^\d{4}-\d{2}$/.test(period)) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Kỳ lương không hợp lệ (YYYY-MM)!')
@@ -15,6 +39,38 @@ const periodBounds = (period) => {
   const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0))
   const end = new Date(Date.UTC(year, month, 1, 0, 0, 0))
   return { start, end }
+}
+
+/** Cty trả NV — cùng công thức settlementPreview trên trang chuyến */
+const resolveTripCompanyPay = (trip) => {
+  const settlement = trip.settlement || {}
+  if (settlement.companyPay != null && settlement.companyPay !== '') {
+    return Math.max(0, Number(settlement.companyPay) || 0)
+  }
+
+  // Schema seed cũ
+  if (settlement.totalExpenseReimburse != null) {
+    const advanceTotal = Number(settlement.totalAdvance) || 0
+    const expenseAdvanceTotal = Number(settlement.totalExpenseAdvance) || 0
+    const expenseReimburseTotal = Number(settlement.totalExpenseReimburse) || 0
+    return (
+      expenseReimburseTotal + Math.max(0, expenseAdvanceTotal - advanceTotal)
+    )
+  }
+
+  const advanceTotal = (trip.advances || []).reduce(
+    (sum, item) => sum + (Number(item.amount) || 0),
+    0
+  )
+  const approved = (trip.expenses || []).filter((item) => item.status === 'approved')
+  const expenseAdvanceTotal = approved
+    .filter((item) => item.funding === 'advance')
+    .reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+  const expenseReimburseTotal = approved
+    .filter((item) => item.funding === 'reimburse')
+    .reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+
+  return expenseReimburseTotal + Math.max(0, expenseAdvanceTotal - advanceTotal)
 }
 
 const formatPayroll = (doc) => {
@@ -60,10 +116,12 @@ const buildLinesForPeriod = async (period) => {
     salesByUser.set(userId, (salesByUser.get(userId) || 0) + (Number(order.total) || 0))
   }
 
-  // Split settlement companyPay equally among trip members for the period
+  // Split companyPay equally among trip members for the period.
+  // Tính lại từ chi phí (giống settlementPreview trên UI) để khớp schema cũ
+  // (seed dùng totalExpenseReimburse thay vì companyPay).
   const tripPayByEmployee = new Map()
   for (const trip of closedTrips.items) {
-    const companyPay = Number(trip.settlement?.companyPay) || 0
+    const companyPay = resolveTripCompanyPay(trip)
     const members = (trip.memberIds || []).map((id) => id.toString())
     if (!members.length || companyPay <= 0) continue
     const share = companyPay / members.length
@@ -98,8 +156,33 @@ const buildLinesForPeriod = async (period) => {
   })
 }
 
-const getList = async (query) => {
+const getList = async (query, actorUserId, actorRole) => {
   const pagination = parsePaginationQuery(query)
+
+  if (!canViewAllPayroll(actorRole)) {
+    const employeeIds = await findEmployeeIdsForUser(actorUserId)
+    const all = await payrollModel.findMany({}, { limit: 500, skip: 0 })
+    const filtered = all.items
+      .map(formatPayroll)
+      .map((item) => scopePayrollForViewer(item, employeeIds))
+      .filter((item) => item && item.lines.length > 0)
+
+    const pageItems = filtered.slice(
+      pagination.skip,
+      pagination.skip + pagination.limit
+    )
+
+    return buildPaginationResult(
+      {
+        items: pageItems,
+        total: filtered.length,
+        limit: pagination.limit,
+        skip: pagination.skip
+      },
+      pagination.page
+    )
+  }
+
   const result = await payrollModel.findMany({}, {
     limit: pagination.limit,
     skip: pagination.skip
@@ -116,10 +199,21 @@ const getList = async (query) => {
   )
 }
 
-const getDetails = async (id) => {
+const getDetails = async (id, actorUserId = null, actorRole = null) => {
   const doc = await payrollModel.findOneById(id)
   if (!doc) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy bảng lương!')
-  return formatPayroll(doc)
+
+  const formatted = formatPayroll(doc)
+  if (!actorUserId || canViewAllPayroll(actorRole)) {
+    return formatted
+  }
+
+  const employeeIds = await findEmployeeIdsForUser(actorUserId)
+  const scoped = scopePayrollForViewer(formatted, employeeIds)
+  if (!scoped?.lines?.length) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Bạn không có quyền xem bảng lương này!')
+  }
+  return scoped
 }
 
 const generate = async (period, userId, note = '') => {

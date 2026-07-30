@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { KeyRound, Plus, RefreshCw } from "lucide-react";
+import { KeyRound, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/mobile-record-card";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canManageUsers, ROLE_LABELS } from "@/lib/auth/permissions";
@@ -28,6 +29,7 @@ import { statusBadgeVariant } from "@/lib/status-badge";
 import { getEmployees } from "@/lib/api/employees";
 import {
   createUser,
+  deleteUser,
   getUsers,
   updateUserPassword,
   updateUserRole,
@@ -61,6 +63,7 @@ const EMPTY_FORM: CreateForm = {
 };
 
 export default function UsersPage() {
+  const confirm = useConfirm();
   const toast = useToast();
   const { user } = useAuth();
   const [items, setItems] = useState<UserProfile[]>([]);
@@ -199,6 +202,32 @@ export default function UsersPage() {
     }
   }
 
+  async function handleDelete(item: UserProfile) {
+    if (item.id === user?.id) {
+      toast.warning("Không thể xóa tài khoản đang đăng nhập");
+      return;
+    }
+    const ok = await confirm({
+      title: "Xóa tài khoản CRM",
+      description: `Xóa tài khoản "${item.employeeName || item.email}"? Nhân viên sẽ được gỡ gắn và có thể cấp lại sau.`,
+      confirmText: "Xóa",
+      cancelText: "Hủy",
+      variant: "danger",
+    });
+    if (!ok) return;
+
+    setUpdatingId(item.id);
+    try {
+      await deleteUser(item.id);
+      toast.success("Đã xóa tài khoản");
+      await loadData();
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
   if (!canManageUsers(user?.role)) {
     return (
       <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-8 text-center">
@@ -296,6 +325,16 @@ export default function UsersPage() {
                           <KeyRound className="h-4 w-4" />
                           Đặt lại MK
                         </Button>
+                        {item.id !== user?.id ? (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            disabled={updatingId === item.id}
+                            onClick={() => handleDelete(item)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        ) : null}
                       </MobileRecordActions>
                     </MobileRecordCard>
                   ))}
@@ -350,7 +389,7 @@ export default function UsersPage() {
                         </div>
                       </td>
                       <td className="px-2 py-3">
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-2">
                           <Button
                             variant="outline"
                             size="sm"
@@ -362,6 +401,16 @@ export default function UsersPage() {
                             <KeyRound className="h-4 w-4" />
                             Đặt lại MK
                           </Button>
+                          {item.id !== user?.id ? (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              disabled={updatingId === item.id}
+                              onClick={() => handleDelete(item)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          ) : null}
                         </div>
                       </td>
                     </tr>

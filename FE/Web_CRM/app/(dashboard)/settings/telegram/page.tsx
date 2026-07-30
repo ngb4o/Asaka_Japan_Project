@@ -13,12 +13,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canManageTelegram } from "@/lib/auth/permissions";
 import { ApiClientError } from "@/lib/api/client";
+import { getEmployees } from "@/lib/api/employees";
 import {
   deleteTelegramContact,
   getTelegramContacts,
@@ -28,19 +30,18 @@ import {
   type TelegramContact,
   type TelegramStatus,
 } from "@/lib/api/telegram";
+import type { Employee } from "@/lib/types";
 
 const BOT_URL = "https://t.me/asaka_japan_noti_bot";
 
 type FormState = {
+  employeeId: string;
   chatId: string;
-  displayName: string;
-  phone: string;
 };
 
 const EMPTY_FORM: FormState = {
+  employeeId: "",
   chatId: "",
-  displayName: "",
-  phone: "",
 };
 
 export default function TelegramSettingsPage() {
@@ -48,6 +49,7 @@ export default function TelegramSettingsPage() {
   const { user } = useAuth();
   const [status, setStatus] = useState<TelegramStatus | null>(null);
   const [items, setItems] = useState<TelegramContact[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [envStaffChatIds, setEnvStaffChatIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -60,15 +62,20 @@ export default function TelegramSettingsPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const contactsResult = await getTelegramContacts({
-        role: "staff",
-        limit: 100,
-        page: 1,
-      });
+      const [contactsResult, employeesResult] = await Promise.all([
+        getTelegramContacts({
+          role: "staff",
+          limit: 100,
+          page: 1,
+        }),
+        getEmployees({ status: "active", limit: 200, page: 1 }).catch(() => ({
+          items: [] as Employee[],
+        })),
+      ]);
       setItems(contactsResult.items || []);
       setEnvStaffChatIds(contactsResult.envStaffChatIds || []);
+      setEmployees(employeesResult.items || []);
 
-      // Status gọi Telegram getMe — không chặn list nếu chậm
       try {
         const statusResult = await getTelegramStatus();
         setStatus(statusResult);
@@ -95,6 +102,18 @@ export default function TelegramSettingsPage() {
     return envStaffChatIds.filter((id) => !dbIds.has(String(id)));
   }, [envStaffChatIds, items]);
 
+  const linkedEmployeeIds = useMemo(
+    () => new Set(items.map((item) => item.employeeId).filter(Boolean)),
+    [items]
+  );
+
+  function handleEmployeeChange(employeeId: string) {
+    setForm((prev) => ({
+      ...prev,
+      employeeId,
+    }));
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     const chatId = form.chatId.trim();
@@ -102,14 +121,21 @@ export default function TelegramSettingsPage() {
       toast.error("Vui lòng nhập Chat ID");
       return;
     }
+    if (!form.employeeId) {
+      toast.error("Vui lòng chọn nhân viên để gắn");
+      return;
+    }
+
+    const employee = employees.find((item) => item.id === form.employeeId);
 
     setSubmitting(true);
     try {
       await upsertTelegramContact({
         chatId,
-        displayName: form.displayName.trim(),
-        phone: form.phone.trim(),
+        displayName: employee?.fullName || "",
+        phone: employee?.phone || "",
         role: "staff",
+        employeeId: form.employeeId,
       });
       toast.success("Đã thêm người nhận nội bộ");
       setOpen(false);
@@ -262,8 +288,13 @@ export default function TelegramSettingsPage() {
           <CardTitle className="text-base">Hướng dẫn thêm người</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-[var(--color-text-inverse)]">
-          <p>1. Người nhận mở bot ASAKA → gửi <strong>/id</strong> hoặc <strong>/start</strong>.</p>
-          <p>2. Copy Chat ID hiện ra → bấm “Thêm người nhận” trong trang này.</p>
+          <p>
+            1. Chọn nhân viên (nếu đã có tài khoản CRM sẽ gắn luôn với user đó).
+          </p>
+          <p>
+            2. Người nhận mở bot ASAKA → gửi <strong>/id</strong> hoặc{" "}
+            <strong>/start</strong>, copy Chat ID.
+          </p>
           <p>3. Bấm “Gửi thử” để xác nhận đã nhận tin.</p>
         </CardContent>
       </Card>
@@ -291,6 +322,13 @@ export default function TelegramSettingsPage() {
                       {item.displayName || "Chưa đặt tên"}
                     </p>
                     <Badge variant="muted">staff</Badge>
+                    {item.employeeCode || item.employeeName ? (
+                      <Badge variant="default">
+                        {item.employeeCode
+                          ? `${item.employeeCode} · ${item.employeeName || ""}`
+                          : item.employeeName}
+                      </Badge>
+                    ) : null}
                     {item.fromEnv ? (
                       <Badge variant="default">có trong .env</Badge>
                     ) : null}
@@ -343,6 +381,37 @@ export default function TelegramSettingsPage() {
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
+              <Label>Nhân viên *</Label>
+              <SearchableSelect
+                options={employees.map((item) => ({
+                  value: item.id,
+                  label: `${item.code} - ${item.fullName}${
+                    linkedEmployeeIds.has(item.id) ? " (đã gắn TG)" : ""
+                  }${item.userId ? " · có TK CRM" : ""}`,
+                }))}
+                value={form.employeeId}
+                onChange={handleEmployeeChange}
+                placeholder="Chọn nhân viên để gắn"
+              />
+              {form.employeeId ? (
+                <p className="text-xs text-[var(--color-text-inverse)]">
+                  Tên / SĐT lấy từ hồ sơ nhân viên
+                  {(() => {
+                    const employee = employees.find(
+                      (item) => item.id === form.employeeId
+                    );
+                    if (!employee) return null;
+                    return (
+                      <>
+                        : <strong>{employee.fullName}</strong>
+                        {employee.phone ? ` · ${employee.phone}` : ""}
+                      </>
+                    );
+                  })()}
+                </p>
+              ) : null}
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="chatId">Chat ID *</Label>
               <Input
                 id="chatId"
@@ -352,28 +421,6 @@ export default function TelegramSettingsPage() {
                 }
                 placeholder="Ví dụ: 5641491146"
                 required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="displayName">Tên hiển thị</Label>
-              <Input
-                id="displayName"
-                value={form.displayName}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, displayName: e.target.value }))
-                }
-                placeholder="VD: Sales Hà Nội"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">SĐT (tuỳ chọn)</Label>
-              <Input
-                id="phone"
-                value={form.phone}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, phone: e.target.value }))
-                }
-                placeholder="09xxxxxxx"
               />
             </div>
             <div className="flex justify-end gap-2">
