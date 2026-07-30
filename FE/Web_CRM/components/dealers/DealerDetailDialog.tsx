@@ -179,7 +179,7 @@ export function DealerDetailDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, dealer?.id, toast]);
+  }, [open, dealer, toast]);
 
   const showContent = Boolean(dealer) && !loading && loadedDealerId === dealer?.id;
   const orderTotal = orders.reduce((sum, item) => sum + (item.total || 0), 0);

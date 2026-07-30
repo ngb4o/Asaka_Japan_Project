@@ -345,7 +345,7 @@ export default function ReportsPage() {
           title="Bảng đại lý"
           headers={["Đại lý", "Đơn", "Doanh số", "Đã thu"]}
           rows={(report?.topDealers || []).map((item) => [
-            <div className="min-w-0">
+            <div key={`dealer-name-${item.dealerId || item.dealerName}`} className="min-w-0">
               <p className="truncate">{item.dealerName}</p>
               {item.region ? (
                 <p className="truncate text-xs font-normal text-[var(--color-text-inverse)]">
@@ -362,7 +362,12 @@ export default function ReportsPage() {
           title="Bảng sản phẩm"
           headers={["Sản phẩm", "SL", "Doanh số"]}
           rows={(report?.topProducts || []).map((item) => [
-            <span className="line-clamp-2">{item.productName}</span>,
+            <span
+              key={`product-name-${item.productId || item.productName}`}
+              className="line-clamp-2"
+            >
+              {item.productName}
+            </span>,
             String(item.quantity),
             formatCurrency(item.revenue),
           ])}
@@ -371,7 +376,10 @@ export default function ReportsPage() {
           title="Bảng nhân viên"
           headers={["Nhân viên", "Đơn", "Doanh số", "Đã thu"]}
           rows={(report?.topStaff || []).map((item) => [
-            <div className="min-w-0">
+            <div
+              key={`staff-name-${item.userId || item.staffName}`}
+              className="min-w-0"
+            >
               <p className="truncate">{item.staffName}</p>
               {item.employeeCode ? (
                 <p className="truncate text-xs font-normal text-[var(--color-text-inverse)]">
