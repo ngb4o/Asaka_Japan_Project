@@ -204,7 +204,7 @@ export default function DashboardPage() {
           hint="chưa thu trong tháng"
           value={loading ? null : stats?.monthDebt}
           icon={AlertTriangle}
-          accent="amber"
+          accent="rose"
           format="currency"
           href="/orders"
         />
@@ -216,8 +216,7 @@ export default function DashboardPage() {
           icon={ShoppingCart}
           accent="slate"
           href="/orders"
-        />
-      </section>
+        />      </section>
       ) : (
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {user?.role === "warehouse" ? (
@@ -235,7 +234,7 @@ export default function DashboardPage() {
               hint="dưới ngưỡng cảnh báo"
               value={loading ? null : stats?.lowStockCount}
               icon={AlertTriangle}
-              accent="amber"
+              accent="rose"
               href="/inventory"
             />
             <KpiCard
@@ -437,18 +436,21 @@ export default function DashboardPage() {
           value={loading ? null : stats?.newLeads}
           icon={MessageSquare}
           href="/leads"
+          accent="green"
         />
         <QuickStat
           title="Đại lý hoạt động"
           value={loading ? null : stats?.activeDealers}
           icon={Handshake}
           href="/dealers"
+          accent="sky"
         />
         <QuickStat
           title="Đơn chờ xử lý"
           value={loading ? null : stats?.pendingOrders}
           icon={ShoppingCart}
           href="/orders"
+          accent="amber"
           highlight={(stats?.pendingOrders || 0) > 0}
         />
         <QuickStat
@@ -456,6 +458,7 @@ export default function DashboardPage() {
           value={loading ? null : stats?.totalProducts}
           icon={Package}
           href="/products"
+          accent="slate"
         />
       </section>
       ) : null}
@@ -513,7 +516,18 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="font-semibold">{formatCurrency(order.total)}</p>
+                      <p
+                        className={cn(
+                          "font-semibold",
+                          order.paymentStatus === "paid"
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : order.paymentStatus === "partial"
+                              ? "text-amber-600 dark:text-amber-400"
+                              : "text-rose-600 dark:text-rose-400"
+                        )}
+                      >
+                        {formatCurrency(order.total)}
+                      </p>
                       <p className="mt-0.5 text-xs text-[var(--color-text-inverse)]">
                         {order.paymentStatus === "paid"
                           ? "Đã TT"
@@ -630,21 +644,31 @@ const ACCENT = {
     icon: "bg-[var(--color-text-secondary)]/12 text-[var(--color-text-secondary)]",
     bar: "bg-[var(--color-text-secondary)]",
     track: "bg-[var(--color-text-secondary)]/15",
+    value: "text-[var(--color-text-secondary)]",
   },
   sky: {
     icon: "bg-sky-500/12 text-sky-600 dark:text-sky-400",
     bar: "bg-sky-500",
     track: "bg-sky-500/15",
+    value: "text-sky-600 dark:text-sky-400",
   },
   amber: {
     icon: "bg-amber-500/12 text-amber-600 dark:text-amber-400",
     bar: "bg-amber-500",
     track: "bg-amber-500/15",
+    value: "text-amber-600 dark:text-amber-400",
+  },
+  rose: {
+    icon: "bg-rose-500/12 text-rose-600 dark:text-rose-400",
+    bar: "bg-rose-500",
+    track: "bg-rose-500/15",
+    value: "text-rose-600 dark:text-rose-400",
   },
   slate: {
     icon: "bg-slate-500/12 text-slate-600 dark:text-slate-300",
     bar: "bg-slate-500",
     track: "bg-slate-500/15",
+    value: "text-[var(--color-text-primary)]",
   },
 } as const;
 
@@ -696,7 +720,12 @@ function KpiCard({
           ) : (
             <div className="space-y-3">
               <div className="flex items-end justify-between gap-2">
-                <p className="text-[1.65rem] font-semibold leading-none tracking-tight">
+                <p
+                  className={cn(
+                    "text-[1.65rem] font-semibold leading-none tracking-tight",
+                    tone.value
+                  )}
+                >
                   {format === "currency" ? formatCurrency(value) : value}
                 </p>
                 <ChangeBadge value={change} />
@@ -725,13 +754,16 @@ function QuickStat({
   icon: Icon,
   href,
   highlight,
+  accent = "slate",
 }: {
   title: string;
   value: number | null | undefined;
   icon: React.ComponentType<{ className?: string }>;
   href: string;
   highlight?: boolean;
+  accent?: keyof typeof ACCENT;
 }) {
+  const tone = ACCENT[accent];
   return (
     <Link href={href} className="group block">
       <div
@@ -740,7 +772,12 @@ function QuickStat({
           highlight && "border-amber-300/70 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
         )}
       >
-        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
+        <span
+          className={cn(
+            "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+            tone.icon
+          )}
+        >
           <Icon className="h-4 w-4" />
         </span>
         <div className="min-w-0">
@@ -748,7 +785,7 @@ function QuickStat({
           {value == null ? (
             <Skeleton className="mt-1 h-6 w-12" />
           ) : (
-            <p className="text-lg font-semibold tracking-tight">{value}</p>
+            <p className={cn("text-lg font-semibold tracking-tight", tone.value)}>{value}</p>
           )}
         </div>
       </div>

@@ -13,39 +13,90 @@ import { NotificationProvider } from "@/lib/notifications/NotificationProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canAccessPath } from "@/lib/auth/permissions";
 
+function WorkspaceLoading() {
+  return (
+    <div
+      className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-6"
+      aria-busy="true"
+      aria-label="Đang tải workspace"
+    >
+      {/* Same hero as login AuthShell */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/images/backgrounds/hero.jpg"
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-br from-black/75 via-[#013a02]/55 to-black/70" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(1,125,3,0.25),transparent_55%)]" />
+
+      <div className="relative z-10 flex flex-col items-center gap-5">
+        <div className="relative">
+          <div className="absolute -inset-3 animate-pulse rounded-2xl bg-white/10" />
+          <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white/95 shadow-[var(--shadow-elevated)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/brand/logo.png"
+              alt=""
+              className="h-10 w-10 object-contain"
+            />
+          </div>
+        </div>
+
+        <div className="text-center">
+          <p className="text-base font-semibold tracking-tight text-white">
+            ASAKA CRM
+          </p>
+          <p className="mt-1 text-sm text-white/70">
+            Đang chuẩn bị workspace...
+          </p>
+        </div>
+
+        <div
+          className="h-1.5 w-36 overflow-hidden rounded-full bg-white/20"
+          aria-hidden
+        >
+          <div className="crm-workspace-loader h-full w-1/2 rounded-full bg-white/90" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  /** Avoid SSR/client auth tree mismatch during hydration */
+  const [mounted, setMounted] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login");
-    }
-  }, [loading, user, router]);
+    if (!mounted || loading) return;
+    if (!user) router.replace("/login");
+  }, [mounted, loading, user, router]);
 
   useEffect(() => {
-    if (!user?.role || loading) return;
+    if (!mounted || !user?.role || loading) return;
     if (!canAccessPath(user.role, pathname)) {
       router.replace("/dashboard");
     }
-  }, [loading, pathname, router, user?.role]);
+  }, [mounted, loading, pathname, router, user?.role]);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--color-surface-muted)] text-sm text-[var(--color-text-inverse)]">
-        Đang tải workspace...
-      </div>
-    );
+  if (!mounted || loading) {
+    return <WorkspaceLoading />;
   }
 
-  if (!user) return null;
+  if (!user) return <WorkspaceLoading />;
 
   const paddedMobile =
     pathname === "/dashboard" ||
@@ -56,7 +107,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <ConfirmProvider>
       <NotificationProvider>
         <MobileChromeProvider scrollRef={mainRef}>
-          <div className="flex h-[100dvh] overflow-hidden bg-[var(--color-surface-muted)]">
+          <div className="flex h-[100dvh] overflow-hidden bg-[var(--color-surface-elevated)]">
             <Sidebar
               mobileOpen={mobileMenuOpen}
               onMobileOpenChange={setMobileMenuOpen}

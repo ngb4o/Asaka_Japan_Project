@@ -23,7 +23,7 @@ import {
   UsersRound,
   Wallet,
   Warehouse,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthProvider";

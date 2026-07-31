@@ -3,17 +3,65 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { cn } from "@/lib/utils";
 
+type DialogContextValue = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  isMobile: boolean;
+};
+
+const DialogContext = React.createContext<DialogContextValue | null>(null);
+
+function useDialogContext() {
+  const ctx = React.useContext(DialogContext);
+  if (!ctx) {
+    throw new Error("Dialog components must be used within <Dialog>");
+  }
+  return ctx;
+}
+
 function Dialog({
+  open: openProp,
+  defaultOpen,
+  onOpenChange,
   modal,
+  children,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   const isMobile = useIsMobile();
-  // Non-modal on mobile so portaled BottomSheets can receive focus + scroll.
-  // Overlay + outside handlers still provide the modal UX.
-  return <DialogPrimitive.Root modal={modal ?? !isMobile} {...props} />;
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(
+    defaultOpen ?? false
+  );
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? Boolean(openProp) : uncontrolledOpen;
+
+  const handleOpenChange = React.useCallback(
+    (next: boolean) => {
+      if (!isControlled) setUncontrolledOpen(next);
+      onOpenChange?.(next);
+    },
+    [isControlled, onOpenChange]
+  );
+
+  return (
+    <DialogContext.Provider
+      value={{ open, onOpenChange: handleOpenChange, isMobile }}
+    >
+      <DialogPrimitive.Root
+        open={open}
+        onOpenChange={handleOpenChange}
+        // Non-modal on mobile: content is a BottomSheet portal; nested selects
+        // also need to receive focus/pointer events.
+        modal={modal ?? !isMobile}
+        {...props}
+      >
+        {children}
+      </DialogPrimitive.Root>
+    </DialogContext.Provider>
+  );
 }
 
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -26,7 +74,11 @@ const DialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
-    className={cn("fixed inset-0 z-50 bg-black/50", className)}
+    className={cn(
+      "fixed inset-0 z-50 bg-black/50",
+      "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      className
+    )}
     {...props}
   />
 ));
@@ -54,17 +106,18 @@ const DialogContent = React.forwardRef<
       onPointerDownOutside,
       onInteractOutside,
       onFocusOutside,
+      style,
       ...props
     },
     ref
   ) => {
+    const { open, onOpenChange, isMobile } = useDialogContext();
+
     function isOverlayExemptTarget(target: EventTarget | null) {
       return (
         target instanceof Element &&
         Boolean(
-          target.closest(
-            "[data-radix-popover-content], [data-bottom-sheet]"
-          )
+          target.closest("[data-radix-popover-content], [data-bottom-sheet]")
         )
       );
     }
@@ -75,10 +128,47 @@ const DialogContent = React.forwardRef<
         "input, textarea, select, [contenteditable='true']"
       );
       if (!(focusable instanceof HTMLElement)) return;
-      // Radix preventDefault on outside pointerdown blocks native focus — restore it.
       queueMicrotask(() => {
         focusable.focus({ preventScroll: true });
       });
+    }
+
+    const body = bodyScroll ? (
+      <div
+        className={cn(
+          "min-h-0",
+          isMobile
+            ? "[&>:not([data-slot=dialog-header])]:px-4 [&>:not([data-slot=dialog-header])]:py-4"
+            : cn(
+                "flex-1 overflow-y-auto overscroll-contain",
+                "[&>:not([data-slot=dialog-header])]:px-4 [&>:not([data-slot=dialog-header])]:py-4",
+                "sm:[&>:not([data-slot=dialog-header])]:px-6 sm:[&>:not([data-slot=dialog-header])]:py-6"
+              )
+        )}
+      >
+        {children}
+      </div>
+    ) : (
+      children
+    );
+
+    // Mobile: real BottomSheet (shared animation + dim overlay)
+    if (isMobile) {
+      return (
+        <BottomSheet
+          open={open}
+          onOpenChange={onOpenChange}
+          maxHeight="90dvh"
+          showClose={false}
+          className={cn("relative", className)}
+        >
+          <DialogClose className="absolute right-2.5 top-2.5 z-30 inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Đóng</span>
+          </DialogClose>
+          {body}
+        </BottomSheet>
+      );
     }
 
     return (
@@ -87,10 +177,11 @@ const DialogContent = React.forwardRef<
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 flex max-h-[min(90dvh,calc(100dvh-2rem))] w-[calc(100%-1rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] shadow-[var(--shadow-elevated)] sm:w-[calc(100%-2rem)]",
-            className,
-            "overflow-hidden p-0"
+            "fixed left-1/2 top-1/2 z-50 flex max-h-[min(90dvh,calc(100dvh-2rem))] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-0 text-[var(--color-text-primary)] shadow-[var(--shadow-elevated)]",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            className
           )}
+          style={style}
           onPointerDownOutside={(event) => {
             if (isOverlayExemptTarget(event.target)) {
               event.preventDefault();
@@ -152,18 +243,24 @@ const DialogHeader = ({
 );
 
 const DialogTitle = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Title>,
+  HTMLHeadingElement,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Title
-    ref={ref}
-    className={cn(
-      "text-center text-lg font-semibold leading-snug text-[var(--color-text-primary)]",
-      className
-    )}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => {
+  const { isMobile } = useDialogContext();
+  const titleClassName = cn(
+    "text-center text-lg font-semibold leading-snug text-[var(--color-text-primary)]",
+    className
+  );
+
+  // BottomSheet path has no Radix Content — use a plain heading.
+  if (isMobile) {
+    return <h2 ref={ref} className={titleClassName} {...props} />;
+  }
+
+  return (
+    <DialogPrimitive.Title ref={ref} className={titleClassName} {...props} />
+  );
+});
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
 export {

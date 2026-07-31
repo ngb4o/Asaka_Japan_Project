@@ -40,6 +40,8 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { useIsMobile } from "@/lib/hooks/useIsMobile";
+import { TabSwitcher } from "@/components/ui/tab-switcher";
 import { getImageUrl } from "@/lib/api/uploads";
 import {
   exportStock,
@@ -99,7 +101,16 @@ export default function InventoryPage() {
   const { user } = useAuth();
   const confirm = useConfirm();
   const toast = useToast();
+  const isMobile = useIsMobile();
   const isAdmin = user?.role === "admin";
+
+  const mobileTabs = isAdmin
+    ? (["Kho", "Tồn kho", "Lịch sử"] as const)
+    : (["Tồn kho", "Lịch sử"] as const);
+  const warehouseTabIndex = isAdmin ? 0 : -1;
+  const stockTabIndex = isAdmin ? 1 : 0;
+  const historyTabIndex = isAdmin ? 2 : 1;
+  const [mobileTab, setMobileTab] = useState(isAdmin ? 1 : 0);
 
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -113,13 +124,25 @@ export default function InventoryPage() {
 
   // Warehouse management
   const [warehouseSectionOpen, setWarehouseSectionOpen] = useState(false);
-  const [historySectionOpen, setHistorySectionOpen] = useState(false);
   const [warehouseDialogOpen, setWarehouseDialogOpen] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
   const [warehouseForm, setWarehouseForm] = useState<WarehouseFormValues>(EMPTY_WAREHOUSE_FORM);
   const [warehouseSubmitting, setWarehouseSubmitting] = useState(false);
 
+  // Keep mobile tab in range when admin role resolves
+  useEffect(() => {
+    setMobileTab((prev) => {
+      const max = mobileTabs.length - 1;
+      if (prev > max) return isAdmin ? 1 : 0;
+      return prev;
+    });
+  }, [isAdmin, mobileTabs.length]);
+
   const activeWarehouses = warehouses.filter((item) => item.status === "active");
+  const showWarehousePanel = !isMobile || mobileTab === warehouseTabIndex;
+  const showStockPanel = !isMobile || mobileTab === stockTabIndex;
+  const showHistoryPanel = !isMobile || mobileTab === historyTabIndex;
+  const warehousePanelOpen = isMobile || warehouseSectionOpen;
 
   const onError = useCallback(
     (err: unknown) => {
@@ -388,17 +411,24 @@ export default function InventoryPage() {
       />
 
       {activeWarehouses.length === 0 && (
-        <p className="text-sm text-amber-700">
+        <p className="px-3 text-sm text-amber-700 md:px-0">
           Vui lòng tạo ít nhất một kho đang hoạt động trước khi nhập/xuất hàng.
         </p>
       )}
 
-      {/* ── Warehouse management (collapsible) ── */}
-      {isAdmin && (
+      <div className="sticky top-0 z-10 bg-[var(--color-surface-elevated)] px-3 py-2 md:hidden">
+        <TabSwitcher
+          tabs={[...mobileTabs]}
+          selectedIndex={mobileTab}
+          onTabSelected={setMobileTab}
+        />
+      </div>
+
+      {/* ── Warehouse management (collapsible on desktop; tab on mobile) ── */}
+      {isAdmin && showWarehousePanel && (
         <Card>
           <CardHeader
-            showOnMobile
-            className="cursor-pointer select-none"
+            className="hidden cursor-pointer select-none md:flex"
             onClick={() => setWarehouseSectionOpen((prev) => !prev)}
           >
             <div className="flex items-center justify-between">
@@ -411,7 +441,7 @@ export default function InventoryPage() {
               />
             </div>
           </CardHeader>
-          {warehouseSectionOpen && (
+          {warehousePanelOpen && (
             <CardContent className="space-y-4">
               <div className="flex justify-end">
                 <Button size="sm" onClick={openCreateWarehouse}>
@@ -508,16 +538,18 @@ export default function InventoryPage() {
         </Card>
       )}
 
+      {showStockPanel && (
       <Card>
         <CardHeader>
           <CardTitle>Tồn hiện tại</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="flex gap-2 md:grid md:grid-cols-2 md:gap-3">
             <SearchInput
-              placeholder="Tìm theo tên sản phẩm, SKU..."
+              placeholder="Tìm sản phẩm, SKU..."
               value={search}
               onSearch={setSearch}
+              className="min-w-0 flex-1"
             />
             <SearchableSelect
               options={[
@@ -533,6 +565,7 @@ export default function InventoryPage() {
               placeholder="Tất cả kho"
               searchPlaceholder="Tìm kho..."
               clearable
+              className="w-[38%] shrink-0 md:w-full"
             />
           </div>
 
@@ -651,33 +684,31 @@ export default function InventoryPage() {
           )}
         </CardContent>
       </Card>
+      )}
 
+      {showHistoryPanel && (
       <Card>
-        <CardHeader
-          showOnMobile
-          className="max-md:cursor-pointer max-md:select-none"
-          onClick={() => {
-            if (
-              typeof window !== "undefined" &&
-              window.matchMedia("(max-width: 767px)").matches
-            ) {
-              setHistorySectionOpen((prev) => !prev);
-            }
-          }}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle>Lịch sử nhập xuất</CardTitle>
-            <ChevronDown
-              className={cn(
-                "h-5 w-5 shrink-0 text-[var(--color-text-inverse)] transition-transform md:hidden",
-                historySectionOpen && "rotate-180"
-              )}
+        <CardHeader>
+          <CardTitle>Lịch sử nhập xuất</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="md:hidden">
+            <SearchableSelect
+              options={[
+                { value: "", label: "Tất cả kho" },
+                ...warehouses.map((warehouse) => ({
+                  value: warehouse.id,
+                  label: warehouse.name,
+                  description: warehouse.code,
+                })),
+              ]}
+              value={warehouseFilter}
+              onChange={setWarehouseFilter}
+              placeholder="Tất cả kho"
+              searchPlaceholder="Tìm kho..."
+              clearable
             />
           </div>
-        </CardHeader>
-        <CardContent
-          className={cn("space-y-4", !historySectionOpen && "max-md:hidden")}
-        >
           {transactions.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có giao dịch</p>
           ) : (
@@ -810,6 +841,7 @@ export default function InventoryPage() {
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* ── Warehouse dialog ── */}
       <Dialog open={warehouseDialogOpen} onOpenChange={setWarehouseDialogOpen}>

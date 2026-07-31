@@ -29,6 +29,10 @@ import { downloadSalesReportExcel } from "@/lib/export/salesReportExcel";
 import type { SalesReport } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { useToast } from "@/components/providers/ToastProvider";
+import {
+  MobileRecordCard,
+  MobileStatTile,
+} from "@/components/ui/mobile-record-card";
 import { cn, formatCurrency } from "@/lib/utils";
 
 const PRESETS = [
@@ -218,6 +222,7 @@ export default function ReportsPage() {
           change={kpis?.revenueChangePercent}
           icon={TrendingUp}
           format="currency"
+          accent="green"
         />
         <Kpi
           title="Đã thu"
@@ -225,13 +230,21 @@ export default function ReportsPage() {
           change={kpis?.paidChangePercent}
           icon={Wallet}
           format="currency"
+          accent="sky"
         />
-        <Kpi title="Công nợ" value={kpis?.debt} icon={AlertTriangle} format="currency" />
+        <Kpi
+          title="Công nợ"
+          value={kpis?.debt}
+          icon={AlertTriangle}
+          format="currency"
+          accent="rose"
+        />
         <Kpi
           title="Số đơn"
           value={kpis?.orderCount}
           change={kpis?.orderChangePercent}
           icon={ShoppingCart}
+          accent="slate"
         />
       </div>
 
@@ -239,13 +252,15 @@ export default function ReportsPage() {
         <Card>
           <CardContent className="p-5">
             <p className="text-sm text-[var(--color-text-inverse)]">Đơn hoàn tất</p>
-            <p className="mt-1 text-xl font-semibold">{kpis?.completedCount ?? 0}</p>
+            <p className="mt-1 text-xl font-semibold text-emerald-600 dark:text-emerald-400">
+              {kpis?.completedCount ?? 0}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-5">
             <p className="text-sm text-[var(--color-text-inverse)]">Doanh thu hoàn tất</p>
-            <p className="mt-1 text-xl font-semibold">
+            <p className="mt-1 text-xl font-semibold text-[var(--color-text-secondary)]">
               {formatCurrency(kpis?.completedRevenue || 0)}
             </p>
           </CardContent>
@@ -253,7 +268,7 @@ export default function ReportsPage() {
         <Card>
           <CardContent className="p-5">
             <p className="text-sm text-[var(--color-text-inverse)]">Giá trị đơn TB</p>
-            <p className="mt-1 text-xl font-semibold">
+            <p className="mt-1 text-xl font-semibold text-sky-600 dark:text-sky-400">
               {formatCurrency(kpis?.avgOrderValue || 0)}
             </p>
           </CardContent>
@@ -293,22 +308,32 @@ export default function ReportsPage() {
             <CardTitle>Thanh toán</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {(report?.paymentBreakdown || []).map((item) => (
-              <div
-                key={item.status}
-                className="flex items-center justify-between rounded-lg border border-[var(--color-border-subtle)] px-3 py-2.5"
-              >
-                <div>
-                  <p className="text-sm font-medium">
-                    {PAYMENT_LABELS[item.status] || item.status}
-                  </p>
-                  <p className="text-xs text-[var(--color-text-inverse)]">
-                    {item.count} đơn - GT {formatCurrency(item.total)}
+            {(report?.paymentBreakdown || []).map((item) => {
+              const amountTone =
+                item.status === "paid"
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : item.status === "partial"
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-rose-600 dark:text-rose-400";
+              return (
+                <div
+                  key={item.status}
+                  className="flex items-center justify-between rounded-lg border border-[var(--color-border-subtle)] px-3 py-2.5"
+                >
+                  <div>
+                    <p className="text-sm font-medium">
+                      {PAYMENT_LABELS[item.status] || item.status}
+                    </p>
+                    <p className="text-xs text-[var(--color-text-inverse)]">
+                      {item.count} đơn - GT {formatCurrency(item.total)}
+                    </p>
+                  </div>
+                  <p className={cn("text-sm font-semibold", amountTone)}>
+                    {formatCurrency(item.paidAmount)}
                   </p>
                 </div>
-                <p className="text-sm font-semibold">{formatCurrency(item.paidAmount)}</p>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       </div>
@@ -341,56 +366,68 @@ export default function ReportsPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <RankTable
+        <RankList
           title="Bảng đại lý"
-          headers={["Đại lý", "Đơn", "Doanh số", "Đã thu"]}
-          rows={(report?.topDealers || []).map((item) => [
-            <div key={`dealer-name-${item.dealerId || item.dealerName}`} className="min-w-0">
-              <p className="truncate">{item.dealerName}</p>
-              {item.region ? (
-                <p className="truncate text-xs font-normal text-[var(--color-text-inverse)]">
-                  {item.region}
-                </p>
-              ) : null}
-            </div>,
-            String(item.orderCount),
-            formatCurrency(item.revenue),
-            formatCurrency(item.paidAmount),
-          ])}
+          empty="Chưa có đại lý trong kỳ"
+          items={(report?.topDealers || []).map((item, index) => ({
+            id: item.dealerId || `${item.dealerName}-${index}`,
+            rank: index + 1,
+            title: item.dealerName,
+            subtitle: item.region || undefined,
+            stats: [
+              { label: "Đơn", value: item.orderCount },
+              {
+                label: "Doanh số",
+                value: formatCurrency(item.revenue),
+                valueClassName: "text-[var(--color-text-secondary)]",
+              },
+              {
+                label: "Đã thu",
+                value: formatCurrency(item.paidAmount),
+                valueClassName: "text-sky-600 dark:text-sky-400",
+              },
+            ],
+          }))}
         />
-        <RankTable
+        <RankList
           title="Bảng sản phẩm"
-          headers={["Sản phẩm", "SL", "Doanh số"]}
-          rows={(report?.topProducts || []).map((item) => [
-            <span
-              key={`product-name-${item.productId || item.productName}`}
-              className="line-clamp-2"
-            >
-              {item.productName}
-            </span>,
-            String(item.quantity),
-            formatCurrency(item.revenue),
-          ])}
+          empty="Chưa có sản phẩm trong kỳ"
+          items={(report?.topProducts || []).map((item, index) => ({
+            id: item.productId || `${item.productName}-${index}`,
+            rank: index + 1,
+            title: item.productName,
+            stats: [
+              { label: "SL", value: item.quantity },
+              {
+                label: "Doanh số",
+                value: formatCurrency(item.revenue),
+                valueClassName: "text-[var(--color-text-secondary)]",
+              },
+            ],
+          }))}
         />
-        <RankTable
+        <RankList
           title="Bảng nhân viên"
-          headers={["Nhân viên", "Đơn", "Doanh số", "Đã thu"]}
-          rows={(report?.topStaff || []).map((item) => [
-            <div
-              key={`staff-name-${item.userId || item.staffName}`}
-              className="min-w-0"
-            >
-              <p className="truncate">{item.staffName}</p>
-              {item.employeeCode ? (
-                <p className="truncate text-xs font-normal text-[var(--color-text-inverse)]">
-                  {item.employeeCode}
-                </p>
-              ) : null}
-            </div>,
-            String(item.orderCount),
-            formatCurrency(item.revenue),
-            formatCurrency(item.paidAmount),
-          ])}
+          empty="Chưa có nhân viên trong kỳ"
+          items={(report?.topStaff || []).map((item, index) => ({
+            id: item.userId || `${item.staffName}-${index}`,
+            rank: index + 1,
+            title: item.staffName,
+            subtitle: item.employeeCode || undefined,
+            stats: [
+              { label: "Đơn", value: item.orderCount },
+              {
+                label: "Doanh số",
+                value: formatCurrency(item.revenue),
+                valueClassName: "text-[var(--color-text-secondary)]",
+              },
+              {
+                label: "Đã thu",
+                value: formatCurrency(item.paidAmount),
+                valueClassName: "text-sky-600 dark:text-sky-400",
+              },
+            ],
+          }))}
         />
       </div>
     </div>
@@ -430,25 +467,55 @@ function Kpi({
   change,
   icon: Icon,
   format,
+  accent = "slate",
 }: {
   title: string;
   value?: number;
   change?: number;
   icon: React.ComponentType<{ className?: string }>;
   format?: "currency";
+  accent?: "green" | "sky" | "rose" | "slate" | "amber";
 }) {
+  const tone = {
+    green: {
+      icon: "bg-[var(--color-text-secondary)]/10 text-[var(--color-text-secondary)]",
+      value: "text-[var(--color-text-secondary)]",
+    },
+    sky: {
+      icon: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+      value: "text-sky-600 dark:text-sky-400",
+    },
+    rose: {
+      icon: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+      value: "text-rose-600 dark:text-rose-400",
+    },
+    amber: {
+      icon: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+      value: "text-amber-600 dark:text-amber-400",
+    },
+    slate: {
+      icon: "bg-slate-500/10 text-slate-600 dark:text-slate-300",
+      value: "text-[var(--color-text-primary)]",
+    },
+  }[accent];
+
   return (
     <Card>
       <CardHeader showOnMobile className="border-none pb-0">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-medium text-[var(--color-text-inverse)]">{title}</p>
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-text-secondary)]/10 text-[var(--color-text-secondary)]">
+          <span
+            className={cn(
+              "inline-flex h-9 w-9 items-center justify-center rounded-xl",
+              tone.icon
+            )}
+          >
             <Icon className="h-4 w-4" />
           </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-2 pt-3">
-        <p className="text-2xl font-semibold tracking-tight">
+        <p className={cn("text-2xl font-semibold tracking-tight", tone.value)}>
           {format === "currency" ? formatCurrency(value || 0) : value || 0}
         </p>
         <ChangeBadge value={change} />
@@ -469,16 +536,33 @@ function rankTableColumnWidths(columnCount: number): string[] {
   return Array.from({ length: columnCount }, () => each);
 }
 
-function RankTable({
+type RankStat = {
+  label: string;
+  value: ReactNode;
+  valueClassName?: string;
+};
+
+type RankItem = {
+  id: string;
+  rank: number;
+  title: string;
+  subtitle?: string;
+  stats: RankStat[];
+};
+
+function RankList({
   title,
-  headers,
-  rows,
+  items,
+  empty = "Chưa có dữ liệu trong kỳ",
 }: {
   title: string;
-  headers: string[];
-  rows: ReactNode[][];
+  items: RankItem[];
+  empty?: string;
 }) {
-  const colWidths = rankTableColumnWidths(headers.length);
+  const tableHeaders = items[0]
+    ? [title.replace(/^Bảng\s+/i, ""), ...items[0].stats.map((s) => s.label)]
+    : [];
+  const colWidths = rankTableColumnWidths(tableHeaders.length || 3);
 
   return (
     <Card>
@@ -486,52 +570,112 @@ function RankTable({
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        {rows.length === 0 ? (
-          <Empty />
+        {items.length === 0 ? (
+          <p className="py-10 text-center text-sm text-[var(--color-text-inverse)]">
+            {empty}
+          </p>
         ) : (
-          <div className="crm-table-scroll">
-            <table className="w-full min-w-[300px] table-fixed text-left text-sm">
-              <colgroup>
-                {colWidths.map((width, index) => (
-                  <col key={`${headers[index]}-${index}`} style={{ width }} />
-                ))}
-              </colgroup>
-              <thead>
-                <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                  {headers.map((header, index) => (
-                    <th
-                      key={header}
+          <>
+            {/* Mobile: ranked cards */}
+            <div className="flex flex-col gap-3 md:hidden">
+              {items.map((item) => (
+                <MobileRecordCard key={item.id} className="p-3 shadow-none">
+                  <div className="flex items-start gap-3">
+                    <span
                       className={cn(
-                        "px-2 py-2 font-medium",
-                        index === 0 ? "text-left" : "text-right"
+                        "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+                        item.rank <= 3
+                          ? "bg-[var(--color-text-secondary)]/12 text-[var(--color-text-secondary)]"
+                          : "bg-[var(--color-surface-muted)] text-[var(--color-text-inverse)]"
                       )}
                     >
-                      {header}
-                    </th>
+                      {item.rank}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                        {item.title}
+                      </p>
+                      {item.subtitle ? (
+                        <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                          {item.subtitle}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      "mt-3 grid gap-2",
+                      item.stats.length === 2 ? "grid-cols-2" : "grid-cols-3"
+                    )}
+                  >
+                    {item.stats.map((stat) => (
+                      <MobileStatTile
+                        key={stat.label}
+                        label={stat.label}
+                        valueClassName={cn("text-sm", stat.valueClassName)}
+                      >
+                        {stat.value}
+                      </MobileStatTile>
+                    ))}
+                  </div>
+                </MobileRecordCard>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="crm-table-scroll hidden md:block">
+              <table className="w-full min-w-[300px] table-fixed text-left text-sm">
+                <colgroup>
+                  {colWidths.map((width, index) => (
+                    <col key={`${tableHeaders[index]}-${index}`} style={{ width }} />
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, index) => (
-                  <tr key={index} className="border-b border-[var(--color-border-subtle)]">
-                    {row.map((cell, cellIndex) => (
-                      <td
-                        key={cellIndex}
+                </colgroup>
+                <thead>
+                  <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
+                    {tableHeaders.map((header, index) => (
+                      <th
+                        key={header}
                         className={cn(
-                          "px-2 py-2 align-top",
-                          cellIndex === 0
-                            ? "max-w-0 font-medium"
-                            : "whitespace-nowrap text-right tabular-nums text-[var(--color-text-inverse)]"
+                          "px-2 py-2 font-medium",
+                          index === 0 ? "text-left" : "text-right"
                         )}
                       >
-                        {cell}
-                      </td>
+                        {header}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr
+                      key={item.id}
+                      className="border-b border-[var(--color-border-subtle)]"
+                    >
+                      <td className="max-w-0 px-2 py-2 align-top font-medium">
+                        <p className="truncate">{item.title}</p>
+                        {item.subtitle ? (
+                          <p className="truncate text-xs font-normal text-[var(--color-text-inverse)]">
+                            {item.subtitle}
+                          </p>
+                        ) : null}
+                      </td>
+                      {item.stats.map((stat) => (
+                        <td
+                          key={stat.label}
+                          className={cn(
+                            "whitespace-nowrap px-2 py-2 text-right align-top tabular-nums",
+                            stat.valueClassName || "text-[var(--color-text-inverse)]"
+                          )}
+                        >
+                          {stat.value}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

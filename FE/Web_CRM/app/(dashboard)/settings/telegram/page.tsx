@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ExternalLink, Plus, RefreshCw, Send, Trash2 } from "lucide-react";
+import { ExternalLink, Plus, RefreshCw, Send, Trash2 } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,8 +50,10 @@ export default function TelegramSettingsPage() {
   const [status, setStatus] = useState<TelegramStatus | null>(null);
   const [items, setItems] = useState<TelegramContact[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeesLoaded, setEmployeesLoaded] = useState(false);
   const [envStaffChatIds, setEnvStaffChatIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
@@ -59,43 +61,55 @@ export default function TelegramSettingsPage() {
 
   const allowed = canManageTelegram(user?.role);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [contactsResult, employeesResult] = await Promise.all([
-        getTelegramContacts({
-          role: "staff",
-          limit: 100,
-          page: 1,
-        }),
-        getEmployees({ status: "active", limit: 200, page: 1 }).catch(() => ({
-          items: [] as Employee[],
-        })),
-      ]);
-      setItems(contactsResult.items || []);
-      setEnvStaffChatIds(contactsResult.envStaffChatIds || []);
-      setEmployees(employeesResult.items || []);
-
+  const loadData = useCallback(
+    async (opts?: { soft?: boolean }) => {
+      const soft = Boolean(opts?.soft);
+      if (soft) setRefreshing(true);
+      else setLoading(true);
       try {
-        const statusResult = await getTelegramStatus();
-        setStatus(statusResult);
-      } catch {
-        setStatus((prev) => prev);
+        const [contactsResult, statusResult] = await Promise.all([
+          getTelegramContacts({
+            role: "staff",
+            limit: 100,
+            page: 1,
+          }),
+          getTelegramStatus().catch(() => null),
+        ]);
+        setItems(contactsResult.items || []);
+        setEnvStaffChatIds(contactsResult.envStaffChatIds || []);
+        if (statusResult) setStatus(statusResult);
+      } catch (err) {
+        toast.error(
+          err instanceof ApiClientError
+            ? err.message
+            : "Không tải được cấu hình Telegram"
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } catch (err) {
-      toast.error(
-        err instanceof ApiClientError
-          ? err.message
-          : "Không tải được cấu hình Telegram"
-      );
-    } finally {
-      setLoading(false);
+    },
+    [toast]
+  );
+
+  const loadEmployees = useCallback(async () => {
+    if (employeesLoaded) return;
+    try {
+      const result = await getEmployees({ status: "active", limit: 200, page: 1 });
+      setEmployees(result.items || []);
+      setEmployeesLoaded(true);
+    } catch {
+      setEmployees([]);
     }
-  }, [toast]);
+  }, [employeesLoaded]);
 
   useEffect(() => {
-    if (allowed) loadData();
+    if (allowed) void loadData();
   }, [allowed, loadData]);
+
+  useEffect(() => {
+    if (open) void loadEmployees();
+  }, [open, loadEmployees]);
 
   const envOnlyRecipients = useMemo(() => {
     const dbIds = new Set(items.map((item) => String(item.chatId)));
@@ -140,7 +154,7 @@ export default function TelegramSettingsPage() {
       toast.success("Đã thêm người nhận nội bộ");
       setOpen(false);
       setForm(EMPTY_FORM);
-      await loadData();
+      await loadData({ soft: true });
     } catch (err) {
       toast.error(
         err instanceof ApiClientError ? err.message : "Không lưu được người nhận"
@@ -188,7 +202,7 @@ export default function TelegramSettingsPage() {
     try {
       await deleteTelegramContact(contact.chatId);
       toast.success("Đã xóa người nhận");
-      await loadData();
+      await loadData({ soft: true });
     } catch (err) {
       toast.error(
         err instanceof ApiClientError ? err.message : "Không xóa được người nhận"
@@ -200,7 +214,7 @@ export default function TelegramSettingsPage() {
 
   if (!allowed) {
     return (
-      <div className="space-y-0 md:space-y-6">
+      <div className="space-y-3 md:space-y-6">
         <PageHeader title="Thông báo Telegram" />
         <Card>
           <CardContent className="py-10 text-center text-sm text-[var(--color-text-inverse)]">
@@ -216,14 +230,18 @@ export default function TelegramSettingsPage() {
   }
 
   return (
-    <div className="space-y-0 md:space-y-6">
+    <div className="space-y-3 md:space-y-6">
       <PageHeader
         title="Thông báo Telegram"
         description="Thêm Chat ID nhân sự để nhận toàn bộ thông báo CRM (đơn hàng, công nợ, lead, chuyến, tồn kho). Đại lý/khách không cần cài bot."
         actions={
           <>
-            <Button variant="outline" onClick={() => loadData()}>
-              <RefreshCw className="mr-2 h-4 w-4" />
+            <Button
+              variant="outline"
+              onClick={() => loadData({ soft: true })}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
               Tải lại
             </Button>
             <Button
@@ -351,7 +369,7 @@ export default function TelegramSettingsPage() {
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="danger"
                     disabled={busyChatId === item.chatId}
                     onClick={() => handleDelete(item)}
                   >
@@ -391,7 +409,10 @@ export default function TelegramSettingsPage() {
                 }))}
                 value={form.employeeId}
                 onChange={handleEmployeeChange}
-                placeholder="Chọn nhân viên để gắn"
+                placeholder={
+                  employeesLoaded ? "Chọn nhân viên để gắn" : "Đang tải nhân viên..."
+                }
+                disabled={!employeesLoaded}
               />
               {form.employeeId ? (
                 <p className="text-xs text-[var(--color-text-inverse)]">
@@ -431,7 +452,7 @@ export default function TelegramSettingsPage() {
               >
                 Hủy
               </Button>
-              <Button type="submit" disabled={submitting}>
+              <Button type="submit" disabled={submitting || !employeesLoaded}>
                 {submitting ? "Đang lưu..." : "Lưu"}
               </Button>
             </div>

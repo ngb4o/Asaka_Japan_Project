@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Plus, Trash2, X } from "lucide-react";
+import { Check, Plus, Trash2, X } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -533,7 +533,7 @@ export default function TripsPage() {
                           Chi tiết
                         </Button>
                         {canFinance && item.status !== "closed" ? (
-                          <Button variant="outline" size="sm" onClick={() => handleDelete(item)}>
+                          <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         ) : null}
@@ -599,7 +599,7 @@ export default function TripsPage() {
                             Chi tiết
                           </Button>
                           {canFinance && item.status !== "closed" ? (
-                            <Button variant="outline" size="sm" onClick={() => handleDelete(item)}>
+                            <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           ) : null}
@@ -871,7 +871,7 @@ export default function TripsPage() {
                     </div>
                     {canOperateSelected && selected.status !== "closed" ? (
                       <Button
-                        variant="outline"
+                        variant="danger"
                         size="sm"
                         onClick={async () => {
                           await removeTripStop(selected.id, stop.id);

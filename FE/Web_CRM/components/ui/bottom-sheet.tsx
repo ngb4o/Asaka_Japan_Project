@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
   type TransitionEvent,
@@ -18,24 +19,32 @@ type BottomSheetProps = {
   children: ReactNode;
   className?: string;
   maxHeight?: string;
+  /** Show the built-in X next to title. Default true when title is set. */
+  showClose?: boolean;
 };
 
 const EXIT_MS = 320;
 
 /**
- * Suspend Radix Dialog layers while a sheet is open so focus + touch
- * reach the portaled sheet (modal dialogs set pointer-events:none on body
- * and trap focus inside dialog content).
+ * Suspend underlying layers (Radix dialog / other bottom sheets) while this
+ * sheet is open so focus + touch reach the top sheet.
  */
-function useSuspendDialogLayers(active: boolean) {
+function useSuspendUnderlyingLayers(
+  active: boolean,
+  selfRef: React.RefObject<HTMLElement | null>
+) {
   useEffect(() => {
     if (!active) return;
 
     const nodes = Array.from(
       document.querySelectorAll<HTMLElement>(
-        "[data-radix-dialog-content], [data-radix-dialog-overlay], [data-radix-dialog-overlay-wrapper]"
+        [
+          "[data-radix-dialog-content]",
+          "[data-radix-dialog-overlay]",
+          "[data-bottom-sheet]",
+        ].join(", ")
       )
-    );
+    ).filter((node) => node !== selfRef.current);
 
     const prev = nodes.map((node) => ({
       node,
@@ -55,9 +64,11 @@ function useSuspendDialogLayers(active: boolean) {
         node.inert = inert;
         node.style.pointerEvents = pointerEvents;
       });
-      document.body.removeAttribute("data-bottom-sheet-open");
+      if (!document.querySelector("[data-bottom-sheet]")) {
+        document.body.removeAttribute("data-bottom-sheet-open");
+      }
     };
-  }, [active]);
+  }, [active, selfRef]);
 }
 
 /**
@@ -70,7 +81,9 @@ export function BottomSheet({
   children,
   className,
   maxHeight = "80dvh",
+  showClose = true,
 }: BottomSheetProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [entered, setEntered] = useState(false);
   /** After open animation, drop CSS transform so iOS can scroll inside. */
@@ -78,7 +91,7 @@ export function BottomSheet({
 
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
-  useSuspendDialogLayers(mounted && entered);
+  useSuspendUnderlyingLayers(mounted && entered, rootRef);
 
   useEffect(() => {
     if (open) {
@@ -90,7 +103,6 @@ export function BottomSheet({
       return () => cancelAnimationFrame(id);
     }
 
-    // Re-enable transform at rest position, then slide down.
     setSettled(false);
     const id = requestAnimationFrame(() => {
       requestAnimationFrame(() => setEntered(false));
@@ -140,13 +152,14 @@ export function BottomSheet({
 
   return createPortal(
     <div
+      ref={rootRef}
       data-bottom-sheet=""
       data-state={entered ? "open" : "closed"}
       className="pointer-events-auto fixed inset-0 z-[200]"
       style={{ pointerEvents: "auto" }}
       role="dialog"
       aria-modal="true"
-      aria-label={title || "Chọn"}
+      aria-label={title || "Hộp thoại"}
     >
       <div
         aria-label="Đóng"
@@ -161,18 +174,13 @@ export function BottomSheet({
         }}
       />
 
-      {/*
-        Height hugs content; caps at maxHeight (default 80dvh).
-        Shell stays transform-free when settled (iOS won't scroll inside
-        transformed ancestors).
-      */}
       <div
         className="absolute inset-x-0 bottom-0 z-10 flex max-h-[80dvh] flex-col overflow-hidden"
         style={{ maxHeight }}
       >
         <div
           className={cn(
-            "flex max-h-full min-h-0 w-full flex-col overflow-hidden rounded-t-2xl bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] shadow-[0_-12px_40px_rgba(0,0,0,0.22)]",
+            "relative flex max-h-full min-h-0 w-full flex-col overflow-hidden rounded-t-2xl bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] shadow-[0_-12px_40px_rgba(0,0,0,0.22)]",
             !settled &&
               "origin-bottom will-change-transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
             !settled && (entered ? "translate-y-0" : "translate-y-full"),
@@ -191,24 +199,31 @@ export function BottomSheet({
                 <p className="truncate text-center text-base font-semibold tracking-tight">
                   {title}
                 </p>
-                <button
-                  type="button"
-                  aria-label="Đóng"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    close();
-                  }}
-                  className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                {showClose ? (
+                  <button
+                    type="button"
+                    aria-label="Đóng"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      close();
+                    }}
+                    className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                ) : null}
               </div>
             ) : null}
           </div>
 
           <div
-            className="min-h-0 overflow-y-auto overscroll-contain"
+            className={cn(
+              "min-h-0 flex-1 overflow-y-auto overscroll-contain",
+              // Form action rows (Hủy / Lưu): split equal, full width on mobile
+              "[&_form_.flex.justify-end.gap-2]:!grid [&_form_.flex.justify-end.gap-2]:w-full [&_form_.flex.justify-end.gap-2]:grid-cols-2",
+              "[&_form_.flex.justify-end.gap-2>button]:!w-full [&_form_.flex.justify-end.gap-2>a]:!w-full"
+            )}
             style={{
               WebkitOverflowScrolling: "touch",
               touchAction: "pan-y",

@@ -271,7 +271,7 @@ export default function PayrollPage() {
                               <Button variant="outline" size="sm" onClick={() => handleLock(item)}>
                                 <Lock className="h-4 w-4" />
                               </Button>
-                              <Button variant="outline" size="sm" onClick={() => handleDelete(item)}>
+                              <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </>
@@ -326,7 +326,7 @@ export default function PayrollPage() {
                                   <Lock className="h-4 w-4" />
                                 </Button>
                                 <Button
-                                  variant="outline"
+                                  variant="danger"
                                   size="sm"
                                   onClick={() => handleDelete(item)}
                                 >

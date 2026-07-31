@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Trash2 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +29,7 @@ import {
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
 import { ImageUpload } from "@/components/products/ImageUpload";
+import { EmployeeDetailDialog } from "@/components/employees/EmployeeDetailDialog";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canManageEmployees, canViewEmployeesPage } from "@/lib/auth/permissions";
@@ -91,6 +92,8 @@ export default function EmployeesPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [viewing, setViewing] = useState<Employee | null>(null);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [form, setForm] = useState<FormValues>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
@@ -155,6 +158,11 @@ export default function EmployeesPage() {
     setEditing(null);
     setForm(EMPTY_FORM);
     setDialogOpen(true);
+  }
+
+  function openDetail(item: Employee) {
+    setViewing(item);
+    setDetailOpen(true);
   }
 
   function openEdit(item: Employee) {
@@ -332,16 +340,26 @@ export default function EmployeesPage() {
                       ) : null}
                     </div>
 
-                    {canEdit ? (
-                      <MobileRecordActions>
-                        <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDelete(item)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </MobileRecordActions>
-                    ) : null}
+                    <MobileRecordActions>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openDetail(item)}
+                        title="Xem chi tiết"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {canEdit ? (
+                        <>
+                          <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : null}
+                    </MobileRecordActions>
                   </MobileRecordCard>
                 ))}
                 </div>
@@ -357,7 +375,7 @@ export default function EmployeesPage() {
                     <th className="px-2 py-3 font-medium">Lương / HH</th>
                     <th className="px-2 py-3 font-medium">TK CRM</th>
                     <th className="px-2 py-3 font-medium">Trạng thái</th>
-                    {canEdit ? <th className="px-2 py-3 text-right font-medium">Thao tác</th> : null}
+                    <th className="px-2 py-3 text-right font-medium">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -388,18 +406,28 @@ export default function EmployeesPage() {
                           {item.status === "active" ? "Đang làm" : "Ngưng"}
                         </Badge>
                       </td>
-                      {canEdit ? (
-                        <td className="px-2 py-3">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleDelete(item)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      ) : null}
+                      <td className="px-2 py-3">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDetail(item)}
+                            title="Xem chi tiết"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {canEdit ? (
+                            <>
+                              <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : null}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -417,6 +445,15 @@ export default function EmployeesPage() {
           />
         </CardContent>
       </Card>
+
+      <EmployeeDetailDialog
+        employee={viewing}
+        open={detailOpen}
+        onOpenChange={(next) => {
+          setDetailOpen(next);
+          if (!next) setViewing(null);
+        }}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
@@ -502,6 +539,8 @@ export default function EmployeesPage() {
                 type="number"
                 min={0}
                 max={100}
+                step="0.01"
+                inputMode="decimal"
                 value={form.commissionPercent}
                 onChange={(e) =>
                   setForm({
