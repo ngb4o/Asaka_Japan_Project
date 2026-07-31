@@ -6,6 +6,7 @@ import {
   subscribePush,
   unsubscribePush,
 } from "@/lib/api/push";
+import { isInstalledPwa, isIosDevice } from "@/lib/device";
 
 const SW_PATH = "/sw.js";
 
@@ -20,26 +21,7 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
-/** iPhone / iPad (incl. iPadOS desktop UA) */
-export function isIosDevice() {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent || "";
-  if (/iPad|iPhone|iPod/.test(ua)) return true;
-  // iPadOS 13+ may report as Mac
-  return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
-}
-
-/** Launched as installed Home Screen / PWA (required for iOS Web Push) */
-export function isInstalledPwa() {
-  if (typeof window === "undefined") return false;
-  const nav = window.navigator as Navigator & { standalone?: boolean };
-  if (nav.standalone === true) return true;
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    window.matchMedia("(display-mode: fullscreen)").matches ||
-    window.matchMedia("(display-mode: minimal-ui)").matches
-  );
-}
+export { isInstalledPwa, isIosDevice } from "@/lib/device";
 
 export function isPushSupported() {
   if (typeof window === "undefined") return false;

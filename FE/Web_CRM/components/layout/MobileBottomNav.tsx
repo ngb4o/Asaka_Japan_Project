@@ -74,9 +74,9 @@ type MobileBottomNavProps = {
 };
 
 /**
- * Bottom tab bar — absolutely positioned in the dashboard column (not `fixed`
- * to the viewport). Nested `fixed` inside a `fixed` shell double-counts
- * safe-area on iOS PWAs and leaves a large white gap under the tabs.
+ * Bottom tab bar. Safe-area padding stays on the nav so its background fills
+ * the home-indicator zone. Shell height must be
+ * `100dvh + env(safe-area-inset-bottom)` on iOS PWA (WebKit quirk).
  */
 export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProps) {
   const pathname = usePathname();
@@ -96,10 +96,13 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
         "absolute inset-x-0 bottom-0 z-40 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] transition-transform duration-300 ease-out will-change-transform lg:hidden",
         visible ? "translate-y-0" : "translate-y-full"
       )}
+      style={{
+        // Push tab icons above home indicator; background fills the inset
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
       aria-label="Điều hướng chính"
       aria-hidden={!visible}
     >
-      {/* Tab row — content sits above home indicator */}
       <div className="mx-auto flex h-12 max-w-lg items-stretch justify-around px-1 pt-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -135,14 +138,6 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
           );
         })}
       </div>
-      {/* Home indicator only — no extra 0.5rem that stacks with safe-area */}
-      <div
-        aria-hidden
-        className="bg-[var(--color-surface-elevated)]"
-        style={{
-          height: "env(safe-area-inset-bottom, 0px)",
-        }}
-      />
     </nav>
   );
 }

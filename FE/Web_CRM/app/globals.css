@@ -102,6 +102,7 @@
   html {
     color-scheme: light;
     height: 100%;
+    overflow: hidden;
     /* Chặn pull-to-refresh native (Safari/Chrome) reload cả trang */
     overscroll-behavior-y: none;
   }
@@ -113,6 +114,7 @@
   body {
     height: 100%;
     margin: 0;
+    overflow: hidden;
     font-family: var(--font-barlow), var(--font-primary);
     font-size: var(--text-md);
     font-weight: 500;
@@ -124,19 +126,32 @@
     overscroll-behavior-y: none;
   }
 
-  @supports (height: 100dvh) {
-    html,
-    body {
-      height: 100dvh;
-    }
+  /**
+   * Default shell — full viewport (Android / desktop / Safari tab).
+   */
+  .crm-app-shell {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    overflow: hidden;
+    background-color: var(--color-surface-elevated);
   }
 
-  /* iOS PWA: fill home-indicator gap with app background, not a white letterbox */
-  @supports (padding: env(safe-area-inset-bottom)) {
-    body {
-      min-height: 100%;
-      min-height: -webkit-fill-available;
-    }
+  /**
+   * iOS Home Screen PWA only (WebKit quirk):
+   * `100dvh` / `inset:0` often exclude `safe-area-inset-bottom`, leaving a white
+   * gap under the bottom nav. Compensate shell height only on iOS PWA.
+   * @see https://stackoverflow.com/questions/79902310
+   */
+  html.crm-ios-pwa .crm-app-shell {
+    inset: auto;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: auto;
+    height: 100vh;
+    height: 100dvh;
+    height: calc(100dvh + env(safe-area-inset-bottom, 0px));
   }
 
   :focus-visible {
