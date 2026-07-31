@@ -17,6 +17,7 @@ import { ApiClientError } from "@/lib/api/client";
 import {
   disableWebPush,
   enableWebPush,
+  getPushBlockReason,
   isPushSupported,
   refreshPushStatus,
   registerPushServiceWorker,
@@ -27,6 +28,7 @@ type PushUiState = {
   permission: NotificationPermission | "unsupported";
   enabled: boolean;
   busy: boolean;
+  blockReason: string | null;
 };
 
 type NotificationContextValue = {
@@ -55,6 +57,7 @@ const DEFAULT_PUSH: PushUiState = {
   permission: "unsupported",
   enabled: false,
   busy: false,
+  blockReason: null,
 };
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
@@ -78,14 +81,26 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const syncPush = useCallback(async () => {
+    const blockReason = getPushBlockReason();
+    if (blockReason) {
+      setPush({
+        supported: false,
+        permission: "unsupported",
+        enabled: false,
+        busy: false,
+        blockReason,
+      });
+      return;
+    }
+
     const status = await refreshPushStatus();
-    setPush((prev) => ({
-      ...prev,
+    setPush({
       supported: status.supported,
       permission: status.permission,
       enabled: Boolean(status.localSubscribed),
       busy: false,
-    }));
+      blockReason: null,
+    });
   }, []);
 
   const markAllRead = useCallback(async () => {

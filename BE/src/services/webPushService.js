@@ -36,42 +36,30 @@ const ensureIndexes = async () => {
   }
 }
 
-const stripTelegramText = (text) =>
-  String(text || '')
-    .replace(/\*+/g, '')
-    .replace(/_/g, '')
-    .replace(/`/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-
 const hrefFromTrack = (track) => {
   const type = track?.entityType
   if (type === 'order') return '/orders'
   if (type === 'lead') return '/leads'
   if (type === 'dealer') return '/dealers'
   if (type === 'trip') return '/trips'
+  if (type === 'product') return '/inventory'
   return '/dashboard'
 }
 
 const buildPayload = (text, options = {}) => {
   if (options.push?.title) {
     return {
-      title: String(options.push.title).slice(0, 80),
-      body: String(options.push.body || '').slice(0, 180),
+      title: String(options.push.title).slice(0, 48),
+      body: String(options.push.body || '').slice(0, 90),
       url: options.push.url || hrefFromTrack(options.track) || '/dashboard',
       tag: options.push.tag || options.track?.kind || 'asaka-crm'
     }
   }
 
-  const plain = stripTelegramText(text)
-  const lines = plain
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-
+  // Fallback only — prefer explicit short `options.push` from notify callers
   return {
-    title: (lines[0] || 'ASAKA CRM').slice(0, 80),
-    body: (lines.slice(1).join(' · ') || lines[0] || 'Có cập nhật mới').slice(0, 180),
+    title: 'ASAKA CRM',
+    body: 'Có cập nhật mới',
     url: options.pushUrl || hrefFromTrack(options.track) || '/dashboard',
     tag: options.track?.kind || 'asaka-crm'
   }
@@ -93,7 +81,12 @@ const sendToSubscription = async (doc, payload) => {
         tag: payload.tag,
         icon: '/icons/icon-192.png',
         badge: '/icons/icon-192.png'
-      })
+      }),
+      {
+        // Apple Push (iOS) drops messages more aggressively without TTL/urgency
+        TTL: 60 * 60 * 24,
+        urgency: 'high'
+      }
     )
     return { ok: true }
   } catch (error) {

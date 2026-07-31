@@ -160,8 +160,8 @@ export function NotificationBell() {
             </div>
           ) : (
             <div className="mx-2 mb-2 rounded-lg border border-dashed border-[var(--color-border-subtle)] px-3 py-2 text-xs text-[var(--color-text-inverse)]">
-              Thiết bị này không hỗ trợ Web Push. Trên iOS cần mở app từ Home
-              Screen (iOS 16.4+).
+              {push.blockReason ||
+                "Thiết bị này không hỗ trợ Web Push. Trên iOS cần mở app từ Home Screen (iOS 16.4+)."}
             </div>
           )}
 

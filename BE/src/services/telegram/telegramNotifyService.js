@@ -12,6 +12,7 @@ import { orderModel } from '~/models/orderModel'
 import { tripModel } from '~/models/tripModel'
 import { leadModel } from '~/models/leadModel'
 import { webPushService } from '~/services/webPushService'
+import { webPushCopy } from '~/services/webPushCopy'
 
 const LOW_STOCK_THRESHOLD = 20
 
@@ -121,7 +122,8 @@ const onOrderStatusChanged = async (previousStatus, order) => {
       entityType: 'order',
       entityId: order.id,
       kind: TRACK_KIND.ORDER_FLOW
-    }
+    },
+    push: webPushCopy.orderStatus(order)
   })
 
   if (
@@ -136,14 +138,18 @@ const onOrderStatusChanged = async (previousStatus, order) => {
         entityType: 'order',
         entityId: order.id,
         kind: TRACK_KIND.PAYMENT_REMINDER
-      }
+      },
+      push: webPushCopy.paymentReminder(order)
     })
   }
 }
 
 /** 2 — Payment recorded → staff */
 const onPaymentUpdated = async (order) => {
-  await notifyStaff(telegramTemplates.paymentUpdate(order))
+  await notifyStaff(telegramTemplates.paymentUpdate(order), {
+    push: webPushCopy.paymentUpdate(order),
+    track: { entityType: 'order', entityId: order.id, kind: 'payment_update' }
+  })
 }
 
 /** 3 — Dealer approved / pending → staff */
@@ -152,7 +158,10 @@ const onDealerStatusChanged = async (previousStatus, dealer) => {
     previousStatus === dealerModel.DEALER_STATUS.PENDING &&
     dealer.status === dealerModel.DEALER_STATUS.ACTIVE
   ) {
-    await notifyStaff(telegramTemplates.dealerApproved(dealer))
+    await notifyStaff(telegramTemplates.dealerApproved(dealer), {
+      push: webPushCopy.dealerApproved(dealer),
+      track: { entityType: 'dealer', entityId: dealer.id, kind: 'dealer_approved' }
+    })
   }
 
   if (
@@ -179,7 +188,8 @@ const onDealerStatusChanged = async (previousStatus, dealer) => {
           entityType: 'dealer',
           entityId: dealer.id,
           kind: TRACK_KIND.PENDING_DEALER
-        }
+        },
+        push: webPushCopy.pendingDealer(dealer)
       }
     )
   }
@@ -209,7 +219,8 @@ const onDealerCreated = async (dealer) => {
         entityType: 'dealer',
         entityId: dealer.id,
         kind: TRACK_KIND.PENDING_DEALER
-      }
+      },
+      push: webPushCopy.pendingDealer(dealer)
     }
   )
 }
@@ -221,7 +232,10 @@ const onTripStarted = async (trip) => {
   )
 
   if (!deliveryStops.length) {
-    await notifyStaff(telegramTemplates.tripStartedStaff({ trip, stops: [] }))
+    await notifyStaff(telegramTemplates.tripStartedStaff({ trip, stops: [] }), {
+      push: webPushCopy.tripStarted(trip, 0),
+      track: { entityType: 'trip', entityId: trip.id, kind: 'trip_started' }
+    })
     return
   }
 
@@ -233,7 +247,13 @@ const onTripStarted = async (trip) => {
     stopsWithDealer.push({ stop, dealer })
   }
 
-  await notifyStaff(telegramTemplates.tripStartedStaff({ trip, stops: stopsWithDealer }))
+  await notifyStaff(
+    telegramTemplates.tripStartedStaff({ trip, stops: stopsWithDealer }),
+    {
+      push: webPushCopy.tripStarted(trip, deliveryStops.length),
+      track: { entityType: 'trip', entityId: trip.id, kind: 'trip_started' }
+    }
+  )
 }
 
 /** 5 — New lead → staff */
@@ -247,7 +267,8 @@ const onLeadCreated = async (lead) => {
       entityType: 'lead',
       entityId: lead.id,
       kind: TRACK_KIND.LEAD
-    }
+    },
+    push: webPushCopy.newLead(lead)
   })
 }
 
@@ -261,7 +282,8 @@ const onOrderCreated = async (order) => {
       entityType: 'order',
       entityId: order.id,
       kind: TRACK_KIND.PENDING_ORDER
-    }
+    },
+    push: webPushCopy.pendingOrder(order)
   })
 }
 
@@ -274,12 +296,19 @@ const onStockChanged = async ({ productId, warehouseId, quantity }) => {
     warehouseId ? warehouseModel.findOneById(warehouseId) : null
   ])
 
+  const productName = product?.name || 'Sản phẩm'
+  const warehouseName = warehouse?.name || ''
+
   await notifyStaff(
     telegramTemplates.lowStockStaff({
-      productName: product?.name || 'Sản phẩm',
+      productName,
       quantity,
-      warehouseName: warehouse?.name || ''
-    })
+      warehouseName
+    }),
+    {
+      push: webPushCopy.lowStock({ productName, quantity, warehouseName }),
+      track: { entityType: 'product', entityId: productId, kind: 'low_stock' }
+    }
   )
 }
 

@@ -1,4 +1,4 @@
-/* ASAKA CRM — Web Push service worker */
+/* ASAKA CRM — Web Push service worker (Android + iOS PWA) */
 self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
@@ -6,6 +6,14 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
+
+function toAbsoluteUrl(path) {
+  try {
+    return new URL(path || "/dashboard", self.location.origin).href;
+  } catch {
+    return self.location.origin + "/dashboard";
+  }
+}
 
 self.addEventListener("push", (event) => {
   let data = {
@@ -31,13 +39,13 @@ self.addEventListener("push", (event) => {
     }
   }
 
+  // iOS requires a visible notification for every push
   event.waitUntil(
     self.registration.showNotification(data.title || "ASAKA CRM", {
       body: data.body || "",
       icon: data.icon || "/icons/icon-192.png",
       badge: data.badge || "/icons/icon-192.png",
       tag: data.tag || "asaka-crm",
-      renotify: true,
       data: { url: data.url || "/dashboard" },
     })
   );
@@ -45,7 +53,9 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || "/dashboard";
+  const targetUrl = toAbsoluteUrl(
+    (event.notification.data && event.notification.data.url) || "/dashboard"
+  );
 
   event.waitUntil(
     (async () => {
@@ -57,10 +67,11 @@ self.addEventListener("notificationclick", (event) => {
       for (const client of allClients) {
         if ("focus" in client) {
           await client.focus();
-          if ("navigate" in client) {
-            await client.navigate(targetUrl);
-          } else {
+          // navigate() is unreliable on iOS — prefer postMessage / openWindow
+          try {
             client.postMessage({ type: "PUSH_NAVIGATE", url: targetUrl });
+          } catch {
+            // ignore
           }
           return;
         }
