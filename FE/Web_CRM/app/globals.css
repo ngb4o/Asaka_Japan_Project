@@ -139,19 +139,17 @@
 
   /**
    * iOS Home Screen PWA only (WebKit quirk):
-   * `100dvh` / `inset:0` often exclude `safe-area-inset-bottom`, leaving a white
-   * gap under the bottom nav. Compensate shell height only on iOS PWA.
+   * Layout viewport is shorter than the physical screen by ~safe-area (sometimes
+   * more). Pull the shell bottom edge down into that strip.
+   * `--crm-shell-bottom-shift` is measured in JS (see DashboardShell).
    * @see https://stackoverflow.com/questions/79902310
    */
   html.crm-ios-pwa .crm-app-shell {
-    inset: auto;
     top: 0;
-    left: 0;
     right: 0;
-    bottom: auto;
-    height: 100vh;
-    height: 100dvh;
-    height: calc(100dvh + env(safe-area-inset-bottom, 0px));
+    left: 0;
+    bottom: calc(-1 * var(--crm-shell-bottom-shift, env(safe-area-inset-bottom, 0px)));
+    height: auto;
   }
 
   :focus-visible {

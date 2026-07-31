@@ -79,15 +79,51 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
-    const sync = () => {
-      root.classList.toggle("crm-ios-pwa", isIosPwa());
+
+    const measureSafeAreaBottom = () => {
+      const probe = document.createElement("div");
+      probe.setAttribute("aria-hidden", "true");
+      probe.style.cssText =
+        "position:fixed;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none;";
+      document.body.appendChild(probe);
+      const value = probe.getBoundingClientRect().height;
+      probe.remove();
+      return value;
     };
+
+    const sync = () => {
+      if (!isIosPwa()) {
+        root.classList.remove("crm-ios-pwa");
+        root.style.removeProperty("--crm-shell-bottom-shift");
+        return;
+      }
+
+      root.classList.add("crm-ios-pwa");
+
+      const sab = measureSafeAreaBottom();
+      // +1×sab only closed ~half the gap on device; extend ~2× (capped)
+      const shift = sab > 0 ? Math.min(Math.ceil(sab * 2), 80) : 0;
+      root.style.setProperty("--crm-shell-bottom-shift", `${shift}px`);
+    };
+
     sync();
+    // Re-measure after paint — env() can be 0 on first tick
+    const raf = window.requestAnimationFrame(sync);
+    const t = window.setTimeout(sync, 100);
+
     const mq = window.matchMedia("(display-mode: standalone)");
     mq.addEventListener?.("change", sync);
+    window.addEventListener("resize", sync);
+    window.visualViewport?.addEventListener("resize", sync);
+
     return () => {
+      window.cancelAnimationFrame(raf);
+      window.clearTimeout(t);
       mq.removeEventListener?.("change", sync);
+      window.removeEventListener("resize", sync);
+      window.visualViewport?.removeEventListener("resize", sync);
       root.classList.remove("crm-ios-pwa");
+      root.style.removeProperty("--crm-shell-bottom-shift");
     };
   }, []);
 
