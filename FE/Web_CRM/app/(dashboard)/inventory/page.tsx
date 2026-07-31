@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
   ChevronDown,
+  ImageIcon,
   Pencil,
   Plus,
   Trash2,
@@ -19,14 +21,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Pagination } from "@/components/ui/pagination";
 import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
 import {
+  MobileMediaCard,
   MobileMetaChip,
   MobileRecordCard,
-  MobileStatTile,
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import {
@@ -37,6 +40,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { getImageUrl } from "@/lib/api/uploads";
 import {
   exportStock,
   getInventoryTransactions,
@@ -109,6 +113,7 @@ export default function InventoryPage() {
 
   // Warehouse management
   const [warehouseSectionOpen, setWarehouseSectionOpen] = useState(false);
+  const [historySectionOpen, setHistorySectionOpen] = useState(false);
   const [warehouseDialogOpen, setWarehouseDialogOpen] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
   const [warehouseForm, setWarehouseForm] = useState<WarehouseFormValues>(EMPTY_WAREHOUSE_FORM);
@@ -352,7 +357,7 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Kho hàng"
         description="Quản lý kho, nhập xuất và theo dõi tồn kho"
@@ -392,6 +397,7 @@ export default function InventoryPage() {
       {isAdmin && (
         <Card>
           <CardHeader
+            showOnMobile
             className="cursor-pointer select-none"
             onClick={() => setWarehouseSectionOpen((prev) => !prev)}
           >
@@ -508,10 +514,10 @@ export default function InventoryPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
-            <Input
+            <SearchInput
               placeholder="Tìm theo tên sản phẩm, SKU..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onSearch={setSearch}
             />
             <SearchableSelect
               options={[
@@ -542,42 +548,50 @@ export default function InventoryPage() {
                 disabled={stockLoading}
               >
                 <div className="flex flex-col gap-3">
-                {stocks.map((item) => (
-                  <MobileRecordCard key={item.id} className="p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
-                          {item.productName || "—"}
-                        </p>
-                        {item.productSku ? (
-                          <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
-                            {item.productSku}
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="mt-3">
-                      <MobileStatTile label="Tồn kho">
-                        {formatStockDisplay(item.quantity, item.unitsPerCase)}
-                      </MobileStatTile>
-                    </div>
-
-                    <div className="mt-2.5 flex flex-wrap gap-1.5">
-                      {item.warehouseName ? (
-                        <MobileMetaChip>Kho: {item.warehouseName}</MobileMetaChip>
-                      ) : null}
-                      <MobileMetaChip>{formatDate(item.updatedAt)}</MobileMetaChip>
-                    </div>
-                  </MobileRecordCard>
-                ))}
+                {stocks.map((item) => {
+                  const thumb = item.productImage;
+                  return (
+                    <MobileMediaCard
+                      key={item.id}
+                      media={
+                        thumb ? (
+                          <Image
+                            src={getImageUrl(thumb)}
+                            alt={item.productName || "Sản phẩm"}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[var(--color-text-inverse)]">
+                            <ImageIcon className="h-6 w-6" />
+                          </div>
+                        )
+                      }
+                      title={item.productName || "—"}
+                      subtitle={item.productSku || undefined}
+                      meta={
+                        <>
+                          <MobileMetaChip>
+                            Tồn {formatStockDisplay(item.quantity, item.unitsPerCase)}
+                          </MobileMetaChip>
+                          {item.warehouseName ? (
+                            <MobileMetaChip>Kho: {item.warehouseName}</MobileMetaChip>
+                          ) : null}
+                          <MobileMetaChip>{formatDate(item.updatedAt)}</MobileMetaChip>
+                        </>
+                      }
+                    />
+                  );
+                })}
                 </div>
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-                <table className="w-full min-w-[860px] text-left text-sm">
+                <table className="w-full min-w-[920px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
+                      <th className="px-2 py-3 font-medium">Ảnh</th>
                       <th className="px-2 py-3 font-medium">Kho</th>
                       <th className="px-2 py-3 font-medium">Sản phẩm</th>
                       <th className="px-2 py-3 font-medium">SKU</th>
@@ -586,21 +600,41 @@ export default function InventoryPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {stocks.map((item) => (
-                      <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                        <td className="px-2 py-3 font-medium">{item.warehouseName || "—"}</td>
-                        <td className="px-2 py-3">{item.productName || "—"}</td>
-                        <td className="px-2 py-3 text-[var(--color-text-inverse)]">
-                          {item.productSku || "—"}
-                        </td>
-                        <td className="px-2 py-3 font-medium">
-                          {formatStockDisplay(item.quantity, item.unitsPerCase)}
-                        </td>
-                        <td className="px-2 py-3 text-[var(--color-text-inverse)]">
-                          {formatDate(item.updatedAt)}
-                        </td>
-                      </tr>
-                    ))}
+                    {stocks.map((item) => {
+                      const thumb = item.productImage;
+                      return (
+                        <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
+                          <td className="px-2 py-3">
+                            <div className="relative h-11 w-11 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]">
+                              {thumb ? (
+                                <Image
+                                  src={getImageUrl(thumb)}
+                                  alt={item.productName || "Sản phẩm"}
+                                  fill
+                                  className="object-cover"
+                                  unoptimized
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-[var(--color-text-inverse)]">
+                                  <ImageIcon className="h-4 w-4" />
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-2 py-3 font-medium">{item.warehouseName || "—"}</td>
+                          <td className="px-2 py-3">{item.productName || "—"}</td>
+                          <td className="px-2 py-3 text-[var(--color-text-inverse)]">
+                            {item.productSku || "—"}
+                          </td>
+                          <td className="px-2 py-3 font-medium">
+                            {formatStockDisplay(item.quantity, item.unitsPerCase)}
+                          </td>
+                          <td className="px-2 py-3 text-[var(--color-text-inverse)]">
+                            {formatDate(item.updatedAt)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -619,10 +653,31 @@ export default function InventoryPage() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Lịch sử nhập xuất</CardTitle>
+        <CardHeader
+          showOnMobile
+          className="max-md:cursor-pointer max-md:select-none"
+          onClick={() => {
+            if (
+              typeof window !== "undefined" &&
+              window.matchMedia("(max-width: 767px)").matches
+            ) {
+              setHistorySectionOpen((prev) => !prev);
+            }
+          }}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle>Lịch sử nhập xuất</CardTitle>
+            <ChevronDown
+              className={cn(
+                "h-5 w-5 shrink-0 text-[var(--color-text-inverse)] transition-transform md:hidden",
+                historySectionOpen && "rotate-180"
+              )}
+            />
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent
+          className={cn("space-y-4", !historySectionOpen && "max-md:hidden")}
+        >
           {transactions.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có giao dịch</p>
           ) : (
@@ -635,50 +690,65 @@ export default function InventoryPage() {
                 disabled={transactionLoading}
               >
                 <div className="flex flex-col gap-3">
-                {transactions.map((item) => (
-                  <MobileRecordCard key={item.id} className="p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
-                          {item.productName || "—"}
+                {transactions.map((item) => {
+                  const thumb = item.productImage;
+                  return (
+                    <MobileMediaCard
+                      key={item.id}
+                      media={
+                        thumb ? (
+                          <Image
+                            src={getImageUrl(thumb)}
+                            alt={item.productName || "Sản phẩm"}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[var(--color-text-inverse)]">
+                            <ImageIcon className="h-6 w-6" />
+                          </div>
+                        )
+                      }
+                      title={item.productName || "—"}
+                      badge={
+                        <Badge
+                          variant={statusBadgeVariant(item.type)}
+                          className="shrink-0"
+                        >
+                          {item.type === "import" ? "Nhập" : "Xuất"}
+                        </Badge>
+                      }
+                      meta={
+                        <>
+                          <MobileMetaChip>
+                            SL{" "}
+                            {formatMovementQuantity(
+                              item.quantity,
+                              item.unitType,
+                              item.quantityBase,
+                              item.unitsPerCase
+                            )}
+                          </MobileMetaChip>
+                          <MobileMetaChip>
+                            Tồn{" "}
+                            {formatStockDisplay(item.balanceAfter, item.unitsPerCase)}
+                          </MobileMetaChip>
+                          {item.warehouseName ? (
+                            <MobileMetaChip>Kho: {item.warehouseName}</MobileMetaChip>
+                          ) : null}
+                          <MobileMetaChip>{formatDate(item.createdAt)}</MobileMetaChip>
+                        </>
+                      }
+                    >
+                      {item.note ? (
+                        <p className="truncate text-xs text-[var(--color-text-inverse)]">
+                          {item.note}
                         </p>
-                      </div>
-                      <Badge
-                        variant={statusBadgeVariant(item.type)}
-                        className="shrink-0"
-                      >
-                        {item.type === "import" ? "Nhập" : "Xuất"}
-                      </Badge>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <MobileStatTile label="Số lượng">
-                        {formatMovementQuantity(
-                          item.quantity,
-                          item.unitType,
-                          item.quantityBase,
-                          item.unitsPerCase
-                        )}
-                      </MobileStatTile>
-                      <MobileStatTile label="Tồn sau">
-                        {formatStockDisplay(item.balanceAfter, item.unitsPerCase)}
-                      </MobileStatTile>
-                    </div>
-
-                    <div className="mt-2.5 flex flex-wrap gap-1.5">
-                      {item.warehouseName ? (
-                        <MobileMetaChip>Kho: {item.warehouseName}</MobileMetaChip>
                       ) : null}
-                      <MobileMetaChip>{formatDate(item.createdAt)}</MobileMetaChip>
-                    </div>
-
-                    {item.note ? (
-                      <p className="mt-2 truncate text-xs text-[var(--color-text-inverse)]">
-                        {item.note}
-                      </p>
-                    ) : null}
-                  </MobileRecordCard>
-                ))}
+                    </MobileMediaCard>
+                  );
+                })}
                 </div>
               </MobileInfiniteList>
 

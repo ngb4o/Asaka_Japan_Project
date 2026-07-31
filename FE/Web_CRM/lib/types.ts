@@ -143,6 +143,7 @@ export type WarehouseStock = {
   productName?: string;
   productSku?: string;
   productUnit?: string;
+  productImage?: string;
   unitsPerCase?: number;
 };
 
@@ -163,6 +164,7 @@ export type InventoryTransaction = {
   createdAt: string;
   warehouseName?: string;
   productName?: string;
+  productImage?: string;
 };
 
 export type InventoryMovementInput = {

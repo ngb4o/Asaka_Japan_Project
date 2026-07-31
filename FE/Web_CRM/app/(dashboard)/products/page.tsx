@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VndInput } from "@/components/ui/vnd-input";
@@ -281,7 +282,7 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Sản phẩm"
         description={
@@ -320,10 +321,10 @@ export default function ProductsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
-            <Input
+            <SearchInput
               placeholder="Tìm theo tên sản phẩm..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onSearch={setSearch}
             />
             <SearchableSelect
               options={[

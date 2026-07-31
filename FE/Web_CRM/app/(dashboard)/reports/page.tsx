@@ -262,7 +262,7 @@ export default function ReportsPage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader>
+          <CardHeader showOnMobile>
             <CardTitle>Doanh số & đã thu theo kỳ</CardTitle>
           </CardHeader>
           <CardContent>
@@ -270,7 +270,7 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
+          <CardHeader showOnMobile>
             <CardTitle>Trạng thái đơn</CardTitle>
           </CardHeader>
           <CardContent>
@@ -281,7 +281,7 @@ export default function ReportsPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader>
+          <CardHeader showOnMobile>
             <CardTitle>Số đơn theo kỳ</CardTitle>
           </CardHeader>
           <CardContent>
@@ -289,7 +289,7 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
+          <CardHeader showOnMobile>
             <CardTitle>Thanh toán</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -315,7 +315,7 @@ export default function ReportsPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader>
+          <CardHeader showOnMobile>
             <CardTitle>Top đại lý</CardTitle>
           </CardHeader>
           <CardContent>
@@ -327,7 +327,7 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
+          <CardHeader showOnMobile>
             <CardTitle>Top sản phẩm</CardTitle>
           </CardHeader>
           <CardContent>
@@ -412,7 +412,7 @@ function ChangeBadge({ value }: { value?: number }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2 md:py-0.5 md:text-xs",
         up
           ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
           : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
@@ -439,7 +439,7 @@ function Kpi({
 }) {
   return (
     <Card>
-      <CardHeader className="border-none pb-0">
+      <CardHeader showOnMobile className="border-none pb-0">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-medium text-[var(--color-text-inverse)]">{title}</p>
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-text-secondary)]/10 text-[var(--color-text-secondary)]">
@@ -482,7 +482,7 @@ function RankTable({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader showOnMobile>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>

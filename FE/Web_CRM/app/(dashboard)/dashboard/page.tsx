@@ -127,7 +127,7 @@ export default function DashboardPage() {
   const displayName = user?.employeeName || user?.email?.split("@")[0] || "bạn";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 md:space-y-6">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(1,125,3,0.12),_transparent_55%)]" />
@@ -298,7 +298,7 @@ export default function DashboardPage() {
         <>
           <section className="grid gap-4 xl:grid-cols-5">
             <Card className="overflow-hidden xl:col-span-3">
-              <CardHeader className="border-none pb-0">
+              <CardHeader showOnMobile className="border-none pb-0">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <CardTitle>Xu hướng doanh số</CardTitle>
@@ -324,7 +324,7 @@ export default function DashboardPage() {
             </Card>
 
             <Card className="overflow-hidden xl:col-span-2">
-              <CardHeader className="border-none pb-0">
+              <CardHeader showOnMobile className="border-none pb-0">
                 <CardTitle>Trạng thái đơn</CardTitle>
                 <p className="mt-1 text-sm text-[var(--color-text-inverse)]">Phân bổ trong tháng</p>
               </CardHeader>
@@ -340,7 +340,7 @@ export default function DashboardPage() {
 
           <section className="grid gap-4 lg:grid-cols-5">
             <Card className="overflow-hidden lg:col-span-3">
-              <CardHeader className="border-none pb-0">
+              <CardHeader showOnMobile className="border-none pb-0">
                 <CardTitle>Số đơn theo tháng</CardTitle>
                 <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
                   Khối lượng đơn (không gồm hủy)
@@ -356,7 +356,7 @@ export default function DashboardPage() {
             </Card>
 
             <Card className="lg:col-span-2">
-              <CardHeader className="border-none pb-0">
+              <CardHeader showOnMobile className="border-none pb-0">
                 <CardTitle>Thanh toán</CardTitle>
                 <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
                   Theo trạng thái tháng này
@@ -399,7 +399,7 @@ export default function DashboardPage() {
       ) : user?.role === "sales" ? (
         <section className="grid gap-4 xl:grid-cols-5">
           <Card className="overflow-hidden xl:col-span-3">
-            <CardHeader className="border-none pb-0">
+            <CardHeader showOnMobile className="border-none pb-0">
               <CardTitle>Số đơn theo tháng</CardTitle>
               <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
                 Khối lượng đơn (không gồm hủy)
@@ -414,7 +414,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
           <Card className="overflow-hidden xl:col-span-2">
-            <CardHeader className="border-none pb-0">
+            <CardHeader showOnMobile className="border-none pb-0">
               <CardTitle>Trạng thái đơn</CardTitle>
               <p className="mt-1 text-sm text-[var(--color-text-inverse)]">Phân bổ trong tháng</p>
             </CardHeader>
@@ -468,7 +468,7 @@ export default function DashboardPage() {
         )}
       >
         <Card className={user?.role === "sales" ? "" : "xl:col-span-3"}>
-          <CardHeader className="flex flex-row items-center justify-between border-none pb-0">
+          <CardHeader showOnMobile className="flex flex-row items-center justify-between border-none pb-0">
             <div>
               <CardTitle>Đơn gần đây</CardTitle>
               <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
@@ -501,7 +501,7 @@ export default function DashboardPage() {
                         <p className="font-semibold tracking-tight">{order.code}</p>
                         <span
                           className={cn(
-                            "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                            "rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2 md:py-0.5 md:text-[11px]",
                             ORDER_STATUS_TONE[order.status] || ORDER_STATUS_TONE.pending
                           )}
                         >
@@ -533,7 +533,7 @@ export default function DashboardPage() {
 
         {user?.role !== "sales" ? (
         <Card className="xl:col-span-2">
-          <CardHeader className="border-none pb-0">
+          <CardHeader showOnMobile className="border-none pb-0">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <CardTitle className="flex items-center gap-2">
@@ -613,7 +613,7 @@ function ChangeBadge({ value }: { value?: number }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+        "inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-[13px] font-semibold leading-none md:px-2 md:py-0.5 md:text-[11px]",
         up
           ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
           : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"

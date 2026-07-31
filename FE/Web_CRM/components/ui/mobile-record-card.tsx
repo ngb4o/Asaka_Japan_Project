@@ -69,12 +69,12 @@ export function MobileStatTile({
         className
       )}
     >
-      <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
+      <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
         {label}
       </p>
       <p
         className={cn(
-          "mt-0.5 text-sm font-semibold tabular-nums text-[var(--color-text-primary)]",
+          "mt-1 text-base font-semibold tabular-nums text-[var(--color-text-primary)]",
           valueClassName
         )}
       >
@@ -157,9 +157,20 @@ export function MobileMediaCard({
   );
 }
 
-export function MobileMetaChip({ children }: { children: ReactNode }) {
+export function MobileMetaChip({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <span className="inline-flex max-w-full truncate rounded-md bg-[var(--color-surface-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-primary)]">
+    <span
+      className={cn(
+        "inline-flex max-w-full truncate rounded-md bg-[var(--color-surface-muted)] px-2.5 py-1 text-[13px] font-medium leading-none text-[var(--color-text-primary)]",
+        className
+      )}
+    >
       {children}
     </span>
   );

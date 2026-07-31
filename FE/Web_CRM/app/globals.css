@@ -101,6 +101,8 @@
 
   html {
     color-scheme: light;
+    /* Chặn pull-to-refresh native (Safari/Chrome) reload cả trang */
+    overscroll-behavior-y: none;
   }
 
   html.dark {
@@ -116,6 +118,7 @@
     background-color: var(--color-surface-muted);
     -webkit-font-smoothing: antialiased;
     transition: background-color 200ms ease, color 200ms ease;
+    overscroll-behavior-y: none;
   }
 
   :focus-visible {
@@ -174,6 +177,17 @@
 
   .auth-delay {
     animation-delay: 120ms;
+  }
+}
+
+/** List pages on mobile: Card full-bleed (dashboard/reports keep normal margin + radius) */
+@media (max-width: 767px) {
+  .crm-page-flush [data-crm-card] {
+    border-radius: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    box-shadow: none;
   }
 }
 

@@ -3,9 +3,19 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
+import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { cn } from "@/lib/utils";
 
-const Dialog = DialogPrimitive.Root;
+function Dialog({
+  modal,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  const isMobile = useIsMobile();
+  // Non-modal on mobile so portaled BottomSheets can receive focus + scroll.
+  // Overlay + outside handlers still provide the modal UX.
+  return <DialogPrimitive.Root modal={modal ?? !isMobile} {...props} />;
+}
+
 const DialogTrigger = DialogPrimitive.Trigger;
 const DialogPortal = DialogPrimitive.Portal;
 const DialogClose = DialogPrimitive.Close;
@@ -43,15 +53,32 @@ const DialogContent = React.forwardRef<
       bodyScroll = true,
       onPointerDownOutside,
       onInteractOutside,
+      onFocusOutside,
       ...props
     },
     ref
   ) => {
-    function isPopoverTarget(target: EventTarget | null) {
+    function isOverlayExemptTarget(target: EventTarget | null) {
       return (
         target instanceof Element &&
-        Boolean(target.closest("[data-radix-popover-content]"))
+        Boolean(
+          target.closest(
+            "[data-radix-popover-content], [data-bottom-sheet]"
+          )
+        )
       );
+    }
+
+    function retainFocusableInExemptOverlay(target: EventTarget | null) {
+      if (!(target instanceof HTMLElement)) return;
+      const focusable = target.closest(
+        "input, textarea, select, [contenteditable='true']"
+      );
+      if (!(focusable instanceof HTMLElement)) return;
+      // Radix preventDefault on outside pointerdown blocks native focus — restore it.
+      queueMicrotask(() => {
+        focusable.focus({ preventScroll: true });
+      });
     }
 
     return (
@@ -65,13 +92,20 @@ const DialogContent = React.forwardRef<
             "overflow-hidden p-0"
           )}
           onPointerDownOutside={(event) => {
-            if (isPopoverTarget(event.target)) {
+            if (isOverlayExemptTarget(event.target)) {
               event.preventDefault();
+              retainFocusableInExemptOverlay(event.target);
             }
             onPointerDownOutside?.(event);
           }}
+          onFocusOutside={(event) => {
+            if (isOverlayExemptTarget(event.target)) {
+              event.preventDefault();
+            }
+            onFocusOutside?.(event);
+          }}
           onInteractOutside={(event) => {
-            if (isPopoverTarget(event.target)) {
+            if (isOverlayExemptTarget(event.target)) {
               event.preventDefault();
             }
             onInteractOutside?.(event);

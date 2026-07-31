@@ -156,7 +156,7 @@ export default function PayrollPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-full space-y-0 bg-[var(--color-surface-elevated)] md:min-h-0 md:space-y-6 md:bg-transparent">
       <PageHeader
         title="Bảng lương"
         description={
@@ -198,7 +198,7 @@ export default function PayrollPage() {
       />
 
       {canEdit ? (
-      <div className="md:hidden">
+      <div className="bg-[var(--color-surface-elevated)] px-3 py-3 md:hidden">
         <Label htmlFor="period-mobile" className="sr-only">
           Kỳ lương
         </Label>

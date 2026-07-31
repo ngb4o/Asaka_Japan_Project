@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { DateInput } from "@/components/ui/date-input";
 import { DateRangeInput } from "@/components/ui/date-range-input";
 import { Label } from "@/components/ui/label";
@@ -454,7 +455,7 @@ export default function TripsPage() {
   const preview = selected?.settlementPreview;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Chuyến công tác"
         description="Giao hàng nhiều ngày, tạm ứng, chi phí và quyết toán"
@@ -472,11 +473,11 @@ export default function TripsPage() {
           <CardTitle>Danh sách chuyến</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input
+          <SearchInput
             placeholder="Tìm mã / tiêu đề / khu vực..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+            onSearch={setSearch}
+            />
           {items.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có chuyến công tác</p>
           ) : (
@@ -712,7 +713,7 @@ export default function TripsPage() {
                             </span>
                             <span
                               className={cn(
-                                "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                                "rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2 md:py-0.5 md:text-[11px]",
                                 ORDER_STATUS_TONE[order.status]
                               )}
                             >
@@ -775,7 +776,7 @@ export default function TripsPage() {
           </DialogHeader>
 
           {selected ? (
-            <div className="space-y-6">
+            <div className="space-y-0 md:space-y-6">
               <div className="grid gap-3 rounded-xl border border-[var(--color-border-subtle)] p-4 sm:grid-cols-4">
                 <div>
                   <p className="text-xs text-[var(--color-text-inverse)]">Thời gian</p>
@@ -828,7 +829,7 @@ export default function TripsPage() {
                             </Link>
                             <span
                               className={cn(
-                                "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                                "rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2 md:py-0.5 md:text-[11px]",
                                 ORDER_STATUS_TONE[
                                   (order.status as Order["status"]) || "pending"
                                 ] || ORDER_STATUS_TONE.pending

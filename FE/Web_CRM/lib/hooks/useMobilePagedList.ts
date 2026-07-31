@@ -14,7 +14,38 @@ type FetchPage<T> = (page: number) => Promise<PageResult<T>>;
 type UseMobilePagedListOptions<T> = {
   fetchPage: FetchPage<T>;
   onError?: (error: unknown) => void;
+  /** Unique key for append dedupe. Default: `id`. */
+  getItemKey?: (item: T) => string;
 };
+
+function defaultGetItemKey<T>(item: T): string {
+  const record = item as { id?: string };
+  return String(record.id ?? "");
+}
+
+function mergeUniqueByKey<T>(
+  prev: T[],
+  next: T[],
+  getItemKey: (item: T) => string
+): T[] {
+  const seen = new Set<string>();
+  const merged: T[] = [];
+
+  for (const item of prev) {
+    const key = getItemKey(item);
+    if (key) seen.add(key);
+    merged.push(item);
+  }
+
+  for (const item of next) {
+    const key = getItemKey(item);
+    if (key && seen.has(key)) continue;
+    if (key) seen.add(key);
+    merged.push(item);
+  }
+
+  return merged;
+}
 
 /**
  * Paged list helpers for mobile pull-to-refresh + infinite scroll.
@@ -23,6 +54,7 @@ type UseMobilePagedListOptions<T> = {
 export function useMobilePagedList<T>({
   fetchPage,
   onError,
+  getItemKey = defaultGetItemKey,
 }: UseMobilePagedListOptions<T>) {
   const [items, setItems] = useState<T[]>([]);
   const [page, setPage] = useState(1);
@@ -36,6 +68,8 @@ export function useMobilePagedList<T>({
   const pageRef = useRef(1);
   const totalPagesRef = useRef(1);
   const busyRef = useRef(false);
+  const getItemKeyRef = useRef(getItemKey);
+  getItemKeyRef.current = getItemKey;
 
   const applyResult = useCallback(
     async (targetPage: number, mode: "replace" | "append") => {
@@ -57,7 +91,9 @@ export function useMobilePagedList<T>({
         }
 
         setItems((prev) =>
-          mode === "append" ? [...prev, ...result.items] : result.items
+          mode === "append"
+            ? mergeUniqueByKey(prev, result.items, getItemKeyRef.current)
+            : result.items
         );
         pageRef.current = result.page;
         totalPagesRef.current = result.totalPages;
@@ -94,6 +130,8 @@ export function useMobilePagedList<T>({
   const loadMore = useCallback(() => {
     if (busyRef.current || loading || loadingMore || refreshing) return;
     if (pageRef.current >= totalPagesRef.current) return;
+    // Lock immediately so IntersectionObserver can't double-fire the same page
+    busyRef.current = true;
     void applyResult(pageRef.current + 1, "append");
   }, [applyResult, loading, loadingMore, refreshing]);
 

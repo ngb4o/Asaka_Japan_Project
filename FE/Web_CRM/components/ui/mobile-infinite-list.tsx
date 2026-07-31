@@ -122,9 +122,10 @@ export function MobileInfiniteList({
 
         loadMoreLock.current = true;
         onLoadMore();
+        // Keep lock until loading finishes; fallback unlock if parent didn't start
         window.setTimeout(() => {
-          loadMoreLock.current = false;
-        }, 400);
+          if (!loadingMore) loadMoreLock.current = false;
+        }, 800);
       },
       {
         root: getScrollParent(rootRef.current),
@@ -136,6 +137,12 @@ export function MobileInfiniteList({
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [disabled, hasMore, loadingMore, onLoadMore, refreshing]);
+
+  useEffect(() => {
+    if (!loadingMore && !refreshing) {
+      loadMoreLock.current = false;
+    }
+  }, [loadingMore, refreshing]);
 
   const indicatorOffset = refreshing ? 44 : pullDistance;
   const readyToRefresh = pullDistance >= 56;
@@ -193,12 +200,6 @@ export function MobileInfiniteList({
           <Loader2 className="h-4 w-4 animate-spin" />
           Đang tải thêm...
         </div>
-      ) : null}
-
-      {!hasMore && !loadingMore ? (
-        <p className="py-2 text-center text-[11px] text-[var(--color-text-inverse)]">
-          Đã hết danh sách
-        </p>
       ) : null}
     </div>
   );

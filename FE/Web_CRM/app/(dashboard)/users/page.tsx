@@ -244,7 +244,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Người dùng & phân quyền"
         description="Chọn nhân viên để cấp tài khoản CRM - đăng nhập bằng email"

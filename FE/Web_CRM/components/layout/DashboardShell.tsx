@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
+import {
+  MobileChromeProvider,
+} from "@/components/layout/MobileChromeProvider";
 import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
 import { NotificationProvider } from "@/lib/notifications/NotificationProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -15,6 +18,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -43,24 +47,40 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   if (!user) return null;
 
+  const paddedMobile =
+    pathname === "/dashboard" ||
+    pathname.startsWith("/reports") ||
+    pathname.startsWith("/settings");
+
   return (
     <ConfirmProvider>
       <NotificationProvider>
-        <div className="flex min-h-[100dvh] bg-[var(--color-surface-muted)]">
-          <Sidebar
-            mobileOpen={mobileMenuOpen}
-            onMobileOpenChange={setMobileMenuOpen}
-          />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <DashboardHeader onOpenMenu={() => setMobileMenuOpen(true)} />
-            <main className="flex-1 overflow-x-hidden overflow-y-auto pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0">
-              <div className="w-full max-w-[1600px] space-y-4 p-3 sm:space-y-5 sm:p-4 md:p-5 lg:p-6">
-                {children}
-              </div>
-            </main>
+        <MobileChromeProvider scrollRef={mainRef}>
+          <div className="flex h-[100dvh] overflow-hidden bg-[var(--color-surface-muted)]">
+            <Sidebar
+              mobileOpen={mobileMenuOpen}
+              onMobileOpenChange={setMobileMenuOpen}
+            />
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <DashboardHeader onOpenMenu={() => setMobileMenuOpen(true)} />
+              <main
+                ref={mainRef}
+                className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0"
+              >
+                <div
+                  className={
+                    paddedMobile
+                      ? "crm-page-padded w-full max-w-[1600px] space-y-3 p-3 sm:space-y-4 sm:p-4 md:space-y-5 md:p-5 lg:p-6"
+                      : "crm-page-flush w-full max-w-[1600px] space-y-0 p-0 md:space-y-5 md:p-5 lg:p-6"
+                  }
+                >
+                  {children}
+                </div>
+              </main>
+            </div>
+            <MobileBottomNav onOpenMenu={() => setMobileMenuOpen(true)} />
           </div>
-          <MobileBottomNav onOpenMenu={() => setMobileMenuOpen(true)} />
-        </div>
+        </MobileChromeProvider>
       </NotificationProvider>
     </ConfirmProvider>
   );

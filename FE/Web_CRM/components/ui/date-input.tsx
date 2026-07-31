@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import * as Popover from "@radix-ui/react-popover";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
 import {
   cn,
@@ -159,6 +161,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
         : null;
 
     const [open, setOpen] = React.useState(false);
+    const isMobile = useIsMobile();
     const [text, setText] = React.useState(() =>
       normalized
         ? isMonth
@@ -309,7 +312,13 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
       placeholder || (isMonth ? "mm/yyyy" : "dd/mm/yyyy");
 
     return (
-      <Popover.Root open={open} onOpenChange={(next) => !disabled && setOpen(next)}>
+      <Popover.Root
+        open={!isMobile && open}
+        onOpenChange={(next) => {
+          if (disabled) return;
+          setOpen(next);
+        }}
+      >
         <div className={cn("relative w-full", className)}>
           <div
             className={cn(
@@ -362,6 +371,9 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                     open && "bg-[var(--color-text-secondary)]/10"
                   )}
                   onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    if (isMobile && !disabled) setOpen(true);
+                  }}
                 >
                   <CalendarDays className="h-4 w-4" />
                 </button>
@@ -369,18 +381,20 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
             </div>
           </div>
 
-          <Popover.Portal>
-            <Popover.Content
-              align="end"
-              sideOffset={8}
-              collisionPadding={12}
-              className={cn(
-                "z-[90] w-[320px] overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-elevated)]",
-                "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
-              )}
-              onOpenAutoFocus={(event) => event.preventDefault()}
-              onCloseAutoFocus={(event) => event.preventDefault()}
-            >
+          {!isMobile ? (
+            <Popover.Portal>
+              <Popover.Content
+                align="end"
+                sideOffset={8}
+                collisionPadding={12}
+                className={cn(
+                  "z-[90] w-[320px] overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-elevated)]",
+                  "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+                )}
+                onOpenAutoFocus={(event) => event.preventDefault()}
+                onCloseAutoFocus={(event) => event.preventDefault()}
+              >
+
               {isMonth ? (
                 <>
                   <div className="mb-3 flex items-center justify-between gap-2">
@@ -538,8 +552,176 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                   </button>
                 </div>
               </div>
-            </Popover.Content>
-          </Popover.Portal>
+              </Popover.Content>
+            </Popover.Portal>
+          ) : (
+            <BottomSheet
+              open={open}
+              onOpenChange={(next) => !disabled && setOpen(next)}
+              title={isMonth ? "Chọn tháng" : "Chọn ngày"}
+            >
+              <div className="p-4">
+
+              {isMonth ? (
+                <>
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      aria-label="Năm trước"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+                      onClick={() => setViewYear((year) => year - 1)}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <p className="text-sm font-semibold tracking-tight text-[var(--color-text-primary)]">
+                      {viewYear}
+                    </p>
+                    <button
+                      type="button"
+                      aria-label="Năm sau"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+                      onClick={() => setViewYear((year) => year + 1)}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {MONTH_SHORT.map((label, monthIndex) => {
+                      const isSelected =
+                        selectedDate != null &&
+                        selectedDate.getFullYear() === viewYear &&
+                        selectedDate.getMonth() === monthIndex;
+                      const isCurrent =
+                        today.getFullYear() === viewYear &&
+                        today.getMonth() === monthIndex;
+
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => selectMonth(monthIndex)}
+                          className={cn(
+                            "flex h-11 items-center justify-center rounded-xl text-sm font-medium transition-colors",
+                            !isSelected &&
+                              "text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]",
+                            isSelected &&
+                              "bg-[var(--color-text-secondary)] font-semibold text-white shadow-sm hover:bg-[var(--color-text-secondary)]",
+                            !isSelected &&
+                              isCurrent &&
+                              "font-semibold text-[var(--color-text-secondary)] ring-1 ring-[var(--color-text-secondary)]/35"
+                          )}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      aria-label="Tháng trước"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+                      onClick={() => setViewMonth((month) => addMonths(month, -1))}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <p className="text-sm font-semibold tracking-tight text-[var(--color-text-primary)]">
+                      {monthLabel(viewMonth)}
+                    </p>
+                    <button
+                      type="button"
+                      aria-label="Tháng sau"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+                      onClick={() => setViewMonth((month) => addMonths(month, 1))}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="mb-1 grid grid-cols-7 gap-1">
+                    {WEEKDAYS.map((day) => (
+                      <div
+                        key={day}
+                        className="flex h-8 items-center justify-center text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-inverse)]"
+                      >
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1">
+                    {days.map((day) => {
+                      const inMonth = day.getMonth() === viewMonth.getMonth();
+                      const isSelected = selectedDate
+                        ? sameDay(day, selectedDate)
+                        : false;
+                      const isToday = sameDay(day, today);
+
+                      return (
+                        <button
+                          key={toIsoLocal(day)}
+                          type="button"
+                          onClick={() => selectDay(day)}
+                          className={cn(
+                            "relative flex h-9 items-center justify-center rounded-xl text-sm tabular-nums transition-colors",
+                            inMonth
+                              ? "text-[var(--color-text-primary)]"
+                              : "text-[var(--color-text-inverse)]/45",
+                            !isSelected &&
+                              inMonth &&
+                              "hover:bg-[var(--color-surface-muted)]",
+                            isSelected &&
+                              "bg-[var(--color-text-secondary)] font-semibold text-white shadow-sm hover:bg-[var(--color-text-secondary)]",
+                            !isSelected &&
+                              isToday &&
+                              "font-semibold text-[var(--color-text-secondary)] ring-1 ring-[var(--color-text-secondary)]/35"
+                          )}
+                        >
+                          {day.getDate()}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              <div className="mt-3 flex items-center justify-between gap-2 border-t border-[var(--color-border-subtle)] pt-3">
+                <button
+                  type="button"
+                  className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-text-secondary)]/10"
+                  onClick={selectToday}
+                >
+                  {isMonth ? "Tháng này" : "Hôm nay"}
+                </button>
+                <div className="flex items-center gap-1">
+                  {normalized ? (
+                    <button
+                      type="button"
+                      className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+                      onClick={() => {
+                        clearValue();
+                        setOpen(false);
+                      }}
+                    >
+                      Xóa
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+                    onClick={() => setOpen(false)}
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
+              </div>
+            </BottomSheet>
+          )}
         </div>
       </Popover.Root>
     );

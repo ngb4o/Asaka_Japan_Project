@@ -200,7 +200,7 @@ export default function TelegramSettingsPage() {
 
   if (!allowed) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-0 md:space-y-6">
         <PageHeader title="Thông báo Telegram" />
         <Card>
           <CardContent className="py-10 text-center text-sm text-[var(--color-text-inverse)]">
@@ -216,7 +216,7 @@ export default function TelegramSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Thông báo Telegram"
         description="Thêm Chat ID nhân sự để nhận toàn bộ thông báo CRM (đơn hàng, công nợ, lead, chuyến, tồn kho). Đại lý/khách không cần cài bot."
@@ -255,7 +255,7 @@ export default function TelegramSettingsPage() {
       />
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader showOnMobile className="pb-3">
           <CardTitle className="text-base">Trạng thái bot</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-2 text-sm">
@@ -284,7 +284,7 @@ export default function TelegramSettingsPage() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader showOnMobile className="pb-3">
           <CardTitle className="text-base">Hướng dẫn thêm người</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-[var(--color-text-inverse)]">
@@ -300,7 +300,7 @@ export default function TelegramSettingsPage() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader showOnMobile className="pb-3">
           <CardTitle className="text-base">
             Người nhận nội bộ ({items.length})
           </CardTitle>

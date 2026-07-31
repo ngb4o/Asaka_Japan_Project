@@ -13,6 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
+import { FilterDrawer } from "@/components/ui/filter-drawer";
 import { DateRangeInput } from "@/components/ui/date-range-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -652,7 +654,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Đơn hàng"
         description="Công nợ, giao hàng và xuất kho khi xác nhận"
@@ -677,10 +679,10 @@ export default function OrdersPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
-            <Input
+            <SearchInput
               placeholder="Tìm theo mã, khách hàng, mã vận đơn..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onSearch={setSearch}
               className="flex-1"
             />
             <button
@@ -690,7 +692,8 @@ export default function OrdersPage() {
               onClick={() => setFilterOpen((open) => !open)}
               className={cn(
                 "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]",
-                filterOpen && "border-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]"
+                filterOpen &&
+                  "border-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]"
               )}
             >
               <Filter className="h-4 w-4" />
@@ -702,8 +705,9 @@ export default function OrdersPage() {
             </button>
           </div>
 
+          {/* Desktop: inline filters */}
           {filterOpen ? (
-            <div className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/40 p-3">
+            <div className="hidden space-y-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/40 p-3 md:block">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-medium text-[var(--color-text-primary)]">
                   Bộ lọc
@@ -769,6 +773,61 @@ export default function OrdersPage() {
             </div>
           ) : null}
 
+          {/* Mobile: right filter drawer */}
+          <FilterDrawer
+            open={filterOpen}
+            onOpenChange={setFilterOpen}
+            title="Bộ lọc đơn hàng"
+            activeCount={activeFilterCount}
+            onClear={() => {
+              setStatusFilter("");
+              setPaymentFilter("");
+              setDealerFilter("");
+            }}
+          >
+            <div className="space-y-1.5">
+              <Label>Trạng thái</Label>
+              <SearchableSelect
+                options={[
+                  { value: "", label: "Tất cả trạng thái" },
+                  ...STATUS_OPTIONS.order,
+                ]}
+                value={statusFilter}
+                onChange={setStatusFilter}
+                searchable={false}
+                clearable
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Thanh toán / nợ</Label>
+              <SearchableSelect
+                options={[
+                  { value: "", label: "Tất cả thanh toán" },
+                  { value: "debt", label: "Còn nợ" },
+                  ...STATUS_OPTIONS.payment,
+                ]}
+                value={paymentFilter}
+                onChange={setPaymentFilter}
+                searchable={false}
+                clearable
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Đại lý</Label>
+              <SearchableSelect
+                options={[
+                  { value: "", label: "Tất cả đại lý" },
+                  ...dealers.map((d) => ({ value: d.id, label: d.name })),
+                ]}
+                value={dealerFilter}
+                onChange={setDealerFilter}
+                searchable
+                clearable
+                placeholder="Chọn đại lý"
+              />
+            </div>
+          </FilterDrawer>
+
           {items.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có đơn hàng</p>
           ) : (
@@ -794,79 +853,79 @@ export default function OrdersPage() {
                   const paymentKey = item.paymentStatus || "unpaid";
 
                   return (
-                    <MobileRecordCard key={item.id} className="p-3">
-                      <div className="flex items-start justify-between gap-2">
+                    <MobileRecordCard key={item.id} className="p-4">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                          <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                             {item.code}
                           </p>
-                          <p className="mt-0.5 text-sm font-medium text-[var(--color-text-primary)]">
+                          <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
                             {recipientName}
                           </p>
                           {recipientPhone ? (
-                            <p className="mt-0.5 text-sm text-[var(--color-text-inverse)]">
+                            <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
                               {recipientPhone}
                             </p>
                           ) : null}
                         </div>
-                        <Badge
-                          variant={statusBadgeVariant(item.status)}
-                          className="shrink-0"
-                        >
-                          {statusLabel}
-                        </Badge>
+                        <div className="flex shrink-0 flex-col items-end gap-1.5">
+                          <Badge variant={statusBadgeVariant(item.status)}>
+                            {statusLabel}
+                          </Badge>
+                          <Badge variant={statusBadgeVariant(paymentKey)}>
+                            {PAYMENT_LABELS_SHORT[paymentKey]}
+                          </Badge>
+                        </div>
                       </div>
 
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        <div className="rounded-xl bg-[var(--color-surface-muted)] px-3 py-2">
-                          <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
+                      <div className="mt-3.5 grid grid-cols-2 gap-2.5">
+                        <div className="rounded-xl bg-[var(--color-surface-muted)] px-3.5 py-3">
+                          <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
                             Tổng đơn
                           </p>
-                          <p className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--color-text-primary)]">
+                          <p className="mt-1 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
                             {formatCurrency(item.total)}
                           </p>
                         </div>
-                        <div className="rounded-xl bg-[var(--color-surface-muted)] px-3 py-2">
-                          <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
+                        <div className="rounded-xl bg-[var(--color-surface-muted)] px-3.5 py-3">
+                          <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
                             Còn nợ
                           </p>
                           <p
-                            className={`mt-0.5 text-sm font-semibold tabular-nums ${
+                            className={cn(
+                              "mt-1 text-base font-bold tabular-nums",
                               remaining > 0
-                                ? "text-amber-700 dark:text-amber-300"
-                                : "text-[var(--color-text-primary)]"
-                            }`}
+                                ? "text-red-600 dark:text-red-400"
+                                : "text-[var(--color-text-inverse)]"
+                            )}
                           >
                             {formatCurrency(remaining)}
                           </p>
                         </div>
                       </div>
 
-                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                        <Badge
-                          variant={statusBadgeVariant(paymentKey)}
-                          className="px-2 py-0.5 text-[10px]"
-                        >
-                          {PAYMENT_LABELS_SHORT[paymentKey]}
-                        </Badge>
-                        {deliveryPerson !== "—" ? (
-                          <MobileMetaChip>Giao: {deliveryPerson}</MobileMetaChip>
-                        ) : null}
-                        {item.tripCode ? (
-                          <MobileMetaChip>Chuyến: {item.tripCode}</MobileMetaChip>
-                        ) : null}
-                      </div>
+                      {(deliveryPerson !== "—" || item.tripCode) ? (
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          {deliveryPerson !== "—" ? (
+                            <MobileMetaChip>Giao: {deliveryPerson}</MobileMetaChip>
+                          ) : null}
+                          {item.tripCode ? (
+                            <MobileMetaChip>Chuyến: {item.tripCode}</MobileMetaChip>
+                          ) : null}
+                        </div>
+                      ) : null}
 
                       {item.trackingCode ? (
-                        <p className="mt-2 truncate text-xs text-[var(--color-text-inverse)]">
+                        <p className="mt-2.5 truncate text-sm text-[var(--color-text-inverse)]">
                           Mã VC: {item.trackingCode}
                         </p>
                       ) : null}
 
-                      <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3">
+                      <div className="mt-3.5 flex flex-wrap justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3.5">
                         <Button
                           variant="outline"
                           size="sm"
+                          className="h-9 min-w-9"
                           onClick={() => handlePrint(item)}
                           title="In / PDF"
                         >
@@ -876,6 +935,7 @@ export default function OrdersPage() {
                           <Button
                             variant="outline"
                             size="sm"
+                            className="h-9 px-3"
                             onClick={() => {
                               setPayingOrder(item);
                               setPaymentAmount(
@@ -889,13 +949,19 @@ export default function OrdersPage() {
                             Thu
                           </Button>
                         ) : null}
-                        <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 min-w-9"
+                          onClick={() => openEdit(item)}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         {!item.inventoryExported && canEditOrderItems(role) ? (
                           <Button
                             variant="danger"
                             size="sm"
+                            className="h-9 min-w-9"
                             onClick={() => handleDelete(item)}
                           >
                             <Trash2 className="h-4 w-4" />

@@ -3,6 +3,7 @@
 import { Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { useMobileChrome } from "@/components/layout/MobileChromeProvider";
 import { cn } from "@/lib/utils";
 
 export type PageHeaderFab = {
@@ -59,6 +60,7 @@ export function PageHeader({
   fab,
   className,
 }: PageHeaderProps) {
+  const { visible: chromeVisible } = useMobileChrome();
   const fabs = fab == null ? [] : Array.isArray(fab) ? fab : [fab];
   const hasFab = fabs.length > 0;
   const hasDesktopChrome = Boolean(title || description || actions);
@@ -92,16 +94,28 @@ export function PageHeader({
 
       {hasFab ? (
         <div
-          className="pointer-events-none fixed z-50 flex flex-col-reverse items-end gap-3 md:hidden"
+          className={cn(
+            "pointer-events-none fixed z-50 flex flex-col-reverse items-end gap-3 transition-all duration-300 ease-out md:hidden",
+            chromeVisible
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-6 opacity-0"
+          )}
           style={{
             right: "max(1rem, env(safe-area-inset-right))",
-            // bottom nav ~3.75rem — giảm số sau cùng để FAB thấp hơn, tăng để cao hơn
-            bottom:
-              "calc(3.75rem + env(safe-area-inset-bottom) + 0.25rem)",
+            bottom: chromeVisible
+              ? "calc(3.75rem + env(safe-area-inset-bottom) + 1rem)"
+              : "calc(env(safe-area-inset-bottom) + 1rem)",
           }}
+          aria-hidden={!chromeVisible}
         >
           {fabs.map((item, index) => (
-            <div key={`${item.label}-${index}`} className="pointer-events-auto">
+            <div
+              key={`${item.label}-${index}`}
+              className={cn(
+                "pointer-events-auto",
+                !chromeVisible && "pointer-events-none"
+              )}
+            >
               <FabButton {...item} primary={index === 0} />
             </div>
           ))}

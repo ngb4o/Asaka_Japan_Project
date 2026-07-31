@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VndInput } from "@/components/ui/vnd-input";
@@ -252,7 +253,7 @@ export default function EmployeesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Hồ sơ nhân viên"
         description="Quản lý hồ sơ, lương, hoa hồng và liên kết tài khoản CRM"
@@ -274,11 +275,11 @@ export default function EmployeesPage() {
           <CardTitle>Danh sách nhân viên</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input
+          <SearchInput
             placeholder="Tìm theo tên, mã, SĐT..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+            onSearch={setSearch}
+            />
           {items.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có nhân viên</p>
           ) : (

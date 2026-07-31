@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Label } from "@/components/ui/label";
 import { ImageUpload } from "@/components/products/ImageUpload";
 import { NewsContentField } from "@/components/news/NewsContentField";
@@ -236,7 +237,7 @@ export default function NewsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Tin tức"
         description="Quản lý bài viết tin tức"
@@ -254,11 +255,11 @@ export default function NewsPage() {
           <CardTitle>Danh sách</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input
+          <SearchInput
             placeholder="Tìm theo tiêu đề, nội dung..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+            onSearch={setSearch}
+            />
 
           {items.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có tin tức</p>

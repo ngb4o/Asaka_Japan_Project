@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
@@ -168,7 +169,7 @@ export default function ProductCategoriesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Loại sản phẩm"
         description="Quản lý nhóm sản phẩm BVTV"
@@ -186,11 +187,11 @@ export default function ProductCategoriesPage() {
           <CardTitle>Danh sách</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input
+          <SearchInput
             placeholder="Tìm theo tên..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+            onSearch={setSearch}
+            />
 
           {items.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">

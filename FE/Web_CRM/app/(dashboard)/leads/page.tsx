@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
@@ -186,7 +187,7 @@ export default function LeadsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Lead liên hệ"
         description="Quản lý yêu cầu liên hệ và đăng ký đại lý từ website"
@@ -198,10 +199,10 @@ export default function LeadsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
-            <Input
+            <SearchInput
               placeholder="Tìm theo tên, SĐT, email..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onSearch={setSearch}
             />
             <SearchableSelect
               options={[{ value: "", label: "Tất cả trạng thái" }, ...STATUS_OPTIONS.lead]}

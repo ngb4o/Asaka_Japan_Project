@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DealerDetailDialog } from "@/components/dealers/DealerDetailDialog";
@@ -243,7 +244,7 @@ export default function DealersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Đại lý"
         description="Quản lý đại lý — xem sản phẩm, số lượng và giá theo đơn hàng"
@@ -261,11 +262,11 @@ export default function DealersPage() {
           <CardTitle>Danh sách đại lý</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input
+          <SearchInput
             placeholder="Tìm theo tên, SĐT, khu vực..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+            onSearch={setSearch}
+            />
 
           {items.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có đại lý</p>

@@ -7,8 +7,9 @@ const Card = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
+    data-crm-card=""
     className={cn(
-      "rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)] transition-shadow",
+      "w-full rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)] transition-shadow",
       className
     )}
     {...props}
@@ -16,19 +17,24 @@ const Card = React.forwardRef<
 ));
 Card.displayName = "Card";
 
-const CardHeader = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "flex flex-col gap-1 border-b border-[var(--color-border-subtle)] px-5 py-4",
-      className
-    )}
-    {...props}
-  />
-));
+type CardHeaderProps = React.HTMLAttributes<HTMLDivElement> & {
+  /** Keep header visible on mobile (default hidden — list titles). */
+  showOnMobile?: boolean;
+};
+
+const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
+  ({ className, showOnMobile = false, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        "flex flex-col gap-1 border-b border-[var(--color-border-subtle)] px-5 py-4",
+        !showOnMobile && "max-md:hidden",
+        className
+      )}
+      {...props}
+    />
+  )
+);
 CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<
@@ -50,7 +56,11 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-5", className)} {...props} />
+  <div
+    ref={ref}
+    className={cn("p-5 max-md:px-3 max-md:pb-3 max-md:pt-3", className)}
+    {...props}
+  />
 ));
 CardContent.displayName = "CardContent";
 
