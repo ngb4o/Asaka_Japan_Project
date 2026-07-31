@@ -131,7 +131,7 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
                   </span>
                 ) : null}
               </span>
-              <span className="truncate text-[10px] font-medium leading-none">
+              <span className="max-w-full truncate text-[10px] font-medium leading-tight">
                 {tab.label}
               </span>
             </Link>
