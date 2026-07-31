@@ -93,11 +93,11 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
   return (
     <nav
       className={cn(
-        "absolute inset-x-0 bottom-0 z-40 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] transition-transform duration-300 ease-out will-change-transform lg:hidden",
+        "crm-mobile-bottom-nav absolute inset-x-0 bottom-0 z-40 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] transition-transform duration-300 ease-out will-change-transform lg:hidden",
         visible ? "translate-y-0" : "translate-y-full"
       )}
       style={{
-        // Push tab icons above home indicator; background fills the inset
+        // Android / Safari tab: native env() is enough
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
       aria-label="Điều hướng chính"
