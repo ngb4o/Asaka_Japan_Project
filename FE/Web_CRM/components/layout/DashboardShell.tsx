@@ -12,7 +12,7 @@ import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
 import { NotificationProvider } from "@/lib/notifications/NotificationProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canAccessPath } from "@/lib/auth/permissions";
-import { syncIosPwaViewport } from "@/lib/device";
+import { isIosPwa } from "@/lib/device";
 
 function WorkspaceLoading() {
   return (
@@ -78,7 +78,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    return syncIosPwaViewport();
+    const root = document.documentElement;
+    const sync = () => {
+      root.classList.toggle("crm-ios-pwa", isIosPwa());
+    };
+    sync();
+    const mq = window.matchMedia("(display-mode: standalone)");
+    mq.addEventListener?.("change", sync);
+    return () => {
+      mq.removeEventListener?.("change", sync);
+      root.classList.remove("crm-ios-pwa");
+    };
   }, []);
 
   useEffect(() => {

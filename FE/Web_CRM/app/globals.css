@@ -138,18 +138,10 @@
   }
 
   /**
-   * iOS Home Screen PWA only.
-   *
-   * Keywords / root cause (WebKit):
-   * - standalone PWA + viewport-fit=cover
-   * - 100dvh / inset:0 under-report height (exclude safe-area-inset-bottom)
-   * - env(safe-area-inset-bottom) may return 0
-   *
-   * Fix: use 100vh (includes bottom inset in standalone) and pad nav with a
-   * measured/floored bottom gap. Do NOT apply this on Android.
-   *
+   * iOS Home Screen PWA only (WebKit quirk):
+   * `100dvh` / `inset:0` often exclude `safe-area-inset-bottom`, leaving a white
+   * gap under the bottom nav. Compensate shell height only on iOS PWA.
    * @see https://stackoverflow.com/questions/79902310
-   * @see https://bugs.webkit.org/show_bug.cgi?id=254868
    */
   html.crm-ios-pwa .crm-app-shell {
     inset: auto;
@@ -157,25 +149,9 @@
     left: 0;
     right: 0;
     bottom: auto;
-    /* 100vh includes bottom inset in standalone (WebKit #254868) */
-    min-height: 100vh;
-    /* 100dvh often excludes inset — add measured/floored gap (SO #79902310) */
-    height: calc(
-      100dvh + max(env(safe-area-inset-bottom, 0px), var(--crm-ios-bottom-gap, 34px))
-    );
-  }
-
-  html.crm-ios-pwa .crm-mobile-bottom-nav {
-    padding-bottom: max(
-      env(safe-area-inset-bottom, 0px),
-      var(--crm-ios-bottom-gap, 34px)
-    ) !important;
-  }
-
-  html.crm-ios-pwa .crm-app-shell main {
-    padding-bottom: calc(
-      3rem + max(env(safe-area-inset-bottom, 0px), var(--crm-ios-bottom-gap, 34px))
-    );
+    height: 100vh;
+    height: 100dvh;
+    height: calc(100dvh + env(safe-area-inset-bottom, 0px));
   }
 
   :focus-visible {
