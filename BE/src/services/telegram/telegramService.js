@@ -21,7 +21,8 @@ const getStatus = async () => {
   let botUsername = null
 
   if (telegramClient.isEnabled()) {
-    const me = await telegramClient.getMe()
+    // Never block settings page on live Telegram getMe (can take seconds)
+    const me = telegramClient.getMeCached()
     botUsername = me.ok ? me.data?.username || null : null
   }
 

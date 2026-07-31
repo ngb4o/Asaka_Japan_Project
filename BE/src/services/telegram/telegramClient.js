@@ -168,17 +168,33 @@ const editMessageReplyMarkup = async ({
   return await callApi('editMessageReplyMarkup', body, { timeoutMs: SEND_TIMEOUT_MS })
 }
 
-const getMe = async ({ force = false } = {}) => {
+const getMe = async ({ force = false, timeoutMs = GET_ME_TIMEOUT_MS } = {}) => {
   const now = Date.now()
   if (!force && getMeCache.result && now - getMeCache.at < GET_ME_CACHE_MS) {
     return getMeCache.result
   }
 
-  const result = await callApi('getMe', {}, { timeoutMs: GET_ME_TIMEOUT_MS })
+  const result = await callApi('getMe', {}, { timeoutMs })
   if (result.ok) {
     getMeCache = { at: now, result }
   }
   return result
+}
+
+/** Return cache immediately; refresh in background when stale/empty. */
+const getMeCached = () => {
+  const now = Date.now()
+  const fresh =
+    getMeCache.result && now - getMeCache.at < GET_ME_CACHE_MS
+      ? getMeCache.result
+      : null
+
+  if (!fresh) {
+    // Fire-and-forget so settings/status UI never waits on Telegram network
+    void getMe({ force: true }).catch(() => {})
+  }
+
+  return fresh || getMeCache.result || { ok: false, skipped: true, reason: 'cache_miss' }
 }
 
 const getUpdates = async ({ offset, timeout = 25, allowed_updates } = {}) => {
@@ -213,6 +229,7 @@ export const telegramClient = {
   editMessageText,
   editMessageReplyMarkup,
   getMe,
+  getMeCached,
   getUpdates,
   setWebhook,
   deleteWebhook,
