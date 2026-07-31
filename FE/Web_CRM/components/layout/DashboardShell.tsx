@@ -112,11 +112,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               mobileOpen={mobileMenuOpen}
               onMobileOpenChange={setMobileMenuOpen}
             />
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
               <DashboardHeader onOpenMenu={() => setMobileMenuOpen(true)} />
               <main
                 ref={mainRef}
-                className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(3.5rem+max(0.5rem,env(safe-area-inset-bottom,0px)))] lg:pb-0"
+                className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(3rem+env(safe-area-inset-bottom,0px))] lg:pb-0"
               >
                 <div
                   className={
@@ -128,8 +128,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   {children}
                 </div>
               </main>
+              <MobileBottomNav onOpenMenu={() => setMobileMenuOpen(true)} />
             </div>
-            <MobileBottomNav onOpenMenu={() => setMobileMenuOpen(true)} />
           </div>
         </MobileChromeProvider>
       </NotificationProvider>

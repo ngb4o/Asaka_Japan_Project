@@ -73,6 +73,11 @@ type MobileBottomNavProps = {
   onOpenMenu: () => void;
 };
 
+/**
+ * Bottom tab bar — absolutely positioned in the dashboard column (not `fixed`
+ * to the viewport). Nested `fixed` inside a `fixed` shell double-counts
+ * safe-area on iOS PWAs and leaves a large white gap under the tabs.
+ */
 export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProps) {
   const pathname = usePathname();
   const { user } = useAuth();
@@ -88,16 +93,14 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
   return (
     <nav
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] transition-transform duration-300 ease-out will-change-transform lg:hidden",
+        "absolute inset-x-0 bottom-0 z-40 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] transition-transform duration-300 ease-out will-change-transform lg:hidden",
         visible ? "translate-y-0" : "translate-y-full"
       )}
-      style={{
-        paddingBottom: "max(0.5rem, env(safe-area-inset-bottom, 0px))",
-      }}
       aria-label="Điều hướng chính"
       aria-hidden={!visible}
     >
-      <div className="mx-auto flex h-14 max-w-lg items-stretch justify-around px-1">
+      {/* Tab row — content sits above home indicator */}
+      <div className="mx-auto flex h-12 max-w-lg items-stretch justify-around px-1 pt-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = isActive(pathname, tab.href);
@@ -132,6 +135,14 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
           );
         })}
       </div>
+      {/* Home indicator only — no extra 0.5rem that stacks with safe-area */}
+      <div
+        aria-hidden
+        className="bg-[var(--color-surface-elevated)]"
+        style={{
+          height: "env(safe-area-inset-bottom, 0px)",
+        }}
+      />
     </nav>
   );
 }
