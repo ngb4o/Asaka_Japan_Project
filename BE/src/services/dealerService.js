@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes'
 import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
+import { buildSearchFilter } from '~/utils/search.js'
 
 const createNew = async (reqBody, userId) => {
   const created = await dealerModel.createNew({
@@ -33,15 +34,11 @@ const getList = async (query) => {
   if (query.status) findQuery.status = query.status
   if (query.region) findQuery.region = query.region
 
-  if (query.search) {
-    findQuery.$or = [
-      { name: { $regex: query.search, $options: 'i' } },
-      { contactName: { $regex: query.search, $options: 'i' } },
-      { phone: { $regex: query.search, $options: 'i' } },
-      { email: { $regex: query.search, $options: 'i' } },
-      { region: { $regex: query.search, $options: 'i' } }
-    ]
-  }
+  const searchFilter = buildSearchFilter(
+    ['name', 'contactName', 'phone', 'email', 'region'],
+    query.search
+  )
+  if (searchFilter) Object.assign(findQuery, searchFilter)
 
   const pagination = parsePaginationQuery(query)
   const result = await dealerModel.findMany(findQuery, {

@@ -4,6 +4,7 @@ import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { slugify, formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
+import { buildSearchFilter } from '~/utils/search.js'
 
 const normalizeCode = (value) => slugify(value).replace(/-/g, '_').toUpperCase()
 
@@ -35,13 +36,11 @@ const getList = async (query) => {
     findQuery.status = query.status
   }
 
-  if (query.search) {
-    findQuery.$or = [
-      { name: { $regex: query.search, $options: 'i' } },
-      { code: { $regex: query.search, $options: 'i' } },
-      { address: { $regex: query.search, $options: 'i' } }
-    ]
-  }
+  const searchFilter = buildSearchFilter(
+    ['name', 'code', 'address'],
+    query.search
+  )
+  if (searchFilter) Object.assign(findQuery, searchFilter)
 
   const pagination = parsePaginationQuery(query)
 

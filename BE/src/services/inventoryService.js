@@ -10,6 +10,7 @@ import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { toBaseQuantity, toUnitsPerCase, UNIT_TYPE } from '~/utils/inventoryUnits'
 import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
+import { buildSearchFilter } from '~/utils/search.js'
 
 const ensureWarehouseExists = async (warehouseId) => {
   const warehouse = await warehouseModel.findOneById(warehouseId)
@@ -187,10 +188,7 @@ const getStocks = async (query) => {
       .collection(productModel.PRODUCT_COLLECTION_NAME)
       .find({
         _destroy: false,
-        $or: [
-          { name: { $regex: query.search, $options: 'i' } },
-          { sku: { $regex: query.search, $options: 'i' } }
-        ]
+        ...(buildSearchFilter(['name', 'sku'], query.search) || { _id: null })
       })
       .project({ _id: 1 })
       .limit(200)
@@ -246,7 +244,8 @@ const getStocks = async (query) => {
         name: item.name,
         sku: item.sku,
         unit: item.unit,
-        unitsPerCase: toUnitsPerCase(item.unitsPerCase)
+        unitsPerCase: toUnitsPerCase(item.unitsPerCase),
+        image: item.image || (Array.isArray(item.images) ? item.images[0] : '') || ''
       }
     ])
   )
@@ -260,6 +259,7 @@ const getStocks = async (query) => {
       productName: product?.name || '',
       productSku: product?.sku || '',
       productUnit: product?.unit || 'chai',
+      productImage: product?.image || '',
       unitsPerCase: product?.unitsPerCase || 1
     }
   })
@@ -320,7 +320,8 @@ const getTransactions = async (query) => {
       item._id.toString(),
       {
         name: item.name,
-        unitsPerCase: toUnitsPerCase(item.unitsPerCase)
+        unitsPerCase: toUnitsPerCase(item.unitsPerCase),
+        image: item.image || (Array.isArray(item.images) ? item.images[0] : '') || ''
       }
     ])
   )
@@ -332,6 +333,7 @@ const getTransactions = async (query) => {
       ...item,
       warehouseName: warehouseMap.get(item.warehouseId) || '',
       productName: product?.name || '',
+      productImage: product?.image || '',
       unitsPerCase: item.unitsPerCase || product?.unitsPerCase || 1,
       unitType: item.unitType || UNIT_TYPE.BOTTLE,
       quantityBase: item.quantityBase ?? item.quantity

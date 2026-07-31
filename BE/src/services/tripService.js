@@ -9,6 +9,7 @@ import { formatDocument } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { generateDocumentCode } from '~/utils/documentCode'
 import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
+import { buildSearchFilter } from '~/utils/search.js'
 
 const newId = () => new ObjectId().toString()
 
@@ -254,15 +255,10 @@ const getList = async (query, actorUserId, actorRole) => {
   const findQuery = {}
   if (query.status) findQuery.status = query.status
 
-  const searchFilter = query.search
-    ? {
-        $or: [
-          { code: { $regex: query.search, $options: 'i' } },
-          { title: { $regex: query.search, $options: 'i' } },
-          { region: { $regex: query.search, $options: 'i' } }
-        ]
-      }
-    : null
+  const searchFilter = buildSearchFilter(
+    ['code', 'title', 'region'],
+    query.search
+  )
 
   // Sales/warehouse: chỉ thấy chuyến mình tạo hoặc mình là người đi
   let scopeFilter = null

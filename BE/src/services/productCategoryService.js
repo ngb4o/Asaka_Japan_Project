@@ -3,6 +3,7 @@ import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { slugify, formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
+import { buildSearchFilter } from '~/utils/search.js'
 
 const createNew = async (reqBody, userId) => {
   const slug = slugify(reqBody.slug || reqBody.name)
@@ -31,13 +32,8 @@ const getList = async (query) => {
     findQuery.status = query.status
   }
 
-  if (query.search) {
-    const keyword = String(query.search).trim()
-    if (keyword) {
-      const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      findQuery.name = { $regex: escaped, $options: 'i' }
-    }
-  }
+  const nameSearch = buildSearchFilter(['name'], query.search)
+  if (nameSearch) Object.assign(findQuery, nameSearch)
 
   const pagination = parsePaginationQuery(query)
 

@@ -13,6 +13,7 @@ import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { generateDocumentCode } from '~/utils/documentCode'
 import { toBaseQuantity, toUnitsPerCase, UNIT_TYPE } from '~/utils/inventoryUnits'
 import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
+import { buildSearchFilter } from '~/utils/search.js'
 
 const resolveDeliveryEmployeeIds = (body = {}) => {
   const ids = new Set()
@@ -448,14 +449,11 @@ const getList = async (query) => {
     }
   }
 
-  if (query.search) {
-    findQuery.$or = [
-      { code: { $regex: query.search, $options: 'i' } },
-      { customerName: { $regex: query.search, $options: 'i' } },
-      { customerPhone: { $regex: query.search, $options: 'i' } },
-      { trackingCode: { $regex: query.search, $options: 'i' } }
-    ]
-  }
+  const searchFilter = buildSearchFilter(
+    ['code', 'customerName', 'customerPhone', 'trackingCode'],
+    query.search
+  )
+  if (searchFilter) Object.assign(findQuery, searchFilter)
 
   const pagination = parsePaginationQuery(query)
   const result = await orderModel.findMany(findQuery, {

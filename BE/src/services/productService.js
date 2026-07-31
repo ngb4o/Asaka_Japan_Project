@@ -6,6 +6,7 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
+import { buildSearchFilter } from '~/utils/search.js'
 
 const MAX_PRODUCT_IMAGES = 5
 
@@ -100,13 +101,11 @@ const getList = async (query) => {
     findQuery.categoryId = new ObjectId(query.categoryId)
   }
 
-  if (query.search) {
-    findQuery.$or = [
-      { name: { $regex: query.search, $options: 'i' } },
-      { sku: { $regex: query.search, $options: 'i' } },
-      { activeIngredient: { $regex: query.search, $options: 'i' } }
-    ]
-  }
+  const searchFilter = buildSearchFilter(
+    ['name', 'sku', 'activeIngredient'],
+    query.search
+  )
+  if (searchFilter) Object.assign(findQuery, searchFilter)
 
   const pagination = parsePaginationQuery(query)
 

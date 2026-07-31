@@ -3,6 +3,7 @@ import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { formatDocument, formatDocuments, slugify } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
+import { buildSearchFilter } from '~/utils/search.js'
 
 const formatNews = (news) => {
   const formatted = news?.id ? news : formatDocument(news)
@@ -53,12 +54,8 @@ const getList = async (query) => {
     findQuery.status = query.status
   }
 
-  if (query.search) {
-    findQuery.$or = [
-      { title: { $regex: query.search, $options: 'i' } },
-      { content: { $regex: query.search, $options: 'i' } }
-    ]
-  }
+  const searchFilter = buildSearchFilter(['title', 'content'], query.search)
+  if (searchFilter) Object.assign(findQuery, searchFilter)
 
   const pagination = parsePaginationQuery(query)
 

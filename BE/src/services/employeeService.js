@@ -7,6 +7,7 @@ import { StatusCodes } from 'http-status-codes'
 import { formatDocument } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { generateDocumentCode } from '~/utils/documentCode'
+import { buildSearchFilter } from '~/utils/search.js'
 
 const formatEmployee = (employee, userMap = new Map()) => {
   const formatted = formatDocument(employee)
@@ -74,15 +75,11 @@ const createNew = async (reqBody, userId) => {
 const getList = async (query) => {
   const findQuery = {}
   if (query.status) findQuery.status = query.status
-  if (query.search) {
-    findQuery.$or = [
-      { fullName: { $regex: query.search, $options: 'i' } },
-      { code: { $regex: query.search, $options: 'i' } },
-      { phone: { $regex: query.search, $options: 'i' } },
-      { email: { $regex: query.search, $options: 'i' } },
-      { title: { $regex: query.search, $options: 'i' } }
-    ]
-  }
+  const searchFilter = buildSearchFilter(
+    ['fullName', 'code', 'phone', 'email', 'title'],
+    query.search
+  )
+  if (searchFilter) Object.assign(findQuery, searchFilter)
 
   const pagination = parsePaginationQuery(query)
   const result = await employeeModel.findMany(findQuery, {
