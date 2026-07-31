@@ -103,8 +103,8 @@ export function PageHeader({
           style={{
             right: "max(1rem, env(safe-area-inset-right))",
             bottom: chromeVisible
-              ? "calc(3.75rem + env(safe-area-inset-bottom) + 1rem)"
-              : "calc(env(safe-area-inset-bottom) + 1rem)",
+              ? "calc(3.5rem + max(0.5rem, env(safe-area-inset-bottom, 0px)) + 1rem)"
+              : "calc(env(safe-area-inset-bottom, 0px) + 1rem)",
           }}
           aria-hidden={!chromeVisible}
         >

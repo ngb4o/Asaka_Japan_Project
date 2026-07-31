@@ -14,6 +14,20 @@ import {
 } from "@/lib/api/notifications";
 import type { AppNotification, NotificationSummary } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
+import {
+  disableWebPush,
+  enableWebPush,
+  isPushSupported,
+  refreshPushStatus,
+  registerPushServiceWorker,
+} from "@/lib/push/webPush";
+
+type PushUiState = {
+  supported: boolean;
+  permission: NotificationPermission | "unsupported";
+  enabled: boolean;
+  busy: boolean;
+};
 
 type NotificationContextValue = {
   unreadCount: number;
@@ -22,6 +36,9 @@ type NotificationContextValue = {
   loading: boolean;
   refresh: () => Promise<void>;
   markAllRead: () => Promise<void>;
+  push: PushUiState;
+  enablePush: () => Promise<void>;
+  disablePush: () => Promise<void>;
 };
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -33,11 +50,19 @@ const EMPTY_COUNTS: NotificationSummary["counts"] = {
   stock: 0,
 };
 
+const DEFAULT_PUSH: PushUiState = {
+  supported: false,
+  permission: "unsupported",
+  enabled: false,
+  busy: false,
+};
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [counts, setCounts] = useState(EMPTY_COUNTS);
   const [items, setItems] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [push, setPush] = useState<PushUiState>(DEFAULT_PUSH);
 
   const refresh = useCallback(async () => {
     try {
@@ -52,23 +77,72 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
+  const syncPush = useCallback(async () => {
+    const status = await refreshPushStatus();
+    setPush((prev) => ({
+      ...prev,
+      supported: status.supported,
+      permission: status.permission,
+      enabled: Boolean(status.localSubscribed),
+      busy: false,
+    }));
+  }, []);
+
   const markAllRead = useCallback(async () => {
     await markAllNotificationsRead();
     await refresh();
   }, [refresh]);
 
+  const enablePush = useCallback(async () => {
+    setPush((prev) => ({ ...prev, busy: true }));
+    try {
+      await enableWebPush();
+      await syncPush();
+    } catch (err) {
+      await syncPush();
+      throw err;
+    }
+  }, [syncPush]);
+
+  const disablePush = useCallback(async () => {
+    setPush((prev) => ({ ...prev, busy: true }));
+    try {
+      await disableWebPush();
+      await syncPush();
+    } catch (err) {
+      await syncPush();
+      throw err;
+    }
+  }, [syncPush]);
+
   useEffect(() => {
     refresh();
+    void syncPush();
+
+    if (isPushSupported()) {
+      void registerPushServiceWorker().catch(() => {});
+    }
 
     const timer = window.setInterval(refresh, 60_000);
-    const onFocus = () => refresh();
+    const onFocus = () => {
+      void refresh();
+      void syncPush();
+    };
     window.addEventListener("focus", onFocus);
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type === "PUSH_NAVIGATE" && typeof event.data.url === "string") {
+        window.location.assign(event.data.url);
+      }
+    };
+    navigator.serviceWorker?.addEventListener("message", onMessage);
 
     return () => {
       window.clearInterval(timer);
       window.removeEventListener("focus", onFocus);
+      navigator.serviceWorker?.removeEventListener("message", onMessage);
     };
-  }, [refresh]);
+  }, [refresh, syncPush]);
 
   const value = useMemo(
     () => ({
@@ -78,8 +152,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       loading,
       refresh,
       markAllRead,
+      push,
+      enablePush,
+      disablePush,
     }),
-    [unreadCount, counts, items, loading, refresh, markAllRead]
+    [
+      unreadCount,
+      counts,
+      items,
+      loading,
+      refresh,
+      markAllRead,
+      push,
+      enablePush,
+      disablePush,
+    ]
   );
 
   return (

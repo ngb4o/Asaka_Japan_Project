@@ -88,10 +88,12 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
   return (
     <nav
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]/95 backdrop-blur-md transition-transform duration-300 ease-out will-change-transform lg:hidden",
+        "fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] transition-transform duration-300 ease-out will-change-transform lg:hidden",
         visible ? "translate-y-0" : "translate-y-full"
       )}
-      style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+      style={{
+        paddingBottom: "max(0.5rem, env(safe-area-inset-bottom, 0px))",
+      }}
       aria-label="Điều hướng chính"
       aria-hidden={!visible}
     >

@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/lib/notifications/NotificationProvider";
+import { useToast } from "@/components/providers/ToastProvider";
 import type { AppNotification } from "@/lib/types";
 
 const TYPE_META: Record<
@@ -54,7 +55,16 @@ function formatTime(value: string) {
 
 export function NotificationBell() {
   const router = useRouter();
-  const { unreadCount, items, markAllRead, refresh } = useNotifications();
+  const toast = useToast();
+  const {
+    unreadCount,
+    items,
+    markAllRead,
+    refresh,
+    push,
+    enablePush,
+    disablePush,
+  } = useNotifications();
 
   async function handleOpenChange(open: boolean) {
     if (open) {
@@ -64,6 +74,22 @@ export function NotificationBell() {
 
   async function handleItemClick(item: AppNotification) {
     router.push(item.href);
+  }
+
+  async function handleTogglePush() {
+    try {
+      if (push.enabled) {
+        await disablePush();
+        toast.success("Đã tắt thông báo đẩy trên thiết bị này");
+      } else {
+        await enablePush();
+        toast.success("Đã bật thông báo đẩy");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Không thay đổi được thông báo đẩy"
+      );
+    }
   }
 
   return (
@@ -106,6 +132,38 @@ export function NotificationBell() {
               </Button>
             ) : null}
           </div>
+
+          {push.supported ? (
+            <div className="mx-2 mb-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/50 px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                    Thông báo đẩy
+                  </p>
+                  <p className="text-xs text-[var(--color-text-inverse)]">
+                    {push.enabled
+                      ? "Đang bật trên thiết bị này"
+                      : push.permission === "denied"
+                        ? "Đã bị chặn — mở lại trong cài đặt trình duyệt"
+                        : "Nhận tin khi có đơn, lead, công nợ…"}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={push.enabled ? "outline" : "default"}
+                  disabled={push.busy || push.permission === "denied"}
+                  onClick={() => void handleTogglePush()}
+                >
+                  {push.busy ? "…" : push.enabled ? "Tắt" : "Bật"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="mx-2 mb-2 rounded-lg border border-dashed border-[var(--color-border-subtle)] px-3 py-2 text-xs text-[var(--color-text-inverse)]">
+              Thiết bị này không hỗ trợ Web Push. Trên iOS cần mở app từ Home
+              Screen (iOS 16.4+).
+            </div>
+          )}
 
           <div className="max-h-[420px] space-y-1 overflow-y-auto">
             {items.length === 0 ? (

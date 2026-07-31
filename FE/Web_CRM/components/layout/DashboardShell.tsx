@@ -107,7 +107,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <ConfirmProvider>
       <NotificationProvider>
         <MobileChromeProvider scrollRef={mainRef}>
-          <div className="flex h-[100dvh] overflow-hidden bg-[var(--color-surface-elevated)]">
+          <div className="fixed inset-0 flex overflow-hidden bg-[var(--color-surface-elevated)]">
             <Sidebar
               mobileOpen={mobileMenuOpen}
               onMobileOpenChange={setMobileMenuOpen}
@@ -116,7 +116,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <DashboardHeader onOpenMenu={() => setMobileMenuOpen(true)} />
               <main
                 ref={mainRef}
-                className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0"
+                className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(3.5rem+max(0.5rem,env(safe-area-inset-bottom,0px)))] lg:pb-0"
               >
                 <div
                   className={

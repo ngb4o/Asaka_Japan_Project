@@ -101,6 +101,7 @@
 
   html {
     color-scheme: light;
+    height: 100%;
     /* Chặn pull-to-refresh native (Safari/Chrome) reload cả trang */
     overscroll-behavior-y: none;
   }
@@ -110,6 +111,8 @@
   }
 
   body {
+    height: 100%;
+    margin: 0;
     font-family: var(--font-barlow), var(--font-primary);
     font-size: var(--text-md);
     font-weight: 500;
@@ -119,6 +122,21 @@
     -webkit-font-smoothing: antialiased;
     transition: background-color 200ms ease, color 200ms ease;
     overscroll-behavior-y: none;
+  }
+
+  @supports (height: 100dvh) {
+    html,
+    body {
+      height: 100dvh;
+    }
+  }
+
+  /* iOS PWA: fill home-indicator gap with app background, not a white letterbox */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    body {
+      min-height: 100%;
+      min-height: -webkit-fill-available;
+    }
   }
 
   :focus-visible {

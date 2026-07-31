@@ -11,6 +11,7 @@ import { warehouseModel } from '~/models/warehouseModel'
 import { orderModel } from '~/models/orderModel'
 import { tripModel } from '~/models/tripModel'
 import { leadModel } from '~/models/leadModel'
+import { webPushService } from '~/services/webPushService'
 
 const LOW_STOCK_THRESHOLD = 20
 
@@ -76,6 +77,9 @@ const sendToChatIds = async (chatIds, text, { replyMarkup } = {}) => {
 
 /** Tất cả thông báo CRM → chỉ gửi nội bộ (staff). Đại lý/khách không cần cài bot. */
 const notifyStaff = async (text, options = {}) => {
+  // Web Push to subscribed CRM devices (independent of Telegram)
+  fireAndForget(webPushService.notifyStaff(text, options))
+
   const ids = await resolveStaffRecipientIds()
   if (!ids.length) {
     console.warn('[telegram] no staff recipients configured')

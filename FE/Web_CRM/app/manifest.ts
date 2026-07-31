@@ -6,9 +6,9 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "ASAKA CRM",
     description: "Hệ thống quản lý sản phẩm ASAKA JAPAN",
     start_url: "/",
-    display: "fullscreen",
+    display: "standalone",
     background_color: "#ffffff",
-    theme_color: "#166534",
+    theme_color: "#ffffff",
     lang: "vi",
     icons: [
       {

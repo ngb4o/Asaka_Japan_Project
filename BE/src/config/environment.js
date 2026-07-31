@@ -29,5 +29,9 @@ export const env = {
   TELEGRAM_STAFF_CHAT_IDS: (process.env.TELEGRAM_STAFF_CHAT_IDS || '')
     .split(',')
     .map((id) => id.trim())
-    .filter(Boolean)
+    .filter(Boolean),
+
+  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || '',
+  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || '',
+  VAPID_SUBJECT: process.env.VAPID_SUBJECT || 'mailto:admin@asaka.local'
 }
