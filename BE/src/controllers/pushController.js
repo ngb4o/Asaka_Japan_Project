@@ -66,9 +66,41 @@ const unsubscribe = async (req, res, next) => {
   }
 }
 
+const sendTest = async (req, res, next) => {
+  try {
+    const data = await webPushService.notifyUser(req.userId, {
+      title: 'ASAKA CRM',
+      body: 'Tin thử từ server — nếu thấy tin này thì iOS/Android đã nhận push.',
+      url: '/dashboard',
+      tag: 'asaka-push-test'
+    })
+
+    if (data?.skipped) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message:
+          data.reason === 'no_subscribers'
+            ? 'Chưa có thiết bị nào đăng ký push cho tài khoản này. Bật thông báo trên máy trước.'
+            : 'Web Push chưa cấu hình VAPID trên server.',
+        data
+      })
+    }
+
+    res.status(StatusCodes.OK).json({
+      message:
+        data.sent > 0
+          ? `Đã gửi tin thử tới ${data.sent}/${data.total} thiết bị`
+          : 'Gửi thử không thành công — endpoint có thể hết hạn, hãy tắt rồi bật lại thông báo.',
+      data
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const pushController = {
   getVapidPublicKey,
   getPushStatus,
   subscribe,
-  unsubscribe
+  unsubscribe,
+  sendTest
 }

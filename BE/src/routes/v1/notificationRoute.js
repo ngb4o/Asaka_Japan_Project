@@ -14,5 +14,6 @@ Router.get('/push/vapid-public-key', pushController.getVapidPublicKey)
 Router.get('/push/status', pushController.getPushStatus)
 Router.post('/push/subscribe', pushController.subscribe)
 Router.post('/push/unsubscribe', pushController.unsubscribe)
+Router.post('/push/test', pushController.sendTest)
 
 export const notificationRoute = Router

@@ -15,12 +15,14 @@ import {
 import type { AppNotification, NotificationSummary } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import {
+  autoEnableWebPushOnAppOpen,
   disableWebPush,
   enableWebPush,
   getPushBlockReason,
   isPushSupported,
   refreshPushStatus,
   registerPushServiceWorker,
+  requestTestPush,
 } from "@/lib/push/webPush";
 
 type PushUiState = {
@@ -41,6 +43,7 @@ type NotificationContextValue = {
   push: PushUiState;
   enablePush: () => Promise<void>;
   disablePush: () => Promise<void>;
+  testPush: () => Promise<{ sent: number; total: number }>;
 };
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -130,6 +133,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [syncPush]);
 
+  const testPush = useCallback(async () => {
+    setPush((prev) => ({ ...prev, busy: true }));
+    try {
+      const result = await requestTestPush();
+      return { sent: result.sent ?? 0, total: result.total ?? 0 };
+    } finally {
+      setPush((prev) => ({ ...prev, busy: false }));
+      await syncPush();
+    }
+  }, [syncPush]);
+
   useEffect(() => {
     refresh();
     void syncPush();
@@ -137,6 +151,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (isPushSupported()) {
       void registerPushServiceWorker().catch(() => {});
     }
+
+    // Phone: xin quyền hệ thống + đăng ký push khi vào app (không cần bấm Bật)
+    const autoTimer = window.setTimeout(() => {
+      void autoEnableWebPushOnAppOpen()
+        .then(() => syncPush())
+        .catch(() => {
+          void syncPush();
+        });
+    }, 900);
 
     const timer = window.setInterval(refresh, 60_000);
     const onFocus = () => {
@@ -153,6 +176,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     navigator.serviceWorker?.addEventListener("message", onMessage);
 
     return () => {
+      window.clearTimeout(autoTimer);
       window.clearInterval(timer);
       window.removeEventListener("focus", onFocus);
       navigator.serviceWorker?.removeEventListener("message", onMessage);
@@ -170,6 +194,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       push,
       enablePush,
       disablePush,
+      testPush,
     }),
     [
       unreadCount,
@@ -181,6 +206,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       push,
       enablePush,
       disablePush,
+      testPush,
     ]
   );
 

@@ -64,6 +64,7 @@ export function NotificationBell() {
     push,
     enablePush,
     disablePush,
+    testPush,
   } = useNotifications();
 
   async function handleOpenChange(open: boolean) {
@@ -83,11 +84,30 @@ export function NotificationBell() {
         toast.success("Đã tắt thông báo đẩy trên thiết bị này");
       } else {
         await enablePush();
-        toast.success("Đã bật thông báo đẩy");
+        toast.success(
+          "Đã bật thông báo đẩy — kiểm tra màn hình khóa xem có tin thử không"
+        );
       }
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Không thay đổi được thông báo đẩy"
+      );
+    }
+  }
+
+  async function handleTestPush() {
+    try {
+      const result = await testPush();
+      if (result.sent > 0) {
+        toast.success(`Đã gửi tin thử (${result.sent}/${result.total}). Kiểm tra màn hình khóa.`);
+      } else {
+        toast.error(
+          "Server không gửi được tới thiết bị. Thử Tắt → Bật lại thông báo (mở từ Home Screen trên iPhone)."
+        );
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Gửi thử thất bại"
       );
     }
   }
@@ -144,8 +164,8 @@ export function NotificationBell() {
                     {push.enabled
                       ? "Đang bật trên thiết bị này"
                       : push.permission === "denied"
-                        ? "Đã bị chặn — mở lại trong cài đặt trình duyệt"
-                        : "Nhận tin khi có đơn, lead, công nợ…"}
+                        ? "Đã bị chặn — mở lại trong Cài đặt → Thông báo"
+                        : "Tự hỏi quyền khi vào app — hoặc bấm Bật"}
                   </p>
                 </div>
                 <Button
@@ -157,6 +177,16 @@ export function NotificationBell() {
                   {push.busy ? "…" : push.enabled ? "Tắt" : "Bật"}
                 </Button>
               </div>
+              {push.enabled ? (
+                <button
+                  type="button"
+                  disabled={push.busy}
+                  onClick={() => void handleTestPush()}
+                  className="mt-2 text-xs font-medium text-[var(--color-text-secondary)] underline-offset-2 hover:underline disabled:opacity-50"
+                >
+                  Gửi tin thử tới máy này
+                </button>
+              ) : null}
             </div>
           ) : (
             <div className="mx-2 mb-2 rounded-lg border border-dashed border-[var(--color-border-subtle)] px-3 py-2 text-xs text-[var(--color-text-inverse)]">

@@ -3,6 +3,23 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Cho phép mở CRM qua IP LAN trên thiết bị thật (Next.js 15+)
   allowedDevOrigins: ["192.168.1.167"],
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+          {
+            key: "Service-Worker-Allowed",
+            value: "/",
+          },
+        ],
+      },
+    ];
+  },
   images: {
     qualities: [75, 100],
     remotePatterns: [

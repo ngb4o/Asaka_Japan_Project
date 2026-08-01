@@ -7,7 +7,8 @@ const PUSH_SUBSCRIPTION_COLLECTION_NAME = 'push_subscriptions'
 
 const SCHEMA = Joi.object({
   userId: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
-  endpoint: Joi.string().required().uri().max(2048),
+  // Apple web.push.apple.com URLs can be long; don't over-validate with .uri()
+  endpoint: Joi.string().required().min(20).max(4096),
   keys: Joi.object({
     p256dh: Joi.string().required().max(512),
     auth: Joi.string().required().max(512)

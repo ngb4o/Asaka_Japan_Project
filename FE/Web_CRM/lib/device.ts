@@ -6,6 +6,18 @@ export function isIosDevice() {
   return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
 }
 
+export function isAndroidDevice() {
+  if (typeof navigator === "undefined") return false;
+  return /Android/i.test(navigator.userAgent || "");
+}
+
+/** Phone / tablet — used for auto notification permission on app open */
+export function isPhoneDevice() {
+  if (typeof window === "undefined") return false;
+  if (isIosDevice() || isAndroidDevice()) return true;
+  return window.matchMedia("(max-width: 767px)").matches;
+}
+
 /** Launched as installed Home Screen / PWA */
 export function isInstalledPwa() {
   if (typeof window === "undefined") return false;

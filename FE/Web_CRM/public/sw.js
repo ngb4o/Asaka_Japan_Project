@@ -15,39 +15,56 @@ function toAbsoluteUrl(path) {
   }
 }
 
-self.addEventListener("push", (event) => {
-  let data = {
+function assetUrl(path) {
+  return toAbsoluteUrl(path || "/icons/icon-192.png");
+}
+
+function parsePushData(event) {
+  const fallback = {
     title: "ASAKA CRM",
     body: "Có cập nhật mới",
     url: "/dashboard",
     tag: "asaka-crm",
-    icon: "/icons/icon-192.png",
-    badge: "/icons/icon-192.png",
   };
 
+  if (!event.data) return fallback;
+
   try {
-    if (event.data) {
-      const parsed = event.data.json();
-      data = { ...data, ...parsed };
-    }
-  } catch {
-    try {
-      const text = event.data && event.data.text();
-      if (text) data.body = text;
-    } catch {
-      // ignore
-    }
+    return { ...fallback, ...event.data.json() };
+  } catch (_) {
+    // ignore json errors
   }
 
-  // iOS requires a visible notification for every push
+  try {
+    const text = event.data.text();
+    if (text) return { ...fallback, body: text };
+  } catch (_) {
+    // ignore text errors
+  }
+
+  return fallback;
+}
+
+self.addEventListener("push", (event) => {
+  const data = parsePushData(event);
+
+  // iOS requires EVERY push to show a visible notification or it may revoke permission
   event.waitUntil(
-    self.registration.showNotification(data.title || "ASAKA CRM", {
-      body: data.body || "",
-      icon: data.icon || "/icons/icon-192.png",
-      badge: data.badge || "/icons/icon-192.png",
-      tag: data.tag || "asaka-crm",
-      data: { url: data.url || "/dashboard" },
-    })
+    self.registration
+      .showNotification(String(data.title || "ASAKA CRM").slice(0, 64), {
+        body: String(data.body || "Có cập nhật mới").slice(0, 180),
+        icon: assetUrl(data.icon || "/icons/icon-192.png"),
+        badge: assetUrl(data.badge || "/icons/icon-192.png"),
+        tag: data.tag || "asaka-crm",
+        data: { url: data.url || "/dashboard" },
+      })
+      .catch(function (err) {
+        console.error("[sw] showNotification failed", err);
+        return self.registration.showNotification("ASAKA CRM", {
+          body: "Có cập nhật mới",
+          data: { url: "/dashboard" },
+        });
+      })
   );
 });
 
@@ -67,10 +84,9 @@ self.addEventListener("notificationclick", (event) => {
       for (const client of allClients) {
         if ("focus" in client) {
           await client.focus();
-          // navigate() is unreliable on iOS — prefer postMessage / openWindow
           try {
             client.postMessage({ type: "PUSH_NAVIGATE", url: targetUrl });
-          } catch {
+          } catch (_) {
             // ignore
           }
           return;

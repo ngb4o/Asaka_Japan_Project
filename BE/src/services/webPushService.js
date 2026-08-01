@@ -19,7 +19,7 @@ const ensureConfigured = () => {
   }
 
   webpush.setVapidDetails(
-    env.VAPID_SUBJECT || 'mailto:admin@asaka.local',
+    env.VAPID_SUBJECT || 'mailto:crm@asaka.jp',
     env.VAPID_PUBLIC_KEY,
     env.VAPID_PRIVATE_KEY
   )
@@ -36,6 +36,9 @@ const ensureIndexes = async () => {
   }
 }
 
+const isAppleEndpoint = (endpoint = '') =>
+  String(endpoint).includes('web.push.apple.com')
+
 const hrefFromTrack = (track) => {
   const type = track?.entityType
   if (type === 'order') return '/orders'
@@ -50,13 +53,12 @@ const buildPayload = (text, options = {}) => {
   if (options.push?.title) {
     return {
       title: String(options.push.title).slice(0, 48),
-      body: String(options.push.body || '').slice(0, 90),
+      body: String(options.push.body || 'Có cập nhật mới').slice(0, 90),
       url: options.push.url || hrefFromTrack(options.track) || '/dashboard',
       tag: options.push.tag || options.track?.kind || 'asaka-crm'
     }
   }
 
-  // Fallback only — prefer explicit short `options.push` from notify callers
   return {
     title: 'ASAKA CRM',
     body: 'Có cập nhật mới',
@@ -66,38 +68,65 @@ const buildPayload = (text, options = {}) => {
 }
 
 const sendToSubscription = async (doc, payload) => {
+  const endpoint = doc.endpoint
   const subscription = {
-    endpoint: doc.endpoint,
-    keys: doc.keys
+    endpoint,
+    keys: {
+      p256dh: doc.keys?.p256dh,
+      auth: doc.keys?.auth
+    }
   }
+
+  if (!subscription.keys.p256dh || !subscription.keys.auth) {
+    console.error('[web-push] missing keys', endpoint?.slice?.(0, 48))
+    return { ok: false }
+  }
+
+  const apple = isAppleEndpoint(endpoint)
 
   try {
     await webpush.sendNotification(
       subscription,
       JSON.stringify({
         title: payload.title,
-        body: payload.body,
+        body: payload.body || 'Có cập nhật mới',
         url: payload.url,
-        tag: payload.tag,
-        icon: '/icons/icon-192.png',
-        badge: '/icons/icon-192.png'
+        tag: payload.tag
       }),
       {
-        // Apple Push (iOS) drops messages more aggressively without TTL/urgency
         TTL: 60 * 60 * 24,
-        urgency: 'high'
+        // Apple Web Push is picky; high is OK, prefer normal fallback handled below
+        urgency: apple ? 'high' : 'high',
+        contentEncoding: 'aes128gcm'
       }
     )
-    return { ok: true }
+    return { ok: true, apple }
   } catch (error) {
     const statusCode = error?.statusCode
-    // Gone / expired subscription
+    const body = error?.body || error?.message
+
     if (statusCode === 404 || statusCode === 410) {
-      await pushSubscriptionModel.removeByEndpointOnly(doc.endpoint)
-      return { ok: false, removed: true }
+      await pushSubscriptionModel.removeByEndpointOnly(endpoint)
+      return { ok: false, removed: true, apple }
     }
-    console.error('[web-push] send failed', statusCode || error?.message || error)
-    return { ok: false }
+
+    console.error('[web-push] send failed', {
+      apple,
+      statusCode,
+      body,
+      endpoint: String(endpoint || '').slice(0, 64)
+    })
+    return { ok: false, apple, statusCode }
+  }
+}
+
+const sendToDocs = async (docs, payload) => {
+  const results = await Promise.all(docs.map((doc) => sendToSubscription(doc, payload)))
+  return {
+    sent: results.filter((item) => item.ok).length,
+    removed: results.filter((item) => item.removed).length,
+    apple: results.filter((item) => item.apple).length,
+    total: docs.length
   }
 }
 
@@ -110,13 +139,25 @@ const notifyStaff = async (text, options = {}) => {
   if (!subs.length) return { skipped: true, reason: 'no_subscribers' }
 
   const payload = buildPayload(text, options)
-  const results = await Promise.all(subs.map((doc) => sendToSubscription(doc, payload)))
+  return sendToDocs(subs, payload)
+}
 
-  return {
-    sent: results.filter((item) => item.ok).length,
-    removed: results.filter((item) => item.removed).length,
-    total: subs.length
+/** Send only to the signed-in user's devices (for "Gửi thử"). */
+const notifyUser = async (userId, payloadInput = {}) => {
+  if (!ensureConfigured()) return { skipped: true, reason: 'not_configured' }
+
+  await ensureIndexes()
+  const subs = await pushSubscriptionModel.listByUser(userId)
+  if (!subs.length) return { skipped: true, reason: 'no_subscribers' }
+
+  const payload = {
+    title: payloadInput.title || 'ASAKA CRM',
+    body: payloadInput.body || 'Tin thử thông báo đẩy',
+    url: payloadInput.url || '/dashboard',
+    tag: payloadInput.tag || 'asaka-push-test'
   }
+
+  return sendToDocs(subs, payload)
 }
 
 const subscribe = async (userId, subscription, userAgent) => {
@@ -136,12 +177,13 @@ const unsubscribe = async (userId, endpoint) => {
 
 const getStatusForUser = async (userId) => {
   await ensureIndexes()
-  const count = await pushSubscriptionModel.countByUser(userId)
+  const subs = await pushSubscriptionModel.listByUser(userId)
   return {
     enabled: isConfigured(),
     publicKey: env.VAPID_PUBLIC_KEY || null,
-    subscribed: count > 0,
-    deviceCount: count
+    subscribed: subs.length > 0,
+    deviceCount: subs.length,
+    hasAppleDevice: subs.some((item) => isAppleEndpoint(item.endpoint))
   }
 }
 
@@ -152,5 +194,6 @@ export const webPushService = {
   unsubscribe,
   getStatusForUser,
   notifyStaff,
+  notifyUser,
   buildPayload
 }

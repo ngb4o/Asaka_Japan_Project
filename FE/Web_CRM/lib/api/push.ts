@@ -5,6 +5,16 @@ export type PushStatus = {
   publicKey: string | null;
   subscribed: boolean;
   deviceCount: number;
+  hasAppleDevice?: boolean;
+};
+
+export type PushTestResult = {
+  sent: number;
+  removed: number;
+  apple: number;
+  total: number;
+  skipped?: boolean;
+  reason?: string;
 };
 
 export async function getPushVapidPublicKey() {
@@ -28,5 +38,11 @@ export async function unsubscribePush(endpoint: string) {
   return apiRequest<{ deleted: boolean }>("/notifications/push/unsubscribe", {
     method: "POST",
     body: { endpoint },
+  });
+}
+
+export async function sendTestPush() {
+  return apiRequest<PushTestResult>("/notifications/push/test", {
+    method: "POST",
   });
 }
