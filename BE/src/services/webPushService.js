@@ -41,19 +41,22 @@ const isAppleEndpoint = (endpoint = '') =>
 
 const hrefFromTrack = (track) => {
   const type = track?.entityType
-  if (type === 'order') return '/orders'
-  if (type === 'lead') return '/leads'
-  if (type === 'dealer') return '/dealers'
-  if (type === 'trip') return '/trips'
-  if (type === 'product') return '/inventory'
+  const id = track?.entityId ? String(track.entityId) : ''
+  const withId = (path) => (id ? `${path}?id=${encodeURIComponent(id)}` : path)
+
+  if (type === 'order') return withId('/orders')
+  if (type === 'lead') return withId('/leads')
+  if (type === 'dealer') return withId('/dealers')
+  if (type === 'trip') return withId('/trips')
+  if (type === 'product') return withId('/inventory')
   return '/dashboard'
 }
 
 const buildPayload = (text, options = {}) => {
   if (options.push?.title) {
     return {
-      title: String(options.push.title).slice(0, 48),
-      body: String(options.push.body || 'Có cập nhật mới').slice(0, 90),
+      title: String(options.push.title).slice(0, 64),
+      body: String(options.push.body || 'Có cập nhật mới').slice(0, 240),
       url: options.push.url || hrefFromTrack(options.track) || '/dashboard',
       tag: options.push.tag || options.track?.kind || 'asaka-crm'
     }

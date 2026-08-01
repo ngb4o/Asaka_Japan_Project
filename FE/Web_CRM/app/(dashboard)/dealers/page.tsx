@@ -30,6 +30,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import {
   createDealer,
   deleteDealer,
+  getDealer,
   getDealers,
   updateDealer,
 } from "@/lib/api/dealers";
@@ -37,6 +38,7 @@ import type { Dealer } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
 import { statusBadgeVariant } from "@/lib/status-badge";
 import { Badge } from "@/components/ui/badge";
 
@@ -127,6 +129,18 @@ export default function DealersPage() {
     setViewing(item);
     setDetailOpen(true);
   }
+
+  useDeepLinkOpen(async (id) => {
+    try {
+      const dealer = await getDealer(id);
+      openDetail(dealer);
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không mở được đại lý"
+      );
+      throw err;
+    }
+  });
 
   function openEdit(item: Dealer) {
     setEditing(item);

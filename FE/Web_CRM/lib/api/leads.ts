@@ -25,6 +25,10 @@ export async function getLeads(params?: {
   return apiRequest<PaginatedResult<Lead>>(`/leads${suffix}`);
 }
 
+export async function getLead(id: string) {
+  return apiRequest<Lead>(`/leads/${id}`);
+}
+
 export async function updateLead(id: string, data: LeadUpdateInput) {
   return apiRequest<Lead>(`/leads/${id}`, {
     method: "PUT",

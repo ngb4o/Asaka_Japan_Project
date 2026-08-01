@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "ASAKA CRM",
-    short_name: "ASAKA CRM",
+    name: "ASAKA",
+    short_name: "ASAKA",
     description: "Hệ thống quản lý sản phẩm ASAKA JAPAN",
     start_url: "/",
     display: "standalone",

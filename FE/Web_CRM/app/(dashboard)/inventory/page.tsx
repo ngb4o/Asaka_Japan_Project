@@ -49,7 +49,7 @@ import {
   getWarehouseStocks,
   importStock,
 } from "@/lib/api/inventory";
-import { getProducts } from "@/lib/api/products";
+import { getProduct, getProducts } from "@/lib/api/products";
 import {
   createWarehouse,
   deleteWarehouse,
@@ -65,6 +65,7 @@ import type {
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
 import {
   formatMovementQuantity,
   formatStockDisplay,
@@ -137,6 +138,22 @@ export default function InventoryPage() {
       return prev;
     });
   }, [isAdmin, mobileTabs.length]);
+
+  useDeepLinkOpen(async (id) => {
+    try {
+      const product = await getProduct(id);
+      setSearch(product.name || "");
+      setMobileTab(stockTabIndex >= 0 ? stockTabIndex : 0);
+      toast.success(`Đang lọc: ${product.name}`);
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError
+          ? err.message
+          : "Không tìm thấy sản phẩm"
+      );
+      throw err;
+    }
+  });
 
   const activeWarehouses = warehouses.filter((item) => item.status === "active");
   const showWarehousePanel = !isMobile || mobileTab === warehouseTabIndex;

@@ -29,6 +29,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import {
   convertLeadToDealer,
   deleteLead,
+  getLead,
   getLeads,
   updateLead,
 } from "@/lib/api/leads";
@@ -36,6 +37,7 @@ import type { Lead } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
 import { leadStatusBadgeVariant } from "@/lib/status-badge";
 import { Badge } from "@/components/ui/badge";
 
@@ -96,6 +98,18 @@ export default function LeadsPage() {
     setNote(lead.note || "");
     setStatus(lead.status);
   }
+
+  useDeepLinkOpen(async (id) => {
+    try {
+      const lead = await getLead(id);
+      openDetail(lead);
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không mở được lead"
+      );
+      throw err;
+    }
+  });
 
   async function handleSave() {
     if (!selected) return;

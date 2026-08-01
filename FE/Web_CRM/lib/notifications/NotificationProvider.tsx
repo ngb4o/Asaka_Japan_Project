@@ -170,7 +170,22 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     const onMessage = (event: MessageEvent) => {
       if (event.data?.type === "PUSH_NAVIGATE" && typeof event.data.url === "string") {
-        window.location.assign(event.data.url);
+        const target = event.data.url as string;
+        try {
+          const next = new URL(target, window.location.origin);
+          const current = new URL(window.location.href);
+          if (
+            next.origin === current.origin &&
+            next.pathname === current.pathname &&
+            next.search === current.search
+          ) {
+            return;
+          }
+          // Same origin deep link — full navigation so page hooks see ?id=
+          window.location.assign(next.pathname + next.search + next.hash);
+        } catch {
+          window.location.assign(target);
+        }
       }
     };
     navigator.serviceWorker?.addEventListener("message", onMessage);

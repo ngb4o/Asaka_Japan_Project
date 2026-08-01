@@ -48,6 +48,7 @@ import { getDealers } from "@/lib/api/dealers";
 import {
   createOrder,
   deleteOrder,
+  getOrder,
   getOrders,
   recordOrderPayment,
   updateOrder,
@@ -61,6 +62,7 @@ import type { Dealer, Employee, Order, Product } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
 import { cn, formatCurrency, toDateValue } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
 
@@ -320,6 +322,18 @@ export default function OrdersPage() {
     });
     setDialogOpen(true);
   }
+
+  useDeepLinkOpen(async (id) => {
+    try {
+      const order = await getOrder(id);
+      openEdit(order);
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không mở được đơn hàng"
+      );
+      throw err;
+    }
+  });
 
   async function handlePrint(item: Order) {
     try {

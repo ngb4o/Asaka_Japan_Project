@@ -33,6 +33,10 @@ export async function getOrders(params?: {
   return apiRequest<PaginatedResult<Order>>(`/orders${suffix}`);
 }
 
+export async function getOrder(id: string) {
+  return apiRequest<Order>(`/orders/${id}`);
+}
+
 export async function createOrder(data: OrderInput) {
   return apiRequest<Order>("/orders", {
     method: "POST",

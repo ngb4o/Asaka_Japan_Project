@@ -17,6 +17,10 @@ export async function getDealers(params?: {
   return apiRequest<PaginatedResult<Dealer>>(`/dealers${suffix}`);
 }
 
+export async function getDealer(id: string) {
+  return apiRequest<Dealer>(`/dealers/${id}`);
+}
+
 export async function createDealer(data: DealerInput) {
   return apiRequest<Dealer>("/dealers", {
     method: "POST",

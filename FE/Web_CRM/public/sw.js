@@ -52,7 +52,7 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration
       .showNotification(String(data.title || "ASAKA CRM").slice(0, 64), {
-        body: String(data.body || "Có cập nhật mới").slice(0, 180),
+        body: String(data.body || "Có cập nhật mới").slice(0, 240),
         icon: assetUrl(data.icon || "/icons/icon-192.png"),
         badge: assetUrl(data.badge || "/icons/icon-192.png"),
         tag: data.tag || "asaka-crm",
@@ -82,6 +82,17 @@ self.addEventListener("notificationclick", (event) => {
       });
 
       for (const client of allClients) {
+        try {
+          // Prefer navigating existing PWA window to the deep link
+          if ("navigate" in client && typeof client.navigate === "function") {
+            await client.navigate(targetUrl);
+            if ("focus" in client) await client.focus();
+            return;
+          }
+        } catch (_) {
+          // fall through to postMessage / openWindow
+        }
+
         if ("focus" in client) {
           await client.focus();
           try {

@@ -17,6 +17,10 @@ export async function getProducts(params?: {
   return apiRequest<PaginatedResult<Product>>(`/products${suffix}`);
 }
 
+export async function getProduct(id: string) {
+  return apiRequest<Product>(`/products/${id}`);
+}
+
 export async function createProduct(data: ProductInput) {
   return apiRequest<Product>("/products", {
     method: "POST",

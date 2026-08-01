@@ -53,6 +53,7 @@ import type { Dealer, Employee, Order, Trip } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
 import { formatCurrency, formatDateDisplay, toDateValue, cn } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
 
@@ -271,6 +272,26 @@ export default function TripsPage() {
       toast.error(err instanceof ApiClientError ? err.message : "Không mở được chuyến");
     }
   }
+
+  useDeepLinkOpen(async (id) => {
+    try {
+      const detail = await getTrip(id);
+      setSelected(detail);
+      setStopForm({
+        date: toDateValue(detail.startDate),
+        dealerId: "",
+        location: "",
+        purpose: "delivery",
+        note: "",
+      });
+      setDetailOpen(true);
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không mở được chuyến"
+      );
+      throw err;
+    }
+  });
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();

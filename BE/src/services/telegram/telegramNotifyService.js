@@ -306,7 +306,12 @@ const onStockChanged = async ({ productId, warehouseId, quantity }) => {
       warehouseName
     }),
     {
-      push: webPushCopy.lowStock({ productName, quantity, warehouseName }),
+      push: webPushCopy.lowStock({
+        productName,
+        quantity,
+        warehouseName,
+        productId
+      }),
       track: { entityType: 'product', entityId: productId, kind: 'low_stock' }
     }
   )

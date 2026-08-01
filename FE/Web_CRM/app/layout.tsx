@@ -15,7 +15,7 @@ const barlow = Barlow({
 export const metadata: Metadata = {
   title: "ASAKA CRM",
   description: "Hệ thống quản lý sản phẩm ASAKA JAPAN",
-  applicationName: "ASAKA CRM",
+  applicationName: "ASAKA",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32" },
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "ASAKA CRM",
+    title: "ASAKA",
   },
   manifest: "/manifest.webmanifest",
 };
