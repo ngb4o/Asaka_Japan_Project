@@ -9,6 +9,7 @@ Router.use(verifyToken)
 
 Router.get('/', notificationController.getList)
 Router.post('/mark-all-read', notificationController.markAllRead)
+Router.post('/read', notificationController.markOneRead)
 
 Router.get('/push/vapid-public-key', pushController.getVapidPublicKey)
 Router.get('/push/status', pushController.getPushStatus)

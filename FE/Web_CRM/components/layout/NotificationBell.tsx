@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { forwardRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as Popover from "@radix-ui/react-popover";
 import {
@@ -11,9 +11,10 @@ import {
   ShoppingCart,
 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { useNotifications } from "@/lib/notifications/NotificationProvider";
-import { useToast } from "@/components/providers/ToastProvider";
 import type { AppNotification } from "@/lib/types";
 
 const TYPE_META: Record<
@@ -53,207 +54,196 @@ function formatTime(value: string) {
   });
 }
 
+function NotificationList({
+  items,
+  unreadCount,
+  onMarkAllRead,
+  onItemClick,
+  compact,
+}: {
+  items: AppNotification[];
+  unreadCount: number;
+  onMarkAllRead: () => void;
+  onItemClick: (item: AppNotification) => void;
+  compact?: boolean;
+}) {
+  return (
+    <div>
+      {compact || unreadCount > 0 ? (
+        <div
+          className={cn(
+            "flex items-center gap-3 border-b border-[var(--color-border-subtle)]",
+            compact ? "justify-between px-3 py-2.5" : "justify-end px-4 py-2.5"
+          )}
+        >
+          {compact ? (
+            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+              Thông báo
+            </p>
+          ) : null}
+          {unreadCount > 0 ? (
+            <Button variant="outline" size="sm" onClick={onMarkAllRead}>
+              Đánh dấu đã đọc
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div
+        className={cn(
+          "overflow-y-auto",
+          compact ? "max-h-[420px]" : "max-h-[min(60dvh,480px)]"
+        )}
+      >
+        {items.length === 0 ? (
+          <div className="px-4 py-8 text-center text-sm text-[var(--color-text-inverse)]">
+            Chưa có thông báo mới
+          </div>
+        ) : (
+          <div
+            role="list"
+            className="divide-y divide-[var(--color-border-subtle)]"
+          >
+            {items.map((item) => {
+              const meta = TYPE_META[item.type];
+              const Icon = meta.icon;
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="listitem"
+                  onClick={() => onItemClick(item)}
+                  className={cn(
+                    "flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[var(--color-surface-muted)]",
+                    item.unread && "bg-[var(--color-text-secondary)]/5"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                      meta.tone
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium text-[var(--color-text-primary)]">
+                        {item.title}
+                      </span>
+                      {item.unread ? (
+                        <span className="inline-flex h-2 w-2 shrink-0 rounded-full bg-red-500" />
+                      ) : null}
+                    </span>
+                    <span className="mt-0.5 block whitespace-pre-line text-sm text-[var(--color-text-inverse)]">
+                      {item.message}
+                    </span>
+                    <span className="mt-1 block text-xs text-[var(--color-text-inverse)]/80">
+                      {formatTime(item.createdAt)}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const BellButton = forwardRef<
+  HTMLButtonElement,
+  {
+    unreadCount: number;
+    onClick?: () => void;
+  }
+>(function BellButton({ unreadCount, onClick }, ref) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      aria-label="Thông báo"
+      onClick={onClick}
+      className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]"
+    >
+      <Bell className="h-5 w-5" />
+      {unreadCount > 0 ? (
+        <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+          {unreadCount > 99 ? "99+" : unreadCount}
+        </span>
+      ) : null}
+    </button>
+  );
+});
+BellButton.displayName = "BellButton";
+
 export function NotificationBell() {
   const router = useRouter();
-  const toast = useToast();
-  const {
-    unreadCount,
-    items,
-    markAllRead,
-    refresh,
-    push,
-    enablePush,
-    disablePush,
-    testPush,
-  } = useNotifications();
+  const isMobile = useIsMobile();
+  const [open, setOpen] = useState(false);
+  const { unreadCount, items, markAllRead, markRead, refresh } =
+    useNotifications();
 
-  async function handleOpenChange(open: boolean) {
-    if (open) {
+  async function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (next) {
       await refresh();
     }
   }
 
-  async function handleItemClick(item: AppNotification) {
+  function handleItemClick(item: AppNotification) {
+    if (item.unread) {
+      void markRead(item.id);
+    }
+    setOpen(false);
     router.push(item.href);
   }
 
-  async function handleTogglePush() {
-    try {
-      if (push.enabled) {
-        await disablePush();
-        toast.success("Đã tắt thông báo đẩy trên thiết bị này");
-      } else {
-        await enablePush();
-        toast.success(
-          "Đã bật thông báo đẩy — kiểm tra màn hình khóa xem có tin thử không"
-        );
-      }
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Không thay đổi được thông báo đẩy"
-      );
-    }
-  }
-
-  async function handleTestPush() {
-    try {
-      const result = await testPush();
-      if (result.sent > 0) {
-        toast.success(`Đã gửi tin thử (${result.sent}/${result.total}). Kiểm tra màn hình khóa.`);
-      } else {
-        toast.error(
-          "Server không gửi được tới thiết bị. Thử Tắt → Bật lại thông báo (mở từ Home Screen trên iPhone)."
-        );
-      }
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Gửi thử thất bại"
-      );
-    }
+  if (isMobile) {
+    return (
+      <>
+        <BellButton
+          unreadCount={unreadCount}
+          onClick={() => void handleOpenChange(true)}
+        />
+        <BottomSheet
+          open={open}
+          onOpenChange={(next) => void handleOpenChange(next)}
+          title="Thông báo"
+          maxHeight="85dvh"
+        >
+          <NotificationList
+            items={items}
+            unreadCount={unreadCount}
+            onMarkAllRead={markAllRead}
+            onItemClick={handleItemClick}
+          />
+        </BottomSheet>
+      </>
+    );
   }
 
   return (
-    <Popover.Root onOpenChange={handleOpenChange}>
+    <Popover.Root open={open} onOpenChange={(next) => void handleOpenChange(next)}>
       <Popover.Trigger asChild>
-        <button
-          type="button"
-          aria-label="Thông báo"
-          className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]"
-        >
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 ? (
-            <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
-          ) : null}
-        </button>
+        <BellButton unreadCount={unreadCount} />
       </Popover.Trigger>
 
       <Popover.Portal>
         <Popover.Content
           align="end"
           sideOffset={8}
-          className="z-50 w-[min(92vw,380px)] rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-2 shadow-[var(--shadow-elevated)]"
+          className="z-50 w-[min(92vw,380px)] rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-0 shadow-[var(--shadow-elevated)]"
         >
-          <div className="flex items-center justify-between px-2 py-2">
-            <div>
-              <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                Thông báo
-              </p>
-              <p className="text-xs text-[var(--color-text-inverse)]">
-                {unreadCount > 0
-                  ? `${unreadCount} mục chưa đọc`
-                  : "Không có mục chưa đọc"}
-              </p>
-            </div>
-            {unreadCount > 0 ? (
-              <Button variant="outline" size="sm" onClick={markAllRead}>
-                Đánh dấu đã đọc
-              </Button>
-            ) : null}
-          </div>
-
-          {push.supported ? (
-            <div className="mx-2 mb-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/50 px-3 py-2.5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                    Thông báo đẩy
-                  </p>
-                  <p className="text-xs text-[var(--color-text-inverse)]">
-                    {push.enabled
-                      ? "Đang bật trên thiết bị này"
-                      : push.permission === "denied"
-                        ? "Đã bị chặn — mở lại trong Cài đặt → Thông báo"
-                        : "Tự hỏi quyền khi vào app — hoặc bấm Bật"}
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  variant={push.enabled ? "outline" : "default"}
-                  disabled={push.busy || push.permission === "denied"}
-                  onClick={() => void handleTogglePush()}
-                >
-                  {push.busy ? "…" : push.enabled ? "Tắt" : "Bật"}
-                </Button>
-              </div>
-              {push.enabled ? (
-                <button
-                  type="button"
-                  disabled={push.busy}
-                  onClick={() => void handleTestPush()}
-                  className="mt-2 text-xs font-medium text-[var(--color-text-secondary)] underline-offset-2 hover:underline disabled:opacity-50"
-                >
-                  Gửi tin thử tới máy này
-                </button>
-              ) : null}
-            </div>
-          ) : (
-            <div className="mx-2 mb-2 rounded-lg border border-dashed border-[var(--color-border-subtle)] px-3 py-2 text-xs text-[var(--color-text-inverse)]">
-              {push.blockReason ||
-                "Thiết bị này không hỗ trợ Web Push. Trên iOS cần mở app từ Home Screen (iOS 16.4+)."}
-            </div>
-          )}
-
-          <div className="max-h-[420px] space-y-1 overflow-y-auto">
-            {items.length === 0 ? (
-              <div className="rounded-lg px-3 py-8 text-center text-sm text-[var(--color-text-inverse)]">
-                Chưa có thông báo mới
-              </div>
-            ) : (
-              items.map((item) => {
-                const meta = TYPE_META[item.type];
-                const Icon = meta.icon;
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleItemClick(item)}
-                    className={cn(
-                      "flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-[var(--color-surface-muted)]",
-                      item.unread && "bg-[var(--color-text-secondary)]/5"
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-                        meta.tone
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-2">
-                        <span className="truncate text-sm font-medium text-[var(--color-text-primary)]">
-                          {item.title}
-                        </span>
-                        {item.unread ? (
-                          <span className="inline-flex h-2 w-2 shrink-0 rounded-full bg-red-500" />
-                        ) : null}
-                      </span>
-                      <span className="mt-0.5 block whitespace-pre-line text-sm text-[var(--color-text-inverse)]">
-                        {item.message}
-                      </span>
-                      <span className="mt-1 block text-xs text-[var(--color-text-inverse)]/80">
-                        {formatTime(item.createdAt)}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })
-            )}
-          </div>
-
-          <div className="mt-2 border-t border-[var(--color-border-subtle)] px-2 pt-2">
-            <Link
-              href="/dashboard"
-              className="block rounded-lg px-2 py-2 text-center text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]"
-            >
-              Xem tổng quan
-            </Link>
-          </div>
-
+          <NotificationList
+            items={items}
+            unreadCount={unreadCount}
+            onMarkAllRead={markAllRead}
+            onItemClick={handleItemClick}
+            compact
+          />
           <Popover.Arrow className="fill-[var(--color-surface-elevated)]" />
         </Popover.Content>
       </Popover.Portal>

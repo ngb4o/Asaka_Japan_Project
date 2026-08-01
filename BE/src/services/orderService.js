@@ -12,7 +12,7 @@ import { formatDocument } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { generateDocumentCode } from '~/utils/documentCode'
 import { toBaseQuantity, toUnitsPerCase, UNIT_TYPE } from '~/utils/inventoryUnits'
-import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
+import { staffNotifyService } from '~/services/staffNotifyService'
 import { buildSearchFilter } from '~/utils/search.js'
 import { userModel } from '~/models/userModel'
 import { hasAnyRole } from '~/utils/roles'
@@ -526,7 +526,7 @@ const createNew = async (reqBody, userId) => {
 
   const order = await orderModel.findOneById(created.insertedId)
   const [formatted] = await enrichOrders([order])
-  telegramNotifyService.onOrderCreated(formatted)
+  staffNotifyService.onOrderCreated(formatted)
   await orderAuditService.log({
     orderId: formatted.id,
     orderCode: formatted.code,
@@ -665,7 +665,7 @@ const assertStatusTransition = (currentStatus, nextStatus) => {
   }
 }
 
-const update = async (orderId, updateData, userId, options = {}) => {
+const update = async (orderId, updateData, userId) => {
   const order = await orderModel.findOneById(orderId)
 
   if (!order) {
@@ -845,16 +845,13 @@ const update = async (orderId, updateData, userId, options = {}) => {
 
   const formatted = await getDetails(orderId)
 
-  // Telegram inline actions already edit the tracked message — skip broadcasting a duplicate.
-  if (!options.silentTelegram) {
-    telegramNotifyService.onOrderStatusChanged(order.status, formatted)
+  staffNotifyService.onOrderStatusChanged(order.status, formatted)
 
-    if (
-      dataToUpdate.paymentStatus !== undefined &&
-      dataToUpdate.paymentStatus !== order.paymentStatus
-    ) {
-      telegramNotifyService.onPaymentUpdated(formatted)
-    }
+  if (
+    dataToUpdate.paymentStatus !== undefined &&
+    dataToUpdate.paymentStatus !== order.paymentStatus
+  ) {
+    staffNotifyService.onPaymentUpdated(formatted)
   }
 
   if (shouldExportInventory) {
@@ -942,9 +939,7 @@ const recordPayment = async (orderId, { amount, note }, options = {}) => {
   })
 
   const formatted = await getDetails(orderId)
-  if (!options.silentTelegram) {
-    telegramNotifyService.onPaymentUpdated(formatted)
-  }
+  staffNotifyService.onPaymentUpdated(formatted)
 
   await orderAuditService.log({
     orderId,

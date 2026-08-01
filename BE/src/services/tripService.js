@@ -8,7 +8,7 @@ import { StatusCodes } from 'http-status-codes'
 import { formatDocument } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { generateDocumentCode } from '~/utils/documentCode'
-import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
+import { staffNotifyService } from '~/services/staffNotifyService'
 import { buildSearchFilter } from '~/utils/search.js'
 import { hasAnyRole } from '~/utils/roles'
 
@@ -378,7 +378,7 @@ const update = async (tripId, updateData, actorUserId, actorRole) => {
     dataToUpdate.status === tripModel.TRIP_STATUS.IN_PROGRESS &&
     trip.status !== tripModel.TRIP_STATUS.IN_PROGRESS
   ) {
-    telegramNotifyService.onTripStarted(formatted)
+    staffNotifyService.onTripStarted(formatted)
   }
 
   return formatted
@@ -457,7 +457,7 @@ const addAdvance = async (tripId, body, userId) => {
   const formatted = await getDetails(tripId)
 
   if (trip.status === tripModel.TRIP_STATUS.DRAFT) {
-    telegramNotifyService.onTripStarted(formatted)
+    staffNotifyService.onTripStarted(formatted)
   }
 
   return formatted

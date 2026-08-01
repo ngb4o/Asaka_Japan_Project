@@ -10,3 +10,13 @@ export async function markAllNotificationsRead() {
     method: "POST",
   });
 }
+
+export async function markNotificationRead(id: string) {
+  return apiRequest<{ message: string; readIds?: string[] }>(
+    "/notifications/read",
+    {
+      method: "POST",
+      body: { id },
+    }
+  );
+}

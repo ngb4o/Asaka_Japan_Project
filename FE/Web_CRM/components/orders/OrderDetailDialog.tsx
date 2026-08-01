@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -89,7 +90,7 @@ function formatShippingRange(
 ) {
   const from = formatDateDisplay(shippingDate);
   const to = formatDateDisplay(deliveredAt);
-  if (from && to) return `${from} đến ${to}`;
+  if (from && to) return `${from}   ->   ${to}`;
   if (from) return from;
   if (to) return to;
   return "";
@@ -500,22 +501,17 @@ export function OrderDetailDialog({
             </section>
           ) : null}
 
-          <div
-            className={cn(
-              "border-t border-[var(--color-border-subtle)] pt-4",
-              showDetailPanel && onEdit && "grid grid-cols-2 gap-2"
-            )}
-          >
+          <DialogFooter>
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full sm:w-auto"
               onClick={() => onOpenChange(false)}
             >
               Đóng
             </Button>
             {showDetailPanel && onEdit ? (
               <Button
-                className="w-full"
+                className="w-full sm:w-auto"
                 onClick={() => {
                   onOpenChange(false);
                   onEdit(order);
@@ -524,7 +520,7 @@ export function OrderDetailDialog({
                 Sửa đơn
               </Button>
             ) : null}
-          </div>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>

@@ -220,9 +220,13 @@ export function BottomSheet({
           <div
             className={cn(
               "min-h-0 flex-1 overflow-y-auto overscroll-contain",
-              // Form action rows (Hủy / Lưu): split equal, full width on mobile
-              "[&_form_.flex.justify-end.gap-2]:!grid [&_form_.flex.justify-end.gap-2]:w-full [&_form_.flex.justify-end.gap-2]:grid-cols-2",
-              "[&_form_.flex.justify-end.gap-2>button]:!w-full [&_form_.flex.justify-end.gap-2>a]:!w-full",
+              // Action footers (Hủy / Lưu / Đóng…): full-width, equal split
+              "[&_[data-slot=dialog-footer]]:!grid [&_[data-slot=dialog-footer]]:w-full [&_[data-slot=dialog-footer]]:grid-cols-2 [&_[data-slot=dialog-footer]]:gap-2",
+              "[&_[data-slot=dialog-footer]:has(>:only-child)]:!grid-cols-1",
+              "[&_[data-slot=dialog-footer]>button]:!w-full [&_[data-slot=dialog-footer]>a]:!w-full",
+              "[&_.flex.justify-end.gap-2]:!grid [&_.flex.justify-end.gap-2]:w-full [&_.flex.justify-end.gap-2]:grid-cols-2",
+              "[&_.flex.justify-end.gap-2:has(>:only-child)]:!grid-cols-1",
+              "[&_.flex.justify-end.gap-2>button]:!w-full [&_.flex.justify-end.gap-2>a]:!w-full",
               // List items (select / status picker): hairline dividers between rows
               "[&_[role=listbox]]:divide-y [&_[role=listbox]]:divide-[var(--color-border-subtle)]",
               "[&_[role=listbox]>[role=option]]:rounded-none"

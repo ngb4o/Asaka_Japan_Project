@@ -1,9 +1,14 @@
 "use client";
 
-import * as React from "react";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { AlertTriangle } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 export type ConfirmDialogVariant = "danger" | "default";
@@ -34,15 +39,13 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <DialogPrimitive.Content
-          className={cn(
-            "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-card)] bg-[var(--color-surface-elevated)] p-6 shadow-[var(--shadow-elevated)]",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
-          )}
-        >
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
           <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left">
             <div
               className={cn(
@@ -55,22 +58,18 @@ export function ConfirmDialog({
               <AlertTriangle className="h-6 w-6" aria-hidden="true" />
             </div>
 
-            <div className="flex-1 space-y-2">
-              <DialogPrimitive.Title className="text-lg font-semibold text-[var(--color-text-primary)]">
-                {title}
-              </DialogPrimitive.Title>
-              {description && (
-                <DialogPrimitive.Description className="text-sm leading-relaxed text-[var(--color-text-inverse)]">
-                  {description}
-                </DialogPrimitive.Description>
-              )}
-            </div>
+            {description ? (
+              <p className="flex-1 text-sm leading-relaxed text-[var(--color-text-inverse)] sm:pt-2">
+                {description}
+              </p>
+            ) : null}
           </div>
 
-          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <DialogFooter className="border-0 pt-0">
             <Button
               type="button"
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={onCancel}
               disabled={loading}
             >
@@ -79,14 +78,15 @@ export function ConfirmDialog({
             <Button
               type="button"
               variant={variant === "danger" ? "danger" : "default"}
+              className="w-full sm:w-auto"
               onClick={onConfirm}
               loading={loading}
             >
               {confirmText}
             </Button>
-          </div>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

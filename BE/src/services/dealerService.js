@@ -3,7 +3,7 @@ import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
-import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
+import { staffNotifyService } from '~/services/staffNotifyService'
 import { buildSearchFilter } from '~/utils/search.js'
 
 const createNew = async (reqBody, userId) => {
@@ -24,7 +24,7 @@ const createNew = async (reqBody, userId) => {
 
   const dealer = await dealerModel.findOneById(created.insertedId)
   const formatted = formatDocument(dealer)
-  telegramNotifyService.onDealerCreated(formatted)
+  staffNotifyService.onDealerCreated(formatted)
   return formatted
 }
 
@@ -67,7 +67,7 @@ const getDetails = async (dealerId) => {
   return formatDocument(dealer)
 }
 
-const update = async (dealerId, updateData, options = {}) => {
+const update = async (dealerId, updateData) => {
   const dealer = await dealerModel.findOneById(dealerId)
 
   if (!dealer) {
@@ -92,10 +92,7 @@ const update = async (dealerId, updateData, options = {}) => {
   await dealerModel.update(dealerId, dataToUpdate)
 
   const formatted = await getDetails(dealerId)
-  // Telegram inline approve already edits the tracked message — skip duplicate broadcast.
-  if (!options.silentTelegram) {
-    telegramNotifyService.onDealerStatusChanged(dealer.status, formatted)
-  }
+  staffNotifyService.onDealerStatusChanged(dealer.status, formatted)
   return formatted
 }
 

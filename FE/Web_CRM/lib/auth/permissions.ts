@@ -114,7 +114,6 @@ const NAV_BY_ROLE: Record<UserRole, string[]> = {
     "/trips",
     "/payroll",
     "/users",
-    "/settings/telegram",
   ],
   sales: [...OPS_NAV],
   warehouse: [
@@ -223,10 +222,6 @@ export function canManageUsers(roleOrRoles?: RoleInput) {
 
 /** CRUD sản phẩm / loại sản phẩm — chỉ admin */
 export function canManageProducts(roleOrRoles?: RoleInput) {
-  return hasAnyRole(roleOrRoles);
-}
-
-export function canManageTelegram(roleOrRoles?: RoleInput) {
   return hasAnyRole(roleOrRoles);
 }
 

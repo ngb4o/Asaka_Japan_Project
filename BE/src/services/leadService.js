@@ -5,7 +5,7 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
-import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
+import { staffNotifyService } from '~/services/staffNotifyService'
 import { buildSearchFilter } from '~/utils/search.js'
 
 const formatLead = (lead, dealerMap = new Map()) => {
@@ -35,7 +35,7 @@ const createPublic = async (reqBody) => {
 
   const lead = await leadModel.findOneById(created.insertedId)
   const formatted = formatLead(lead)
-  telegramNotifyService.onLeadCreated(formatted)
+  staffNotifyService.onLeadCreated(formatted)
   return formatted
 }
 
@@ -168,7 +168,7 @@ const convertToDealer = async (leadId, userId) => {
 
   const dealer = await dealerModel.findOneById(created.insertedId)
   const formatted = formatDocument(dealer)
-  telegramNotifyService.onDealerCreated(formatted)
+  staffNotifyService.onDealerCreated(formatted)
   return formatted
 }
 

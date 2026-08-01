@@ -21,6 +21,7 @@ import {
   MobileStatTile,
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { VndInput } from "@/components/ui/vnd-input";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -379,9 +380,15 @@ export default function ReceivablesPage() {
               </div>
 
               {ordersLoading ? (
-                <p className="text-sm text-[var(--color-text-inverse)]">
-                  Đang tải đơn…
-                </p>
+                <div
+                  className="space-y-3"
+                  aria-busy="true"
+                  aria-label="Đang tải đơn"
+                >
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-28 w-full rounded-xl" />
+                  <Skeleton className="h-28 w-full rounded-xl" />
+                </div>
               ) : debtOrders.length === 0 ? (
                 <p className="text-sm text-[var(--color-text-inverse)]">
                   Không còn đơn nợ

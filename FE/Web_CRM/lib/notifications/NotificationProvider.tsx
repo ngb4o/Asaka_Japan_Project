@@ -11,6 +11,7 @@ import {
 import {
   getNotifications,
   markAllNotificationsRead,
+  markNotificationRead,
 } from "@/lib/api/notifications";
 import type { AppNotification, NotificationSummary } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
@@ -40,6 +41,7 @@ type NotificationContextValue = {
   loading: boolean;
   refresh: () => Promise<void>;
   markAllRead: () => Promise<void>;
+  markRead: (id: string) => Promise<void>;
   push: PushUiState;
   enablePush: () => Promise<void>;
   disablePush: () => Promise<void>;
@@ -110,6 +112,48 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     await markAllNotificationsRead();
     await refresh();
   }, [refresh]);
+
+  const markRead = useCallback(
+    async (id: string) => {
+      if (!id) return;
+
+      let markedType: AppNotification["type"] | null = null;
+
+      setItems((prev) => {
+        const target = prev.find((item) => item.id === id);
+        if (!target?.unread) return prev;
+        markedType = target.type;
+        return prev.map((item) =>
+          item.id === id ? { ...item, unread: false } : item
+        );
+      });
+
+      if (markedType) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+        setCounts((prev) => {
+          const next = { ...prev };
+          if (markedType === "lead" || markedType === "dealer_lead") {
+            next.leads = Math.max(0, next.leads - 1);
+          } else if (markedType === "dealer") {
+            next.dealers = Math.max(0, next.dealers - 1);
+          } else if (markedType === "order") {
+            next.orders = Math.max(0, next.orders - 1);
+          } else if (markedType === "stock") {
+            next.stock = Math.max(0, next.stock - 1);
+          }
+          return next;
+        });
+      }
+
+      try {
+        await markNotificationRead(id);
+      } catch (err) {
+        if (err instanceof ApiClientError && err.statusCode === 401) return;
+        await refresh();
+      }
+    },
+    [refresh]
+  );
 
   const enablePush = useCallback(async () => {
     setPush((prev) => ({ ...prev, busy: true }));
@@ -206,6 +250,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       loading,
       refresh,
       markAllRead,
+      markRead,
       push,
       enablePush,
       disablePush,
@@ -218,6 +263,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       loading,
       refresh,
       markAllRead,
+      markRead,
       push,
       enablePush,
       disablePush,

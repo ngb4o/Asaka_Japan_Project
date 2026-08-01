@@ -27,7 +27,24 @@ const markAllRead = async (req, res, next) => {
   }
 }
 
+const markOneRead = async (req, res, next) => {
+  try {
+    const result = await notificationService.markOneRead(
+      req.userId,
+      req.body?.id
+    )
+
+    res.status(StatusCodes.OK).json({
+      message: 'Đã đánh dấu thông báo đã đọc!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const notificationController = {
   getList,
-  markAllRead
+  markAllRead,
+  markOneRead
 }

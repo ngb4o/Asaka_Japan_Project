@@ -263,11 +263,27 @@ const DialogTitle = React.forwardRef<
 });
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
+/** Action row at the bottom of a dialog / bottom sheet (Hủy · Lưu, Đóng · Sửa…). */
+const DialogFooter = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    data-slot="dialog-footer"
+    className={cn(
+      "flex flex-col-reverse gap-2 border-t border-[var(--color-border-subtle)] pt-4 sm:flex-row sm:justify-end",
+      className
+    )}
+    {...props}
+  />
+);
+
 export {
   Dialog,
   DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
   DialogClose,
 };

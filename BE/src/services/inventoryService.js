@@ -9,7 +9,7 @@ import { StatusCodes } from 'http-status-codes'
 import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { toBaseQuantity, toUnitsPerCase, UNIT_TYPE } from '~/utils/inventoryUnits'
-import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
+import { staffNotifyService } from '~/services/staffNotifyService'
 import { buildSearchFilter } from '~/utils/search.js'
 
 const ensureWarehouseExists = async (warehouseId) => {
@@ -150,7 +150,7 @@ const importStock = async (reqBody, userId) => {
     reqBody,
     userId
   )
-  telegramNotifyService.onStockChanged({
+  staffNotifyService.onStockChanged({
     productId: reqBody.productId,
     warehouseId: reqBody.warehouseId,
     quantity: result.balanceAfter
@@ -164,7 +164,7 @@ const exportStock = async (reqBody, userId) => {
     reqBody,
     userId
   )
-  telegramNotifyService.onStockChanged({
+  staffNotifyService.onStockChanged({
     productId: reqBody.productId,
     warehouseId: reqBody.warehouseId,
     quantity: result.balanceAfter

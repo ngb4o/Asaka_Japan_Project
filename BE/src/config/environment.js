@@ -22,15 +22,6 @@ export const env = {
     .map((origin) => origin.trim())
     .filter(Boolean),
 
-  TELEGRAM_ENABLED: process.env.TELEGRAM_ENABLED === 'true',
-  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',
-  TELEGRAM_WEBHOOK_URL: process.env.TELEGRAM_WEBHOOK_URL || '',
-  TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET || '',
-  TELEGRAM_STAFF_CHAT_IDS: (process.env.TELEGRAM_STAFF_CHAT_IDS || '')
-    .split(',')
-    .map((id) => id.trim())
-    .filter(Boolean),
-
   VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || '',
   VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || '',
   // Apple Web Push prefers a real contact mailto/https (avoid .local)
