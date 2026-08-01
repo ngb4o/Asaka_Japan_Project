@@ -52,6 +52,15 @@ const AUDIT_ACTION_LABELS: Record<OrderAuditAction, string> = {
   deleted: "Xóa đơn",
 };
 
+const AUDIT_DOT_CLASS: Record<OrderAuditAction, string> = {
+  created: "bg-emerald-500 ring-emerald-500/25",
+  confirmed_exported: "bg-[var(--color-text-secondary)] ring-[var(--color-text-secondary)]/25",
+  status_changed: "bg-sky-500 ring-sky-500/25",
+  cancelled: "bg-red-500 ring-red-500/25",
+  payment_recorded: "bg-amber-500 ring-amber-500/25",
+  deleted: "bg-[var(--color-text-inverse)] ring-[var(--color-text-inverse)]/20",
+};
+
 function Field({
   label,
   value,
@@ -177,29 +186,54 @@ function OrderAuditTimeline({
   }
 
   return (
-    <ol className="space-y-0 border-l border-[var(--color-border-subtle)] pl-4">
-      {audits.map((item) => {
+    <ol className="relative m-0 list-none space-y-0 p-0">
+      {audits.map((item, index) => {
         const detail = auditDetail(item);
+        const isLast = index === audits.length - 1;
+        const isFirst = index === 0;
+        const dotClass =
+          AUDIT_DOT_CLASS[item.action] ||
+          "bg-[var(--color-text-inverse)] ring-[var(--color-text-inverse)]/20";
+
         return (
-          <li key={item.id} className="relative pb-4 last:pb-0">
-            <span className="absolute -left-[1.15rem] top-1.5 size-2 rounded-full bg-[var(--color-text-inverse)]" />
-            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                {AUDIT_ACTION_LABELS[item.action] || item.action}
-              </p>
-              <p className="text-xs tabular-nums text-[var(--color-text-inverse)]">
-                {formatAuditTime(item.createdAt)}
-              </p>
+          <li key={item.id} className="relative flex gap-3 pb-5 last:pb-0">
+            {/* Rail + node */}
+            <div className="relative flex w-4 shrink-0 flex-col items-center">
+              {!isLast ? (
+                <span
+                  aria-hidden
+                  className="absolute top-4 bottom-0 w-px bg-[var(--color-border-subtle)]"
+                />
+              ) : null}
+              <span
+                aria-hidden
+                className={cn(
+                  "relative z-[1] mt-1.5 size-2.5 shrink-0 rounded-full ring-4",
+                  isFirst && "size-3",
+                  dotClass
+                )}
+              />
             </div>
-            <p className="mt-0.5 text-xs text-[var(--color-text-inverse)]">
-              {item.actorName}
-              {item.actorCode ? ` (${item.actorCode})` : ""}
-            </p>
-            {detail ? (
-              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                {detail}
+
+            {/* Content */}
+            <div className="min-w-0 flex-1 rounded-lg bg-[var(--color-surface-muted)]/70 px-3 py-2.5">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                  {AUDIT_ACTION_LABELS[item.action] || item.action}
+                </p>
+                <p className="text-xs tabular-nums text-[var(--color-text-inverse)]">
+                  {formatAuditTime(item.createdAt)}
+                </p>
+              </div>
+              <p className="mt-0.5 text-xs text-[var(--color-text-inverse)]">
+                {item.actorName}
               </p>
-            ) : null}
+              {detail ? (
+                <p className="mt-0.5 text-sm leading-snug text-[var(--color-text-secondary)]">
+                  {detail}
+                </p>
+              ) : null}
+            </div>
           </li>
         );
       })}

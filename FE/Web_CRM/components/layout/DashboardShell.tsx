@@ -31,7 +31,7 @@ function WorkspaceLoading() {
       <div className="absolute inset-0 bg-gradient-to-br from-black/75 via-[#013a02]/55 to-black/70" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(1,125,3,0.25),transparent_55%)]" />
 
-      <div className="relative z-10 flex flex-col items-center gap-5">
+      <div className="relative z-10 flex flex-col items-center gap-3">
         <div className="relative">
           <div className="absolute -inset-3 animate-pulse rounded-2xl bg-white/10" />
           <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white/95 shadow-[var(--shadow-elevated)]">
@@ -44,14 +44,9 @@ function WorkspaceLoading() {
           </div>
         </div>
 
-        <div className="text-center">
-          <p className="text-base font-semibold tracking-tight text-white">
-            ASAKA CRM
-          </p>
-          <p className="mt-1 text-sm text-white/70">
-            Đang chuẩn bị workspace...
-          </p>
-        </div>
+        <p className="text-base font-semibold tracking-tight text-white">
+          ASAKA CRM
+        </p>
 
         <div
           className="h-1.5 w-36 overflow-hidden rounded-full bg-white/20"
