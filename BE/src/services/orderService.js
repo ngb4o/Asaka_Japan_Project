@@ -78,6 +78,66 @@ const assertCanCancelExportedOrder = async (userId) => {
   }
 }
 
+/** Thu tiền / ghi paidAmount — sales + kế toán (+ admin). */
+const assertCanManagePayments = async (userId) => {
+  if (!userId) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Chưa xác thực!')
+  }
+  const user = await userModel.findOneById(userId)
+  if (!user || user._destroy) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Không tìm thấy người dùng!')
+  }
+  if (
+    !hasAnyRole(
+      user,
+      userModel.USER_ROLES.SALES,
+      userModel.USER_ROLES.ACCOUNTANT
+    )
+  ) {
+    throw new ApiError(
+      StatusCodes.FORBIDDEN,
+      'Chỉ kinh doanh hoặc kế toán được ghi nhận thanh toán!'
+    )
+  }
+}
+
+/** Sửa dòng SP / chiết khấu — sales + kho (+ admin). Kế toán không sửa. */
+const assertCanEditOrderItems = async (userId) => {
+  if (!userId) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Chưa xác thực!')
+  }
+  const user = await userModel.findOneById(userId)
+  if (!user || user._destroy) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Không tìm thấy người dùng!')
+  }
+  if (
+    !hasAnyRole(
+      user,
+      userModel.USER_ROLES.SALES,
+      userModel.USER_ROLES.WAREHOUSE
+    )
+  ) {
+    throw new ApiError(
+      StatusCodes.FORBIDDEN,
+      'Chỉ kinh doanh hoặc kho được sửa sản phẩm trên đơn!'
+    )
+  }
+}
+
+const wantsExplicitPaymentWrite = (data = {}) => {
+  if (data.paidAmount !== undefined && Number(data.paidAmount) > 0) return true
+  if (
+    data.paymentStatus !== undefined &&
+    data.paymentStatus !== orderModel.PAYMENT_STATUS.UNPAID
+  ) {
+    return true
+  }
+  if (data.paymentNote !== undefined && String(data.paymentNote).trim() !== '') {
+    return true
+  }
+  return false
+}
+
 const parseOptionalDate = (value) => {
   if (value === undefined) return undefined
   if (value === null || value === '') return null
@@ -419,6 +479,10 @@ const createNew = async (reqBody, userId) => {
     )
   }
 
+  if (wantsExplicitPaymentWrite(reqBody)) {
+    await assertCanManagePayments(userId)
+  }
+
   const totals = await buildLineItems(reqBody.items)
   const code = await generateDocumentCode(orderModel.ORDER_COLLECTION_NAME, 'O')
   const discount = reqBody.discount ?? 0
@@ -674,6 +738,8 @@ const update = async (orderId, updateData, userId, options = {}) => {
       )
     }
 
+    await assertCanEditOrderItems(userId)
+
     const totals = await buildLineItems(updateData.items)
     dataToUpdate.items = totals.items
     dataToUpdate.subtotal = totals.subtotal
@@ -688,15 +754,24 @@ const update = async (orderId, updateData, userId, options = {}) => {
       )
     }
 
+    await assertCanEditOrderItems(userId)
+
     dataToUpdate.discount = updateData.discount
     dataToUpdate.total = Math.max(0, order.subtotal - updateData.discount)
     nextTotal = dataToUpdate.total
   }
 
-  if (
+  const paymentFieldsTouched =
     updateData.paidAmount !== undefined ||
     updateData.paymentStatus !== undefined ||
-    updateData.paymentNote !== undefined ||
+    updateData.paymentNote !== undefined
+
+  if (paymentFieldsTouched) {
+    await assertCanManagePayments(userId)
+  }
+
+  if (
+    paymentFieldsTouched ||
     dataToUpdate.total !== undefined
   ) {
     const payment = resolvePaymentStatus(

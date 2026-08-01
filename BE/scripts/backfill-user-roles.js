@@ -26,7 +26,12 @@ async function main() {
       continue
     }
 
-    const role = user.role || 'admin'
+    const role = user.role || 'sales'
+    if (!user.role && !hasRoles) {
+      console.warn(
+        `User ${user._id} / ${user.email || user.username} missing role — defaulting to sales (not admin)`
+      )
+    }
     await col.updateOne(
       { _id: user._id },
       {

@@ -24,16 +24,15 @@ export const normalizeRoles = (input) => {
 
 /** Resolve roles from a user document, JWT-like payload, roles[], or a bare role string. */
 export const resolveRoles = (user) => {
-  if (!user) return [userModel.USER_ROLES.ADMIN]
+  if (!user) return []
   if (typeof user === 'string') {
-    const fromString = normalizeRoles(user)
-    return fromString.length ? fromString : [userModel.USER_ROLES.ADMIN]
+    return normalizeRoles(user)
   }
   const fromArray = normalizeRoles(user.roles)
   if (fromArray.length) return fromArray
   if (user.role && VALID_ROLES.includes(user.role)) return [user.role]
-  // Legacy users without role → admin (same as previous middleware default)
-  return [userModel.USER_ROLES.ADMIN]
+  // Missing/invalid role → no privileges (never default to admin)
+  return []
 }
 
 export const primaryRole = (userOrRoles) => {

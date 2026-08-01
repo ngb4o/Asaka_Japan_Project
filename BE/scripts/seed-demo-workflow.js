@@ -95,6 +95,7 @@ async function main() {
       password: passwordHash,
       avatar: null,
       role: 'admin',
+      roles: ['admin'],
       createdAt: daysAgo(90),
       updatedAt: null,
       _destroy: false
@@ -104,7 +105,14 @@ async function main() {
   } else {
     await db.collection('users').updateOne(
       { _id: admin._id },
-      { $set: { password: passwordHash, role: 'admin', _destroy: false } }
+      {
+        $set: {
+          password: passwordHash,
+          role: 'admin',
+          roles: ['admin'],
+          _destroy: false
+        }
+      }
     )
     console.log('Kept existing admin, reset password to 123123')
   }
@@ -207,6 +215,7 @@ async function main() {
       password: passwordHash,
       avatar: null,
       role: def.role,
+      roles: [def.role],
       createdAt: daysAgo(60),
       updatedAt: null,
       _destroy: false

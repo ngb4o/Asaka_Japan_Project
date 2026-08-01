@@ -5,7 +5,7 @@ import { primaryRole, resolveRoles } from '~/utils/roles'
 
 /**
  * Attach roles onto request after JWT verify.
- * Existing users without role default to admin (backward compatible).
+ * Users without a valid role get empty roles[] (no privileges).
  */
 export const attachUserRole = async (req, res, next) => {
   try {

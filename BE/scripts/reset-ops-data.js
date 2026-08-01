@@ -46,6 +46,7 @@ async function main() {
     password: passwordHash,
     avatar: null,
     role: 'admin',
+    roles: ['admin'],
     createdAt: new Date(),
     updatedAt: null,
     _destroy: false

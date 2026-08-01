@@ -1,10 +1,10 @@
 import { orderModel } from '~/models/orderModel'
 
 /**
- * Lock-screen copy kiểu TMĐT:
+ * Lock-screen copy:
  * - Title: emoji + câu hành động
- * - Body: mỗi thông tin một dòng (đại lý / mã / tiền / tên / SĐT…)
- * - url: deep link ?detail= / ?id= để mở đúng bản ghi
+ * - Body: mỗi dòng có icon + nhãn (Mã đơn / Số tiền / Đại lý / …)
+ * - url: deep link ?detail= / ?id=
  */
 
 const ORDER_STATUS_TITLE = {
@@ -26,6 +26,11 @@ const money = (value) => {
   return `${amount.toLocaleString('vi-VN')}đ`
 }
 
+const line = (icon, label, value) => {
+  if (value == null || String(value).trim() === '') return null
+  return `${icon} ${label}: ${String(value).trim()}`
+}
+
 const lines = (...parts) =>
   parts.filter((part) => part != null && String(part).trim() !== '').join('\n')
 
@@ -41,10 +46,18 @@ const withQuery = (path, key, id) => {
   return `${path}?${key}=${encodeURIComponent(id)}`
 }
 
-/** Order push → mở OrderDetailDialog */
 const orderDetailUrl = (order) => withQuery('/orders', 'detail', entityId(order))
 
 const withId = (path, id) => withQuery(path, 'id', id)
+
+const orderBody = (order, { amount, amountLabel = 'Số tiền' } = {}) =>
+  lines(
+    line('🧾', 'Mã đơn', order?.code),
+    line('💰', amountLabel, money(amount ?? order?.total)),
+    line('🏪', 'Đại lý', order?.dealerName),
+    line('👤', 'Tên', order?.customerName || order?.shippingContactName),
+    line('📞', 'SĐT', order?.customerPhone || order?.shippingPhone)
+  )
 
 const push = (title, body, url, tag) => ({
   title,
@@ -58,13 +71,7 @@ export const webPushCopy = {
     const id = entityId(order)
     return push(
       '🛒 Bạn có đơn mới',
-      lines(
-        order?.dealerName,
-        order?.code,
-        money(order?.total),
-        order?.customerName,
-        order?.customerPhone
-      ),
+      orderBody(order),
       orderDetailUrl(order),
       id ? `order-${id}` : 'order'
     )
@@ -74,13 +81,7 @@ export const webPushCopy = {
     const id = entityId(order)
     return push(
       ORDER_STATUS_TITLE[order.status] || '📋 Cập nhật đơn hàng',
-      lines(
-        order?.dealerName,
-        order?.code,
-        money(order?.total),
-        order?.customerName,
-        order?.customerPhone
-      ),
+      orderBody(order),
       orderDetailUrl(order),
       id ? `order-${id}` : 'order'
     )
@@ -94,13 +95,7 @@ export const webPushCopy = {
     )
     return push(
       '💰 Có công nợ cần thu',
-      lines(
-        order?.dealerName,
-        order?.code,
-        `Còn ${money(remaining)}`,
-        order?.customerName,
-        order?.customerPhone
-      ),
+      orderBody(order, { amount: remaining, amountLabel: 'Còn nợ' }),
       orderDetailUrl(order),
       id ? `debt-${id}` : 'debt'
     )
@@ -110,13 +105,10 @@ export const webPushCopy = {
     const id = entityId(order)
     return push(
       PAYMENT_TITLE[order.paymentStatus] || '💳 Cập nhật thanh toán',
-      lines(
-        order?.dealerName,
-        order?.code,
-        money(order?.paidAmount || order?.total),
-        order?.customerName,
-        order?.customerPhone
-      ),
+      orderBody(order, {
+        amount: order?.paidAmount || order?.total,
+        amountLabel: 'Đã thu'
+      }),
       orderDetailUrl(order),
       id ? `payment-${id}` : 'payment'
     )
@@ -126,7 +118,12 @@ export const webPushCopy = {
     const id = entityId(lead)
     return push(
       lead.type === 'dealer' ? '🏪 Có đăng ký đại lý mới' : '📩 Có liên hệ mới',
-      lines(lead.name, lead.phone, lead.company, lead.region),
+      lines(
+        line('👤', 'Tên', lead.name),
+        line('📞', 'SĐT', lead.phone),
+        line('🏢', 'Công ty', lead.company),
+        line('📍', 'Khu vực', lead.region)
+      ),
       withId('/leads', id),
       id ? `lead-${id}` : 'lead'
     )
@@ -137,12 +134,12 @@ export const webPushCopy = {
     return push(
       '🏪 Đại lý đang chờ duyệt',
       lines(
-        dealer.name,
-        dealer.phone,
+        line('🏪', 'Đại lý', dealer.name),
+        line('📞', 'SĐT', dealer.phone),
         dealer.contactName && dealer.contactName !== dealer.name
-          ? dealer.contactName
+          ? line('👤', 'Liên hệ', dealer.contactName)
           : null,
-        dealer.region
+        line('📍', 'Khu vực', dealer.region)
       ),
       withId('/dealers', id),
       id ? `dealer-${id}` : 'dealer'
@@ -153,7 +150,11 @@ export const webPushCopy = {
     const id = entityId(dealer)
     return push(
       '✅ Đại lý đã được duyệt',
-      lines(dealer.name, dealer.phone, dealer.region),
+      lines(
+        line('🏪', 'Đại lý', dealer.name),
+        line('📞', 'SĐT', dealer.phone),
+        line('📍', 'Khu vực', dealer.region)
+      ),
       withId('/dealers', id),
       id ? `dealer-${id}` : 'dealer'
     )
@@ -163,7 +164,14 @@ export const webPushCopy = {
     const id = entityId(trip)
     return push(
       '🚛 Chuyến giao đã bắt đầu',
-      lines(trip.code, stopCount > 0 ? `${stopCount} điểm giao` : 'Đang trên đường'),
+      lines(
+        line('🧾', 'Mã chuyến', trip.code),
+        line(
+          '📍',
+          'Điểm giao',
+          stopCount > 0 ? `${stopCount} điểm` : 'Đang trên đường'
+        )
+      ),
       withId('/trips', id),
       id ? `trip-${id}` : 'trip'
     )
@@ -173,7 +181,11 @@ export const webPushCopy = {
     const id = productId ? String(productId) : ''
     return push(
       '⚠️ Sản phẩm sắp hết hàng',
-      lines(productName, `Còn ${quantity}`, warehouseName || 'Kho'),
+      lines(
+        line('📦', 'Sản phẩm', productName),
+        line('📊', 'Tồn kho', quantity),
+        line('🏭', 'Kho', warehouseName || 'Kho')
+      ),
       withId('/inventory', id),
       id ? `stock-${id}` : 'stock'
     )
