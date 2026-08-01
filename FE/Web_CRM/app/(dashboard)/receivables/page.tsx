@@ -208,7 +208,7 @@ export default function ReceivablesPage() {
             variant="outline"
             size="sm"
             onClick={() => void loadSummary()}
-            disabled={loading}
+            loading={loading}
           >
             <RefreshCw className="h-4 w-4" />
             Làm mới

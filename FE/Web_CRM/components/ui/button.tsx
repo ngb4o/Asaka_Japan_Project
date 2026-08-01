@@ -5,7 +5,7 @@ import { Loader2 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-muted)] disabled:pointer-events-none disabled:opacity-50",
+  "relative inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-muted)] disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
@@ -33,7 +33,7 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
-  /** Shows a spinner and disables the button without changing its label. */
+  /** Replaces content with a loading circle and disables the button. */
   loading?: boolean;
 }
 
@@ -53,6 +53,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const Comp = asChild ? Slot : "button";
     const isDisabled = disabled || loading;
+    const spinnerClass = cn(
+      "animate-spin",
+      size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"
+    );
 
     if (asChild) {
       return (
@@ -74,16 +78,20 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         aria-busy={loading || undefined}
         {...props}
       >
+        <span
+          className={cn(
+            "inline-flex items-center justify-center gap-2",
+            loading && "invisible"
+          )}
+          aria-hidden={loading || undefined}
+        >
+          {children}
+        </span>
         {loading ? (
-          <Loader2
-            className={cn(
-              "animate-spin",
-              size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"
-            )}
-            aria-hidden="true"
-          />
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <Loader2 className={spinnerClass} aria-hidden="true" />
+          </span>
         ) : null}
-        {children}
       </button>
     );
   }

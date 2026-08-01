@@ -83,6 +83,8 @@ export default function DealersPage() {
   const [form, setForm] = useState<DealerFormValues>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const isDealerAction = (id: string, kind: "update" | "delete") =>
+    updatingId === `${kind}:${id}`;
 
   const fetchPage = useCallback(
     (pageNum: number) =>
@@ -213,7 +215,7 @@ export default function DealersPage() {
     const nextStatus = patch.status ?? item.status;
     if (nextTier === item.tier && nextStatus === item.status) return;
 
-    setUpdatingId(item.id);
+    setUpdatingId(`update:${item.id}`);
     setItems((prev) =>
       prev.map((row) =>
         row.id === item.id ? { ...row, tier: nextTier, status: nextStatus } : row
@@ -248,12 +250,15 @@ export default function DealersPage() {
     });
     if (!confirmed) return;
 
+    setUpdatingId(`delete:${item.id}`);
     try {
       await deleteDealer(item.id);
       toast.success("Đã xóa đại lý");
       await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
+    } finally {
+      setUpdatingId(null);
     }
   }
 
@@ -353,6 +358,7 @@ export default function DealersPage() {
                                   variant="outline"
                                   size="sm"
                                   title="Đổi trạng thái"
+                                  loading={isDealerAction(item.id, "update")}
                                 >
                                   <RefreshCw className="h-4 w-4" />
                                 </Button>
@@ -379,6 +385,7 @@ export default function DealersPage() {
                               <Button
                                 variant="danger"
                                 size="sm"
+                                loading={isDealerAction(item.id, "delete")}
                                 onClick={() => handleDelete(item)}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -425,7 +432,7 @@ export default function DealersPage() {
                                   })
                                 }
                                 searchable={false}
-                                disabled={updatingId === item.id}
+                                disabled={Boolean(updatingId?.endsWith(`:${item.id}`))}
                                 triggerClassName="h-8 text-xs"
                               />
                             </div>
@@ -446,7 +453,7 @@ export default function DealersPage() {
                                   })
                                 }
                                 searchable={false}
-                                disabled={updatingId === item.id}
+                                disabled={Boolean(updatingId?.endsWith(`:${item.id}`))}
                                 triggerClassName="h-8 text-xs"
                               />
                             </div>
@@ -479,6 +486,7 @@ export default function DealersPage() {
                                 <Button
                                   variant="danger"
                                   size="sm"
+                                  loading={isDealerAction(item.id, "delete")}
                                   onClick={() => handleDelete(item)}
                                 >
                                   <Trash2 className="h-4 w-4" />

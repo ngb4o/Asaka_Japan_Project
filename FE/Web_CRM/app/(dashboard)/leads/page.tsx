@@ -51,6 +51,8 @@ export default function LeadsPage() {
   const [status, setStatus] = useState<Lead["status"]>("new");
   const [submitting, setSubmitting] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const isLeadAction = (id: string, kind: "status" | "convert" | "delete") =>
+    updatingId === `${kind}:${id}`;
 
   const fetchPage = useCallback(
     (pageNum: number) =>
@@ -129,7 +131,7 @@ export default function LeadsPage() {
   async function handleQuickStatus(item: Lead, nextStatus: Lead["status"]) {
     if (nextStatus === item.status) return;
 
-    setUpdatingId(item.id);
+    setUpdatingId(`status:${item.id}`);
     setItems((prev) =>
       prev.map((row) =>
         row.id === item.id ? { ...row, status: nextStatus } : row
@@ -168,12 +170,15 @@ export default function LeadsPage() {
     });
     if (!confirmed) return;
 
+    setUpdatingId(`convert:${lead.id}`);
     try {
       await convertLeadToDealer(lead.id);
       toast.success("Đã tạo đại lý từ lead");
       await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Chuyển đổi thất bại");
+    } finally {
+      setUpdatingId(null);
     }
   }
 
@@ -187,12 +192,15 @@ export default function LeadsPage() {
     });
     if (!confirmed) return;
 
+    setUpdatingId(`delete:${lead.id}`);
     try {
       await deleteLead(lead.id);
       toast.success("Đã xóa lead");
       await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
+    } finally {
+      setUpdatingId(null);
     }
   }
 
@@ -283,13 +291,13 @@ export default function LeadsPage() {
                           }
                           searchable={false}
                           placeholder="Đổi trạng thái"
-                          disabled={updatingId === item.id}
+                          disabled={Boolean(updatingId?.endsWith(`:${item.id}`))}
                           trigger={
                             <Button
                               variant="outline"
                               size="sm"
                               title="Đổi trạng thái"
-                              disabled={updatingId === item.id}
+                              loading={isLeadAction(item.id, "status")}
                             >
                               <RefreshCw className="h-4 w-4" />
                             </Button>
@@ -299,11 +307,21 @@ export default function LeadsPage() {
                           <Pencil className="h-4 w-4" />
                         </Button>
                         {!item.dealerId && item.type === "dealer" ? (
-                          <Button variant="outline" size="sm" onClick={() => handleConvert(item)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            loading={isLeadAction(item.id, "convert")}
+                            onClick={() => handleConvert(item)}
+                          >
                             <UserPlus className="h-4 w-4" />
                           </Button>
                         ) : null}
-                        <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          loading={isLeadAction(item.id, "delete")}
+                          onClick={() => handleDelete(item)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </MobileRecordActions>
@@ -348,7 +366,7 @@ export default function LeadsPage() {
                                 handleQuickStatus(item, value as Lead["status"])
                               }
                               searchable={false}
-                              disabled={updatingId === item.id}
+                              disabled={Boolean(updatingId?.endsWith(`:${item.id}`))}
                               triggerClassName="h-8 text-xs"
                             />
                           </div>
@@ -365,12 +383,18 @@ export default function LeadsPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                loading={isLeadAction(item.id, "convert")}
                                 onClick={() => handleConvert(item)}
                               >
                                 <UserPlus className="h-4 w-4" />
                               </Button>
                             ) : null}
-                            <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              loading={isLeadAction(item.id, "delete")}
+                              onClick={() => handleDelete(item)}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>

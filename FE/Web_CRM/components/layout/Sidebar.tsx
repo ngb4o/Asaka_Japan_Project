@@ -165,6 +165,7 @@ export function Sidebar({
   const { counts } = useNotifications();
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const visibleGroups = useMemo(() => {
     const accessRoles = rolesOf(user);
@@ -215,11 +216,14 @@ export function Sidebar({
   }
 
   async function handleLogout() {
+    setLoggingOut(true);
     try {
       await logout();
       toast.success("Đã đăng xuất");
     } catch {
       toast.error("Đăng xuất thất bại");
+    } finally {
+      setLoggingOut(false);
     }
   }
 
@@ -369,6 +373,7 @@ export function Sidebar({
           variant="outline"
           size="sm"
           className="w-full border-white/10 bg-transparent text-white hover:bg-white/10 hover:text-white"
+          loading={loggingOut}
           onClick={handleLogout}
         >
           <LogOut className="h-4 w-4" />

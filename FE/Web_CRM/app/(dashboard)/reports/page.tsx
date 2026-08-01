@@ -67,6 +67,7 @@ export default function ReportsPage() {
   const [to, setTo] = useState("");
   const [report, setReport] = useState<SalesReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   const loadReport = useCallback(async () => {
     if (!allowed) {
@@ -144,11 +145,14 @@ export default function ReportsPage() {
       toast.warning("Chưa có dữ liệu báo cáo để xuất");
       return;
     }
+    setExporting(true);
     try {
       await downloadSalesReportExcel(report);
       toast.success("Đã tải file Excel");
     } catch {
       toast.error("Không xuất được file");
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -162,6 +166,7 @@ export default function ReportsPage() {
             type="button"
             variant="outline"
             onClick={() => void handleExportExcel()}
+            loading={exporting}
             disabled={!report || loading}
           >
             <Download className="h-4 w-4" />
@@ -207,6 +212,7 @@ export default function ReportsPage() {
             size="sm"
             className="ml-auto md:hidden"
             onClick={() => void handleExportExcel()}
+            loading={exporting}
             disabled={!report || loading}
           >
             <Download className="h-4 w-4" />

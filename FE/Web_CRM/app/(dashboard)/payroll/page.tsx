@@ -54,6 +54,9 @@ export default function PayrollPage() {
   const canEdit = canManagePayroll(rolesOf(user));
   const [selected, setSelected] = useState<PayrollPeriod | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [actionId, setActionId] = useState<string | null>(null);
+  const isPayrollAction = (id: string, kind: "lock" | "delete") =>
+    actionId === `${kind}:${id}`;
   const [period, setPeriod] = useState(currentPeriod());
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -122,6 +125,7 @@ export default function PayrollPage() {
       confirmText: "Khóa",
     });
     if (!ok) return;
+    setActionId(`lock:${item.id}`);
     try {
       await lockPayroll(item.id);
       toast.success("Đã khóa bảng lương");
@@ -131,6 +135,8 @@ export default function PayrollPage() {
       }
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Khóa thất bại");
+    } finally {
+      setActionId(null);
     }
   }
 
@@ -142,12 +148,15 @@ export default function PayrollPage() {
       variant: "danger",
     });
     if (!ok) return;
+    setActionId(`delete:${item.id}`);
     try {
       await deletePayroll(item.id);
       toast.success("Đã xóa bảng lương");
       await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
+    } finally {
+      setActionId(null);
     }
   }
 
@@ -268,10 +277,20 @@ export default function PayrollPage() {
                           </Button>
                           {canEdit && item.status !== "locked" ? (
                             <>
-                              <Button variant="outline" size="sm" onClick={() => handleLock(item)}>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                loading={isPayrollAction(item.id, "lock")}
+                                onClick={() => handleLock(item)}
+                              >
                                 <Lock className="h-4 w-4" />
                               </Button>
-                              <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                loading={isPayrollAction(item.id, "delete")}
+                                onClick={() => handleDelete(item)}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </>
@@ -322,12 +341,18 @@ export default function PayrollPage() {
                             </Button>
                             {canEdit && item.status !== "locked" ? (
                               <>
-                                <Button variant="outline" size="sm" onClick={() => handleLock(item)}>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  loading={isPayrollAction(item.id, "lock")}
+                                  onClick={() => handleLock(item)}
+                                >
                                   <Lock className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="danger"
                                   size="sm"
+                                  loading={isPayrollAction(item.id, "delete")}
                                   onClick={() => handleDelete(item)}
                                 >
                                   <Trash2 className="h-4 w-4" />

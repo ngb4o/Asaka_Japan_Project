@@ -29,6 +29,7 @@ import {
   MobileRecordCard,
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -111,8 +112,12 @@ export default function TripsPage() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [selected, setSelected] = useState<Trip | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [submittingKey, setSubmittingKey] = useState<string | null>(null);
+  const [actionId, setActionId] = useState<string | null>(null);
+  const isTripAction = (key: string) => actionId === key;
+  const isSubmitting = (key: string) => submittingKey === key;
   const canOperateSelected = canOperateTrip(selected, user);
 
   const [form, setForm] = useState({
@@ -256,40 +261,46 @@ export default function TripsPage() {
     setCreateOpen(true);
   }
 
+  function applyTripDetail(detail: Trip) {
+    setSelected(detail);
+    setStopForm({
+      date: toDateValue(detail.startDate),
+      dealerId: "",
+      location: "",
+      purpose: "delivery",
+      note: "",
+    });
+  }
+
   async function openDetail(item: Trip) {
+    applyTripDetail(item);
+    setDetailOpen(true);
+    setDetailLoading(true);
     try {
       const detail = await getTrip(item.id);
-      setSelected(detail);
-      setStopForm({
-        date: toDateValue(detail.startDate),
-        dealerId: "",
-        location: "",
-        purpose: "delivery",
-        note: "",
-      });
-      setDetailOpen(true);
+      applyTripDetail(detail);
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Không mở được chuyến");
+    } finally {
+      setDetailLoading(false);
     }
   }
 
   useDeepLinkOpen(async (id) => {
+    setSelected(null);
+    setDetailOpen(true);
+    setDetailLoading(true);
     try {
       const detail = await getTrip(id);
-      setSelected(detail);
-      setStopForm({
-        date: toDateValue(detail.startDate),
-        dealerId: "",
-        location: "",
-        purpose: "delivery",
-        note: "",
-      });
-      setDetailOpen(true);
+      applyTripDetail(detail);
     } catch (err) {
+      setDetailOpen(false);
       toast.error(
         err instanceof ApiClientError ? err.message : "Không mở được chuyến"
       );
       throw err;
+    } finally {
+      setDetailLoading(false);
     }
   });
 
@@ -299,7 +310,7 @@ export default function TripsPage() {
       toast.warning("Chọn ít nhất một nhân viên");
       return;
     }
-    setSubmitting(true);
+    setSubmittingKey("create");
     try {
       const trip = await createTrip({
         title: form.title.trim(),
@@ -318,7 +329,7 @@ export default function TripsPage() {
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Tạo chuyến thất bại");
     } finally {
-      setSubmitting(false);
+      setSubmittingKey(null);
     }
   }
 
@@ -330,30 +341,65 @@ export default function TripsPage() {
       variant: "danger",
     });
     if (!ok) return;
+    setActionId(`delete:${item.id}`);
     try {
       await deleteTrip(item.id);
       toast.success("Đã xóa chuyến");
       await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
+    } finally {
+      setActionId(null);
     }
   }
 
   async function handleStatus(status: Trip["status"]) {
     if (!selected) return;
+    setActionId(`status:${status}`);
     try {
       await updateTrip(selected.id, { status });
       toast.success("Đã cập nhật trạng thái");
       await refreshSelected(selected.id);
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Cập nhật thất bại");
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  async function handleRemoveStop(stopId: string) {
+    if (!selected) return;
+    setActionId(`stop:${stopId}`);
+    try {
+      await removeTripStop(selected.id, stopId);
+      await refreshSelected(selected.id);
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Xóa điểm dừng thất bại");
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  async function handleReviewExpense(
+    expenseId: string,
+    status: "approved" | "rejected"
+  ) {
+    if (!selected) return;
+    setActionId(`${status}:${expenseId}`);
+    try {
+      await reviewTripExpense(selected.id, expenseId, status);
+      await refreshSelected(selected.id);
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Duyệt chi phí thất bại");
+    } finally {
+      setActionId(null);
     }
   }
 
   async function handleAddStop(event: React.FormEvent) {
     event.preventDefault();
     if (!selected) return;
-    setSubmitting(true);
+    setSubmittingKey("stop");
     try {
       await addTripStop(selected.id, {
         date: stopForm.date || undefined,
@@ -367,7 +413,7 @@ export default function TripsPage() {
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Thêm điểm dừng thất bại");
     } finally {
-      setSubmitting(false);
+      setSubmittingKey(null);
     }
   }
 
@@ -378,7 +424,7 @@ export default function TripsPage() {
       toast.warning("Nhập số tiền ứng");
       return;
     }
-    setSubmitting(true);
+    setSubmittingKey("advance");
     try {
       await addTripAdvance(selected.id, {
         amount: Number(advanceAmount),
@@ -391,7 +437,7 @@ export default function TripsPage() {
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Ghi tạm ứng thất bại");
     } finally {
-      setSubmitting(false);
+      setSubmittingKey(null);
     }
   }
 
@@ -402,7 +448,7 @@ export default function TripsPage() {
       toast.warning("Nhập số tiền chi");
       return;
     }
-    setSubmitting(true);
+    setSubmittingKey("expense");
     try {
       await addTripExpense(selected.id, {
         category: expenseForm.category as Trip["expenses"][number]["category"],
@@ -423,7 +469,7 @@ export default function TripsPage() {
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Thêm chi phí thất bại");
     } finally {
-      setSubmitting(false);
+      setSubmittingKey(null);
     }
   }
 
@@ -435,7 +481,7 @@ export default function TripsPage() {
       confirmText: "Quyết toán",
     });
     if (!ok) return;
-    setSubmitting(true);
+    setSubmittingKey("settle");
     try {
       await settleTrip(selected.id);
       toast.success("Đã quyết toán chuyến");
@@ -443,7 +489,7 @@ export default function TripsPage() {
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Quyết toán thất bại");
     } finally {
-      setSubmitting(false);
+      setSubmittingKey(null);
     }
   }
 
@@ -554,7 +600,12 @@ export default function TripsPage() {
                           Chi tiết
                         </Button>
                         {canFinance && item.status !== "closed" ? (
-                          <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            loading={isTripAction(`delete:${item.id}`)}
+                            onClick={() => handleDelete(item)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         ) : null}
@@ -620,7 +671,12 @@ export default function TripsPage() {
                             Chi tiết
                           </Button>
                           {canFinance && item.status !== "closed" ? (
-                            <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              loading={isTripAction(`delete:${item.id}`)}
+                              onClick={() => handleDelete(item)}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           ) : null}
@@ -780,7 +836,7 @@ export default function TripsPage() {
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
                 Hủy
               </Button>
-              <Button type="submit" loading={submitting}>
+              <Button type="submit" loading={isSubmitting("create")}>
                 Tạo chuyến
               </Button>
             </div>
@@ -788,16 +844,39 @@ export default function TripsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+      <Dialog
+        open={detailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open) {
+            setDetailLoading(false);
+          }
+        }}
+      >
         <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {selected?.code} - {TRIP_STATUS_LABEL[selected?.status || "draft"]}
+              {selected
+                ? `${selected.code} - ${TRIP_STATUS_LABEL[selected.status || "draft"]}`
+                : "Chi tiết chuyến"}
             </DialogTitle>
           </DialogHeader>
 
+          {detailLoading && !selected ? (
+            <div className="space-y-3 py-2">
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-28 w-full rounded-xl" />
+              <Skeleton className="h-28 w-full rounded-xl" />
+            </div>
+          ) : null}
+
           {selected ? (
-            <div className="space-y-0 md:space-y-6">
+            <div
+              className={cn(
+                "space-y-0 md:space-y-6",
+                detailLoading && "pointer-events-none opacity-60"
+              )}
+            >
               <div className="grid gap-3 rounded-xl border border-[var(--color-border-subtle)] p-4 sm:grid-cols-4">
                 <div>
                   <p className="text-xs text-[var(--color-text-inverse)]">Thời gian</p>
@@ -817,12 +896,21 @@ export default function TripsPage() {
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2 sm:col-start-4">
                   {canOperateSelected && selected.status === "draft" ? (
-                    <Button size="sm" onClick={() => handleStatus("in_progress")}>
+                    <Button
+                      size="sm"
+                      loading={isTripAction("status:in_progress")}
+                      onClick={() => handleStatus("in_progress")}
+                    >
                       Bắt đầu đi
                     </Button>
                   ) : null}
                   {canOperateSelected && selected.status === "in_progress" ? (
-                    <Button size="sm" variant="outline" onClick={() => handleStatus("settlement")}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      loading={isTripAction("status:settlement")}
+                      onClick={() => handleStatus("settlement")}
+                    >
                       Chờ quyết toán
                     </Button>
                   ) : null}
@@ -894,10 +982,8 @@ export default function TripsPage() {
                       <Button
                         variant="danger"
                         size="sm"
-                        onClick={async () => {
-                          await removeTripStop(selected.id, stop.id);
-                          await refreshSelected(selected.id);
-                        }}
+                        loading={isTripAction(`stop:${stop.id}`)}
+                        onClick={() => handleRemoveStop(stop.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -941,7 +1027,7 @@ export default function TripsPage() {
                       value={stopForm.note}
                       onChange={(e) => setStopForm({ ...stopForm, note: e.target.value })}
                     />
-                    <Button type="submit" loading={submitting} className="sm:col-span-2">
+                    <Button type="submit" loading={isSubmitting("stop")} className="sm:col-span-2">
                       Thêm điểm dừng
                     </Button>
                   </form>
@@ -971,7 +1057,7 @@ export default function TripsPage() {
                       onChange={(e) => setAdvanceNote(e.target.value)}
                       placeholder="Ghi chú"
                     />
-                    <Button type="submit" loading={submitting}>
+                    <Button type="submit" loading={isSubmitting("advance")}>
                       Ghi tạm ứng
                     </Button>
                   </form>
@@ -1016,20 +1102,16 @@ export default function TripsPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={async () => {
-                              await reviewTripExpense(selected.id, item.id, "approved");
-                              await refreshSelected(selected.id);
-                            }}
+                            loading={isTripAction(`approved:${item.id}`)}
+                            onClick={() => handleReviewExpense(item.id, "approved")}
                           >
                             <Check className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={async () => {
-                              await reviewTripExpense(selected.id, item.id, "rejected");
-                              await refreshSelected(selected.id);
-                            }}
+                            loading={isTripAction(`rejected:${item.id}`)}
+                            onClick={() => handleReviewExpense(item.id, "rejected")}
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -1082,7 +1164,7 @@ export default function TripsPage() {
                       value={expenseForm.note}
                       onChange={(e) => setExpenseForm({ ...expenseForm, note: e.target.value })}
                     />
-                    <Button type="submit" loading={submitting} className="sm:col-span-2">
+                    <Button type="submit" loading={isSubmitting("expense")} className="sm:col-span-2">
                       Thêm khoản chi
                     </Button>
                   </form>
@@ -1111,7 +1193,7 @@ export default function TripsPage() {
                   </div>
                 ) : null}
                 {canFinance && selected.status !== "closed" ? (
-                  <Button onClick={handleSettle} loading={submitting}>
+                  <Button onClick={handleSettle} loading={isSubmitting("settle")}>
                     Quyết toán & khóa chuyến
                   </Button>
                 ) : null}

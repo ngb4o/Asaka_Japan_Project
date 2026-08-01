@@ -131,6 +131,7 @@ export default function InventoryPage() {
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
   const [warehouseForm, setWarehouseForm] = useState<WarehouseFormValues>(EMPTY_WAREHOUSE_FORM);
   const [warehouseSubmitting, setWarehouseSubmitting] = useState(false);
+  const [actionId, setActionId] = useState<string | null>(null);
 
   // Keep mobile tab in range when admin role resolves
   useEffect(() => {
@@ -306,12 +307,15 @@ export default function InventoryPage() {
     });
     if (!confirmed) return;
 
+    setActionId(item.id);
     try {
       await deleteWarehouse(item.id);
       toast.success(`Đã xóa kho "${item.name}"`);
       await loadMasterData();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
+    } finally {
+      setActionId(null);
     }
   }
 
@@ -520,7 +524,12 @@ export default function InventoryPage() {
                           <Button variant="outline" size="sm" onClick={() => openEditWarehouse(item)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="danger" size="sm" onClick={() => handleDeleteWarehouse(item)}>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            loading={actionId === item.id}
+                            onClick={() => handleDeleteWarehouse(item)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -558,7 +567,12 @@ export default function InventoryPage() {
                                 <Button variant="outline" size="sm" onClick={() => openEditWarehouse(item)}>
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button variant="danger" size="sm" onClick={() => handleDeleteWarehouse(item)}>
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  loading={actionId === item.id}
+                                  onClick={() => handleDeleteWarehouse(item)}
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>

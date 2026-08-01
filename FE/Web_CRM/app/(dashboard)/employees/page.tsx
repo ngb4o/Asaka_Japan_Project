@@ -97,6 +97,7 @@ export default function EmployeesPage() {
   const [editing, setEditing] = useState<Employee | null>(null);
   const [form, setForm] = useState<FormValues>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [actionId, setActionId] = useState<string | null>(null);
 
   const fetchPage = useCallback(
     (pageNum: number) =>
@@ -236,12 +237,15 @@ export default function EmployeesPage() {
       variant: "danger",
     });
     if (!ok) return;
+    setActionId(item.id);
     try {
       await deleteEmployee(item.id);
       toast.success("Đã xóa nhân viên");
       await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
+    } finally {
+      setActionId(null);
     }
   }
 
@@ -354,7 +358,12 @@ export default function EmployeesPage() {
                           <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            loading={actionId === item.id}
+                            onClick={() => handleDelete(item)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </>
@@ -421,7 +430,12 @@ export default function EmployeesPage() {
                               <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                loading={actionId === item.id}
+                                onClick={() => handleDelete(item)}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </>

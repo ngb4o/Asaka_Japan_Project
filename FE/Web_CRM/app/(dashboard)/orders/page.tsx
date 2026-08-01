@@ -250,6 +250,8 @@ export default function OrdersPage() {
   const [form, setForm] = useState<OrderFormValues>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const isOrderAction = (id: string, kind: "status" | "print" | "delete") =>
+    updatingStatusId === `${kind}:${id}`;
   const [confirmingOrder, setConfirmingOrder] = useState<Order | null>(null);
   const [confirmationStocks, setConfirmationStocks] = useState<ConfirmationStockRow[]>([]);
   const [loadingConfirmation, setLoadingConfirmation] = useState(false);
@@ -385,6 +387,7 @@ export default function OrdersPage() {
   }
 
   async function handlePrint(item: Order) {
+    setUpdatingStatusId(`print:${item.id}`);
     try {
       const paid = item.paidAmount || 0;
       const remaining =
@@ -459,6 +462,8 @@ export default function OrdersPage() {
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Không in được đơn");
+    } finally {
+      setUpdatingStatusId(null);
     }
   }
 
@@ -555,12 +560,15 @@ export default function OrdersPage() {
     });
     if (!confirmed) return;
 
+    setUpdatingStatusId(`delete:${item.id}`);
     try {
       await deleteOrder(item.id);
       toast.success("Đã xóa đơn hàng");
       await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
+    } finally {
+      setUpdatingStatusId(null);
     }
   }
 
@@ -625,7 +633,7 @@ export default function OrdersPage() {
       return;
     }
 
-    setUpdatingStatusId(item.id);
+    setUpdatingStatusId(`status:${item.id}`);
     try {
       await updateOrder(item.id, { status: nextStatus });
       toast.success(
@@ -656,7 +664,7 @@ export default function OrdersPage() {
       return;
     }
 
-    setUpdatingStatusId(confirmingOrder.id);
+    setUpdatingStatusId(`status:${confirmingOrder.id}`);
     try {
       await updateOrder(confirmingOrder.id, { status: "confirmed" });
       toast.success("Đã xác nhận đơn và xuất kho");
@@ -1033,7 +1041,7 @@ export default function OrdersPage() {
                           placeholder="Đổi trạng thái"
                           disabled={
                             item.status === "cancelled" ||
-                            updatingStatusId === item.id
+                            Boolean(updatingStatusId?.endsWith(`:${item.id}`))
                           }
                           trigger={
                             <Button
@@ -1041,10 +1049,8 @@ export default function OrdersPage() {
                               size="sm"
                               className="h-9 min-w-9"
                               title="Đổi trạng thái"
-                              disabled={
-                                item.status === "cancelled" ||
-                                updatingStatusId === item.id
-                              }
+                              disabled={item.status === "cancelled"}
+                              loading={isOrderAction(item.id, "status")}
                             >
                               <RefreshCw className="h-4 w-4" />
                             </Button>
@@ -1065,6 +1071,7 @@ export default function OrdersPage() {
                           className="h-9 min-w-9"
                           onClick={() => handlePrint(item)}
                           title="In / PDF"
+                          loading={isOrderAction(item.id, "print")}
                         >
                           <Printer className="h-4 w-4" />
                         </Button>
@@ -1104,6 +1111,7 @@ export default function OrdersPage() {
                             variant="danger"
                             size="sm"
                             className="h-9 min-w-9"
+                            loading={isOrderAction(item.id, "delete")}
                             onClick={() => handleDelete(item)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1192,7 +1200,7 @@ export default function OrdersPage() {
                                 searchable={false}
                                 disabled={
                                   item.status === "cancelled" ||
-                                  updatingStatusId === item.id
+                                  Boolean(updatingStatusId?.endsWith(`:${item.id}`))
                                 }
                                 triggerClassName="h-8 text-xs"
                               />
@@ -1213,6 +1221,7 @@ export default function OrdersPage() {
                                 size="sm"
                                 onClick={() => handlePrint(item)}
                                 title="In / PDF"
+                                loading={isOrderAction(item.id, "print")}
                               >
                                 <Printer className="h-4 w-4" />
                               </Button>
@@ -1251,6 +1260,7 @@ export default function OrdersPage() {
                                 <Button
                                   variant="danger"
                                   size="sm"
+                                  loading={isOrderAction(item.id, "delete")}
                                   onClick={() => handleDelete(item)}
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -1666,7 +1676,7 @@ export default function OrdersPage() {
                 disabled={loadingConfirmation || confirmationHasInsufficient}
                 onClick={confirmOrderAndExport}
               >
-                {!confirmationSubmitting ? <PackageCheck className="h-4 w-4" /> : null}
+                <PackageCheck className="h-4 w-4" />
                 Xác nhận & xuất kho
               </Button>
             </div>

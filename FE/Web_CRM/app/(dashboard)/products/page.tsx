@@ -78,6 +78,7 @@ export default function ProductsPage() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductFormValues>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [actionId, setActionId] = useState<string | null>(null);
   const [orderDrafts, setOrderDrafts] = useState<Record<string, string>>({});
   const [savingOrderId, setSavingOrderId] = useState<string | null>(null);
 
@@ -268,12 +269,15 @@ export default function ProductsPage() {
     });
     if (!confirmed) return;
 
+    setActionId(item.id);
     try {
       await deleteProduct(item.id);
       toast.success(`Đã xóa sản phẩm "${item.name}"`);
       await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
+    } finally {
+      setActionId(null);
     }
   }
 
@@ -415,7 +419,12 @@ export default function ProductsPage() {
                           <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            loading={actionId === item.id}
+                            onClick={() => handleDelete(item)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </>
@@ -513,7 +522,12 @@ export default function ProductsPage() {
                           <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            loading={actionId === item.id}
+                            onClick={() => handleDelete(item)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

@@ -141,6 +141,8 @@ export default function UsersPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const isUserAction = (id: string, kind: "role" | "delete") =>
+    updatingId === `${kind}:${id}`;
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState<CreateForm>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
@@ -220,7 +222,7 @@ export default function UsersPage() {
       setRolesTarget(null);
       return;
     }
-    setUpdatingId(rolesTarget.id);
+    setUpdatingId(`role:${rolesTarget.id}`);
     try {
       await updateUserRole(rolesTarget.id, rolesDraft);
       toast.success("Đã cập nhật quyền");
@@ -310,7 +312,7 @@ export default function UsersPage() {
     });
     if (!ok) return;
 
-    setUpdatingId(item.id);
+    setUpdatingId(`delete:${item.id}`);
     try {
       await deleteUser(item.id);
       toast.success("Đã xóa tài khoản");
@@ -399,7 +401,6 @@ export default function UsersPage() {
                           size="sm"
                           className="h-9 min-w-9"
                           title="Đổi quyền"
-                          disabled={updatingId === item.id}
                           onClick={() => openRolesEditor(item)}
                         >
                           <RefreshCw className="h-4 w-4" />
@@ -422,7 +423,7 @@ export default function UsersPage() {
                             size="sm"
                             className="h-9 min-w-9"
                             title="Xóa tài khoản"
-                            disabled={updatingId === item.id}
+                            loading={isUserAction(item.id, "delete")}
                             onClick={() => handleDelete(item)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -469,7 +470,6 @@ export default function UsersPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            disabled={updatingId === item.id}
                             onClick={() => openRolesEditor(item)}
                           >
                             <RefreshCw className="h-4 w-4" />
@@ -490,7 +490,7 @@ export default function UsersPage() {
                             <Button
                               variant="danger"
                               size="sm"
-                              disabled={updatingId === item.id}
+                              loading={isUserAction(item.id, "delete")}
                               onClick={() => handleDelete(item)}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -598,7 +598,7 @@ export default function UsersPage() {
             <RoleCheckboxes
               value={rolesDraft}
               onChange={setRolesDraft}
-              disabled={updatingId === rolesTarget?.id}
+              disabled={Boolean(rolesTarget && isUserAction(rolesTarget.id, "role"))}
             />
             <p className="text-xs text-[var(--color-text-inverse)]">
               Quyền thực tế = hợp các vai trò đã chọn. Vai trò đầu tiên dùng để hiển thị.
@@ -611,7 +611,7 @@ export default function UsersPage() {
               >
                 Hủy
               </Button>
-              <Button type="submit" loading={updatingId === rolesTarget?.id}>
+              <Button type="submit" loading={Boolean(rolesTarget && isUserAction(rolesTarget.id, "role"))}>
                 Lưu
               </Button>
             </div>

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { ImagePlus, Loader2, X } from "@/components/ui/icons";
+import { ImagePlus, X } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -153,24 +153,18 @@ export function ImageUpload({
         ))}
 
         {canAdd ? (
-          <button
+          <Button
             type="button"
+            variant="outline"
+            loading={uploading}
             onClick={() => inputRef.current?.click()}
-            disabled={uploading}
-            className="flex h-28 w-28 flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] text-xs text-[var(--color-text-inverse)] transition-colors hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-60"
+            className="h-28 w-28 rounded-lg border-dashed bg-[var(--color-surface-muted)] text-xs text-[var(--color-text-inverse)] shadow-none hover:border-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
           >
-            {uploading ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Thêm ảnh
-              </>
-            ) : (
-              <>
-                <ImagePlus className="h-5 w-5" />
-                Thêm ảnh
-              </>
-            )}
-          </button>
+            <span className="flex flex-col items-center gap-1.5">
+              <ImagePlus className="h-5 w-5" />
+              Thêm ảnh
+            </span>
+          </Button>
         ) : null}
       </div>
 

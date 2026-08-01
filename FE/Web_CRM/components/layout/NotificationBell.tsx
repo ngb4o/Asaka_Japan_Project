@@ -60,12 +60,14 @@ function NotificationList({
   onMarkAllRead,
   onItemClick,
   compact,
+  markingAllRead,
 }: {
   items: AppNotification[];
   unreadCount: number;
   onMarkAllRead: () => void;
   onItemClick: (item: AppNotification) => void;
   compact?: boolean;
+  markingAllRead?: boolean;
 }) {
   return (
     <div>
@@ -82,7 +84,12 @@ function NotificationList({
             </p>
           ) : null}
           {unreadCount > 0 ? (
-            <Button variant="outline" size="sm" onClick={onMarkAllRead}>
+            <Button
+              variant="outline"
+              size="sm"
+              loading={markingAllRead}
+              onClick={onMarkAllRead}
+            >
               Đánh dấu đã đọc
             </Button>
           ) : null}
@@ -183,6 +190,7 @@ export function NotificationBell() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+  const [markingAllRead, setMarkingAllRead] = useState(false);
   const { unreadCount, items, markAllRead, markRead, refresh } =
     useNotifications();
 
@@ -190,6 +198,15 @@ export function NotificationBell() {
     setOpen(next);
     if (next) {
       await refresh();
+    }
+  }
+
+  async function handleMarkAllRead() {
+    setMarkingAllRead(true);
+    try {
+      await markAllRead();
+    } finally {
+      setMarkingAllRead(false);
     }
   }
 
@@ -217,8 +234,9 @@ export function NotificationBell() {
           <NotificationList
             items={items}
             unreadCount={unreadCount}
-            onMarkAllRead={markAllRead}
+            onMarkAllRead={() => void handleMarkAllRead()}
             onItemClick={handleItemClick}
+            markingAllRead={markingAllRead}
           />
         </BottomSheet>
       </>
@@ -240,8 +258,9 @@ export function NotificationBell() {
           <NotificationList
             items={items}
             unreadCount={unreadCount}
-            onMarkAllRead={markAllRead}
+            onMarkAllRead={() => void handleMarkAllRead()}
             onItemClick={handleItemClick}
+            markingAllRead={markingAllRead}
             compact
           />
           <Popover.Arrow className="fill-[var(--color-surface-elevated)]" />
