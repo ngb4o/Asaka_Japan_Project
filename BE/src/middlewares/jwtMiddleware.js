@@ -35,7 +35,13 @@ export const verifyToken = async (req, res, next) => {
 
     // Lưu userId vào req để các controller/service sử dụng
     req.userId = decoded.userId
-    req.userRole = decoded.role || null
+    const roles = Array.isArray(decoded.roles)
+      ? decoded.roles.filter(Boolean)
+      : decoded.role
+        ? [decoded.role]
+        : []
+    req.userRoles = roles
+    req.userRole = decoded.role || roles[0] || null
 
     // Chuyển sang middleware/controller tiếp theo
     next()

@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canManageProducts } from "@/lib/auth/permissions";
+import { canManageProducts, rolesOf } from "@/lib/auth/permissions";
 import { getProductCategories } from "@/lib/api/product-categories";
 import {
   createProduct,
@@ -70,7 +70,7 @@ export default function ProductsPage() {
   const confirm = useConfirm();
   const toast = useToast();
   const { user } = useAuth();
-  const canEdit = canManageProducts(user?.role);
+  const canEdit = canManageProducts(rolesOf(user));
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");

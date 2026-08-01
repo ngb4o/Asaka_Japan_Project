@@ -7,8 +7,9 @@ import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { formatDocument } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
+import { hasAnyRole } from '~/utils/roles'
 
-const canViewAllPayroll = (role) => role === 'admin' || role === 'accountant'
+const canViewAllPayroll = (roles) => hasAnyRole(roles, 'admin', 'accountant')
 
 const findEmployeeIdsForUser = async (userId) => {
   if (!userId) return []

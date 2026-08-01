@@ -32,7 +32,7 @@ import { ImageUpload } from "@/components/products/ImageUpload";
 import { EmployeeDetailDialog } from "@/components/employees/EmployeeDetailDialog";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canManageEmployees, canViewEmployeesPage } from "@/lib/auth/permissions";
+import { canManageEmployees, canViewEmployeesPage, rolesOf } from "@/lib/auth/permissions";
 import {
   createEmployee,
   deleteEmployee,
@@ -87,8 +87,8 @@ export default function EmployeesPage() {
   const confirm = useConfirm();
   const toast = useToast();
   const { user } = useAuth();
-  const canEdit = canManageEmployees(user?.role);
-  const allowed = canViewEmployeesPage(user?.role);
+  const canEdit = canManageEmployees(rolesOf(user));
+  const allowed = canViewEmployeesPage(rolesOf(user));
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);

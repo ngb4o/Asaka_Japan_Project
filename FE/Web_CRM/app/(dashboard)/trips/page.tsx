@@ -32,7 +32,7 @@ import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canManageTripsFinance, canOperateTrip } from "@/lib/auth/permissions";
+import { canManageTripsFinance, canOperateTrip, rolesOf } from "@/lib/auth/permissions";
 import { getEmployees } from "@/lib/api/employees";
 import { getDealers } from "@/lib/api/dealers";
 import { getOrders } from "@/lib/api/orders";
@@ -101,7 +101,7 @@ export default function TripsPage() {
   const confirm = useConfirm();
   const toast = useToast();
   const { user } = useAuth();
-  const canFinance = canManageTripsFinance(user?.role);
+  const canFinance = canManageTripsFinance(rolesOf(user));
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [dealers, setDealers] = useState<Dealer[]>([]);

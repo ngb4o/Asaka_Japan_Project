@@ -10,6 +10,7 @@ import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { generateDocumentCode } from '~/utils/documentCode'
 import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
 import { buildSearchFilter } from '~/utils/search.js'
+import { hasAnyRole } from '~/utils/roles'
 
 const newId = () => new ObjectId().toString()
 
@@ -36,12 +37,12 @@ const assertEditable = (trip) => {
  * Admin/accountant can operate any trip.
  * Sales/warehouse only if they created it or are a trip member (via linked employee).
  */
-const assertCanOperateTrip = async (trip, actorUserId, actorRole) => {
+const assertCanOperateTrip = async (trip, actorUserId, actorRoles) => {
   if (!actorUserId) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Chưa xác thực!')
   }
 
-  if (actorRole === 'admin' || actorRole === 'accountant') {
+  if (hasAnyRole(actorRoles, 'admin', 'accountant')) {
     return
   }
 
@@ -251,7 +252,7 @@ const createNew = async (reqBody, userId) => {
   return await getDetails(created.insertedId.toString())
 }
 
-const getList = async (query, actorUserId, actorRole) => {
+const getList = async (query, actorUserId, actorRoles) => {
   const findQuery = {}
   if (query.status) findQuery.status = query.status
 
@@ -262,7 +263,7 @@ const getList = async (query, actorUserId, actorRole) => {
 
   // Sales/warehouse: chỉ thấy chuyến mình tạo hoặc mình là người đi
   let scopeFilter = null
-  if (actorRole !== 'admin' && actorRole !== 'accountant') {
+  if (!hasAnyRole(actorRoles, 'admin', 'accountant')) {
     const employeeResult = await employeeModel.findMany(
       { userId: new ObjectId(actorUserId) },
       { limit: 20, skip: 0 }

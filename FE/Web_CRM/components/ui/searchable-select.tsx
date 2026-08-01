@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, cloneElement } from "react";
 import * as Popover from "@radix-ui/react-popover";
 import { Check, ChevronsUpDown, Search, X } from "lucide-react";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
@@ -26,6 +26,11 @@ type SearchableSelectProps = {
   searchable?: boolean;
   clearable?: boolean;
   id?: string;
+  /** Custom trigger (e.g. icon button). Opens the same picker. */
+  trigger?: React.ReactElement<{
+    onClick?: (event: React.MouseEvent) => void;
+    disabled?: boolean;
+  }>;
 };
 
 export function SearchableSelect({
@@ -41,6 +46,7 @@ export function SearchableSelect({
   searchable = true,
   clearable = false,
   id,
+  trigger,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -194,7 +200,10 @@ export function SearchableSelect({
       <div
         id={listId}
         role="listbox"
-        className={cn("p-2", !isMobile && "max-h-60 overflow-y-auto p-1")}
+        className={cn(
+          !isMobile && "max-h-60 overflow-y-auto p-1",
+          isMobile && "divide-y divide-[var(--color-border-subtle)]"
+        )}
         onWheel={(event) => event.stopPropagation()}
         onScroll={() => {
           if (pointerStartRef.current) pointerStartRef.current.moved = true;
@@ -215,8 +224,10 @@ export function SearchableSelect({
                 aria-selected={isSelected}
                 tabIndex={0}
                 className={cn(
-                  "flex w-full cursor-pointer items-start gap-2 rounded-lg px-3 text-left transition-colors select-none",
-                  isMobile ? "py-3.5 text-base" : "py-2.5 text-sm",
+                  "flex w-full cursor-pointer items-start gap-2 text-left transition-colors select-none",
+                  isMobile
+                    ? "rounded-none px-4 py-3.5 text-base"
+                    : "rounded-lg px-3 py-2.5 text-sm",
                   isSelected
                     ? "bg-[var(--color-text-secondary)]/10 text-[var(--color-text-secondary)]"
                     : "text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]"
@@ -253,22 +264,40 @@ export function SearchableSelect({
     </div>
   );
 
+  const customTrigger = trigger
+    ? cloneElement(trigger, {
+        disabled: disabled || trigger.props.disabled,
+        ...(isMobile
+          ? {
+              onClick: (event: React.MouseEvent) => {
+                trigger.props.onClick?.(event);
+                if (!disabled && !event.defaultPrevented) setOpen(true);
+              },
+            }
+          : {}),
+      })
+    : null;
+
   if (isMobile) {
     return (
-      <div className={cn("relative w-full", className)}>
-        <button
-          type="button"
-          id={id}
-          disabled={disabled}
-          aria-expanded={open}
-          aria-controls={listId}
-          className={triggerClassNameMerged}
-          onClick={() => {
-            if (!disabled) setOpen(true);
-          }}
-        >
-          {triggerInner}
-        </button>
+      <div className={cn(customTrigger ? "inline-flex" : "relative w-full", className)}>
+        {customTrigger ? (
+          customTrigger
+        ) : (
+          <button
+            type="button"
+            id={id}
+            disabled={disabled}
+            aria-expanded={open}
+            aria-controls={listId}
+            className={triggerClassNameMerged}
+            onClick={() => {
+              if (!disabled) setOpen(true);
+            }}
+          >
+            {triggerInner}
+          </button>
+        )}
         <BottomSheet
           open={open}
           onOpenChange={setOpen}
@@ -282,19 +311,25 @@ export function SearchableSelect({
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen} modal>
-      <div className={cn("relative w-full", className)}>
-        <Popover.Trigger asChild disabled={disabled}>
-          <button
-            type="button"
-            id={id}
-            disabled={disabled}
-            aria-expanded={open}
-            aria-controls={listId}
-            className={triggerClassNameMerged}
-          >
-            {triggerInner}
-          </button>
-        </Popover.Trigger>
+      <div className={cn(customTrigger ? "inline-flex" : "relative w-full", className)}>
+        {customTrigger ? (
+          <Popover.Trigger asChild disabled={disabled}>
+            {customTrigger}
+          </Popover.Trigger>
+        ) : (
+          <Popover.Trigger asChild disabled={disabled}>
+            <button
+              type="button"
+              id={id}
+              disabled={disabled}
+              aria-expanded={open}
+              aria-controls={listId}
+              className={triggerClassNameMerged}
+            >
+              {triggerInner}
+            </button>
+          </Popover.Trigger>
+        )}
 
         <Popover.Portal>
           <Popover.Content
@@ -302,7 +337,7 @@ export function SearchableSelect({
             sideOffset={6}
             collisionPadding={12}
             className={cn(
-              "z-[80] w-[var(--radix-popover-trigger-width)] overflow-hidden rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-elevated)]",
+              "z-[80] w-[var(--radix-popover-trigger-width)] min-w-[12rem] overflow-hidden rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-elevated)]",
               "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
             )}
             onOpenAutoFocus={(event) => event.preventDefault()}

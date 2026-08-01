@@ -40,6 +40,19 @@ const getDetails = async (req, res, next) => {
   }
 }
 
+const getAudits = async (req, res, next) => {
+  try {
+    const result = await orderService.getAudits(req.params.id)
+
+    res.status(StatusCodes.OK).json({
+      message: 'Lấy lịch sử đơn hàng thành công!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 const update = async (req, res, next) => {
   try {
     const result = await orderService.update(req.params.id, req.body, req.userId)
@@ -55,7 +68,7 @@ const update = async (req, res, next) => {
 
 const deleteOne = async (req, res, next) => {
   try {
-    const result = await orderService.deleteOne(req.params.id)
+    const result = await orderService.deleteOne(req.params.id, req.userId)
 
     res.status(StatusCodes.OK).json({
       message: result.message,
@@ -68,7 +81,9 @@ const deleteOne = async (req, res, next) => {
 
 const recordPayment = async (req, res, next) => {
   try {
-    const result = await orderService.recordPayment(req.params.id, req.body)
+    const result = await orderService.recordPayment(req.params.id, req.body, {
+      actorUserId: req.userId
+    })
 
     res.status(StatusCodes.OK).json({
       message: 'Đã ghi nhận thanh toán thành công!',
@@ -83,6 +98,7 @@ export const orderController = {
   createNew,
   getList,
   getDetails,
+  getAudits,
   update,
   recordPayment,
   deleteOne

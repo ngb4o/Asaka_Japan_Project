@@ -44,7 +44,10 @@ const resolveActorUserId = async (chatId) => {
 
   const admin = await GET_DB()
     .collection('users')
-    .findOne({ role: 'admin', _destroy: { $ne: true } })
+    .findOne({
+      _destroy: { $ne: true },
+      $or: [{ roles: 'admin' }, { role: 'admin' }]
+    })
 
   return admin?._id?.toString() || null
 }
@@ -173,7 +176,7 @@ const confirmOrder = async (orderId, chatId) => {
   }
 }
 
-const markPaidFull = async (orderId) => {
+const markPaidFull = async (orderId, chatId) => {
   const order = await orderModel.findOneById(orderId)
   if (!order) throw new ApiError(404, 'Không tìm thấy đơn hàng')
 
@@ -194,13 +197,15 @@ const markPaidFull = async (orderId) => {
     throw new ApiError(409, 'Không còn số tiền cần thu')
   }
 
+  const userId = await resolveActorUserId(chatId)
+
   const updated = await orderService.recordPayment(
     orderId,
     {
       amount: remaining,
       note: 'Ghi nhận đủ qua Telegram bot'
     },
-    { silentTelegram: true }
+    { silentTelegram: true, actorUserId: userId }
   )
 
   return {
@@ -461,7 +466,7 @@ const handleCallbackQuery = async (callbackQuery = {}) => {
       if (action === 'c') {
         result = await confirmOrder(id, chatId)
       } else if (action === 'p') {
-        result = await markPaidFull(id)
+        result = await markPaidFull(id, chatId)
         await telegramClient.answerCallbackQuery(callbackQuery.id, {
           text: result.toast
         })

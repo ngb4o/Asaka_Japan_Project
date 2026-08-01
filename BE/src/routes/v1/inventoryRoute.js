@@ -20,13 +20,13 @@ Router.get(
 )
 Router.post(
   '/import',
-  requireRoles('sales', 'warehouse'),
+  requireRoles('warehouse'),
   inventoryValidation.importStock,
   inventoryController.importStock
 )
 Router.post(
   '/export',
-  requireRoles('sales', 'warehouse'),
+  requireRoles('warehouse'),
   inventoryValidation.exportStock,
   inventoryController.exportStock
 )

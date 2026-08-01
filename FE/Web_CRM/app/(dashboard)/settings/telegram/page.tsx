@@ -18,7 +18,7 @@ import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canManageTelegram } from "@/lib/auth/permissions";
+import { canManageTelegram, rolesOf } from "@/lib/auth/permissions";
 import { ApiClientError } from "@/lib/api/client";
 import { getEmployees } from "@/lib/api/employees";
 import {
@@ -59,7 +59,7 @@ export default function TelegramSettingsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [busyChatId, setBusyChatId] = useState<string | null>(null);
 
-  const allowed = canManageTelegram(user?.role);
+  const allowed = canManageTelegram(rolesOf(user));
 
   const loadData = useCallback(
     async (opts?: { soft?: boolean }) => {

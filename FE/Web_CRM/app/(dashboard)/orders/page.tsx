@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { AlertTriangle, Filter, PackageCheck, Pencil, Plus, Printer, Trash2 } from "lucide-react";
+import { AlertTriangle, Eye, Filter, PackageCheck, Pencil, Plus, Printer, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +25,7 @@ import {
   validateLineItems,
   type LineItemFormRow,
 } from "@/components/sales/LineItemsField";
+import { OrderDetailDialog } from "@/components/orders/OrderDetailDialog";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
@@ -38,10 +39,14 @@ import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-sel
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import {
+  canCancelExportedOrder,
+  canConfirmAndExport,
   canEditOrderItems,
   canManageOrders,
   canManagePayments,
   canManageShipping,
+  isOrderEditable,
+  rolesOf,
 } from "@/lib/auth/permissions";
 import { getEmployees } from "@/lib/api/employees";
 import { getDealers } from "@/lib/api/dealers";
@@ -142,11 +147,23 @@ const PAYMENT_LABELS_SHORT: Record<Order["paymentStatus"], string> = {
   paid: "Đã TT",
 };
 
-function getAllowedStatusOptions(order: Order) {
+function getAllowedStatusOptions(
+  order: Order,
+  canConfirm: boolean,
+  canCancelExported: boolean
+) {
+  const canCancel =
+    !order.inventoryExported || canCancelExported || order.status === "pending";
+
+  const withCancel = <T extends string>(statuses: T[]): T[] =>
+    canCancel ? statuses : (statuses.filter((s) => s !== "cancelled") as T[]);
+
   const allowed: Record<Order["status"], Order["status"][]> = {
-    pending: ["pending", "confirmed", "cancelled"],
-    confirmed: ["confirmed", "delivering", "completed", "cancelled"],
-    delivering: ["delivering", "completed", "cancelled"],
+    pending: canConfirm
+      ? ["pending", "confirmed", "cancelled"]
+      : ["pending", "cancelled"],
+    confirmed: withCancel(["confirmed", "delivering", "completed", "cancelled"]),
+    delivering: withCancel(["delivering", "completed", "cancelled"]),
     completed: ["completed"],
     cancelled: ["cancelled"],
   };
@@ -180,11 +197,39 @@ function orderDeliveryEmployeeIds(order: Order) {
   return order.deliveryEmployeeId ? [order.deliveryEmployeeId] : [];
 }
 
+/** Deep link `/orders?detail=` → OrderDetailDialog (also accepts legacy `?id=`) */
+function OrderDetailDeepLink({
+  onOpen,
+}: {
+  onOpen: (order: Order) => void;
+}) {
+  const toast = useToast();
+
+  useDeepLinkOpen(
+    async (id) => {
+      try {
+        const order = await getOrder(id);
+        onOpen(order);
+      } catch (err) {
+        toast.error(
+          err instanceof ApiClientError ? err.message : "Không mở được đơn hàng"
+        );
+        throw err;
+      }
+    },
+    { param: "detail", fallbackParams: ["id"] }
+  );
+
+  return null;
+}
+
 export default function OrdersPage() {
   const confirm = useConfirm();
   const toast = useToast();
   const { user } = useAuth();
-  const role = user?.role;
+  const role = rolesOf(user);
+  const canConfirm = canConfirmAndExport(role);
+  const canCancelExported = canCancelExportedOrder(role);
   const [dealers, setDealers] = useState<Dealer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
@@ -195,6 +240,8 @@ export default function OrdersPage() {
   const [dealerFilter, setDealerFilter] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [viewing, setViewing] = useState<Order | null>(null);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [payingOrder, setPayingOrder] = useState<Order | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number | "">("");
@@ -292,6 +339,10 @@ export default function OrdersPage() {
   }
 
   function openEdit(item: Order) {
+    if (!isOrderEditable(item)) {
+      toast.warning("Đơn đã hoàn tất hoặc đã hủy — không thể sửa.");
+      return;
+    }
     setEditing(item);
     setForm({
       dealerId: item.dealerId || "",
@@ -323,17 +374,15 @@ export default function OrdersPage() {
     setDialogOpen(true);
   }
 
-  useDeepLinkOpen(async (id) => {
-    try {
-      const order = await getOrder(id);
-      openEdit(order);
-    } catch (err) {
-      toast.error(
-        err instanceof ApiClientError ? err.message : "Không mở được đơn hàng"
-      );
-      throw err;
-    }
-  });
+  function openDetail(item: Order) {
+    setViewing(item);
+    setDetailOpen(true);
+    void getOrder(item.id)
+      .then((order) => setViewing(order))
+      .catch(() => {
+        // keep list item if refresh fails
+      });
+  }
 
   async function handlePrint(item: Order) {
     try {
@@ -428,6 +477,17 @@ export default function OrdersPage() {
       return;
     }
 
+    if (
+      form.status === "confirmed" &&
+      (!editing || editing.status === "pending") &&
+      !canConfirm
+    ) {
+      toast.warning(
+        "Chỉ quản trị hoặc kho được xác nhận đơn và xuất kho. Để đơn ở Chờ xử lý."
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
       const basePayload = {
@@ -507,7 +567,24 @@ export default function OrdersPage() {
   async function handleStatusChange(item: Order, nextStatus: Order["status"]) {
     if (nextStatus === item.status) return;
 
+    if (
+      nextStatus === "cancelled" &&
+      item.inventoryExported &&
+      !canCancelExported
+    ) {
+      toast.warning(
+        "Chỉ quản trị hoặc kho được hủy đơn đã xuất kho (hoàn tồn)."
+      );
+      return;
+    }
+
     if (nextStatus === "confirmed" && !item.inventoryExported) {
+      if (!canConfirm) {
+        toast.warning(
+          "Chỉ quản trị hoặc kho được xác nhận đơn và xuất kho. Gán thêm role Kho nếu bạn kiêm nhiệm."
+        );
+        return;
+      }
       if (!item.warehouseId) {
         toast.warning("Vui lòng chọn kho trước khi xác nhận đơn hàng");
         openEdit(item);
@@ -568,6 +645,12 @@ export default function OrdersPage() {
 
   async function confirmOrderAndExport() {
     if (!confirmingOrder) return;
+    if (!canConfirm) {
+      toast.warning(
+        "Chỉ quản trị hoặc kho được xác nhận đơn và xuất kho."
+      );
+      return;
+    }
     if (confirmationStocks.some((row) => row.available < row.required)) {
       toast.warning("Sản phẩm trong kho không đủ");
       return;
@@ -671,7 +754,7 @@ export default function OrdersPage() {
     <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Đơn hàng"
-        description="Công nợ, giao hàng và xuất kho khi xác nhận"
+        description="Sales tạo đơn chờ xử lý · Kho xác nhận & xuất kho · Giao hàng · Thu công nợ"
         actions={
           canManageOrders(role) && canEditOrderItems(role) ? (
             <Button onClick={openCreate}>
@@ -936,6 +1019,46 @@ export default function OrdersPage() {
                       ) : null}
 
                       <div className="mt-3.5 flex flex-wrap justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3.5">
+                        <SearchableSelect
+                          options={getAllowedStatusOptions(
+                            item,
+                            canConfirm,
+                            canCancelExported
+                          )}
+                          value={item.status}
+                          onChange={(value) =>
+                            handleStatusChange(item, value as Order["status"])
+                          }
+                          searchable={false}
+                          placeholder="Đổi trạng thái"
+                          disabled={
+                            item.status === "cancelled" ||
+                            updatingStatusId === item.id
+                          }
+                          trigger={
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-9 min-w-9"
+                              title="Đổi trạng thái"
+                              disabled={
+                                item.status === "cancelled" ||
+                                updatingStatusId === item.id
+                              }
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          }
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 min-w-9"
+                          onClick={() => openDetail(item)}
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -963,15 +1086,20 @@ export default function OrdersPage() {
                             Thu
                           </Button>
                         ) : null}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-9 min-w-9"
-                          onClick={() => openEdit(item)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        {!item.inventoryExported && canEditOrderItems(role) ? (
+                        {isOrderEditable(item) ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 min-w-9"
+                            onClick={() => openEdit(item)}
+                            title="Sửa"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        ) : null}
+                        {!item.inventoryExported &&
+                        canEditOrderItems(role) &&
+                        isOrderEditable(item) ? (
                           <Button
                             variant="danger"
                             size="sm"
@@ -1052,7 +1180,11 @@ export default function OrdersPage() {
                           <td className="px-2 py-3">
                             <div className="w-[150px]">
                               <SearchableSelect
-                                options={getAllowedStatusOptions(item)}
+                                options={getAllowedStatusOptions(
+                            item,
+                            canConfirm,
+                            canCancelExported
+                          )}
                                 value={item.status}
                                 onChange={(value) =>
                                   handleStatusChange(item, value as Order["status"])
@@ -1068,6 +1200,14 @@ export default function OrdersPage() {
                           </td>
                           <td className="px-2 py-3">
                             <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openDetail(item)}
+                                title="Xem chi tiết"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1095,10 +1235,19 @@ export default function OrdersPage() {
                                   Thu
                                 </Button>
                               ) : null}
-                              <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              {!item.inventoryExported && canEditOrderItems(role) ? (
+                              {isOrderEditable(item) ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEdit(item)}
+                                  title="Sửa"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              ) : null}
+                              {!item.inventoryExported &&
+                              canEditOrderItems(role) &&
+                              isOrderEditable(item) ? (
                                 <Button
                                   variant="danger"
                                   size="sm"
@@ -1128,6 +1277,20 @@ export default function OrdersPage() {
           )}
         </CardContent>
       </Card>
+
+      <OrderDetailDeepLink onOpen={openDetail} />
+
+      <OrderDetailDialog
+        order={viewing}
+        open={detailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open) setViewing(null);
+        }}
+        onEdit={
+          viewing && isOrderEditable(viewing) ? openEdit : undefined
+        }
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] max-w-3xl">

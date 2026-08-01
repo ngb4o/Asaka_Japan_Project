@@ -55,7 +55,7 @@ export function EmployeeDetailDialog({
             </Badge>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <Field label="SĐT">{employee.phone || "—"}</Field>
             <Field label="Email">{employee.email || "—"}</Field>
             <Field label="Chức vụ">{employee.title || "—"}</Field>
@@ -66,13 +66,13 @@ export function EmployeeDetailDialog({
             </Field>
           </div>
 
-          <div className="grid gap-4 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/40 p-4 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/40 p-4 sm:grid-cols-3">
             <Field label="Lương cứng">{formatCurrency(employee.baseSalary)}</Field>
             <Field label="Phụ cấp">{formatCurrency(employee.allowance)}</Field>
             <Field label="Hoa hồng">{employee.commissionPercent}%</Field>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Ngân hàng">{employee.bankName || "—"}</Field>
             <Field label="Số tài khoản">{employee.bankAccount || "—"}</Field>
           </div>

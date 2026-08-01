@@ -17,6 +17,7 @@ import {
 import { clearToken, setToken } from "@/lib/auth/session";
 import type { UserProfile } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
+import { primaryRole, resolveRoles } from "@/lib/auth/permissions";
 
 type AuthContextValue = {
   user: UserProfile | null;
@@ -28,6 +29,18 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function normalizeProfile(profile: UserProfile): UserProfile {
+  const roles = resolveRoles(
+    profile.roles,
+    profile.role ? [profile.role] : null
+  );
+  return {
+    ...profile,
+    roles: roles.length ? roles : profile.role ? [profile.role] : [],
+    role: primaryRole(roles, profile.role) || profile.role || "sales",
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -36,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshProfile = useCallback(async () => {
     try {
       const profile = await getProfileRequest();
-      setUser(profile);
+      setUser(normalizeProfile(profile));
     } catch {
       clearToken();
       setUser(null);

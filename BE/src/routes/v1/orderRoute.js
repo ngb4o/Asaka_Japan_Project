@@ -16,6 +16,11 @@ Router.post(
 )
 Router.get('/', requireRoles('sales', 'warehouse', 'accountant'), orderController.getList)
 Router.get(
+  '/:id/audits',
+  requireRoles('sales', 'warehouse', 'accountant'),
+  orderController.getAudits
+)
+Router.get(
   '/:id',
   requireRoles('sales', 'warehouse', 'accountant'),
   orderController.getDetails
@@ -28,7 +33,7 @@ Router.put(
 )
 Router.post(
   '/:id/payments',
-  requireRoles('sales', 'warehouse', 'accountant'),
+  requireRoles('sales', 'accountant'),
   orderValidation.recordPayment,
   orderController.recordPayment
 )

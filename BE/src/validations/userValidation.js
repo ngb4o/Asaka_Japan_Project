@@ -36,8 +36,15 @@ const getUserById = async (req, res, next) => {
 }
 
 const updateRoleSchema = Joi.object({
-  role: Joi.string().valid('admin', 'sales', 'warehouse', 'accountant').required()
+  roles: Joi.array()
+    .items(Joi.string().valid('admin', 'sales', 'warehouse', 'accountant'))
+    .min(1),
+  role: Joi.string().valid('admin', 'sales', 'warehouse', 'accountant')
 })
+  .or('roles', 'role')
+  .messages({
+    'object.missing': 'Cần gửi roles hoặc role'
+  })
 
 const createByAdminSchema = Joi.object({
   employeeId: Joi.string()
@@ -46,6 +53,9 @@ const createByAdminSchema = Joi.object({
     .message(OBJECT_ID_RULE_MESSAGE),
   email: Joi.string().email(EMAIL_JOI_OPTIONS).trim().allow('', null),
   password: Joi.string().min(6).trim().allow('', null),
+  roles: Joi.array()
+    .items(Joi.string().valid('admin', 'sales', 'warehouse', 'accountant'))
+    .min(1),
   role: Joi.string().valid('admin', 'sales', 'warehouse', 'accountant').default('sales')
 })
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Trash2, UserPlus } from "@/components/ui/icons";
+import { Pencil, RefreshCw, Trash2, UserPlus } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -275,6 +275,26 @@ export default function LeadsPage() {
                       </div>
 
                       <MobileRecordActions>
+                        <SearchableSelect
+                          options={STATUS_OPTIONS.lead}
+                          value={item.status}
+                          onChange={(value) =>
+                            handleQuickStatus(item, value as Lead["status"])
+                          }
+                          searchable={false}
+                          placeholder="Đổi trạng thái"
+                          disabled={updatingId === item.id}
+                          trigger={
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title="Đổi trạng thái"
+                              disabled={updatingId === item.id}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          }
+                        />
                         <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
                           <Pencil className="h-4 w-4" />
                         </Button>

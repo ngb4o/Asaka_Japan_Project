@@ -28,7 +28,10 @@ import {
   canViewCompanyFinancials,
   canViewReports,
   DASHBOARD_HERO_SUBTITLE,
+  hasRole,
+  primaryRole,
   ROLE_LABELS,
+  rolesOf,
 } from "@/lib/auth/permissions";
 import { getDashboardSummary } from "@/lib/api/dashboard";
 import type { DashboardSummary } from "@/lib/types";
@@ -87,11 +90,15 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const canReports = canViewReports(user?.role);
-  const canFinancials = canViewCompanyFinancials(user?.role);
+  const userRoles = rolesOf(user);
+  const mainRole = primaryRole(userRoles, user?.role);
+  const canReports = canViewReports(userRoles);
+  const canFinancials = canViewCompanyFinancials(userRoles);
   const heroSubtitle =
-    (user?.role && DASHBOARD_HERO_SUBTITLE[user.role]) ||
+    (mainRole && DASHBOARD_HERO_SUBTITLE[mainRole]) ||
     "Theo dõi công việc hàng ngày.";
+  const isWarehouseView = hasRole(userRoles, "warehouse") && !canFinancials;
+  const isSalesView = hasRole(userRoles, "sales") && !canFinancials && !isWarehouseView;
 
   useEffect(() => {
     getDashboardSummary()
@@ -138,8 +145,8 @@ export default function DashboardPage() {
               <span className="rounded-full bg-[var(--color-text-secondary)]/10 px-2.5 py-1 text-xs font-medium text-[var(--color-text-secondary)]">
                 {todayLabel()}
               </span>
-              {user?.role ? (
-                <Badge variant="muted">{ROLE_LABELS[user.role]}</Badge>
+              {userRoles.length ? (
+                <Badge variant="muted">{userRoles.map((r) => ROLE_LABELS[r]).join(" · ")}</Badge>
               ) : null}
             </div>
             <div>
@@ -219,7 +226,7 @@ export default function DashboardPage() {
         />      </section>
       ) : (
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {user?.role === "warehouse" ? (
+        {isWarehouseView ? (
           <>
             <KpiCard
               title="Đơn chờ xử lý"
@@ -395,7 +402,7 @@ export default function DashboardPage() {
             </Card>
           </section>
         </>
-      ) : user?.role === "sales" ? (
+      ) : isSalesView ? (
         <section className="grid gap-4 xl:grid-cols-5">
           <Card className="overflow-hidden xl:col-span-3">
             <CardHeader showOnMobile className="border-none pb-0">
@@ -467,10 +474,10 @@ export default function DashboardPage() {
       <section
         className={cn(
           "grid gap-4",
-          user?.role === "sales" ? "xl:grid-cols-1" : "xl:grid-cols-5"
+          isSalesView ? "xl:grid-cols-1" : "xl:grid-cols-5"
         )}
       >
-        <Card className={user?.role === "sales" ? "" : "xl:col-span-3"}>
+        <Card className={isSalesView ? "" : "xl:col-span-3"}>
           <CardHeader showOnMobile className="flex flex-row items-center justify-between border-none pb-0">
             <div>
               <CardTitle>Đơn gần đây</CardTitle>
@@ -545,7 +552,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {user?.role !== "sales" ? (
+        {!isSalesView ? (
         <Card className="xl:col-span-2">
           <CardHeader showOnMobile className="border-none pb-0">
             <div className="flex items-start justify-between gap-3">

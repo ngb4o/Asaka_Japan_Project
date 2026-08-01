@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3,
+  AlertTriangle,
   Handshake,
   LayoutDashboard,
   Package,
@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canAccessPath } from "@/lib/auth/permissions";
+import { canAccessPath, rolesOf } from "@/lib/auth/permissions";
 import { useNotifications } from "@/lib/notifications/NotificationProvider";
 import { useMobileChrome } from "@/components/layout/MobileChromeProvider";
 import type { UserRole } from "@/lib/types";
@@ -54,7 +54,7 @@ const TABS_BY_ROLE: Record<UserRole, TabDef[]> = {
   accountant: [
     { href: "/dashboard", label: "Tổng quan", icon: LayoutDashboard },
     { href: "/orders", label: "Đơn", icon: ShoppingCart, badgeKey: "orders" },
-    { href: "/reports", label: "Báo cáo", icon: BarChart3 },
+    { href: "/receivables", label: "Công nợ", icon: AlertTriangle },
     { href: "/payroll", label: "Lương", icon: Wallet },
     { href: "/trips", label: "Chuyến", icon: Route },
   ],
@@ -65,8 +65,39 @@ const FALLBACK_TABS: TabDef[] = [
   { href: "/orders", label: "Đơn", icon: ShoppingCart },
 ];
 
+const TAB_PRIORITY = [
+  "/dashboard",
+  "/orders",
+  "/receivables",
+  "/inventory",
+  "/dealers",
+  "/payroll",
+  "/trips",
+  "/reports",
+];
+
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function unionTabsForRoles(roles: UserRole[]): TabDef[] {
+  if (!roles.length) return FALLBACK_TABS;
+  if (roles.includes("admin")) return TABS_BY_ROLE.admin;
+
+  const byHref = new Map<string, TabDef>();
+  for (const role of roles) {
+    for (const tab of TABS_BY_ROLE[role] || []) {
+      if (!byHref.has(tab.href)) byHref.set(tab.href, tab);
+    }
+  }
+
+  return Array.from(byHref.values())
+    .sort((a, b) => {
+      const ai = TAB_PRIORITY.indexOf(a.href);
+      const bi = TAB_PRIORITY.indexOf(b.href);
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    })
+    .slice(0, 5);
 }
 
 type MobileBottomNavProps = {
@@ -84,11 +115,9 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
   const { counts } = useNotifications();
   const { visible } = useMobileChrome();
 
-  const candidates = user?.role
-    ? TABS_BY_ROLE[user.role] || FALLBACK_TABS
-    : FALLBACK_TABS;
-
-  const tabs = candidates.filter((tab) => canAccessPath(user?.role, tab.href));
+  const accessRoles = rolesOf(user);
+  const candidates = unionTabsForRoles(accessRoles);
+  const tabs = candidates.filter((tab) => canAccessPath(accessRoles, tab.href));
 
   return (
     <nav

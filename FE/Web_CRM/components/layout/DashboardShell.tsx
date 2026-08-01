@@ -11,7 +11,7 @@ import {
 import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
 import { NotificationProvider } from "@/lib/notifications/NotificationProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canAccessPath } from "@/lib/auth/permissions";
+import { canAccessPath, rolesOf } from "@/lib/auth/permissions";
 import { isIosPwa } from "@/lib/device";
 
 function WorkspaceLoading() {
@@ -101,11 +101,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, [mounted, loading, user, router]);
 
   useEffect(() => {
-    if (!mounted || !user?.role || loading) return;
-    if (!canAccessPath(user.role, pathname)) {
+    if (!mounted || !user || loading) return;
+    if (!canAccessPath(rolesOf(user), pathname)) {
       router.replace("/dashboard");
     }
-  }, [mounted, loading, pathname, router, user?.role]);
+  }, [mounted, loading, pathname, router, user]);
 
   if (!mounted || loading) {
     return <WorkspaceLoading />;
@@ -116,6 +116,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const paddedMobile =
     pathname === "/dashboard" ||
     pathname.startsWith("/reports") ||
+    pathname.startsWith("/receivables") ||
     pathname.startsWith("/settings");
 
   return (

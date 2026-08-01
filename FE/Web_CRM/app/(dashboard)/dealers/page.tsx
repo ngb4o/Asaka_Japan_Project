@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Eye, Pencil, Plus, Trash2 } from "@/components/ui/icons";
+import { Eye, Pencil, Plus, RefreshCw, Trash2 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -27,6 +27,8 @@ import {
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { canManageDealers, rolesOf } from "@/lib/auth/permissions";
 import {
   createDealer,
   deleteDealer,
@@ -71,6 +73,8 @@ const EMPTY_FORM: DealerFormValues = {
 export default function DealersPage() {
   const confirm = useConfirm();
   const toast = useToast();
+  const { user } = useAuth();
+  const canWrite = canManageDealers(rolesOf(user));
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -261,14 +265,20 @@ export default function DealersPage() {
     <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Đại lý"
-        description="Quản lý đại lý — xem sản phẩm, số lượng và giá theo đơn hàng"
-        actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Thêm đại lý
-          </Button>
+        description={
+          canWrite
+            ? "Quản lý đại lý — xem sản phẩm, số lượng và giá theo đơn hàng"
+            : "Xem đại lý và đơn hàng (chỉ sales/kho được chỉnh sửa)"
         }
-        fab={{ onClick: openCreate, label: "Thêm đại lý" }}
+        actions={
+          canWrite ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Thêm đại lý
+            </Button>
+          ) : null
+        }
+        fab={canWrite ? { onClick: openCreate, label: "Thêm đại lý" } : null}
       />
 
       <Card>
@@ -327,6 +337,28 @@ export default function DealersPage() {
                         </div>
 
                         <MobileRecordActions>
+                          {canWrite ? (
+                            <SearchableSelect
+                              options={STATUS_OPTIONS.dealer}
+                              value={item.status}
+                              onChange={(value) =>
+                                void handleQuickUpdate(item, {
+                                  status: value as Dealer["status"],
+                                })
+                              }
+                              searchable={false}
+                              placeholder="Đổi trạng thái"
+                              trigger={
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  title="Đổi trạng thái"
+                                >
+                                  <RefreshCw className="h-4 w-4" />
+                                </Button>
+                              }
+                            />
+                          ) : null}
                           <Button
                             variant="outline"
                             size="sm"
@@ -335,12 +367,24 @@ export default function DealersPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {canWrite ? (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEdit(item)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDelete(item)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : null}
                         </MobileRecordActions>
                       </MobileRecordCard>
                     );
@@ -370,36 +414,48 @@ export default function DealersPage() {
                         </td>
                         <td className="px-2 py-3">{item.region || "—"}</td>
                         <td className="px-2 py-3">
-                          <div className="w-[140px]">
-                            <SearchableSelect
-                              options={STATUS_OPTIONS.dealerTier}
-                              value={item.tier}
-                              onChange={(value) =>
-                                handleQuickUpdate(item, {
-                                  tier: value as Dealer["tier"],
-                                })
-                              }
-                              searchable={false}
-                              disabled={updatingId === item.id}
-                              triggerClassName="h-8 text-xs"
-                            />
-                          </div>
+                          {canWrite ? (
+                            <div className="w-[140px]">
+                              <SearchableSelect
+                                options={STATUS_OPTIONS.dealerTier}
+                                value={item.tier}
+                                onChange={(value) =>
+                                  handleQuickUpdate(item, {
+                                    tier: value as Dealer["tier"],
+                                  })
+                                }
+                                searchable={false}
+                                disabled={updatingId === item.id}
+                                triggerClassName="h-8 text-xs"
+                              />
+                            </div>
+                          ) : (
+                            STATUS_OPTIONS.dealerTier.find((o) => o.value === item.tier)
+                              ?.label || item.tier
+                          )}
                         </td>
                         <td className="px-2 py-3">
-                          <div className="w-[140px]">
-                            <SearchableSelect
-                              options={STATUS_OPTIONS.dealer}
-                              value={item.status}
-                              onChange={(value) =>
-                                handleQuickUpdate(item, {
-                                  status: value as Dealer["status"],
-                                })
-                              }
-                              searchable={false}
-                              disabled={updatingId === item.id}
-                              triggerClassName="h-8 text-xs"
-                            />
-                          </div>
+                          {canWrite ? (
+                            <div className="w-[140px]">
+                              <SearchableSelect
+                                options={STATUS_OPTIONS.dealer}
+                                value={item.status}
+                                onChange={(value) =>
+                                  handleQuickUpdate(item, {
+                                    status: value as Dealer["status"],
+                                  })
+                                }
+                                searchable={false}
+                                disabled={updatingId === item.id}
+                                triggerClassName="h-8 text-xs"
+                              />
+                            </div>
+                          ) : (
+                            <Badge variant={statusBadgeVariant(item.status)}>
+                              {STATUS_OPTIONS.dealer.find((o) => o.value === item.status)
+                                ?.label || item.status}
+                            </Badge>
+                          )}
                         </td>
                         <td className="px-2 py-3">
                           <div className="flex justify-end gap-2">
@@ -411,12 +467,24 @@ export default function DealersPage() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="danger" size="sm" onClick={() => handleDelete(item)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {canWrite ? (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEdit(item)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() => handleDelete(item)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            ) : null}
                           </div>
                         </td>
                       </tr>

@@ -133,7 +133,7 @@ const updateRole = async (req, res, next) => {
   try {
     const result = await userService.updateRole(
       req.params.id,
-      req.body.role,
+      req.body.roles || req.body.role,
       req.userId
     )
 

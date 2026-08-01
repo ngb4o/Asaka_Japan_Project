@@ -222,7 +222,10 @@ export function BottomSheet({
               "min-h-0 flex-1 overflow-y-auto overscroll-contain",
               // Form action rows (Hủy / Lưu): split equal, full width on mobile
               "[&_form_.flex.justify-end.gap-2]:!grid [&_form_.flex.justify-end.gap-2]:w-full [&_form_.flex.justify-end.gap-2]:grid-cols-2",
-              "[&_form_.flex.justify-end.gap-2>button]:!w-full [&_form_.flex.justify-end.gap-2>a]:!w-full"
+              "[&_form_.flex.justify-end.gap-2>button]:!w-full [&_form_.flex.justify-end.gap-2>a]:!w-full",
+              // List items (select / status picker): hairline dividers between rows
+              "[&_[role=listbox]]:divide-y [&_[role=listbox]]:divide-[var(--color-border-subtle)]",
+              "[&_[role=listbox]>[role=option]]:rounded-none"
             )}
             style={{
               WebkitOverflowScrolling: "touch",

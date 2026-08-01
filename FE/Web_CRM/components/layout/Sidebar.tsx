@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  AlertTriangle,
   BriefcaseBusiness,
   ChevronDown,
   Handshake,
@@ -27,7 +28,7 @@ import {
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canAccessPath, ROLE_LABELS, ROLE_WORKSPACE_SUBTITLE } from "@/lib/auth/permissions";
+import { canAccessPath, ROLE_LABELS, ROLE_WORKSPACE_SUBTITLE, primaryRole, rolesOf } from "@/lib/auth/permissions";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useNotifications } from "@/lib/notifications/NotificationProvider";
@@ -86,6 +87,12 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Đơn hàng",
         icon: ShoppingCart,
         badgeKey: "orders",
+      },
+      {
+        href: "/receivables",
+        label: "Công nợ",
+        icon: AlertTriangle,
+        badgeKey: null,
       },
     ],
   },
@@ -167,11 +174,12 @@ export function Sidebar({
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   const visibleGroups = useMemo(() => {
+    const accessRoles = rolesOf(user);
     return NAV_GROUPS.map((group) => ({
       ...group,
-      items: group.items.filter((item) => canAccessPath(user?.role, item.href)),
+      items: group.items.filter((item) => canAccessPath(accessRoles, item.href)),
     })).filter((group) => group.items.length > 0);
-  }, [user?.role]);
+  }, [user]);
 
   useEffect(() => {
     const activeIds = visibleGroups
@@ -245,7 +253,9 @@ export function Sidebar({
             ASAKA CRM
           </p>
           <p className="truncate text-xs text-[var(--color-sidebar-muted)]">
-            {user?.role ? ROLE_WORKSPACE_SUBTITLE[user.role] : "Quản lý kinh doanh"}
+            {user
+              ? ROLE_WORKSPACE_SUBTITLE[primaryRole(rolesOf(user), user.role) || "sales"]
+              : "Quản lý kinh doanh"}
           </p>
         </div>
       </div>
@@ -347,9 +357,9 @@ export function Sidebar({
           <p className="truncate text-xs text-[var(--color-sidebar-muted)]">
             {user?.email}
           </p>
-          {user?.role ? (
+          {rolesOf(user).length ? (
             <p className="mt-1 text-xs font-medium text-[var(--color-sidebar-active-fg)]">
-              {ROLE_LABELS[user.role]}
+              {rolesOf(user).map((r) => ROLE_LABELS[r]).join(" · ")}
             </p>
           ) : null}
         </div>

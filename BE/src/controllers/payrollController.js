@@ -1,9 +1,15 @@
 import { StatusCodes } from 'http-status-codes'
 import { payrollService } from '~/services/payrollService'
 
+const actorRolesOf = (req) => req.userRoles || (req.userRole ? [req.userRole] : [])
+
 const getList = async (req, res, next) => {
   try {
-    const result = await payrollService.getList(req.query, req.userId, req.userRole)
+    const result = await payrollService.getList(
+      req.query,
+      req.userId,
+      actorRolesOf(req)
+    )
     res.status(StatusCodes.OK).json({
       message: 'Lấy danh sách bảng lương thành công!',
       data: result
@@ -18,7 +24,7 @@ const getDetails = async (req, res, next) => {
     const result = await payrollService.getDetails(
       req.params.id,
       req.userId,
-      req.userRole
+      actorRolesOf(req)
     )
     res.status(StatusCodes.OK).json({
       message: 'Lấy chi tiết bảng lương thành công!',

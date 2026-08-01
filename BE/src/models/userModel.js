@@ -20,6 +20,11 @@ const USER_COLLECTION_SCHEMA = Joi.object({
     .valid('admin', 'sales', 'warehouse', 'accountant')
     .default('sales'),
 
+  roles: Joi.array()
+    .items(Joi.string().valid('admin', 'sales', 'warehouse', 'accountant'))
+    .min(1)
+    .default(['sales']),
+
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(null),
   _destroy: Joi.boolean().default(false)
@@ -50,11 +55,14 @@ const validateBeforeCreate = async (data) => {
  */
 const createNew = async (data) => {
   try {
-    // Validate dữ liệu trước
     const validData = await validateBeforeCreate(data)
+    // Keep role + roles in sync
+    if (Array.isArray(validData.roles) && validData.roles.length) {
+      validData.role = validData.roles[0]
+    } else if (validData.role) {
+      validData.roles = [validData.role]
+    }
 
-    // insertOne() thêm 1 document vào collection 'users'
-    // Trả về object có insertedId (ID của user vừa tạo)
     return await GET_DB().collection(USER_COLLECTION_NAME).insertOne(validData)
   } catch (error) {
     throw new Error(error)
@@ -133,14 +141,24 @@ const findMany = async (options = {}) => {
   return { items, total, limit, skip }
 }
 
-const updateRole = async (id, role) => {
+const updateRoles = async (id, roles) => {
+  const nextRoles = Array.isArray(roles) && roles.length ? roles : ['sales']
   return await GET_DB()
     .collection(USER_COLLECTION_NAME)
     .updateOne(
       { _id: new ObjectId(id) },
-      { $set: { role, updatedAt: new Date() } }
+      {
+        $set: {
+          roles: nextRoles,
+          role: nextRoles[0],
+          updatedAt: new Date()
+        }
+      }
     )
 }
+
+/** @deprecated prefer updateRoles — kept for callers passing a single role */
+const updateRole = async (id, role) => updateRoles(id, [role])
 
 const updatePassword = async (id, password) => {
   return await GET_DB()
@@ -171,7 +189,7 @@ const countByRole = async (role) => {
     .collection(USER_COLLECTION_NAME)
     .countDocuments({
       _destroy: { $ne: true },
-      role
+      $or: [{ roles: role }, { role }]
     })
 }
 
@@ -192,6 +210,7 @@ export const userModel = {
   checkEmailExists,
   findMany,
   updateRole,
+  updateRoles,
   updatePassword,
   softDelete,
   deleteOne,

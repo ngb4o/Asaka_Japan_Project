@@ -8,8 +8,29 @@ import { GET_DB } from '~/config/mongodb'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { jwtHelper } from '~/utils/jwt'
+import {
+  hasRole,
+  normalizeRoles,
+  primaryRole,
+  resolveRoles
+} from '~/utils/roles'
 
-const resolveRole = (user) => user.role || userModel.USER_ROLES.ADMIN
+const toPublicUser = (user, employee = null) => {
+  const roles = resolveRoles(user)
+  return {
+    id: user._id.toString(),
+    email: user.email,
+    username: user.username,
+    avatar: user.avatar ?? null,
+    role: primaryRole(roles),
+    roles,
+    employeeId: employee?.id || null,
+    employeeName: employee?.fullName || null,
+    employeeCode: employee?.code || null,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt ?? null
+  }
+}
 
 const generateTemporaryPassword = (length = 10) => {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
@@ -65,19 +86,6 @@ const loadEmployeeByUserIds = async (userIds) => {
   )
 }
 
-const toPublicUser = (user, employee = null) => ({
-  id: user._id.toString(),
-  email: user.email,
-  username: user.username,
-  avatar: user.avatar ?? null,
-  role: resolveRole(user),
-  employeeId: employee?.id || null,
-  employeeName: employee?.fullName || null,
-  employeeCode: employee?.code || null,
-  createdAt: user.createdAt,
-  updatedAt: user.updatedAt ?? null
-})
-
 const register = async () => {
   throw new ApiError(
     StatusCodes.FORBIDDEN,
@@ -117,11 +125,19 @@ const createByAdmin = async (reqBody) => {
     employee.code || employee.fullName || email.split('@')[0]
   )
 
+  const roles = normalizeRoles(
+    reqBody.roles ?? (reqBody.role ? [reqBody.role] : [userModel.USER_ROLES.SALES])
+  )
+  if (!roles.length) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Vai trò không hợp lệ!')
+  }
+
   const created = await userModel.createNew({
     email,
     username,
     password: await bcrypt.hash(temporaryPassword, 10),
-    role: reqBody.role || userModel.USER_ROLES.SALES
+    role: roles[0],
+    roles
   })
 
   const userId = created.insertedId.toString()
@@ -187,10 +203,12 @@ const login = async (reqBody) => {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Email hoặc mật khẩu không đúng!')
   }
 
+  const roles = resolveRoles(user)
   const token = jwtHelper.generateToken({
     userId: user._id.toString(),
     email: user.email,
-    role: resolveRole(user)
+    role: primaryRole(roles),
+    roles
   })
 
   return {
@@ -241,8 +259,11 @@ const getList = async () => {
   }
 }
 
-const updateRole = async (targetUserId, role, actorUserId) => {
-  if (!Object.values(userModel.USER_ROLES).includes(role)) {
+const updateRole = async (targetUserId, roleOrRoles, actorUserId) => {
+  const roles = normalizeRoles(
+    Array.isArray(roleOrRoles) ? roleOrRoles : roleOrRoles ? [roleOrRoles] : []
+  )
+  if (!roles.length) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Vai trò không hợp lệ!')
   }
 
@@ -251,14 +272,33 @@ const updateRole = async (targetUserId, role, actorUserId) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy người dùng!')
   }
 
-  if (targetUserId === actorUserId && role !== userModel.USER_ROLES.ADMIN) {
+  const currentRoles = resolveRoles(user)
+  const removingOwnAdmin =
+    targetUserId === actorUserId &&
+    hasRole(currentRoles, userModel.USER_ROLES.ADMIN) &&
+    !hasRole(roles, userModel.USER_ROLES.ADMIN)
+
+  if (removingOwnAdmin) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
       'Không thể tự gỡ quyền quản trị của chính bạn!'
     )
   }
 
-  await userModel.updateRole(targetUserId, role)
+  if (
+    hasRole(currentRoles, userModel.USER_ROLES.ADMIN) &&
+    !hasRole(roles, userModel.USER_ROLES.ADMIN)
+  ) {
+    const adminCount = await userModel.countByRole(userModel.USER_ROLES.ADMIN)
+    if (adminCount <= 1) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Không thể gỡ quyền admin duy nhất còn lại!'
+      )
+    }
+  }
+
+  await userModel.updateRoles(targetUserId, roles)
   return await getUserById(targetUserId)
 }
 
@@ -275,8 +315,7 @@ const deleteByAdmin = async (targetUserId, actorUserId) => {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy người dùng!')
   }
 
-  const role = resolveRole(user)
-  if (role === userModel.USER_ROLES.ADMIN) {
+  if (hasRole(user, userModel.USER_ROLES.ADMIN)) {
     const adminCount = await userModel.countByRole(userModel.USER_ROLES.ADMIN)
     if (adminCount <= 1) {
       throw new ApiError(

@@ -1,6 +1,8 @@
 import { StatusCodes } from 'http-status-codes'
 import { tripService } from '~/services/tripService'
 
+const actorRolesOf = (req) => req.userRoles || (req.userRole ? [req.userRole] : [])
+
 const createNew = async (req, res, next) => {
   try {
     const result = await tripService.createNew(req.body, req.userId)
@@ -15,7 +17,7 @@ const createNew = async (req, res, next) => {
 
 const getList = async (req, res, next) => {
   try {
-    const result = await tripService.getList(req.query, req.userId, req.userRole)
+    const result = await tripService.getList(req.query, req.userId, actorRolesOf(req))
     res.status(StatusCodes.OK).json({
       message: 'Lấy danh sách chuyến công tác thành công!',
       data: result
@@ -27,7 +29,11 @@ const getList = async (req, res, next) => {
 
 const getDetails = async (req, res, next) => {
   try {
-    const result = await tripService.getDetails(req.params.id, req.userId, req.userRole)
+    const result = await tripService.getDetails(
+      req.params.id,
+      req.userId,
+      actorRolesOf(req)
+    )
     res.status(StatusCodes.OK).json({
       message: 'Lấy chi tiết chuyến công tác thành công!',
       data: result
@@ -43,7 +49,7 @@ const update = async (req, res, next) => {
       req.params.id,
       req.body,
       req.userId,
-      req.userRole
+      actorRolesOf(req)
     )
     res.status(StatusCodes.OK).json({
       message: 'Đã cập nhật chuyến công tác thành công!',
@@ -72,7 +78,7 @@ const addStop = async (req, res, next) => {
       req.params.id,
       req.body,
       req.userId,
-      req.userRole
+      actorRolesOf(req)
     )
     res.status(StatusCodes.OK).json({ message: 'Đã thêm điểm dừng!', data: result })
   } catch (error) {
@@ -86,7 +92,7 @@ const removeStop = async (req, res, next) => {
       req.params.id,
       req.params.stopId,
       req.userId,
-      req.userRole
+      actorRolesOf(req)
     )
     res.status(StatusCodes.OK).json({ message: 'Đã xóa điểm dừng!', data: result })
   } catch (error) {
@@ -109,7 +115,7 @@ const addExpense = async (req, res, next) => {
       req.params.id,
       req.body,
       req.userId,
-      req.userRole
+      actorRolesOf(req)
     )
     res.status(StatusCodes.OK).json({ message: 'Đã thêm khoản chi!', data: result })
   } catch (error) {

@@ -14,6 +14,7 @@ import { employeeRoute } from '~/routes/v1/employeeRoute'
 import { tripRoute } from '~/routes/v1/tripRoute'
 import { payrollRoute } from '~/routes/v1/payrollRoute'
 import { dashboardRoute } from '~/routes/v1/dashboardRoute'
+import { receivablesRoute } from '~/routes/v1/receivablesRoute'
 import { notificationRoute } from '~/routes/v1/notificationRoute'
 import { telegramRoute } from '~/routes/v1/telegramRoute'
 
@@ -45,6 +46,7 @@ Router.use('/employees', employeeRoute)
 Router.use('/trips', tripRoute)
 Router.use('/payroll', payrollRoute)
 Router.use('/dashboard', dashboardRoute)
+Router.use('/receivables', receivablesRoute)
 Router.use('/notifications', notificationRoute)
 Router.use('/telegram', telegramRoute)
 

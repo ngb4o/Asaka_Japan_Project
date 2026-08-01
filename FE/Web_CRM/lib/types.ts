@@ -15,7 +15,10 @@ export type UserProfile = {
   email: string;
   username: string;
   avatar: string | null;
+  /** Primary role (first of roles) — for display / legacy */
   role: UserRole;
+  /** All assigned roles — source of truth for permissions */
+  roles: UserRole[];
   employeeId?: string | null;
   employeeName?: string | null;
   employeeCode?: string | null;
@@ -245,6 +248,7 @@ export type DealerInput = {
 export type LineItem = {
   productId: string;
   productName?: string;
+  productImage?: string;
   quantity: number;
   unitType?: InventoryUnitType;
   quantityBase?: number;
@@ -328,6 +332,27 @@ export type OrderInput = {
   shippingNote?: string;
 };
 
+export type OrderAuditAction =
+  | "created"
+  | "status_changed"
+  | "confirmed_exported"
+  | "cancelled"
+  | "payment_recorded"
+  | "deleted";
+
+export type OrderAudit = {
+  id: string;
+  orderId: string;
+  orderCode: string;
+  action: OrderAuditAction;
+  meta: Record<string, unknown>;
+  actorUserId: string | null;
+  actorName: string;
+  actorEmail?: string;
+  actorCode?: string;
+  createdAt: string;
+};
+
 export type DashboardSummary = {
   stats: {
     newLeads: number;
@@ -355,6 +380,30 @@ export type DashboardSummary = {
     "id" | "code" | "customerName" | "total" | "status" | "paymentStatus" | "createdAt"
   >[];
   lowStock: { productId: string; productName: string; quantity: number }[];
+};
+
+export type ReceivableDealerSummary = {
+  dealerId: string;
+  dealerName: string;
+  contactName: string;
+  phone: string;
+  region: string;
+  status: string | null;
+  orderTotal: number;
+  paidAmount: number;
+  debtAmount: number;
+  debtOrderCount: number;
+};
+
+export type ReceivablesSummary = {
+  totals: {
+    debtAmount: number;
+    paidAmount: number;
+    orderTotal: number;
+    dealerCount: number;
+    debtOrderCount: number;
+  };
+  items: ReceivableDealerSummary[];
 };
 
 export type ReportSeriesPoint = {

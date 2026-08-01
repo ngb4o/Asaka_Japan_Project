@@ -312,4 +312,19 @@ export const PAGE_SKELETONS = {
     columns: ["image", "text", "text", "badge", "actions"] as ColumnPreset[],
     minWidth: "760px",
   },
+  receivables: {
+    label: "Đang tải công nợ",
+    filters: 1,
+    cards: 4,
+    columns: [
+      "text",
+      "text",
+      "text",
+      "badge",
+      "text",
+      "text",
+      "actions",
+    ] as ColumnPreset[],
+    minWidth: "860px",
+  },
 } as const;

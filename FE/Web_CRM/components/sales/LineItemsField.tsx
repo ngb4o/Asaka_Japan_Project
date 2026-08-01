@@ -68,7 +68,7 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
         <Label>Sản phẩm *</Label>
         <Button type="button" variant="outline" size="sm" onClick={addRow}>
           <Plus className="h-4 w-4" />
-          Thêm dòng
+          Thêm sản phẩm
         </Button>
       </div>
 

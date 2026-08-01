@@ -24,6 +24,7 @@ const optionalText = (max) => Joi.string().trim().allow('').max(max)
 const ORDER_ITEM_SCHEMA = Joi.object({
   productId: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
   productName: Joi.string().required().trim().max(200),
+  productImage: optionalText(500).default(''),
   quantity: Joi.number().integer().min(1).required(),
   unitType: Joi.string().valid('chai', 'thung').default('chai'),
   quantityBase: Joi.number().integer().min(1).optional(),

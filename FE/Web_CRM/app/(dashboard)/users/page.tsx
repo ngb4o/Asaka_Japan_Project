@@ -19,12 +19,12 @@ import {
   MobileRecordActions,
   MobileRecordCard,
 } from "@/components/ui/mobile-record-card";
-import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canManageUsers, ROLE_LABELS } from "@/lib/auth/permissions";
+import { canManageUsers, ROLE_LABELS, ALL_USER_ROLES, rolesOf } from "@/lib/auth/permissions";
 import { statusBadgeVariant } from "@/lib/status-badge";
 import { getEmployees } from "@/lib/api/employees";
 import {
@@ -36,6 +36,7 @@ import {
 } from "@/lib/api/users";
 import type { Employee, UserProfile, UserRole } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
+import { cn } from "@/lib/utils";
 
 function randomPassword(length = 10) {
   const alphabet =
@@ -48,18 +49,88 @@ function randomPassword(length = 10) {
   return result;
 }
 
+function normalizeUser(item: UserProfile): UserProfile {
+  const nextRoles = rolesOf(item);
+  return {
+    ...item,
+    roles: nextRoles.length ? nextRoles : item.role ? [item.role] : ["sales"],
+    role: nextRoles[0] || item.role || "sales",
+  };
+}
+
+function RoleCheckboxes({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: UserRole[];
+  onChange: (roles: UserRole[]) => void;
+  disabled?: boolean;
+}) {
+  function toggle(role: UserRole) {
+    if (disabled) return;
+    if (value.includes(role)) {
+      if (value.length <= 1) return;
+      onChange(value.filter((item) => item !== role));
+    } else {
+      onChange([...value, role]);
+    }
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {ALL_USER_ROLES.map((role) => {
+        const checked = value.includes(role);
+        return (
+          <label
+            key={role}
+            className={cn(
+              "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm",
+              checked
+                ? "border-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]"
+                : "border-[var(--color-border-subtle)]",
+              disabled && "cursor-not-allowed opacity-50"
+            )}
+          >
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-[var(--color-text-secondary)]"
+              checked={checked}
+              disabled={disabled}
+              onChange={() => toggle(role)}
+            />
+            <span>{ROLE_LABELS[role]}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function RoleBadges({ roles }: { roles: UserRole[] }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {roles.map((role) => (
+        <Badge key={role} variant={statusBadgeVariant(role)} className="shrink-0">
+          {ROLE_LABELS[role] || role}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
 type CreateForm = {
   employeeId: string;
   email: string;
   password: string;
-  role: UserRole;
+  roles: UserRole[];
 };
 
 const EMPTY_FORM: CreateForm = {
   employeeId: "",
   email: "",
   password: "",
-  role: "sales",
+  roles: ["sales"],
 };
 
 export default function UsersPage() {
@@ -75,6 +146,8 @@ export default function UsersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [passwordTarget, setPasswordTarget] = useState<UserProfile | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [rolesTarget, setRolesTarget] = useState<UserProfile | null>(null);
+  const [rolesDraft, setRolesDraft] = useState<UserRole[]>(["sales"]);
   const [createdCreds, setCreatedCreds] = useState<{
     email: string;
     password: string;
@@ -93,7 +166,7 @@ export default function UsersPage() {
         getUsers(),
         getEmployees({ status: "active", limit: 200, page: 1 }),
       ]);
-      setItems(usersResult.items);
+      setItems(usersResult.items.map(normalizeUser));
       setEmployees(employeesResult.items || []);
     } catch (err) {
       toast.error(
@@ -105,12 +178,12 @@ export default function UsersPage() {
   }, [toast]);
 
   useEffect(() => {
-    if (canManageUsers(user?.role)) {
+    if (canManageUsers(rolesOf(user))) {
       loadData();
     } else {
       setLoading(false);
     }
-  }, [user?.role, loadData]);
+  }, [user, loadData]);
 
   function openCreate() {
     setForm({
@@ -129,12 +202,29 @@ export default function UsersPage() {
     }));
   }
 
-  async function handleRoleChange(id: string, role: UserRole) {
-    if (role === items.find((item) => item.id === id)?.role) return;
-    setUpdatingId(id);
+  function openRolesEditor(item: UserProfile) {
+    setRolesTarget(item);
+    setRolesDraft(rolesOf(item));
+  }
+
+  async function handleRolesSave(event: React.FormEvent) {
+    event.preventDefault();
+    if (!rolesTarget) return;
+    if (!rolesDraft.length) {
+      toast.warning("Chọn ít nhất một vai trò");
+      return;
+    }
+    const current = rolesOf(rolesTarget).slice().sort().join(",");
+    const next = rolesDraft.slice().sort().join(",");
+    if (current === next) {
+      setRolesTarget(null);
+      return;
+    }
+    setUpdatingId(rolesTarget.id);
     try {
-      await updateUserRole(id, role);
+      await updateUserRole(rolesTarget.id, rolesDraft);
       toast.success("Đã cập nhật quyền");
+      setRolesTarget(null);
       await loadData();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Cập nhật thất bại");
@@ -153,13 +243,17 @@ export default function UsersPage() {
       toast.warning("Nhân viên chưa có email — vui lòng nhập email");
       return;
     }
+    if (!form.roles.length) {
+      toast.warning("Chọn ít nhất một vai trò");
+      return;
+    }
     setSubmitting(true);
     try {
       const created = await createUser({
         employeeId: form.employeeId,
         email: form.email.trim(),
         password: form.password.trim() || undefined,
-        role: form.role,
+        roles: form.roles,
       });
       setCreateOpen(false);
       setCreatedCreds({
@@ -228,7 +322,7 @@ export default function UsersPage() {
     }
   }
 
-  if (!canManageUsers(user?.role)) {
+  if (!canManageUsers(rolesOf(user))) {
     return (
       <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-8 text-center">
         <h1 className="text-xl font-semibold">Không có quyền truy cập</h1>
@@ -294,41 +388,40 @@ export default function UsersPage() {
                             {item.email}
                           </p>
                         </div>
-                        <Badge
-                          variant={statusBadgeVariant(item.role)}
-                          className="shrink-0"
-                        >
-                          {ROLE_LABELS[item.role] || item.role}
-                        </Badge>
-                      </div>
-
-                      <div className="mt-2.5">
-                        <SearchableSelect
-                          options={STATUS_OPTIONS.userRole}
-                          value={item.role}
-                          onChange={(value) => handleRoleChange(item.id, value as UserRole)}
-                          searchable={false}
-                          disabled={updatingId === item.id}
-                          triggerClassName="h-9 w-full text-xs"
-                        />
+                        <div className="flex shrink-0 flex-col items-end gap-1">
+                          <RoleBadges roles={rolesOf(item)} />
+                        </div>
                       </div>
 
                       <MobileRecordActions>
                         <Button
                           variant="outline"
                           size="sm"
+                          className="h-9 min-w-9"
+                          title="Đổi quyền"
+                          disabled={updatingId === item.id}
+                          onClick={() => openRolesEditor(item)}
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 min-w-9"
+                          title="Đặt lại mật khẩu"
                           onClick={() => {
                             setPasswordTarget(item);
                             setNewPassword(randomPassword());
                           }}
                         >
                           <KeyRound className="h-4 w-4" />
-                          Đặt lại MK
                         </Button>
                         {item.id !== user?.id ? (
                           <Button
                             variant="danger"
                             size="sm"
+                            className="h-9 min-w-9"
+                            title="Xóa tài khoản"
                             disabled={updatingId === item.id}
                             onClick={() => handleDelete(item)}
                           >
@@ -347,8 +440,7 @@ export default function UsersPage() {
                   <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
                     <th className="px-2 py-3 font-medium">Nhân viên</th>
                     <th className="px-2 py-3 font-medium">Email đăng nhập</th>
-                    <th className="px-2 py-3 font-medium">Vai trò hiện tại</th>
-                    <th className="px-2 py-3 font-medium">Đổi quyền</th>
+                    <th className="px-2 py-3 font-medium">Vai trò</th>
                     <th className="px-2 py-3 text-right font-medium">Thao tác</th>
                   </tr>
                 </thead>
@@ -370,26 +462,19 @@ export default function UsersPage() {
                       </td>
                       <td className="px-2 py-3">{item.email}</td>
                       <td className="px-2 py-3">
-                        <Badge variant={item.role === "admin" ? "success" : "muted"}>
-                          {ROLE_LABELS[item.role] || item.role}
-                        </Badge>
-                      </td>
-                      <td className="px-2 py-3">
-                        <div className="w-[180px]">
-                          <SearchableSelect
-                            options={STATUS_OPTIONS.userRole}
-                            value={item.role}
-                            onChange={(value) =>
-                              handleRoleChange(item.id, value as UserRole)
-                            }
-                            searchable={false}
-                            disabled={updatingId === item.id}
-                            triggerClassName="h-8 text-xs"
-                          />
-                        </div>
+                        <RoleBadges roles={rolesOf(item)} />
                       </td>
                       <td className="px-2 py-3">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={updatingId === item.id}
+                            onClick={() => openRolesEditor(item)}
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                            Đổi quyền
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -476,13 +561,14 @@ export default function UsersPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label>Vai trò</Label>
-              <SearchableSelect
-                options={STATUS_OPTIONS.userRole}
-                value={form.role}
-                onChange={(value) => setForm({ ...form, role: value as UserRole })}
-                searchable={false}
+              <Label>Vai trò (có thể chọn nhiều)</Label>
+              <RoleCheckboxes
+                value={form.roles}
+                onChange={(roles) => setForm({ ...form, roles })}
               />
+              <p className="text-xs text-[var(--color-text-inverse)]">
+                Ví dụ: Kinh doanh + Kho nếu một người vừa bán vừa xuất hàng.
+              </p>
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
@@ -490,6 +576,43 @@ export default function UsersPage() {
               </Button>
               <Button type="submit" loading={submitting}>
                 Cấp tài khoản
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={rolesTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setRolesTarget(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Đổi quyền — {rolesTarget?.employeeName || rolesTarget?.email}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleRolesSave} className="space-y-4">
+            <RoleCheckboxes
+              value={rolesDraft}
+              onChange={setRolesDraft}
+              disabled={updatingId === rolesTarget?.id}
+            />
+            <p className="text-xs text-[var(--color-text-inverse)]">
+              Quyền thực tế = hợp các vai trò đã chọn. Vai trò đầu tiên dùng để hiển thị.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setRolesTarget(null)}
+              >
+                Hủy
+              </Button>
+              <Button type="submit" loading={updatingId === rolesTarget?.id}>
+                Lưu
               </Button>
             </div>
           </form>

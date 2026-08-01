@@ -40,6 +40,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { canManageStockMovements, rolesOf } from "@/lib/auth/permissions";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { TabSwitcher } from "@/components/ui/tab-switcher";
 import { getImageUrl } from "@/lib/api/uploads";
@@ -103,7 +104,8 @@ export default function InventoryPage() {
   const confirm = useConfirm();
   const toast = useToast();
   const isMobile = useIsMobile();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = Boolean(user && rolesOf(user).includes("admin"));
+  const canMoveStock = canManageStockMovements(rolesOf(user));
 
   const mobileTabs = isAdmin
     ? (["Kho", "Tồn kho", "Lịch sử"] as const)
@@ -326,6 +328,10 @@ export default function InventoryPage() {
   }, [fetchTransactionsPage]);
 
   function openMovement(type: "import" | "export") {
+    if (!canMoveStock) {
+      toast.warning("Chỉ quản trị hoặc kho được nhập/xuất kho.");
+      return;
+    }
     if (activeWarehouses.length === 0) {
       toast.warning("Vui lòng tạo ít nhất một kho đang hoạt động trước.");
       return;
@@ -358,6 +364,10 @@ export default function InventoryPage() {
   async function handleMovementSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!movementType) return;
+    if (!canMoveStock) {
+      toast.warning("Chỉ quản trị hoặc kho được nhập/xuất kho.");
+      return;
+    }
 
     const validationError = validateInventoryMovementForm(movementForm);
     if (validationError) {
@@ -400,31 +410,41 @@ export default function InventoryPage() {
     <div className="space-y-0 md:space-y-6">
       <PageHeader
         title="Kho hàng"
-        description="Quản lý kho, nhập xuất và theo dõi tồn kho"
-        actions={
-          <>
-            <Button onClick={() => openMovement("import")}>
-              <ArrowDownToLine className="h-4 w-4" />
-              Nhập kho
-            </Button>
-            <Button variant="outline" onClick={() => openMovement("export")}>
-              <ArrowUpFromLine className="h-4 w-4" />
-              Xuất kho
-            </Button>
-          </>
+        description={
+          canMoveStock
+            ? "Quản lý kho, nhập xuất và theo dõi tồn kho"
+            : "Xem tồn kho và lịch sử (nhập/xuất do kho phụ trách)"
         }
-        fab={[
-          {
-            onClick: () => openMovement("import"),
-            label: "Nhập kho",
-            icon: <ArrowDownToLine className="h-5 w-5" />,
-          },
-          {
-            onClick: () => openMovement("export"),
-            label: "Xuất kho",
-            icon: <ArrowUpFromLine className="h-5 w-5" />,
-          },
-        ]}
+        actions={
+          canMoveStock ? (
+            <>
+              <Button onClick={() => openMovement("import")}>
+                <ArrowDownToLine className="h-4 w-4" />
+                Nhập kho
+              </Button>
+              <Button variant="outline" onClick={() => openMovement("export")}>
+                <ArrowUpFromLine className="h-4 w-4" />
+                Xuất kho
+              </Button>
+            </>
+          ) : null
+        }
+        fab={
+          canMoveStock
+            ? [
+                {
+                  onClick: () => openMovement("import"),
+                  label: "Nhập kho",
+                  icon: <ArrowDownToLine className="h-5 w-5" />,
+                },
+                {
+                  onClick: () => openMovement("export"),
+                  label: "Xuất kho",
+                  icon: <ArrowUpFromLine className="h-5 w-5" />,
+                },
+              ]
+            : null
+        }
       />
 
       {activeWarehouses.length === 0 && (

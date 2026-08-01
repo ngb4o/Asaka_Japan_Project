@@ -9,7 +9,9 @@ export async function createUser(payload: {
   employeeId: string;
   email?: string;
   password?: string;
-  role: UserRole;
+  roles: UserRole[];
+  /** @deprecated prefer roles */
+  role?: UserRole;
 }) {
   return apiRequest<UserProfile>("/users", {
     method: "POST",
@@ -24,10 +26,10 @@ export async function updateUserPassword(id: string, password: string) {
   });
 }
 
-export async function updateUserRole(id: string, role: UserRole) {
+export async function updateUserRole(id: string, roles: UserRole[]) {
   return apiRequest<UserProfile>(`/users/${id}/role`, {
     method: "PUT",
-    body: { role },
+    body: { roles },
   });
 }
 

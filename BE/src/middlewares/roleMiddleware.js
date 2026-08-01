@@ -1,9 +1,10 @@
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
 import { userModel } from '~/models/userModel'
+import { primaryRole, resolveRoles } from '~/utils/roles'
 
 /**
- * Attach role onto request after JWT verify.
+ * Attach roles onto request after JWT verify.
  * Existing users without role default to admin (backward compatible).
  */
 export const attachUserRole = async (req, res, next) => {
@@ -17,7 +18,9 @@ export const attachUserRole = async (req, res, next) => {
       throw new ApiError(StatusCodes.UNAUTHORIZED, 'Không tìm thấy người dùng!')
     }
 
-    req.userRole = user.role || userModel.USER_ROLES.ADMIN
+    const roles = resolveRoles(user)
+    req.userRoles = roles
+    req.userRole = primaryRole(roles)
     next()
   } catch (error) {
     next(error)
@@ -25,21 +28,31 @@ export const attachUserRole = async (req, res, next) => {
 }
 
 /**
- * Restrict route to one or more roles. Admin always allowed.
+ * Restrict route to one or more roles.
+ * Allowed if user has admin OR any listed role (any-of).
  * Usage: requireRoles('sales', 'warehouse')
  */
 export const requireRoles = (...roles) => {
   return (req, res, next) => {
-    const role = req.userRole
+    const userRoles = Array.isArray(req.userRoles)
+      ? req.userRoles
+      : req.userRole
+        ? [req.userRole]
+        : []
 
-    if (!role) {
+    if (!userRoles.length) {
       return next(new ApiError(StatusCodes.FORBIDDEN, 'Thiếu thông tin vai trò!'))
     }
 
-    if (role === userModel.USER_ROLES.ADMIN || roles.includes(role)) {
+    if (
+      userRoles.includes(userModel.USER_ROLES.ADMIN) ||
+      roles.some((role) => userRoles.includes(role))
+    ) {
       return next()
     }
 
-    return next(new ApiError(StatusCodes.FORBIDDEN, 'Bạn không có quyền thực hiện thao tác này!'))
+    return next(
+      new ApiError(StatusCodes.FORBIDDEN, 'Bạn không có quyền thực hiện thao tác này!')
+    )
   }
 }

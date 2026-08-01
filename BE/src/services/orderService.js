@@ -14,6 +14,9 @@ import { generateDocumentCode } from '~/utils/documentCode'
 import { toBaseQuantity, toUnitsPerCase, UNIT_TYPE } from '~/utils/inventoryUnits'
 import { telegramNotifyService } from '~/services/telegram/telegramNotifyService'
 import { buildSearchFilter } from '~/utils/search.js'
+import { userModel } from '~/models/userModel'
+import { hasAnyRole } from '~/utils/roles'
+import { orderAuditService } from '~/services/orderAuditService'
 
 const resolveDeliveryEmployeeIds = (body = {}) => {
   const ids = new Set()
@@ -39,6 +42,40 @@ const getOrderDeliveryEmployeeIds = (order) => {
     ids.push(order.deliveryEmployeeId.toString())
   }
   return [...new Set(ids)]
+}
+
+/** Phase B: only admin or warehouse may confirm + export stock. */
+const assertCanConfirmAndExport = async (userId) => {
+  if (!userId) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Chưa xác thực!')
+  }
+  const user = await userModel.findOneById(userId)
+  if (!user || user._destroy) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Không tìm thấy người dùng!')
+  }
+  if (!hasAnyRole(user, userModel.USER_ROLES.WAREHOUSE)) {
+    throw new ApiError(
+      StatusCodes.FORBIDDEN,
+      'Chỉ quản trị hoặc nhân viên kho được xác nhận đơn và xuất kho!'
+    )
+  }
+}
+
+/** Cancel after export restores stock — warehouse/admin only. */
+const assertCanCancelExportedOrder = async (userId) => {
+  if (!userId) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Chưa xác thực!')
+  }
+  const user = await userModel.findOneById(userId)
+  if (!user || user._destroy) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Không tìm thấy người dùng!')
+  }
+  if (!hasAnyRole(user, userModel.USER_ROLES.WAREHOUSE)) {
+    throw new ApiError(
+      StatusCodes.FORBIDDEN,
+      'Chỉ quản trị hoặc nhân viên kho được hủy đơn đã xuất kho (hoàn tồn)!'
+    )
+  }
 }
 
 const parseOptionalDate = (value) => {
@@ -133,6 +170,7 @@ const buildLineItems = async (items = []) => {
     lineItems.push({
       productId: product._id.toString(),
       productName: product.name,
+      productImage: product.image || product.images?.[0] || '',
       quantity,
       unitType,
       quantityBase,
@@ -170,11 +208,21 @@ const enrichOrders = async (orders) => {
       orders.flatMap((item) => getOrderDeliveryEmployeeIds(item))
     )
   ]
+  const productIds = [
+    ...new Set(
+      orders.flatMap((order) =>
+        (order.items || [])
+          .map((line) => line.productId?.toString?.() || line.productId)
+          .filter(Boolean)
+      )
+    )
+  ]
 
   let dealerMap = new Map()
   let warehouseMap = new Map()
   let tripMap = new Map()
   let deliveryEmployeeMap = new Map()
+  let productMap = new Map()
 
   if (dealerIds.length) {
     const dealers = await dealerModel.findMany(
@@ -211,14 +259,41 @@ const enrichOrders = async (orders) => {
     )
   }
 
+  if (productIds.length) {
+    const products = await productModel.findMany(
+      { _id: { $in: productIds.map((id) => new ObjectId(id)) } },
+      { limit: productIds.length, skip: 0 }
+    )
+    productMap = new Map(
+      products.items.map((item) => [
+        item._id.toString(),
+        {
+          name: item.name || '',
+          image: item.image || item.images?.[0] || ''
+        }
+      ])
+    )
+  }
+
   return orders.map((order) => {
     const formatted = withPaymentDefaults(formatDocument(order))
     const ids = getOrderDeliveryEmployeeIds(order)
     const names = ids
       .map((id) => deliveryEmployeeMap.get(id) || '')
       .filter(Boolean)
+    const items = (formatted.items || []).map((line) => {
+      const productId = line.productId?.toString?.() || line.productId || ''
+      const product = productMap.get(productId)
+      return {
+        ...line,
+        productId,
+        productName: line.productName || product?.name || '',
+        productImage: line.productImage || product?.image || ''
+      }
+    })
     return {
       ...formatted,
+      items,
       deliveryEmployeeIds: ids,
       deliveryEmployeeId: ids[0] || null,
       tripId: order.tripId ? order.tripId.toString() : null,
@@ -388,6 +463,17 @@ const createNew = async (reqBody, userId) => {
   const order = await orderModel.findOneById(created.insertedId)
   const [formatted] = await enrichOrders([order])
   telegramNotifyService.onOrderCreated(formatted)
+  await orderAuditService.log({
+    orderId: formatted.id,
+    orderCode: formatted.code,
+    action: orderAuditService.AUDIT_ACTION.CREATED,
+    actorUserId: userId,
+    meta: {
+      status: formatted.status,
+      total: formatted.total,
+      dealerId: formatted.dealerId || null
+    }
+  })
   return formatted
 }
 
@@ -526,6 +612,13 @@ const update = async (orderId, updateData, userId, options = {}) => {
     throw new ApiError(StatusCodes.CONFLICT, 'Không thể cập nhật đơn hàng đã hủy!')
   }
 
+  if (order.status === orderModel.ORDER_STATUS.COMPLETED) {
+    throw new ApiError(
+      StatusCodes.CONFLICT,
+      'Không thể cập nhật đơn hàng đã hoàn tất!'
+    )
+  }
+
   const dataToUpdate = {}
   const nextStatus = updateData.status ?? order.status
   assertStatusTransition(order.status, nextStatus)
@@ -644,6 +737,7 @@ const update = async (orderId, updateData, userId, options = {}) => {
     nextStatus === orderModel.ORDER_STATUS.CANCELLED && order.inventoryExported
 
   if (shouldRestoreInventory) {
+    await assertCanCancelExportedOrder(userId)
     await restoreInventoryForOrder(order, userId)
     dataToUpdate.inventoryExported = false
   }
@@ -653,6 +747,13 @@ const update = async (orderId, updateData, userId, options = {}) => {
     !shouldRestoreInventory &&
     nextStatus === orderModel.ORDER_STATUS.CONFIRMED &&
     order.status !== orderModel.ORDER_STATUS.CONFIRMED
+
+  if (
+    nextStatus === orderModel.ORDER_STATUS.CONFIRMED &&
+    order.status === orderModel.ORDER_STATUS.PENDING
+  ) {
+    await assertCanConfirmAndExport(userId)
+  }
 
   if (shouldExportInventory) {
     const exportOrder = {
@@ -681,10 +782,70 @@ const update = async (orderId, updateData, userId, options = {}) => {
     }
   }
 
+  if (shouldExportInventory) {
+    await orderAuditService.log({
+      orderId,
+      orderCode: formatted.code,
+      action: orderAuditService.AUDIT_ACTION.CONFIRMED_EXPORTED,
+      actorUserId: userId,
+      meta: {
+        fromStatus: order.status,
+        toStatus: nextStatus,
+        warehouseId: nextWarehouseId
+      }
+    })
+  } else if (
+    nextStatus === orderModel.ORDER_STATUS.CANCELLED &&
+    order.status !== orderModel.ORDER_STATUS.CANCELLED
+  ) {
+    await orderAuditService.log({
+      orderId,
+      orderCode: formatted.code,
+      action: orderAuditService.AUDIT_ACTION.CANCELLED,
+      actorUserId: userId,
+      meta: {
+        fromStatus: order.status,
+        restoredInventory: Boolean(shouldRestoreInventory)
+      }
+    })
+  } else if (updateData.status !== undefined && nextStatus !== order.status) {
+    await orderAuditService.log({
+      orderId,
+      orderCode: formatted.code,
+      action: orderAuditService.AUDIT_ACTION.STATUS_CHANGED,
+      actorUserId: userId,
+      meta: {
+        fromStatus: order.status,
+        toStatus: nextStatus
+      }
+    })
+  }
+
+  if (
+    dataToUpdate.paymentStatus !== undefined &&
+    dataToUpdate.paymentStatus !== order.paymentStatus &&
+    updateData.paidAmount !== undefined
+  ) {
+    // Payment changed via PUT (not recordPayment) — still audit
+    await orderAuditService.log({
+      orderId,
+      orderCode: formatted.code,
+      action: orderAuditService.AUDIT_ACTION.PAYMENT_RECORDED,
+      actorUserId: userId,
+      meta: {
+        via: 'update',
+        fromPaidAmount: order.paidAmount || 0,
+        toPaidAmount: dataToUpdate.paidAmount,
+        paymentStatus: dataToUpdate.paymentStatus
+      }
+    })
+  }
+
   return formatted
 }
 
 const recordPayment = async (orderId, { amount, note }, options = {}) => {
+  const userId = options.actorUserId || options.userId || null
   const order = await orderModel.findOneById(orderId)
 
   if (!order) {
@@ -695,7 +856,8 @@ const recordPayment = async (orderId, { amount, note }, options = {}) => {
     throw new ApiError(StatusCodes.CONFLICT, 'Không thể ghi nhận thanh toán cho đơn đã hủy!')
   }
 
-  const nextPaid = Math.max(0, Number(order.paidAmount) || 0) + Math.max(0, Number(amount) || 0)
+  const payAmount = Math.max(0, Number(amount) || 0)
+  const nextPaid = Math.max(0, Number(order.paidAmount) || 0) + payAmount
   const payment = resolvePaymentStatus(nextPaid, order.total)
 
   await orderModel.update(orderId, {
@@ -708,10 +870,25 @@ const recordPayment = async (orderId, { amount, note }, options = {}) => {
   if (!options.silentTelegram) {
     telegramNotifyService.onPaymentUpdated(formatted)
   }
+
+  await orderAuditService.log({
+    orderId,
+    orderCode: formatted.code,
+    action: orderAuditService.AUDIT_ACTION.PAYMENT_RECORDED,
+    actorUserId: userId,
+    meta: {
+      amount: payAmount,
+      fromPaidAmount: order.paidAmount || 0,
+      toPaidAmount: payment.paidAmount,
+      paymentStatus: payment.paymentStatus,
+      note: note || ''
+    }
+  })
+
   return formatted
 }
 
-const deleteOne = async (orderId) => {
+const deleteOne = async (orderId, userId = null) => {
   const order = await orderModel.findOneById(orderId)
 
   if (!order) {
@@ -725,9 +902,34 @@ const deleteOne = async (orderId) => {
     )
   }
 
+  if (
+    order.status === orderModel.ORDER_STATUS.COMPLETED ||
+    order.status === orderModel.ORDER_STATUS.CANCELLED
+  ) {
+    throw new ApiError(
+      StatusCodes.CONFLICT,
+      'Không thể xóa đơn hàng đã hoàn tất hoặc đã hủy!'
+    )
+  }
+
   await orderModel.deleteOne(orderId)
+  await orderAuditService.log({
+    orderId,
+    orderCode: order.code,
+    action: orderAuditService.AUDIT_ACTION.DELETED,
+    actorUserId: userId,
+    meta: { status: order.status, total: order.total }
+  })
 
   return { message: 'Đã xóa đơn hàng thành công!' }
+}
+
+const getAudits = async (orderId) => {
+  const order = await orderModel.findOneById(orderId)
+  if (!order) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy đơn hàng!')
+  }
+  return await orderAuditService.getByOrderId(orderId)
 }
 
 export const orderService = {
@@ -736,5 +938,6 @@ export const orderService = {
   getDetails,
   update,
   recordPayment,
-  deleteOne
+  deleteOne,
+  getAudits
 }

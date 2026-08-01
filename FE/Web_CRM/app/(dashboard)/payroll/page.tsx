@@ -27,7 +27,7 @@ import {
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canManagePayroll } from "@/lib/auth/permissions";
+import { canManagePayroll, rolesOf } from "@/lib/auth/permissions";
 import {
   deletePayroll,
   generatePayroll,
@@ -51,7 +51,7 @@ export default function PayrollPage() {
   const confirm = useConfirm();
   const toast = useToast();
   const { user } = useAuth();
-  const canEdit = canManagePayroll(user?.role);
+  const canEdit = canManagePayroll(rolesOf(user));
   const [selected, setSelected] = useState<PayrollPeriod | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [period, setPeriod] = useState(currentPeriod());

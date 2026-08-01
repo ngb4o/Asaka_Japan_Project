@@ -1,6 +1,6 @@
 import { apiRequest } from "@/lib/api/client";
 import { appendPaginationParams, type PaginationParams } from "@/lib/pagination";
-import type { Order, OrderInput, PaginatedResult } from "@/lib/types";
+import type { Order, OrderAudit, OrderInput, PaginatedResult } from "@/lib/types";
 
 export async function getOrders(params?: {
   search?: string;
@@ -65,4 +65,10 @@ export async function recordOrderPayment(
     method: "POST",
     body: data,
   });
+}
+
+export async function getOrderAudits(id: string) {
+  return apiRequest<{ items: OrderAudit[]; total: number }>(
+    `/orders/${id}/audits`
+  );
 }

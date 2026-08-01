@@ -232,7 +232,7 @@ export function NotificationBell() {
                           <span className="inline-flex h-2 w-2 shrink-0 rounded-full bg-red-500" />
                         ) : null}
                       </span>
-                      <span className="mt-0.5 block truncate text-sm text-[var(--color-text-inverse)]">
+                      <span className="mt-0.5 block whitespace-pre-line text-sm text-[var(--color-text-inverse)]">
                         {item.message}
                       </span>
                       <span className="mt-1 block text-xs text-[var(--color-text-inverse)]/80">

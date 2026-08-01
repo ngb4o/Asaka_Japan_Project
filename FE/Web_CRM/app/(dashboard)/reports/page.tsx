@@ -23,7 +23,7 @@ import {
   StatusPieChart,
 } from "@/components/reports/Charts";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canViewReports } from "@/lib/auth/permissions";
+import { canViewReports, rolesOf } from "@/lib/auth/permissions";
 import { getSalesReport } from "@/lib/api/dashboard";
 import { downloadSalesReportExcel } from "@/lib/export/salesReportExcel";
 import type { SalesReport } from "@/lib/types";
@@ -61,7 +61,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 export default function ReportsPage() {
   const toast = useToast();
   const { user } = useAuth();
-  const allowed = canViewReports(user?.role);
+  const allowed = canViewReports(rolesOf(user));
   const [preset, setPreset] = useState<string>("thisMonth");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");

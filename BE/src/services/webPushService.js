@@ -44,7 +44,7 @@ const hrefFromTrack = (track) => {
   const id = track?.entityId ? String(track.entityId) : ''
   const withId = (path) => (id ? `${path}?id=${encodeURIComponent(id)}` : path)
 
-  if (type === 'order') return withId('/orders')
+  if (type === 'order') return id ? `/orders?detail=${encodeURIComponent(id)}` : '/orders'
   if (type === 'lead') return withId('/leads')
   if (type === 'dealer') return withId('/dealers')
   if (type === 'trip') return withId('/trips')

@@ -57,7 +57,7 @@ const buildNotifications = async () => {
       id: `lead:${lead.id}`,
       type: isDealerLead ? 'dealer_lead' : 'lead',
       title: isDealerLead ? 'Đăng ký đại lý mới' : 'Liên hệ mới',
-      message: `${lead.name}${lead.phone ? ` · ${lead.phone}` : ''}`,
+      message: [lead.name, lead.phone].filter(Boolean).join('\n'),
       href: `/leads?id=${encodeURIComponent(lead.id)}`,
       createdAt: lead.createdAt
     })
@@ -68,7 +68,7 @@ const buildNotifications = async () => {
       id: `dealer:${dealer.id}`,
       type: 'dealer',
       title: 'Đại lý chờ duyệt',
-      message: dealer.name,
+      message: [dealer.name, dealer.phone, dealer.region].filter(Boolean).join('\n'),
       href: `/dealers?id=${encodeURIComponent(dealer.id)}`,
       createdAt: dealer.createdAt
     })
@@ -79,8 +79,10 @@ const buildNotifications = async () => {
       id: `order:${order.id}`,
       type: 'order',
       title: 'Đơn hàng chờ xử lý',
-      message: `${order.code}${order.customerName ? ` · ${order.customerName}` : ''}`,
-      href: `/orders?id=${encodeURIComponent(order.id)}`,
+      message: [order.code, order.customerName, order.customerPhone]
+        .filter(Boolean)
+        .join('\n'),
+      href: `/orders?detail=${encodeURIComponent(order.id)}`,
       createdAt: order.createdAt
     })
   }
@@ -94,7 +96,7 @@ const buildNotifications = async () => {
       id: `stock:${productId}`,
       type: 'stock',
       title: 'Sắp hết hàng',
-      message: `${productName} · còn ${stock.quantity}`,
+      message: [productName, `Còn ${stock.quantity}`].join('\n'),
       href: `/inventory?id=${encodeURIComponent(productId)}`,
       createdAt
     })
