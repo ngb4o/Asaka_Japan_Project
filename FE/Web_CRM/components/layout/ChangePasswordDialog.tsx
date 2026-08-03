@@ -104,7 +104,7 @@ export function ChangePasswordDialog({
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Hủy
             </Button>
             <Button type="submit" loading={submitting}>

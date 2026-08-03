@@ -220,7 +220,7 @@ export default function ProductCategoriesPage() {
                     <MobileRecordCard key={item.id}>
                       <MobileRecordCardHeader
                         title={item.name}
-                        description={item.description || undefined}
+                        subtitle={item.description || undefined}
                         trailing={
                           <Badge variant={statusBadgeVariant(item.status)}>
                             {item.status === "active" ? "Hoạt động" : "Ngưng"}
