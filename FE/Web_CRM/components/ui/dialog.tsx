@@ -117,7 +117,9 @@ const DialogContent = React.forwardRef<
       return (
         target instanceof Element &&
         Boolean(
-          target.closest("[data-radix-popover-content], [data-bottom-sheet]")
+          target.closest(
+            "[data-radix-popover-content], [data-bottom-sheet], [data-image-lightbox]"
+          )
         )
       );
     }
@@ -263,7 +265,7 @@ const DialogTitle = React.forwardRef<
 });
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
-/** Action row at the bottom of a dialog / bottom sheet (Hủy · Lưu, Đóng · Sửa…). */
+/** Action row: full width; desktop chia đều các nút (Hủy · Lưu…). */
 const DialogFooter = ({
   className,
   ...props
@@ -271,7 +273,8 @@ const DialogFooter = ({
   <div
     data-slot="dialog-footer"
     className={cn(
-      "flex flex-col-reverse gap-2 border-t border-[var(--color-border-subtle)] pt-4 sm:flex-row sm:justify-end",
+      "flex w-full flex-col-reverse gap-2 border-t border-[var(--color-border-subtle)] pt-4 sm:flex-row sm:[&>*]:min-w-0 sm:[&>*]:flex-1",
+      "[&_button]:w-full",
       className
     )}
     {...props}

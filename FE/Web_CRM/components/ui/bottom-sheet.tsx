@@ -132,7 +132,10 @@ export function BottomSheet({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key !== "Escape") return;
+      // Lightbox phía trên đang mở — để lightbox xử lý Esc
+      if (document.body.hasAttribute("data-image-lightbox-open")) return;
+      close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -170,6 +173,7 @@ export function BottomSheet({
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
+          if (document.body.hasAttribute("data-image-lightbox-open")) return;
           if (entered) close();
         }}
       />

@@ -9,7 +9,9 @@ const movementSchema = Joi.object({
   productId: objectIdRule.required(),
   quantity: Joi.number().integer().min(1).required(),
   unitType: Joi.string().valid('chai', 'thung').default('chai'),
-  note: Joi.string().trim().allow('').max(500).optional()
+  note: Joi.string().trim().allow('').max(500).optional(),
+  /** Giá nhập theo đơn vị của phiếu (chai/thùng). Chỉ dùng khi nhập kho. */
+  unitCost: Joi.number().min(0).optional()
 })
 
 export const inventoryValidation = {

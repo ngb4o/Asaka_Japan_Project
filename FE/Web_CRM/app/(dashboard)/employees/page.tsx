@@ -375,47 +375,48 @@ export default function EmployeesPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-              <table className="w-full min-w-[900px] text-left text-sm">
+              <div className="crm-table-frame">
+                <table className="crm-data-table min-w-[900px]">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                    <th className="px-2 py-3 font-medium">Mã</th>
-                    <th className="px-2 py-3 font-medium">Họ tên</th>
-                    <th className="px-2 py-3 font-medium">Chức vụ</th>
-                    <th className="px-2 py-3 font-medium">Lương / HH</th>
-                    <th className="px-2 py-3 font-medium">TK CRM</th>
-                    <th className="px-2 py-3 font-medium">Trạng thái</th>
-                    <th className="px-2 py-3 text-right font-medium">Thao tác</th>
+                  <tr>
+                    <th className="font-medium">Mã</th>
+                    <th className="font-medium">Họ tên</th>
+                    <th className="font-medium">Chức vụ</th>
+                    <th className="font-medium">Lương / HH</th>
+                    <th className="font-medium">TK CRM</th>
+                    <th className="font-medium">Trạng thái</th>
+                    <th className="text-right font-medium">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                      <td className="px-2 py-3 font-medium">{item.code}</td>
-                      <td className="px-2 py-3">
+                    <tr key={item.id}>
+                      <td className="font-medium">{item.code}</td>
+                      <td>
                         <p>{item.fullName}</p>
                         <p className="text-xs text-[var(--color-text-inverse)]">
                           {item.phone || item.email || "—"}
                         </p>
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         {item.title || "—"}
                         {item.department ? (
                           <p className="text-xs text-[var(--color-text-inverse)]">{item.department}</p>
                         ) : null}
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         <p>{formatCurrency(item.baseSalary)}</p>
                         <p className="text-xs text-[var(--color-text-inverse)]">
                           HH {item.commissionPercent}% - PC {formatCurrency(item.allowance)}
                         </p>
                       </td>
-                      <td className="px-2 py-3">{item.userName || "—"}</td>
-                      <td className="px-2 py-3">
+                      <td>{item.userName || "—"}</td>
+                      <td>
                         <Badge variant={item.status === "active" ? "success" : "muted"}>
                           {item.status === "active" ? "Đang làm" : "Ngưng"}
                         </Badge>
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         <div className="flex justify-end gap-2">
                           <Button
                             variant="outline"
@@ -446,6 +447,7 @@ export default function EmployeesPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
             </>
           )}

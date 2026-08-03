@@ -69,7 +69,6 @@ export function ConfirmDialog({
             <Button
               type="button"
               variant="outline"
-              className="w-full sm:w-auto"
               onClick={onCancel}
               disabled={loading}
             >
@@ -78,7 +77,6 @@ export function ConfirmDialog({
             <Button
               type="button"
               variant={variant === "danger" ? "danger" : "default"}
-              className="w-full sm:w-auto"
               onClick={onConfirm}
               loading={loading}
             >

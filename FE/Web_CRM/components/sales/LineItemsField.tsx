@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { VndInput } from "@/components/ui/vnd-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import type { Product } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 export type LineItemFormRow = {
   productId: string;
@@ -19,9 +19,16 @@ type LineItemsFieldProps = {
   items: LineItemFormRow[];
   products: Product[];
   onChange: (items: LineItemFormRow[]) => void;
+  /** Khóa SP/SL/đơn giá — vẫn hiện UI thông tin, ẩn thêm/xóa */
+  readOnly?: boolean;
 };
 
-export function LineItemsField({ items, products, onChange }: LineItemsFieldProps) {
+export function LineItemsField({
+  items,
+  products,
+  onChange,
+  readOnly = false,
+}: LineItemsFieldProps) {
   const productOptions = products.map((product) => ({
     value: product.id,
     label: product.name,
@@ -29,6 +36,7 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
   }));
 
   function updateRow(index: number, patch: Partial<LineItemFormRow>) {
+    if (readOnly) return;
     const next = items.map((item, i) => (i === index ? { ...item, ...patch } : item));
 
     if (patch.productId) {
@@ -42,6 +50,7 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
   }
 
   function addRow() {
+    if (readOnly) return;
     onChange([
       ...items,
       {
@@ -53,6 +62,7 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
   }
 
   function removeRow(index: number) {
+    if (readOnly) return;
     onChange(items.filter((_, i) => i !== index));
   }
 
@@ -65,11 +75,13 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <Label>Sản phẩm *</Label>
-        <Button type="button" variant="outline" size="sm" onClick={addRow}>
-          <Plus className="h-4 w-4" />
-          Thêm sản phẩm
-        </Button>
+        <Label>Sản phẩm{readOnly ? "" : " *"}</Label>
+        {!readOnly ? (
+          <Button type="button" variant="outline" size="sm" onClick={addRow}>
+            <Plus className="h-4 w-4" />
+            Thêm sản phẩm
+          </Button>
+        ) : null}
       </div>
 
       {items.length === 0 ? (
@@ -79,25 +91,45 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
           {items.map((item, index) => {
             const lineTotal =
               (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
+            const productLabel =
+              products.find((p) => p.id === item.productId)?.name ||
+              productOptions.find((p) => p.value === item.productId)?.label ||
+              "—";
 
             return (
               <div
                 key={index}
-                className="space-y-3 rounded-lg border border-[var(--color-border-subtle)] p-3 md:grid md:grid-cols-[minmax(0,1fr)_5.5rem_8.5rem_2.5rem] md:items-end md:gap-3 md:space-y-0"
+                className={cn(
+                  "space-y-3 rounded-lg border border-[var(--color-border-subtle)] p-3",
+                  readOnly
+                    ? "md:grid md:grid-cols-[minmax(0,1fr)_5.5rem_8.5rem] md:items-end md:gap-3 md:space-y-0"
+                    : "md:grid md:grid-cols-[minmax(0,1fr)_5.5rem_8.5rem_2.5rem] md:items-end md:gap-3 md:space-y-0"
+                )}
               >
                 <div className="min-w-0 space-y-1.5">
                   <Label className="text-xs text-[var(--color-text-inverse)] md:sr-only">
                     Sản phẩm
                   </Label>
-                  <SearchableSelect
-                    options={productOptions}
-                    value={item.productId}
-                    onChange={(value) => updateRow(index, { productId: value })}
-                    placeholder="Chọn sản phẩm"
-                  />
+                  {readOnly ? (
+                    <div className="flex h-10 items-center rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-3 text-sm">
+                      <span className="truncate">{productLabel}</span>
+                    </div>
+                  ) : (
+                    <SearchableSelect
+                      options={productOptions}
+                      value={item.productId}
+                      onChange={(value) => updateRow(index, { productId: value })}
+                      placeholder="Chọn sản phẩm"
+                    />
+                  )}
                 </div>
 
-                <div className="grid grid-cols-[1fr_1.4fr_auto] items-end gap-2 md:contents">
+                <div
+                  className={cn(
+                    "grid items-end gap-2 md:contents",
+                    readOnly ? "grid-cols-2" : "grid-cols-[1fr_1.4fr_auto]"
+                  )}
+                >
                   <div className="min-w-0 space-y-1.5">
                     <Label className="text-xs text-[var(--color-text-inverse)] md:sr-only">
                       SL
@@ -107,6 +139,7 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
                       min={1}
                       inputMode="numeric"
                       value={item.quantity}
+                      disabled={readOnly}
                       onChange={(e) =>
                         updateRow(index, {
                           quantity: e.target.value === "" ? "" : Number(e.target.value),
@@ -122,21 +155,24 @@ export function LineItemsField({ items, products, onChange }: LineItemsFieldProp
                     </Label>
                     <VndInput
                       value={item.unitPrice}
+                      disabled={readOnly}
                       onValueChange={(unitPrice) => updateRow(index, { unitPrice })}
                       placeholder="Đơn giá"
                     />
                   </div>
 
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="sm"
-                    className="h-10 w-10 shrink-0 gap-0 p-0"
-                    onClick={() => removeRow(index)}
-                    aria-label="Xóa dòng"
-                  >
-                    <Trash2 className="h-4 w-4 shrink-0" />
-                  </Button>
+                  {!readOnly ? (
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      className="h-10 w-10 shrink-0 gap-0 p-0"
+                      onClick={() => removeRow(index)}
+                      aria-label="Xóa dòng"
+                    >
+                      <Trash2 className="h-4 w-4 shrink-0" />
+                    </Button>
+                  ) : null}
                 </div>
 
                 <p className="text-right text-xs text-[var(--color-text-inverse)] md:hidden">

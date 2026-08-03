@@ -123,14 +123,14 @@ function DocumentCard({
       </div>
 
       {showPayment ? (
-        <div className="grid grid-cols-2 gap-2 border-t border-[var(--color-border-subtle)] pt-3 text-sm">
-          <div>
+        <div className="flex flex-wrap justify-end gap-x-4 gap-y-1 border-t border-[var(--color-border-subtle)] pt-3 text-sm">
+          <div className="text-right">
             <p className="text-xs text-[var(--color-text-inverse)]">Đã thu</p>
             <p className="font-semibold tabular-nums text-[var(--color-text-secondary)]">
               {formatCurrency(paidAmount || 0)}
             </p>
           </div>
-          <div>
+          <div className="text-right">
             <p className="text-xs text-[var(--color-text-inverse)]">Còn nợ</p>
             <p className="font-semibold tabular-nums text-red-600">
               {formatCurrency(remaining || 0)}

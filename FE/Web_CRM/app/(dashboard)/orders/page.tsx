@@ -394,35 +394,12 @@ export default function OrdersPage() {
         item.remainingAmount ?? Math.max(0, (item.total || 0) - paid);
       const paymentStatus = item.paymentStatus || "unpaid";
 
-      const paymentMeta = [
-        {
-          label: "Thanh toán",
-          value: PAYMENT_LABELS[paymentStatus],
-        },
-        {
-          label: "Đã thu",
-          value: formatCurrency(paid),
-        },
-      ];
-
-      if (paymentStatus === "partial") {
-        paymentMeta.push({
-          label: "Còn lại",
-          value: formatCurrency(remaining),
-        });
-      }
-
-      const hasDebt = remaining > 0;
-
-      const extraRows = [
-        ...(item.shippingFee
-          ? [{ label: "Phí giao hàng", value: formatCurrency(item.shippingFee) }]
-          : []),
-        ...(hasDebt && paid > 0
-          ? [{ label: "Tổng đơn", value: formatCurrency(item.total) }]
-          : []),
+      const afterGrandRows = [
         ...(paid > 0
           ? [{ label: "Đã thu", value: formatCurrency(paid) }]
+          : []),
+        ...(paid > 0 && remaining > 0
+          ? [{ label: "Còn lại", value: formatCurrency(remaining) }]
           : []),
       ];
 
@@ -431,7 +408,10 @@ export default function OrdersPage() {
         code: item.code,
         meta: [
           { label: "Trạng thái", value: STATUS_LABELS[item.status] },
-          ...paymentMeta,
+          {
+            label: "Thanh toán",
+            value: PAYMENT_LABELS[paymentStatus],
+          },
           { label: "Kho", value: item.warehouseName || "—" },
           {
             label: "Ngày tạo",
@@ -455,9 +435,15 @@ export default function OrdersPage() {
         subtotal: item.subtotal,
         discount: item.discount,
         total: item.total,
-        grandLabel: hasDebt ? "Còn lại" : "Tổng cộng",
-        grandAmount: hasDebt ? remaining : item.total,
-        extraRows,
+        extraRows: item.shippingFee
+          ? [
+              {
+                label: "Phí giao hàng",
+                value: formatCurrency(item.shippingFee),
+              },
+            ]
+          : [],
+        afterGrandRows,
         note: item.note,
       });
     } catch (err) {
@@ -972,6 +958,11 @@ export default function OrdersPage() {
                               {recipientPhone}
                             </p>
                           ) : null}
+                          {item.dealerName ? (
+                            <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+                              {item.dealerName}
+                            </p>
+                          ) : null}
                         </div>
                         <div className="flex shrink-0 flex-col items-end gap-1.5">
                           <Badge variant={statusBadgeVariant(item.status)}>
@@ -983,22 +974,22 @@ export default function OrdersPage() {
                         </div>
                       </div>
 
-                      <div className="mt-3.5 grid grid-cols-2 gap-2.5">
-                        <div className="rounded-xl bg-[var(--color-surface-muted)] px-3.5 py-3">
-                          <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
+                      <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                        <div>
+                          <p className="text-xs text-[var(--color-text-inverse)]">
                             Tổng đơn
                           </p>
-                          <p className="mt-1 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
+                          <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
                             {formatCurrency(item.total)}
                           </p>
                         </div>
-                        <div className="rounded-xl bg-[var(--color-surface-muted)] px-3.5 py-3">
-                          <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
+                        <div className="text-right">
+                          <p className="text-xs text-[var(--color-text-inverse)]">
                             Còn nợ
                           </p>
                           <p
                             className={cn(
-                              "mt-1 text-base font-bold tabular-nums",
+                              "mt-0.5 text-base font-bold tabular-nums",
                               remaining > 0
                                 ? "text-red-600 dark:text-red-400"
                                 : "text-[var(--color-text-inverse)]"
@@ -1009,7 +1000,7 @@ export default function OrdersPage() {
                         </div>
                       </div>
 
-                      {(deliveryPerson !== "—" || item.tripCode) ? (
+                      {(deliveryPerson !== "—" || item.tripCode || item.trackingCode) ? (
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           {deliveryPerson !== "—" ? (
                             <MobileMetaChip>Giao: {deliveryPerson}</MobileMetaChip>
@@ -1017,16 +1008,13 @@ export default function OrdersPage() {
                           {item.tripCode ? (
                             <MobileMetaChip>Chuyến: {item.tripCode}</MobileMetaChip>
                           ) : null}
+                          {item.trackingCode ? (
+                            <MobileMetaChip>VC: {item.trackingCode}</MobileMetaChip>
+                          ) : null}
                         </div>
                       ) : null}
 
-                      {item.trackingCode ? (
-                        <p className="mt-2.5 truncate text-sm text-[var(--color-text-inverse)]">
-                          Mã VC: {item.trackingCode}
-                        </p>
-                      ) : null}
-
-                      <div className="mt-3.5 flex flex-wrap justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3.5">
+                      <div className="mt-3.5 flex flex-wrap justify-end gap-2">
                         <SearchableSelect
                           options={getAllowedStatusOptions(
                             item,
@@ -1125,16 +1113,17 @@ export default function OrdersPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-                <table className="w-full min-w-[1100px] text-left text-sm">
+                <div className="crm-table-frame">
+                  <table className="crm-data-table min-w-[1100px]">
                   <thead>
-                    <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                      <th className="px-2 py-3 font-medium">Mã</th>
-                      <th className="px-2 py-3 font-medium">Người nhận</th>
-                      <th className="px-2 py-3 font-medium">Tổng / Còn nợ</th>
-                      <th className="px-2 py-3 font-medium">Thanh toán</th>
-                      <th className="px-2 py-3 font-medium">Người giao</th>
-                      <th className="px-2 py-3 font-medium">Trạng thái</th>
-                      <th className="px-2 py-3 font-medium text-right">Thao tác</th>
+                    <tr>
+                      <th className="font-medium">Mã</th>
+                      <th className="font-medium">Người nhận</th>
+                      <th className="font-medium">Tổng / Còn nợ</th>
+                      <th className="font-medium">Thanh toán</th>
+                      <th className="font-medium">Người giao</th>
+                      <th className="font-medium">Trạng thái</th>
+                      <th className="font-medium text-right">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1143,9 +1132,9 @@ export default function OrdersPage() {
                         item.remainingAmount ??
                         Math.max(0, (item.total || 0) - (item.paidAmount || 0));
                       return (
-                        <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                          <td className="px-2 py-3 font-medium">{item.code}</td>
-                          <td className="px-2 py-3">
+                        <tr key={item.id}>
+                          <td className="font-medium">{item.code}</td>
+                          <td>
                             <p className="font-medium">{orderRecipientName(item)}</p>
                             {orderRecipientPhone(item) ? (
                               <p className="text-sm text-[var(--color-text-inverse)]">
@@ -1158,13 +1147,22 @@ export default function OrdersPage() {
                               </p>
                             ) : null}
                           </td>
-                          <td className="px-2 py-3">
-                            <p>{formatCurrency(item.total)}</p>
-                            <p className="text-xs text-[var(--color-text-inverse)]">
+                          <td>
+                            <p className="font-semibold tabular-nums text-[var(--color-text-secondary)]">
+                              {formatCurrency(item.total)}
+                            </p>
+                            <p
+                              className={cn(
+                                "text-xs tabular-nums",
+                                remaining > 0
+                                  ? "font-semibold text-red-600 dark:text-red-400"
+                                  : "text-[var(--color-text-inverse)]"
+                              )}
+                            >
                               Còn: {formatCurrency(remaining)}
                             </p>
                           </td>
-                          <td className="px-2 py-3">
+                          <td>
                             <Badge
                               variant={
                                 item.paymentStatus === "paid"
@@ -1177,7 +1175,7 @@ export default function OrdersPage() {
                               {PAYMENT_LABELS[item.paymentStatus || "unpaid"]}
                             </Badge>
                           </td>
-                          <td className="px-2 py-3">
+                          <td>
                             <p>{orderDeliveryPerson(item)}</p>
                             {item.trackingCode ? (
                               <p className="text-xs text-[var(--color-text-inverse)]">
@@ -1185,7 +1183,7 @@ export default function OrdersPage() {
                               </p>
                             ) : null}
                           </td>
-                          <td className="px-2 py-3">
+                          <td>
                             <div className="w-[150px]">
                               <SearchableSelect
                                 options={getAllowedStatusOptions(
@@ -1206,7 +1204,7 @@ export default function OrdersPage() {
                               />
                             </div>
                           </td>
-                          <td className="px-2 py-3">
+                          <td>
                             <div className="flex justify-end gap-2">
                               <Button
                                 variant="outline"
@@ -1273,6 +1271,7 @@ export default function OrdersPage() {
                     })}
                   </tbody>
                 </table>
+                </div>
               </div>
 
               <Pagination

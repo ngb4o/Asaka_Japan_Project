@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   Handshake,
   LayoutDashboard,
-  Package,
   Route,
   ShoppingCart,
   Warehouse,
@@ -15,45 +14,41 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canAccessPath, rolesOf } from "@/lib/auth/permissions";
-import { useNotifications } from "@/lib/notifications/NotificationProvider";
 import { useMobileChrome } from "@/components/layout/MobileChromeProvider";
 import type { UserRole } from "@/lib/types";
-
-type BadgeKey = "dealers" | "orders" | "stock";
 
 type TabDef = {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  badgeKey?: BadgeKey | null;
 };
 
 /** Primary mobile tabs per role. Full menu stays available via header hamburger. */
 const TABS_BY_ROLE: Record<UserRole, TabDef[]> = {
   admin: [
     { href: "/dashboard", label: "Tổng quan", icon: LayoutDashboard },
-    { href: "/orders", label: "Đơn", icon: ShoppingCart, badgeKey: "orders" },
-    { href: "/inventory", label: "Kho", icon: Warehouse, badgeKey: "stock" },
-    { href: "/dealers", label: "Đại lý", icon: Handshake, badgeKey: "dealers" },
+    { href: "/orders", label: "Đơn", icon: ShoppingCart },
+    { href: "/inventory", label: "Kho", icon: Warehouse },
+    { href: "/dealers", label: "Đại lý", icon: Handshake },
     { href: "/trips", label: "Chuyến", icon: Route },
   ],
   sales: [
     { href: "/dashboard", label: "Tổng quan", icon: LayoutDashboard },
-    { href: "/orders", label: "Đơn", icon: ShoppingCart, badgeKey: "orders" },
-    { href: "/inventory", label: "Kho", icon: Warehouse, badgeKey: "stock" },
-    { href: "/dealers", label: "Đại lý", icon: Handshake, badgeKey: "dealers" },
+    { href: "/orders", label: "Đơn", icon: ShoppingCart },
+    { href: "/inventory", label: "Kho", icon: Warehouse },
+    { href: "/dealers", label: "Đại lý", icon: Handshake },
     { href: "/trips", label: "Chuyến", icon: Route },
   ],
   warehouse: [
     { href: "/dashboard", label: "Tổng quan", icon: LayoutDashboard },
-    { href: "/orders", label: "Đơn", icon: ShoppingCart, badgeKey: "orders" },
-    { href: "/inventory", label: "Kho", icon: Warehouse, badgeKey: "stock" },
-    { href: "/dealers", label: "Đại lý", icon: Handshake, badgeKey: "dealers" },
+    { href: "/orders", label: "Đơn", icon: ShoppingCart },
+    { href: "/inventory", label: "Kho", icon: Warehouse },
+    { href: "/dealers", label: "Đại lý", icon: Handshake },
     { href: "/trips", label: "Chuyến", icon: Route },
   ],
   accountant: [
     { href: "/dashboard", label: "Tổng quan", icon: LayoutDashboard },
-    { href: "/orders", label: "Đơn", icon: ShoppingCart, badgeKey: "orders" },
+    { href: "/orders", label: "Đơn", icon: ShoppingCart },
     { href: "/receivables", label: "Công nợ", icon: AlertTriangle },
     { href: "/payroll", label: "Lương", icon: Wallet },
     { href: "/trips", label: "Chuyến", icon: Route },
@@ -112,7 +107,6 @@ type MobileBottomNavProps = {
 export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProps) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { counts } = useNotifications();
   const { visible } = useMobileChrome();
 
   const accessRoles = rolesOf(user);
@@ -136,10 +130,6 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = isActive(pathname, tab.href);
-          const badge =
-            tab.badgeKey && counts[tab.badgeKey] > 0
-              ? counts[tab.badgeKey]
-              : 0;
 
           return (
             <Link
@@ -152,14 +142,7 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
                   : "text-[var(--color-text-inverse)]"
               )}
             >
-              <span className="relative">
-                <Icon className="h-5 w-5 shrink-0" />
-                {badge > 0 ? (
-                  <span className="absolute -right-2 -top-1.5 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold text-white">
-                    {badge > 9 ? "9+" : badge}
-                  </span>
-                ) : null}
-              </span>
+              <Icon className="h-5 w-5 shrink-0" />
               <span className="max-w-full truncate text-[10px] font-medium leading-tight">
                 {tab.label}
               </span>

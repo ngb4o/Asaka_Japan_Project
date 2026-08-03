@@ -26,6 +26,15 @@ const money = (value) => {
   return `${amount.toLocaleString('vi-VN')}đ`
 }
 
+const EXPENSE_CATEGORY_LABEL = {
+  fuel: 'Xăng',
+  food: 'Ăn uống',
+  lodging: 'Lưu trú',
+  toll: 'Cầu đường',
+  parking: 'Gửi xe',
+  other: 'Khác'
+}
+
 const line = (icon, label, value) => {
   if (value == null || String(value).trim() === '') return null
   return `${icon} ${label}: ${String(value).trim()}`
@@ -74,6 +83,16 @@ export const webPushCopy = {
       orderBody(order),
       orderDetailUrl(order),
       id ? `order-${id}` : 'order'
+    )
+  },
+
+  orderDeliveryAssigned: (order) => {
+    const id = entityId(order)
+    return push(
+      '🚚 Bạn được gắn giao đơn',
+      orderBody(order),
+      orderDetailUrl(order),
+      id ? `order-delivery-${id}` : 'order-delivery'
     )
   },
 
@@ -160,6 +179,29 @@ export const webPushCopy = {
     )
   },
 
+  tripCreated: (trip) => {
+    const id = entityId(trip)
+    const memberNames = Array.isArray(trip.members)
+      ? trip.members.map((m) => m.fullName).filter(Boolean).join(', ')
+      : ''
+    const orderCount = Array.isArray(trip.orders)
+      ? trip.orders.length
+      : Array.isArray(trip.orderIds)
+        ? trip.orderIds.length
+        : 0
+    return push(
+      '🧳 Chuyến công tác mới — cần tạm ứng',
+      lines(
+        line('🧾', 'Mã chuyến', trip.code),
+        line('📍', 'Tuyến', trip.region || trip.title),
+        line('👥', 'Người đi', memberNames),
+        line('📦', 'Đơn gắn', orderCount > 0 ? `${orderCount} đơn` : null)
+      ),
+      withId('/trips', id),
+      id ? `trip-created-${id}` : 'trip-created'
+    )
+  },
+
   tripStarted: (trip, stopCount = 0) => {
     const id = entityId(trip)
     return push(
@@ -174,6 +216,74 @@ export const webPushCopy = {
       ),
       withId('/trips', id),
       id ? `trip-${id}` : 'trip'
+    )
+  },
+
+  tripAdvance: (trip, advance = {}) => {
+    const id = entityId(trip)
+    return push(
+      '💵 Đã ghi tạm ứng chuyến',
+      lines(
+        line('🧾', 'Mã chuyến', trip.code),
+        line('💰', 'Số tiền ứng', money(advance.amount)),
+        line('📝', 'Ghi chú', advance.note)
+      ),
+      withId('/trips', id),
+      id ? `trip-advance-${id}-${advance.id || Date.now()}` : 'trip-advance'
+    )
+  },
+
+  tripExpensePending: (trip, expense = {}) => {
+    const id = entityId(trip)
+    const category =
+      EXPENSE_CATEGORY_LABEL[expense.category] || expense.category || 'Chi phí'
+    return push(
+      '🧾 Chi phí chuyến chờ duyệt',
+      lines(
+        line('🧾', 'Mã chuyến', trip.code),
+        line('📂', 'Loại', category),
+        line('💰', 'Số tiền', money(expense.amount)),
+        line('📝', 'Ghi chú', expense.note)
+      ),
+      withId('/trips', id),
+      id
+        ? `trip-expense-pending-${id}-${expense.id || Date.now()}`
+        : 'trip-expense-pending'
+    )
+  },
+
+  tripExpenseReviewed: (trip, expense = {}, status) => {
+    const id = entityId(trip)
+    const approved = status === 'approved'
+    const category =
+      EXPENSE_CATEGORY_LABEL[expense.category] || expense.category || 'Chi phí'
+    return push(
+      approved ? '✅ Chi phí chuyến đã được duyệt' : '❌ Chi phí chuyến bị từ chối',
+      lines(
+        line('🧾', 'Mã chuyến', trip.code),
+        line('📂', 'Loại', category),
+        line('💰', 'Số tiền', money(expense.amount)),
+        line('📝', 'Ghi chú', expense.note)
+      ),
+      withId('/trips', id),
+      id
+        ? `trip-expense-${id}-${expense.id || Date.now()}-${status}`
+        : `trip-expense-${status}`
+    )
+  },
+
+  tripSettled: (trip, settlement = {}) => {
+    const id = entityId(trip)
+    return push(
+      '🔒 Chuyến đã quyết toán',
+      lines(
+        line('🧾', 'Mã chuyến', trip.code),
+        line('💵', 'Tổng ứng', money(settlement.advanceTotal)),
+        line('💸', 'Cty trả NV', money(settlement.companyPay)),
+        line('📥', 'NV nộp lại', money(settlement.employeeReturn))
+      ),
+      withId('/trips', id),
+      id ? `trip-settled-${id}` : 'trip-settled'
     )
   },
 

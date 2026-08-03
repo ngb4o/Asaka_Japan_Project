@@ -8,7 +8,9 @@ import {
   Bell,
   Handshake,
   MessageSquare,
+  Route,
   ShoppingCart,
+  Wallet,
 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
@@ -37,9 +39,17 @@ const TYPE_META: Record<
     icon: ShoppingCart,
     tone: "bg-violet-500/10 text-violet-600",
   },
+  payment: {
+    icon: Wallet,
+    tone: "bg-emerald-500/10 text-emerald-700",
+  },
   stock: {
     icon: AlertTriangle,
     tone: "bg-red-500/10 text-red-600",
+  },
+  trip: {
+    icon: Route,
+    tone: "bg-teal-500/10 text-teal-700",
   },
 };
 
@@ -112,7 +122,7 @@ function NotificationList({
             className="divide-y divide-[var(--color-border-subtle)]"
           >
             {items.map((item) => {
-              const meta = TYPE_META[item.type];
+              const meta = TYPE_META[item.type] || TYPE_META.order;
               const Icon = meta.icon;
 
               return (

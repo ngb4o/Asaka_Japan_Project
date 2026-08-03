@@ -630,19 +630,20 @@ function RankList({
 
             {/* Desktop: table */}
             <div className="crm-table-scroll hidden md:block">
-              <table className="w-full min-w-[300px] table-fixed text-left text-sm">
+              <div className="crm-table-frame">
+                <table className="crm-data-table min-w-[300px] table-fixed">
                 <colgroup>
                   {colWidths.map((width, index) => (
                     <col key={`${tableHeaders[index]}-${index}`} style={{ width }} />
                   ))}
                 </colgroup>
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
+                  <tr>
                     {tableHeaders.map((header, index) => (
                       <th
                         key={header}
                         className={cn(
-                          "px-2 py-2 font-medium",
+                          "font-medium",
                           index === 0 ? "text-left" : "text-right"
                         )}
                       >
@@ -653,11 +654,8 @@ function RankList({
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="border-b border-[var(--color-border-subtle)]"
-                    >
-                      <td className="max-w-0 px-2 py-2 align-top font-medium">
+                    <tr key={item.id}>
+                      <td className="max-w-0 align-top font-medium">
                         <p className="truncate">{item.title}</p>
                         {item.subtitle ? (
                           <p className="truncate text-xs font-normal text-[var(--color-text-inverse)]">
@@ -669,7 +667,7 @@ function RankList({
                         <td
                           key={stat.label}
                           className={cn(
-                            "whitespace-nowrap px-2 py-2 text-right align-top tabular-nums",
+                            "whitespace-nowrap text-right align-top tabular-nums",
                             stat.valueClassName || "text-[var(--color-text-inverse)]"
                           )}
                         >
@@ -680,6 +678,7 @@ function RankList({
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </>
         )}

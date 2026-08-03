@@ -12,13 +12,35 @@ Router.post('/', requireRoles('sales', 'warehouse', 'accountant'), tripValidatio
 Router.get('/', requireRoles('sales', 'warehouse', 'accountant'), tripController.getList)
 Router.get('/:id', requireRoles('sales', 'warehouse', 'accountant'), tripController.getDetails)
 Router.put('/:id', requireRoles('sales', 'warehouse', 'accountant'), tripValidation.update, tripController.update)
-Router.delete('/:id', requireRoles('accountant'), tripController.deleteOne)
+Router.delete('/:id', requireRoles('sales', 'warehouse', 'accountant'), tripController.deleteOne)
 
 Router.post('/:id/stops', requireRoles('sales', 'warehouse', 'accountant'), tripValidation.addStop, tripController.addStop)
 Router.delete('/:id/stops/:stopId', requireRoles('sales', 'warehouse', 'accountant'), tripController.removeStop)
 
 Router.post('/:id/advances', requireRoles('accountant'), tripValidation.addAdvance, tripController.addAdvance)
+Router.put(
+  '/:id/advances/:advanceId',
+  requireRoles('accountant'),
+  tripValidation.addAdvance,
+  tripController.updateAdvance
+)
+Router.delete(
+  '/:id/advances/:advanceId',
+  requireRoles('accountant'),
+  tripController.removeAdvance
+)
 Router.post('/:id/expenses', requireRoles('sales', 'warehouse', 'accountant'), tripValidation.addExpense, tripController.addExpense)
+Router.put(
+  '/:id/expenses/:expenseId',
+  requireRoles('sales', 'warehouse', 'accountant'),
+  tripValidation.addExpense,
+  tripController.updateExpense
+)
+Router.delete(
+  '/:id/expenses/:expenseId',
+  requireRoles('sales', 'warehouse', 'accountant'),
+  tripController.removeExpense
+)
 Router.put(
   '/:id/expenses/:expenseId/review',
   requireRoles('accountant'),

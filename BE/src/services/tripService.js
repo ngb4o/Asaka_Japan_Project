@@ -3,6 +3,7 @@ import { tripModel } from '~/models/tripModel'
 import { employeeModel } from '~/models/employeeModel'
 import { orderModel } from '~/models/orderModel'
 import { dealerModel } from '~/models/dealerModel'
+import { warehouseModel } from '~/models/warehouseModel'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { formatDocument } from '~/utils/formatters'
@@ -13,6 +14,65 @@ import { buildSearchFilter } from '~/utils/search.js'
 import { hasAnyRole } from '~/utils/roles'
 
 const newId = () => new ObjectId().toString()
+
+const getOrderDeliveryEmployeeIds = (order) => {
+  const ids = []
+  if (Array.isArray(order.deliveryEmployeeIds)) {
+    for (const id of order.deliveryEmployeeIds) {
+      if (id) ids.push(id.toString())
+    }
+  }
+  if (order.deliveryEmployeeId) {
+    ids.push(order.deliveryEmployeeId.toString())
+  }
+  return [...new Set(ids)]
+}
+
+/**
+ * Mọi NV giao trên đơn gắn chuyến phải nằm trong Người đi.
+ * Người đi có thể nhiều hơn NV giao (tài xế phụ, theo xe…).
+ */
+const assertOrdersCoveredByMembers = async (memberIds, orderIds) => {
+  if (!Array.isArray(orderIds) || !orderIds.length) return
+
+  const memberSet = new Set((memberIds || []).map((id) => String(id)))
+  const conflicts = []
+
+  for (const orderId of orderIds) {
+    const order = await orderModel.findOneById(orderId)
+    if (!order) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Đơn hàng không hợp lệ!')
+    }
+    const deliveryIds = getOrderDeliveryEmployeeIds(order)
+    const missing = deliveryIds.filter((id) => !memberSet.has(id))
+    if (missing.length) {
+      conflicts.push({ code: order.code, missing })
+    }
+  }
+
+  if (!conflicts.length) return
+
+  const missingIds = [...new Set(conflicts.flatMap((item) => item.missing))]
+  const employees = missingIds.length
+    ? await employeeModel.findMany(
+      { _id: { $in: missingIds.map((id) => new ObjectId(id)) } },
+      { limit: missingIds.length, skip: 0 }
+    )
+    : { items: [] }
+  const nameMap = new Map(
+    employees.items.map((item) => [item._id.toString(), item.fullName || item.code || ''])
+  )
+  const orderCodes = conflicts.map((item) => item.code).join(', ')
+  const names = missingIds
+    .map((id) => nameMap.get(id) || id)
+    .filter(Boolean)
+    .join(', ')
+
+  throw new ApiError(
+    StatusCodes.BAD_REQUEST,
+    `Đơn ${orderCodes}: NV giao (${names}) chưa nằm trong Người đi. Thêm đủ NV giao vào chuyến hoặc bỏ chọn đơn.`
+  )
+}
 
 const parseDate = (value, label = 'Ngày') => {
   if (value === undefined) return undefined
@@ -86,13 +146,47 @@ const calcSettlementPreview = (trip) => {
   const expenseAdvanceTotal = approved
     .filter((item) => item.funding === tripModel.EXPENSE_FUNDING.ADVANCE)
     .reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
-  const expenseReimburseTotal = approved
-    .filter((item) => item.funding === tripModel.EXPENSE_FUNDING.REIMBURSE)
-    .reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+  const reimburseExpenses = approved.filter(
+    (item) => item.funding === tripModel.EXPENSE_FUNDING.REIMBURSE
+  )
+  const expenseReimburseTotal = reimburseExpenses.reduce(
+    (sum, item) => sum + (Number(item.amount) || 0),
+    0
+  )
 
   const employeeReturn = Math.max(0, advanceTotal - expenseAdvanceTotal)
-  const companyPay =
-    expenseReimburseTotal + Math.max(0, expenseAdvanceTotal - advanceTotal)
+  const advanceTopUp = Math.max(0, expenseAdvanceTotal - advanceTotal)
+  const companyPay = expenseReimburseTotal + advanceTopUp
+
+  // Hoàn chi "tự bỏ" → đúng NV đã trả; phần bù quỹ ứng chia đều người đi
+  const payByEmployee = new Map()
+  const memberIds = (trip.memberIds || []).map((id) => id.toString())
+  for (const expense of reimburseExpenses) {
+    const paidBy =
+      expense.paidByEmployeeId?.toString?.() ||
+      expense.paidByEmployeeId ||
+      null
+    if (paidBy) {
+      payByEmployee.set(paidBy, (payByEmployee.get(paidBy) || 0) + (Number(expense.amount) || 0))
+    } else if (memberIds.length) {
+      // Chi cũ chưa gắn NV: chia đều (tương thích ngược)
+      const share = (Number(expense.amount) || 0) / memberIds.length
+      for (const memberId of memberIds) {
+        payByEmployee.set(memberId, (payByEmployee.get(memberId) || 0) + share)
+      }
+    }
+  }
+  if (advanceTopUp > 0 && memberIds.length) {
+    const share = advanceTopUp / memberIds.length
+    for (const memberId of memberIds) {
+      payByEmployee.set(memberId, (payByEmployee.get(memberId) || 0) + share)
+    }
+  }
+
+  const companyPayByEmployee = [...payByEmployee.entries()].map(([employeeId, amount]) => ({
+    employeeId,
+    amount: Math.round(amount)
+  }))
 
   return {
     advanceTotal,
@@ -100,7 +194,8 @@ const calcSettlementPreview = (trip) => {
     expenseReimburseTotal,
     employeeReturn,
     companyPay,
-    balance: companyPay - employeeReturn
+    balance: companyPay - employeeReturn,
+    companyPayByEmployee
   }
 }
 
@@ -110,15 +205,8 @@ const formatTrip = async (trip) => {
 
   const memberIds = (trip.memberIds || []).map((id) => id.toString())
   const orderIds = (trip.orderIds || []).map((id) => id.toString())
-  const dealerIds = [
-    ...new Set(
-      (trip.stops || [])
-        .filter((stop) => stop.dealerId)
-        .map((stop) => stop.dealerId.toString())
-    )
-  ]
 
-  const [membersResult, ordersResult, dealersResult] = await Promise.all([
+  const [membersResult, ordersResult] = await Promise.all([
     memberIds.length
       ? employeeModel.findMany(
         { _id: { $in: memberIds.map((id) => new ObjectId(id)) } },
@@ -130,29 +218,158 @@ const formatTrip = async (trip) => {
         { _id: { $in: orderIds.map((id) => new ObjectId(id)) } },
         { limit: orderIds.length, skip: 0 }
       )
-      : Promise.resolve({ items: [] }),
-    dealerIds.length
-      ? dealerModel.findMany(
-        { _id: { $in: dealerIds.map((id) => new ObjectId(id)) } },
-        { limit: dealerIds.length, skip: 0 }
-      )
       : Promise.resolve({ items: [] })
   ])
 
   const memberMap = new Map(
     membersResult.items.map((item) => [item._id.toString(), item.fullName])
   )
+
+  const orderDealerIds = []
+  const orderWarehouseIds = []
+  const orderDeliveryIds = []
   const orderMap = new Map(
-    ordersResult.items.map((item) => [
-      item._id.toString(),
-      { code: item.code, total: item.total, status: item.status, customerName: item.customerName }
-    ])
+    ordersResult.items.map((item) => {
+      const total = Number(item.total) || 0
+      const costTotal = Math.max(0, Number(item.costTotal) || 0)
+      const cancelled = item.status === orderModel.ORDER_STATUS.CANCELLED
+      const grossProfit = cancelled
+        ? 0
+        : item.grossProfit !== undefined && item.grossProfit !== null
+          ? Number(item.grossProfit) || 0
+          : Math.round(total - costTotal)
+      const deliveryIds = []
+      if (Array.isArray(item.deliveryEmployeeIds)) {
+        for (const id of item.deliveryEmployeeIds) {
+          if (id) deliveryIds.push(id.toString())
+        }
+      }
+      if (item.deliveryEmployeeId) {
+        deliveryIds.push(item.deliveryEmployeeId.toString())
+      }
+      const uniqueDelivery = [...new Set(deliveryIds)]
+      const dealerId = item.dealerId ? item.dealerId.toString() : null
+      const warehouseId = item.warehouseId ? item.warehouseId.toString() : null
+      if (dealerId) orderDealerIds.push(dealerId)
+      if (warehouseId) orderWarehouseIds.push(warehouseId)
+      orderDeliveryIds.push(...uniqueDelivery)
+      return [
+        item._id.toString(),
+        {
+          code: item.code,
+          total,
+          costTotal,
+          grossProfit,
+          status: item.status,
+          paymentStatus: item.paymentStatus || '',
+          paidAmount: Math.max(0, Number(item.paidAmount) || 0),
+          customerName: item.customerName || '',
+          customerPhone: item.customerPhone || '',
+          shippingAddress: item.shippingAddress || '',
+          shippingContactName: item.shippingContactName || '',
+          shippingPhone: item.shippingPhone || '',
+          shippingNote: item.shippingNote || '',
+          shippingDate: item.shippingDate || null,
+          deliveredAt: item.deliveredAt || null,
+          warehouseId,
+          dealerId,
+          deliveryEmployeeIds: uniqueDelivery,
+          itemCount: Array.isArray(item.items) ? item.items.length : 0
+        }
+      ]
+    })
   )
+
+  const stopDealerIds = (trip.stops || [])
+    .filter((stop) => stop.dealerId)
+    .map((stop) => stop.dealerId.toString())
+  const dealerIds = [...new Set([...stopDealerIds, ...orderDealerIds])]
+  const warehouseIds = [...new Set(orderWarehouseIds)]
+  const deliveryLookupIds = [
+    ...new Set([...orderDeliveryIds, ...memberIds])
+  ]
+
+  const [dealersResult, warehousesResult, deliveryEmployees] = await Promise.all([
+    dealerIds.length
+      ? dealerModel.findMany(
+        { _id: { $in: dealerIds.map((id) => new ObjectId(id)) } },
+        { limit: dealerIds.length, skip: 0 }
+      )
+      : Promise.resolve({ items: [] }),
+    warehouseIds.length
+      ? warehouseModel.findMany(
+        { _id: { $in: warehouseIds.map((id) => new ObjectId(id)) } },
+        { limit: warehouseIds.length, skip: 0 }
+      )
+      : Promise.resolve({ items: [] }),
+    deliveryLookupIds.length
+      ? employeeModel.findMany(
+        { _id: { $in: deliveryLookupIds.map((id) => new ObjectId(id)) } },
+        { limit: deliveryLookupIds.length, skip: 0 }
+      )
+      : Promise.resolve({ items: [] })
+  ])
+
   const dealerMap = new Map(
     dealersResult.items.map((item) => [item._id.toString(), item.name])
   )
+  const warehouseMap = new Map(
+    warehousesResult.items.map((item) => [item._id.toString(), item.name])
+  )
+  for (const item of deliveryEmployees.items) {
+    memberMap.set(item._id.toString(), item.fullName)
+  }
 
   const preview = calcSettlementPreview(trip)
+  const linkedOrders = orderIds.map((id) => {
+    const base = orderMap.get(id) || {
+      code: '—',
+      total: 0,
+      costTotal: 0,
+      grossProfit: 0,
+      status: '',
+      paymentStatus: '',
+      paidAmount: 0,
+      customerName: '',
+      customerPhone: '',
+      shippingAddress: '',
+      shippingContactName: '',
+      shippingPhone: '',
+      shippingNote: '',
+      shippingDate: null,
+      deliveredAt: null,
+      warehouseId: null,
+      dealerId: null,
+      deliveryEmployeeIds: [],
+      itemCount: 0
+    }
+    const deliveryNames = (base.deliveryEmployeeIds || [])
+      .map((empId) => memberMap.get(empId) || '')
+      .filter(Boolean)
+    return {
+      id,
+      ...base,
+      dealerName: base.dealerId ? dealerMap.get(base.dealerId) || '' : '',
+      warehouseName: base.warehouseId
+        ? warehouseMap.get(base.warehouseId) || ''
+        : '',
+      deliveryEmployeeNames: deliveryNames,
+      deliveryEmployeeName: deliveryNames.join(', ')
+    }
+  })
+  const orderRevenue = linkedOrders
+    .filter((o) => o.status && o.status !== orderModel.ORDER_STATUS.CANCELLED)
+    .reduce((sum, o) => sum + (Number(o.total) || 0), 0)
+  const orderCostTotal = linkedOrders
+    .filter((o) => o.status && o.status !== orderModel.ORDER_STATUS.CANCELLED)
+    .reduce((sum, o) => sum + (Number(o.costTotal) || 0), 0)
+  const orderGrossProfit = linkedOrders
+    .filter((o) => o.status && o.status !== orderModel.ORDER_STATUS.CANCELLED)
+    .reduce((sum, o) => sum + (Number(o.grossProfit) || 0), 0)
+  const tripExpenseTotal =
+    (Number(preview.expenseAdvanceTotal) || 0) +
+    (Number(preview.expenseReimburseTotal) || 0)
+  const tripNetProfit = Math.round(orderGrossProfit - tripExpenseTotal)
 
   return {
     ...formatted,
@@ -162,24 +379,38 @@ const formatTrip = async (trip) => {
       id,
       fullName: memberMap.get(id) || '—'
     })),
-    orders: orderIds.map((id) => ({
-      id,
-      ...(orderMap.get(id) || { code: '—', total: 0, status: '', customerName: '' })
-    })),
+    orders: linkedOrders,
     stops: (trip.stops || []).map((stop) => ({
       ...stop,
       id: stop.id,
       dealerId: stop.dealerId ? stop.dealerId.toString() : null,
       dealerName: stop.dealerId ? dealerMap.get(stop.dealerId.toString()) || '' : ''
     })),
-    advances: trip.advances || [],
-    expenses: (trip.expenses || []).map((expense) => ({
-      ...expense,
-      createdBy: expense.createdBy?.toString?.() || expense.createdBy || null,
-      reviewedBy: expense.reviewedBy?.toString?.() || expense.reviewedBy || null
+    advances: (trip.advances || []).map((advance) => ({
+      ...advance,
+      createdBy: advance.createdBy?.toString?.() || advance.createdBy || null,
+      receiptUrl: advance.receiptUrl || ''
     })),
+    expenses: (trip.expenses || []).map((expense) => {
+      const paidBy =
+        expense.paidByEmployeeId?.toString?.() || expense.paidByEmployeeId || null
+      return {
+        ...expense,
+        createdBy: expense.createdBy?.toString?.() || expense.createdBy || null,
+        reviewedBy: expense.reviewedBy?.toString?.() || expense.reviewedBy || null,
+        paidByEmployeeId: paidBy,
+        paidByEmployeeName: paidBy ? memberMap.get(paidBy) || '' : ''
+      }
+    }),
     settlementPreview: preview,
-    settlement: trip.settlement || null
+    settlement: trip.settlement || null,
+    profitSummary: {
+      orderRevenue,
+      orderCostTotal,
+      orderGrossProfit,
+      tripExpenseTotal,
+      tripNetProfit
+    }
   }
 }
 
@@ -226,6 +457,7 @@ const createNew = async (reqBody, userId) => {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Đơn hàng không hợp lệ!')
     }
   }
+  await assertOrdersCoveredByMembers(memberIds, orderIds)
 
   const code = await generateDocumentCode(tripModel.TRIP_COLLECTION_NAME, 'CT')
   const created = await tripModel.createNew({
@@ -249,7 +481,9 @@ const createNew = async (reqBody, userId) => {
     await syncOrderTripLinks(created.insertedId.toString(), orderIds, [])
   }
 
-  return await getDetails(created.insertedId.toString())
+  const formatted = await getDetails(created.insertedId.toString())
+  staffNotifyService.onTripCreated(formatted)
+  return formatted
 }
 
 const getList = async (query, actorUserId, actorRoles) => {
@@ -362,6 +596,22 @@ const update = async (tripId, updateData, actorUserId, actorRole) => {
     dataToUpdate.orderIds = nextOrderIds
   }
 
+  const finalMemberIds =
+    updateData.memberIds !== undefined
+      ? updateData.memberIds
+      : (trip.memberIds || []).map((id) => id.toString())
+  const finalOrderIds =
+    nextOrderIds !== undefined
+      ? nextOrderIds
+      : (trip.orderIds || []).map((id) => id.toString())
+
+  if (
+    updateData.memberIds !== undefined ||
+    updateData.orderIds !== undefined
+  ) {
+    await assertOrdersCoveredByMembers(finalMemberIds, finalOrderIds)
+  }
+
   await tripModel.update(tripId, dataToUpdate)
 
   if (nextOrderIds) {
@@ -384,11 +634,12 @@ const update = async (tripId, updateData, actorUserId, actorRole) => {
   return formatted
 }
 
-const deleteOne = async (tripId) => {
+const deleteOne = async (tripId, actorUserId, actorRoles) => {
   const trip = await tripModel.findOneById(tripId)
   if (!trip) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy chuyến công tác!')
   }
+  await assertCanOperateTrip(trip, actorUserId, actorRoles)
   if (trip.status === tripModel.TRIP_STATUS.CLOSED) {
     throw new ApiError(StatusCodes.CONFLICT, 'Không thể xóa chuyến đã quyết toán!')
   }
@@ -442,6 +693,7 @@ const addAdvance = async (tripId, body, userId) => {
     id: newId(),
     amount,
     note: body.note || '',
+    receiptUrl: body.receiptUrl || '',
     createdBy: userId,
     createdAt: new Date()
   }
@@ -456,11 +708,46 @@ const addAdvance = async (tripId, body, userId) => {
 
   const formatted = await getDetails(tripId)
 
-  if (trip.status === tripModel.TRIP_STATUS.DRAFT) {
-    staffNotifyService.onTripStarted(formatted)
-  }
+  // Chỉ notify tạm ứng — tránh double với tripStarted khi draft → in_progress
+  staffNotifyService.onTripAdvance(formatted, advance, userId)
 
   return formatted
+}
+
+const resolveExpenseFunding = (trip, body) => {
+  const amount = Number(body.amount) || 0
+  if (amount <= 0) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Số tiền chi phải lớn hơn 0!')
+  }
+
+  const funding = body.funding || tripModel.EXPENSE_FUNDING.ADVANCE
+  let paidByEmployeeId = null
+  if (funding === tripModel.EXPENSE_FUNDING.REIMBURSE) {
+    paidByEmployeeId = body.paidByEmployeeId ? String(body.paidByEmployeeId) : null
+    if (!paidByEmployeeId) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Chọn nhân viên đã tự bỏ tiền để hoàn lại đúng người!'
+      )
+    }
+    const memberIds = (trip.memberIds || []).map((id) => id.toString())
+    if (!memberIds.includes(paidByEmployeeId)) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Nhân viên tự bỏ tiền phải là người đi trong chuyến!'
+      )
+    }
+  }
+
+  return {
+    amount,
+    funding,
+    paidByEmployeeId,
+    category: body.category || tripModel.EXPENSE_CATEGORY.OTHER,
+    date: parseDate(body.date, 'Ngày chi') || new Date(),
+    receiptUrl: body.receiptUrl || '',
+    note: body.note || ''
+  }
 }
 
 const addExpense = async (tripId, body, userId, actorRole) => {
@@ -469,19 +756,10 @@ const addExpense = async (tripId, body, userId, actorRole) => {
   await assertCanOperateTrip(trip, userId, actorRole)
   assertEditable(trip)
 
-  const amount = Number(body.amount) || 0
-  if (amount <= 0) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Số tiền chi phải lớn hơn 0!')
-  }
-
+  const fields = resolveExpenseFunding(trip, body)
   const expense = {
     id: newId(),
-    category: body.category || tripModel.EXPENSE_CATEGORY.OTHER,
-    amount,
-    date: parseDate(body.date, 'Ngày chi') || new Date(),
-    funding: body.funding || tripModel.EXPENSE_FUNDING.ADVANCE,
-    receiptUrl: body.receiptUrl || '',
-    note: body.note || '',
+    ...fields,
     status: tripModel.EXPENSE_STATUS.PENDING,
     createdBy: userId,
     createdAt: new Date(),
@@ -496,6 +774,114 @@ const addExpense = async (tripId, body, userId, actorRole) => {
         ? tripModel.TRIP_STATUS.IN_PROGRESS
         : trip.status
   })
+  const formatted = await getDetails(tripId)
+  staffNotifyService.onTripExpensePending(formatted, expense, userId)
+  return formatted
+}
+
+const updateAdvance = async (tripId, advanceId, body) => {
+  const trip = await tripModel.findOneById(tripId)
+  if (!trip) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy chuyến!')
+  assertEditable(trip)
+
+  const amount = Number(body.amount) || 0
+  if (amount <= 0) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Số tiền ứng phải lớn hơn 0!')
+  }
+
+  const advances = trip.advances || []
+  const existing = advances.find((item) => item.id === advanceId)
+  if (!existing) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy khoản tạm ứng!')
+  }
+
+  await tripModel.update(tripId, {
+    advances: advances.map((item) =>
+      item.id !== advanceId
+        ? item
+        : {
+            ...item,
+            amount,
+            note: body.note !== undefined ? body.note || '' : item.note,
+            receiptUrl:
+              body.receiptUrl !== undefined ? body.receiptUrl || '' : item.receiptUrl,
+            updatedAt: new Date()
+          }
+    )
+  })
+  return await getDetails(tripId)
+}
+
+const removeAdvance = async (tripId, advanceId) => {
+  const trip = await tripModel.findOneById(tripId)
+  if (!trip) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy chuyến!')
+  assertEditable(trip)
+
+  const advances = trip.advances || []
+  if (!advances.some((item) => item.id === advanceId)) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy khoản tạm ứng!')
+  }
+
+  await tripModel.update(tripId, {
+    advances: advances.filter((item) => item.id !== advanceId)
+  })
+  return await getDetails(tripId)
+}
+
+const updateExpense = async (tripId, expenseId, body, userId, actorRole) => {
+  const trip = await tripModel.findOneById(tripId)
+  if (!trip) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy chuyến!')
+  await assertCanOperateTrip(trip, userId, actorRole)
+  assertEditable(trip)
+
+  const expenses = trip.expenses || []
+  const existing = expenses.find((item) => item.id === expenseId)
+  if (!existing) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy khoản chi!')
+  }
+  if (existing.status !== tripModel.EXPENSE_STATUS.PENDING) {
+    throw new ApiError(
+      StatusCodes.CONFLICT,
+      'Chỉ được sửa khoản chi đang chờ duyệt!'
+    )
+  }
+
+  const fields = resolveExpenseFunding(trip, body)
+  await tripModel.update(tripId, {
+    expenses: expenses.map((item) =>
+      item.id !== expenseId
+        ? item
+        : {
+            ...item,
+            ...fields,
+            updatedAt: new Date()
+          }
+    )
+  })
+  return await getDetails(tripId)
+}
+
+const removeExpense = async (tripId, expenseId, userId, actorRole) => {
+  const trip = await tripModel.findOneById(tripId)
+  if (!trip) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy chuyến!')
+  await assertCanOperateTrip(trip, userId, actorRole)
+  assertEditable(trip)
+
+  const expenses = trip.expenses || []
+  const existing = expenses.find((item) => item.id === expenseId)
+  if (!existing) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy khoản chi!')
+  }
+  if (existing.status !== tripModel.EXPENSE_STATUS.PENDING) {
+    throw new ApiError(
+      StatusCodes.CONFLICT,
+      'Chỉ được xóa khoản chi đang chờ duyệt!'
+    )
+  }
+
+  await tripModel.update(tripId, {
+    expenses: expenses.filter((item) => item.id !== expenseId)
+  })
   return await getDetails(tripId)
 }
 
@@ -508,6 +894,11 @@ const reviewExpense = async (tripId, expenseId, body, userId) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Trạng thái duyệt không hợp lệ!')
   }
 
+  const existing = (trip.expenses || []).find((item) => item.id === expenseId)
+  if (!existing) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy khoản chi!')
+  }
+
   const expenses = (trip.expenses || []).map((item) => {
     if (item.id !== expenseId) return item
     return {
@@ -518,12 +909,17 @@ const reviewExpense = async (tripId, expenseId, body, userId) => {
     }
   })
 
-  if (!expenses.some((item) => item.id === expenseId)) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy khoản chi!')
-  }
-
   await tripModel.update(tripId, { expenses })
-  return await getDetails(tripId)
+  const formatted = await getDetails(tripId)
+
+  staffNotifyService.onTripExpenseReviewed(
+    formatted,
+    existing,
+    body.status,
+    userId
+  )
+
+  return formatted
 }
 
 const settle = async (tripId, body, userId) => {
@@ -555,7 +951,9 @@ const settle = async (tripId, body, userId) => {
     settlement,
     status: tripModel.TRIP_STATUS.CLOSED
   })
-  return await getDetails(tripId)
+  const formatted = await getDetails(tripId)
+  staffNotifyService.onTripSettled(formatted, settlement, userId)
+  return formatted
 }
 
 export const tripService = {
@@ -567,7 +965,11 @@ export const tripService = {
   addStop,
   removeStop,
   addAdvance,
+  updateAdvance,
+  removeAdvance,
   addExpense,
+  updateExpense,
+  removeExpense,
   reviewExpense,
   settle
 }

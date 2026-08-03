@@ -58,7 +58,8 @@ const createTransaction = async (type, reqBody, userId) => {
     productId,
     quantity,
     unitType = UNIT_TYPE.BOTTLE,
-    note = ''
+    note = '',
+    unitCost: rawUnitCost
   } = reqBody
 
   await ensureWarehouseExists(warehouseId)
@@ -88,10 +89,14 @@ const createTransaction = async (type, reqBody, userId) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, error.message)
   }
 
+  const isImport = type === inventoryTransactionModel.TRANSACTION_TYPE.IMPORT
+  const unitCost = isImport ? Math.max(0, Number(rawUnitCost) || 0) : 0
+  const totalCost = unitCost * quantity
+
   return await runInTransaction(async (session) => {
     let stockResult
 
-    if (type === inventoryTransactionModel.TRANSACTION_TYPE.IMPORT) {
+    if (isImport) {
       stockResult = await warehouseStockModel.increaseStock(
         warehouseId,
         productId,
@@ -116,6 +121,9 @@ const createTransaction = async (type, reqBody, userId) => {
     }
 
     const balanceAfter = stockResult.quantity
+    const previousQuantity = isImport
+      ? balanceAfter - quantityBase
+      : balanceAfter + quantityBase
 
     const created = await inventoryTransactionModel.createNew(
       {
@@ -127,6 +135,8 @@ const createTransaction = async (type, reqBody, userId) => {
         quantityBase,
         unitsPerCase,
         note,
+        unitCost,
+        totalCost,
         balanceAfter,
         createdBy: userId
       },
@@ -139,7 +149,15 @@ const createTransaction = async (type, reqBody, userId) => {
 
     return {
       formatted: formatDocument(transaction),
-      balanceAfter
+      balanceAfter,
+      previousQuantity,
+      shouldUpdateCost: isImport && unitCost > 0,
+      costPerBottle:
+        isImport && unitCost > 0
+          ? unitType === UNIT_TYPE.CASE
+            ? unitCost / Math.max(1, unitsPerCase)
+            : unitCost
+          : null
     }
   })
 }
@@ -150,10 +168,16 @@ const importStock = async (reqBody, userId) => {
     reqBody,
     userId
   )
+  if (result.shouldUpdateCost && result.costPerBottle != null) {
+    await productModel.update(reqBody.productId, {
+      costPrice: Math.round(result.costPerBottle * 100) / 100
+    })
+  }
   staffNotifyService.onStockChanged({
     productId: reqBody.productId,
     warehouseId: reqBody.warehouseId,
-    quantity: result.balanceAfter
+    quantity: result.balanceAfter,
+    previousQuantity: result.previousQuantity
   })
   return result.formatted
 }
@@ -167,7 +191,8 @@ const exportStock = async (reqBody, userId) => {
   staffNotifyService.onStockChanged({
     productId: reqBody.productId,
     warehouseId: reqBody.warehouseId,
-    quantity: result.balanceAfter
+    quantity: result.balanceAfter,
+    previousQuantity: result.previousQuantity
   })
   return result.formatted
 }

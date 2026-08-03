@@ -24,6 +24,9 @@ const INVENTORY_TRANSACTION_SCHEMA = Joi.object({
   quantityBase: Joi.number().required().min(1),
   unitsPerCase: Joi.number().integer().min(1).required(),
   note: Joi.string().trim().allow('').max(500).default(''),
+  /** Đơn giá nhập/xuất theo unitType của phiếu (optional; chủ yếu dùng khi nhập) */
+  unitCost: Joi.number().min(0).default(0),
+  totalCost: Joi.number().min(0).default(0),
   balanceAfter: Joi.number().required().min(0),
   createdBy: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
   createdAt: Joi.date().default(() => new Date())

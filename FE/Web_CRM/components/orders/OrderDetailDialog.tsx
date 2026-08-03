@@ -17,6 +17,8 @@ import { ApiClientError } from "@/lib/api/client";
 import { getOrderAudits } from "@/lib/api/orders";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import type { Order, OrderAudit, OrderAuditAction } from "@/lib/types";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { canViewProfit, rolesOf } from "@/lib/auth/permissions";
 import { cn, formatCurrency, formatDateDisplay } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -249,6 +251,8 @@ export function OrderDetailDialog({
   onEdit,
 }: OrderDetailDialogProps) {
   const toast = useToast();
+  const { user } = useAuth();
+  const showProfit = canViewProfit(rolesOf(user));
   const isMobile = useIsMobile();
   const [mobileTab, setMobileTab] = useState(0);
   const [audits, setAudits] = useState<OrderAudit[]>([]);
@@ -440,6 +444,23 @@ export function OrderDetailDialog({
                     Tổng: {formatCurrency(order.total)}
                   </span>
                 </div>
+                {showProfit ? (
+                  <div className="flex flex-wrap justify-end gap-x-4 gap-y-1 rounded-lg bg-[var(--color-surface-muted)] px-3 py-2 text-sm">
+                    <span className="text-[var(--color-text-inverse)]">
+                      Giá vốn: {formatCurrency(order.costTotal || 0)}
+                    </span>
+                    <span
+                      className={cn(
+                        "font-semibold",
+                        (order.grossProfit || 0) >= 0
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-red-600 dark:text-red-400"
+                      )}
+                    >
+                      Lãi gộp: {formatCurrency(order.grossProfit || 0)}
+                    </span>
+                  </div>
+                ) : null}
               </section>
 
               <section className="space-y-3">
@@ -504,14 +525,12 @@ export function OrderDetailDialog({
           <DialogFooter>
             <Button
               variant="outline"
-              className="w-full sm:w-auto"
               onClick={() => onOpenChange(false)}
             >
               Đóng
             </Button>
             {showDetailPanel && onEdit ? (
               <Button
-                className="w-full sm:w-auto"
                 onClick={() => {
                   onOpenChange(false);
                   onEdit(order);

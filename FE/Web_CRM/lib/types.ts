@@ -162,6 +162,8 @@ export type InventoryTransaction = {
   quantityBase?: number;
   unitsPerCase?: number;
   note: string;
+  unitCost?: number;
+  totalCost?: number;
   balanceAfter: number;
   createdBy: string;
   createdAt: string;
@@ -176,6 +178,7 @@ export type InventoryMovementInput = {
   quantity: number;
   unitType?: InventoryUnitType;
   note?: string;
+  unitCost?: number;
 };
 
 export type Lead = {
@@ -254,6 +257,9 @@ export type LineItem = {
   quantityBase?: number;
   unitPrice: number;
   lineTotal: number;
+  /** Snapshot giá vốn / đơn vị bán lúc tạo dòng */
+  unitCost?: number;
+  lineCost?: number;
 };
 
 export type LineItemInput = {
@@ -280,6 +286,10 @@ export type Order = {
   subtotal: number;
   discount: number;
   total: number;
+  /** Tổng giá vốn snapshot */
+  costTotal?: number;
+  /** Lãi gộp = total − costTotal (đơn hủy = 0) */
+  grossProfit?: number;
   status: "pending" | "confirmed" | "delivering" | "completed" | "cancelled";
   note: string;
   inventoryExported: boolean;
@@ -432,12 +442,15 @@ export type ReportKpis = {
   revenue: number;
   paidAmount: number;
   debt: number;
+  costTotal?: number;
+  grossProfit?: number;
   completedCount: number;
   completedRevenue: number;
   avgOrderValue: number;
   revenueChangePercent: number;
   orderChangePercent: number;
   paidChangePercent: number;
+  grossProfitChangePercent?: number;
 };
 
 export type SalesReport = {
@@ -529,6 +542,7 @@ export type TripAdvance = {
   id: string;
   amount: number;
   note: string;
+  receiptUrl?: string;
   createdBy: string;
   createdAt: string;
 };
@@ -539,6 +553,9 @@ export type TripExpense = {
   amount: number;
   date: string;
   funding: "advance" | "reimburse";
+  /** NV trong chuyến đã tự bỏ tiền (funding=reimburse) */
+  paidByEmployeeId?: string | null;
+  paidByEmployeeName?: string;
   receiptUrl: string;
   note: string;
   status: "pending" | "approved" | "rejected";
@@ -555,6 +572,7 @@ export type TripSettlementPreview = {
   employeeReturn: number;
   companyPay: number;
   balance: number;
+  companyPayByEmployee?: { employeeId: string; amount: number }[];
 };
 
 export type Trip = {
@@ -572,8 +590,24 @@ export type Trip = {
     id: string;
     code: string;
     total: number;
+    costTotal?: number;
+    grossProfit?: number;
     status: string;
+    paymentStatus?: string;
+    paidAmount?: number;
     customerName: string;
+    customerPhone?: string;
+    dealerName?: string;
+    warehouseName?: string;
+    shippingAddress?: string;
+    shippingContactName?: string;
+    shippingPhone?: string;
+    shippingNote?: string;
+    shippingDate?: string | null;
+    deliveredAt?: string | null;
+    deliveryEmployeeName?: string;
+    deliveryEmployeeNames?: string[];
+    itemCount?: number;
   }[];
   stops: TripStop[];
   advances: TripAdvance[];
@@ -584,6 +618,14 @@ export type Trip = {
     settledAt: string;
     settledBy: string;
   }) | null;
+  /** Lãi chuyến: lãi gộp đơn − chi phí đi đường đã duyệt */
+  profitSummary?: {
+    orderRevenue: number;
+    orderCostTotal: number;
+    orderGrossProfit: number;
+    tripExpenseTotal: number;
+    tripNetProfit: number;
+  };
   note: string;
   createdBy?: string;
   createdAt: string;
@@ -627,7 +669,7 @@ export type PayrollPeriod = {
 
 export type AppNotification = {
   id: string;
-  type: "lead" | "dealer_lead" | "dealer" | "order" | "stock";
+  type: "lead" | "dealer_lead" | "dealer" | "order" | "stock" | "trip" | "payment";
   title: string;
   message: string;
   href: string;
@@ -642,6 +684,7 @@ export type NotificationSummary = {
     dealers: number;
     orders: number;
     stock: number;
+    trips: number;
   };
   items: AppNotification[];
 };

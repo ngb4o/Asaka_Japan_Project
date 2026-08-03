@@ -303,38 +303,39 @@ export default function PayrollPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-              <table className="w-full min-w-[720px] text-left text-sm">
+              <div className="crm-table-frame">
+                <table className="crm-data-table min-w-[720px]">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                    <th className="px-2 py-3 font-medium">Kỳ</th>
-                    <th className="px-2 py-3 font-medium">
+                  <tr>
+                    <th className="font-medium">Kỳ</th>
+                    <th className="font-medium">
                       {canEdit ? "Nhân viên" : "Họ tên"}
                     </th>
-                    <th className="px-2 py-3 font-medium">
+                    <th className="font-medium">
                       {canEdit ? "Tổng thực nhận" : "Thực nhận"}
                     </th>
-                    <th className="px-2 py-3 font-medium">Trạng thái</th>
-                    <th className="px-2 py-3 text-right font-medium">Thao tác</th>
+                    <th className="font-medium">Trạng thái</th>
+                    <th className="text-right font-medium">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item) => {
                     const net = item.lines.reduce((sum, line) => sum + (line.net || 0), 0);
                     return (
-                      <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                        <td className="px-2 py-3 font-medium">{item.period}</td>
-                        <td className="px-2 py-3">
+                      <tr key={item.id}>
+                        <td className="font-medium">{item.period}</td>
+                        <td>
                           {canEdit
                             ? item.lines.length
                             : item.lines[0]?.employeeName || "—"}
                         </td>
-                        <td className="px-2 py-3">{formatCurrency(net)}</td>
-                        <td className="px-2 py-3">
+                        <td>{formatCurrency(net)}</td>
+                        <td>
                           <Badge variant={item.status === "locked" ? "success" : "muted"}>
                             {item.status === "locked" ? "Đã khóa" : "Nháp"}
                           </Badge>
                         </td>
-                        <td className="px-2 py-3">
+                        <td>
                           <div className="flex justify-end gap-2">
                             <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
                               Xem
@@ -366,6 +367,7 @@ export default function PayrollPage() {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
             </>
           )}
@@ -431,52 +433,51 @@ export default function PayrollPage() {
               </MobileCardList>
 
               <div className="crm-table-scroll hidden md:block">
-                <table className="w-full min-w-[800px] text-left text-sm">
+                <div className="crm-table-frame">
+                  <table className="crm-data-table min-w-[800px]">
                   <thead>
-                    <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                      <th className="px-2 py-2 font-medium">Nhân viên</th>
-                      <th className="px-2 py-2 font-medium text-right">Lương cứng</th>
-                      <th className="px-2 py-2 font-medium text-right">Phụ cấp</th>
-                      <th className="px-2 py-2 font-medium text-right">Doanh số</th>
-                      <th className="px-2 py-2 font-medium text-right">Hoa hồng</th>
-                      <th className="px-2 py-2 font-medium text-right">Hoàn CT</th>
-                      <th className="px-2 py-2 font-medium text-right">Thực nhận</th>
+                    <tr>
+                      <th className="font-medium">Nhân viên</th>
+                      <th className="font-medium text-right">Lương cứng</th>
+                      <th className="font-medium text-right">Phụ cấp</th>
+                      <th className="font-medium text-right">Doanh số</th>
+                      <th className="font-medium text-right">Hoa hồng</th>
+                      <th className="font-medium text-right">Hoàn CT</th>
+                      <th className="font-medium text-right">Thực nhận</th>
                     </tr>
                   </thead>
                   <tbody>
                     {selected.lines.map((line) => (
-                      <tr
-                        key={line.employeeId}
-                        className="border-b border-[var(--color-border-subtle)]"
-                      >
-                        <td className="px-2 py-2">
+                      <tr key={line.employeeId}>
+                        <td>
                           <p className="font-medium">{line.employeeName}</p>
                           <p className="text-xs text-[var(--color-text-inverse)]">
                             {line.employeeCode} - HH {line.commissionPercent}%
                           </p>
                         </td>
-                        <td className="px-2 py-2 text-right">
+                        <td className="text-right">
                           {formatCurrency(line.baseSalary)}
                         </td>
-                        <td className="px-2 py-2 text-right">
+                        <td className="text-right">
                           {formatCurrency(line.allowance)}
                         </td>
-                        <td className="px-2 py-2 text-right">
+                        <td className="text-right">
                           {formatCurrency(line.salesTotal)}
                         </td>
-                        <td className="px-2 py-2 text-right">
+                        <td className="text-right">
                           {formatCurrency(line.commission)}
                         </td>
-                        <td className="px-2 py-2 text-right">
+                        <td className="text-right">
                           {formatCurrency(line.tripReimburse)}
                         </td>
-                        <td className="px-2 py-2 text-right font-semibold">
+                        <td className="text-right font-semibold">
                           {formatCurrency(line.net)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           ) : null}

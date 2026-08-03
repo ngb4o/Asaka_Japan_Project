@@ -185,7 +185,7 @@ export default function DashboardPage() {
 
       {/* KPI strip */}
       {canFinancials ? (
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <KpiCard
           title="Doanh số tháng"
           hint="so với tháng trước"
@@ -225,7 +225,7 @@ export default function DashboardPage() {
           href="/orders"
         />      </section>
       ) : (
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {isWarehouseView ? (
           <>
             <KpiCard
@@ -437,7 +437,7 @@ export default function DashboardPage() {
 
       {/* Ops shortcuts */}
       {canFinancials ? (
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <QuickStat
           title="Lead mới"
           value={loading ? null : stats?.newLeads}
@@ -511,7 +511,7 @@ export default function DashboardPage() {
                         <p className="font-semibold tracking-tight">{order.code}</p>
                         <span
                           className={cn(
-                            "rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2 md:py-0.5 md:text-[11px]",
+                            "rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2.5 md:py-1 md:text-[13px]",
                             ORDER_STATUS_TONE[order.status] || ORDER_STATUS_TONE.pending
                           )}
                         >
@@ -634,7 +634,7 @@ function ChangeBadge({ value }: { value?: number }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-[13px] font-semibold leading-none md:px-2 md:py-0.5 md:text-[11px]",
+        "inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-[13px] font-semibold leading-none",
         up
           ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
           : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
@@ -704,32 +704,32 @@ function KpiCard({
   return (
     <Link href={href} className="group block">
       <Card className="h-full overflow-hidden border-[var(--color-border-subtle)] transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[var(--shadow-elevated)]">
-        <CardContent className="space-y-4 p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-[var(--color-text-inverse)]">{title}</p>
+        <CardContent className="space-y-3 p-3.5 md:space-y-4 md:p-5">
+          <div className="flex items-start justify-between gap-2 md:gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-[var(--color-text-inverse)] md:text-sm">{title}</p>
               {hint ? (
                 <p className="mt-0.5 text-[11px] text-[var(--color-text-inverse)]/80">{hint}</p>
               ) : null}
             </div>
             <span
               className={cn(
-                "inline-flex h-10 w-10 items-center justify-center rounded-xl",
+                "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl md:h-10 md:w-10",
                 tone.icon
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
             </span>
           </div>
 
           {value == null ? (
-            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-8 w-24 md:h-9 md:w-32" />
           ) : (
-            <div className="space-y-3">
-              <div className="flex items-end justify-between gap-2">
+            <div className="space-y-2 md:space-y-3">
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between sm:gap-2">
                 <p
                   className={cn(
-                    "text-[1.65rem] font-semibold leading-none tracking-tight",
+                    "text-xl font-semibold leading-none tracking-tight md:text-[1.65rem]",
                     tone.value
                   )}
                 >
@@ -775,24 +775,24 @@ function QuickStat({
     <Link href={href} className="group block">
       <div
         className={cn(
-          "flex items-center gap-3 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-4 py-3.5 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[var(--shadow-elevated)]",
+          "flex items-center gap-2.5 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 py-3 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[var(--shadow-elevated)] md:gap-3 md:px-4 md:py-3.5",
           highlight && "border-amber-300/70 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
         )}
       >
         <span
           className={cn(
-            "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+            "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl md:h-10 md:w-10",
             tone.icon
           )}
         >
-          <Icon className="h-4 w-4" />
+          <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
         </span>
         <div className="min-w-0">
-          <p className="text-xs text-[var(--color-text-inverse)]">{title}</p>
+          <p className="truncate text-[11px] text-[var(--color-text-inverse)] md:text-xs">{title}</p>
           {value == null ? (
             <Skeleton className="mt-1 h-6 w-12" />
           ) : (
-            <p className={cn("text-lg font-semibold tracking-tight", tone.value)}>{value}</p>
+            <p className={cn("text-base font-semibold tracking-tight md:text-lg", tone.value)}>{value}</p>
           )}
         </div>
       </div>

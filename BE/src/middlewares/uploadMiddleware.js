@@ -21,3 +21,4 @@ const upload = multer({
 
 export const uploadProductImage = upload
 export const uploadNewsImage = upload
+export const uploadTripReceipt = upload

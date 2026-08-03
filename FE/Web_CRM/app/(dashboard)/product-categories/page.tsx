@@ -22,6 +22,7 @@ import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
 import {
   MobileRecordActions,
   MobileRecordCard,
+  MobileRecordCardHeader,
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import {
@@ -216,25 +217,16 @@ export default function ProductCategoriesPage() {
               >
                 <div className="flex flex-col gap-3">
                   {items.map((item) => (
-                    <MobileRecordCard key={item.id} className="p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
-                            {item.name}
-                          </p>
-                          {item.description ? (
-                            <p className="mt-0.5 line-clamp-2 text-sm text-[var(--color-text-inverse)]">
-                              {item.description}
-                            </p>
-                          ) : null}
-                        </div>
-                        <Badge
-                          variant={statusBadgeVariant(item.status)}
-                          className="shrink-0"
-                        >
-                          {item.status === "active" ? "Hoạt động" : "Ngưng"}
-                        </Badge>
-                      </div>
+                    <MobileRecordCard key={item.id}>
+                      <MobileRecordCardHeader
+                        title={item.name}
+                        description={item.description || undefined}
+                        trailing={
+                          <Badge variant={statusBadgeVariant(item.status)}>
+                            {item.status === "active" ? "Hoạt động" : "Ngưng"}
+                          </Badge>
+                        }
+                      />
 
                       <MobileRecordActions>
                         <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
@@ -255,30 +247,31 @@ export default function ProductCategoriesPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-              <table className="w-full min-w-[640px] text-left text-sm">
+              <div className="crm-table-frame">
+                <table className="crm-data-table min-w-[640px]">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                    <th className="px-2 py-3 font-medium">Tên</th>
-                    <th className="px-2 py-3 font-medium">Slug</th>
-                    <th className="px-2 py-3 font-medium">Trạng thái</th>
-                    <th className="px-2 py-3 font-medium">Mô tả</th>
-                    <th className="px-2 py-3 font-medium text-right">Thao tác</th>
+                  <tr>
+                    <th className="font-medium">Tên</th>
+                    <th className="font-medium">Slug</th>
+                    <th className="font-medium">Trạng thái</th>
+                    <th className="font-medium">Mô tả</th>
+                    <th className="font-medium text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                      <td className="px-2 py-3 font-medium">{item.name}</td>
-                      <td className="px-2 py-3 text-[var(--color-text-inverse)]">{item.slug}</td>
-                      <td className="px-2 py-3">
+                    <tr key={item.id}>
+                      <td className="font-medium">{item.name}</td>
+                      <td className="text-[var(--color-text-inverse)]">{item.slug}</td>
+                      <td>
                         <Badge variant={item.status === "active" ? "success" : "muted"}>
                           {item.status === "active" ? "Hoạt động" : "Ngưng"}
                         </Badge>
                       </td>
-                      <td className="max-w-xs truncate px-2 py-3 text-[var(--color-text-inverse)]">
+                      <td className="max-w-xs truncate text-[var(--color-text-inverse)]">
                         {item.description || "—"}
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
                             <Pencil className="h-4 w-4" />
@@ -297,6 +290,7 @@ export default function ProductCategoriesPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
               </div>
 
               <Pagination

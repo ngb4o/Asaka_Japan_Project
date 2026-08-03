@@ -88,38 +88,35 @@ export function OrderLineItemsList({ items }: { items: LineItem[] }) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-[var(--color-border-subtle)]">
-      <table className="w-full min-w-[520px] text-left text-sm">
+    <div className="crm-table-frame overflow-x-auto">
+      <table className="crm-data-table min-w-[520px]">
         <thead>
-          <tr className="bg-[var(--color-surface-muted)] text-[var(--color-text-inverse)]">
-            <th className="px-3 py-2 font-medium">Ảnh</th>
-            <th className="px-3 py-2 font-medium">Sản phẩm</th>
-            <th className="px-3 py-2 font-medium text-right">SL</th>
-            <th className="px-3 py-2 font-medium text-right">Đơn giá</th>
-            <th className="px-3 py-2 font-medium text-right">Thành tiền</th>
+          <tr>
+            <th className="font-medium">Ảnh</th>
+            <th className="font-medium">Sản phẩm</th>
+            <th className="font-medium text-right">SL</th>
+            <th className="font-medium text-right">Đơn giá</th>
+            <th className="font-medium text-right">Thành tiền</th>
           </tr>
         </thead>
         <tbody>
           {items.map((item, index) => (
-            <tr
-              key={`${item.productId}-${index}`}
-              className="border-t border-[var(--color-border-subtle)]"
-            >
-              <td className="px-3 py-2">
+            <tr key={`${item.productId}-${index}`}>
+              <td>
                 <ProductThumb
                   src={item.productImage}
                   alt={item.productName || "Sản phẩm"}
                   size="sm"
                 />
               </td>
-              <td className="px-3 py-2 font-medium text-[var(--color-text-primary)]">
+              <td className="font-medium text-[var(--color-text-primary)]">
                 {item.productName || "—"}
               </td>
-              <td className="px-3 py-2 text-right tabular-nums">{item.quantity}</td>
-              <td className="px-3 py-2 text-right tabular-nums">
+              <td className="text-right tabular-nums">{item.quantity}</td>
+              <td className="text-right tabular-nums">
                 {formatCurrency(item.unitPrice)}
               </td>
-              <td className="px-3 py-2 text-right tabular-nums font-medium">
+              <td className="text-right tabular-nums font-medium">
                 {formatCurrency(item.lineTotal)}
               </td>
             </tr>

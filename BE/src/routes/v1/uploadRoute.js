@@ -1,7 +1,7 @@
 import express from 'express'
 import multer from 'multer'
 import { uploadController } from '~/controllers/uploadController'
-import { uploadNewsImage, uploadProductImage } from '~/middlewares/uploadMiddleware'
+import { uploadNewsImage, uploadProductImage, uploadTripReceipt } from '~/middlewares/uploadMiddleware'
 import { verifyToken } from '~/middlewares/jwtMiddleware'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
@@ -30,5 +30,6 @@ const handleUpload =
 
 Router.post('/product-image', handleUpload(uploadProductImage, uploadController.uploadProductImage))
 Router.post('/news-image', handleUpload(uploadNewsImage, uploadController.uploadNewsImage))
+Router.post('/trip-receipt', handleUpload(uploadTripReceipt, uploadController.uploadTripReceipt))
 
 export const uploadRoute = Router

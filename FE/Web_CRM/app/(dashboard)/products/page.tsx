@@ -437,25 +437,26 @@ export default function ProductsPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-              <table className="w-full min-w-[780px] text-left text-sm">
+              <div className="crm-table-frame">
+                <table className="crm-data-table min-w-[780px]">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                    <th className="px-2 py-3 font-medium">STT</th>
-                    <th className="px-2 py-3 font-medium">Ảnh</th>
-                    <th className="px-2 py-3 font-medium">Tên</th>
-                    <th className="px-2 py-3 font-medium">Loại</th>
-                    <th className="px-2 py-3 font-medium">Giá bán</th>
-                    <th className="px-2 py-3 font-medium">Tồn kho</th>
-                    <th className="px-2 py-3 font-medium">Trạng thái</th>
+                  <tr>
+                    <th className="font-medium">STT</th>
+                    <th className="font-medium">Ảnh</th>
+                    <th className="font-medium">Tên</th>
+                    <th className="font-medium">Loại</th>
+                    <th className="font-medium">Giá bán</th>
+                    <th className="font-medium">Tồn kho</th>
+                    <th className="font-medium">Trạng thái</th>
                     {canEdit ? (
-                      <th className="px-2 py-3 font-medium text-right">Thao tác</th>
+                      <th className="font-medium text-right">Thao tác</th>
                     ) : null}
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                      <td className="px-2 py-3">
+                    <tr key={item.id}>
+                      <td>
                         {canEdit ? (
                         <Input
                           type="number"
@@ -485,7 +486,7 @@ export default function ProductsPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         {item.image || item.images?.[0] ? (
                           <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]">
                             <Image
@@ -505,19 +506,19 @@ export default function ProductsPage() {
                           <span className="text-xs text-[var(--color-text-inverse)]">—</span>
                         )}
                       </td>
-                      <td className="px-2 py-3 font-medium">{item.name}</td>
-                      <td className="px-2 py-3">{item.categoryName || "—"}</td>
-                      <td className="px-2 py-3">{formatCurrency(item.price)}</td>
-                      <td className="px-2 py-3 font-medium">
+                      <td className="font-medium">{item.name}</td>
+                      <td>{item.categoryName || "—"}</td>
+                      <td>{formatCurrency(item.price)}</td>
+                      <td className="font-medium">
                         {formatStockDisplay(item.totalStock ?? 0, item.unitsPerCase)}
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         <Badge variant={item.status === "active" ? "success" : "muted"}>
                           {item.status === "active" ? "Đang bán" : "Ngưng"}
                         </Badge>
                       </td>
                       {canEdit ? (
-                      <td className="px-2 py-3">
+                      <td>
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
                             <Pencil className="h-4 w-4" />
@@ -537,6 +538,7 @@ export default function ProductsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
               </div>
 
               <Pagination

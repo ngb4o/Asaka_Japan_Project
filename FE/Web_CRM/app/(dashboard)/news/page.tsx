@@ -344,21 +344,22 @@ export default function NewsPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-              <table className="w-full min-w-[760px] text-left text-sm">
+              <div className="crm-table-frame">
+                <table className="crm-data-table min-w-[760px]">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                    <th className="px-2 py-3 font-medium">STT</th>
-                    <th className="px-2 py-3 font-medium">Ảnh</th>
-                    <th className="px-2 py-3 font-medium">Tiêu đề</th>
-                    <th className="px-2 py-3 font-medium">Nội dung</th>
-                    <th className="px-2 py-3 font-medium">Trạng thái</th>
-                    <th className="px-2 py-3 font-medium text-right">Thao tác</th>
+                  <tr>
+                    <th className="font-medium">STT</th>
+                    <th className="font-medium">Ảnh</th>
+                    <th className="font-medium">Tiêu đề</th>
+                    <th className="font-medium">Nội dung</th>
+                    <th className="font-medium">Trạng thái</th>
+                    <th className="font-medium text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                      <td className="px-2 py-3">
+                    <tr key={item.id}>
+                      <td>
                         <Input
                           type="number"
                           min={0}
@@ -382,7 +383,7 @@ export default function NewsPage() {
                           aria-label={`Thứ tự hiển thị ${item.title}`}
                         />
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         {item.image ? (
                           <div className="relative h-12 w-16 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]">
                             <Image
@@ -397,16 +398,16 @@ export default function NewsPage() {
                           <span className="text-xs text-[var(--color-text-inverse)]">—</span>
                         )}
                       </td>
-                      <td className="max-w-[220px] px-2 py-3 font-medium">{item.title}</td>
-                      <td className="max-w-[320px] px-2 py-3 text-[var(--color-text-inverse)]">
+                      <td className="max-w-[220px] font-medium">{item.title}</td>
+                      <td className="max-w-[320px] text-[var(--color-text-inverse)]">
                         {truncateText(item.content)}
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         <Badge variant={item.status === "active" ? "success" : "muted"}>
                           {item.status === "active" ? "Hiển thị" : "Ẩn"}
                         </Badge>
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
                             <Pencil className="h-4 w-4" />
@@ -425,6 +426,7 @@ export default function NewsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
               </div>
 
               <Pagination

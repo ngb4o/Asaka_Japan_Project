@@ -539,30 +539,31 @@ export default function InventoryPage() {
 
                   {/* Desktop */}
                   <div className="crm-table-scroll hidden md:block">
-                    <table className="w-full min-w-[600px] text-left text-sm">
+                    <div className="crm-table-frame">
+                      <table className="crm-data-table min-w-[600px]">
                       <thead>
-                        <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                          <th className="px-2 py-3 font-medium">Tên kho</th>
-                          <th className="px-2 py-3 font-medium">Mã</th>
-                          <th className="px-2 py-3 font-medium">Địa chỉ</th>
-                          <th className="px-2 py-3 font-medium">Trạng thái</th>
-                          <th className="px-2 py-3 font-medium text-right">Thao tác</th>
+                        <tr>
+                          <th className="font-medium">Tên kho</th>
+                          <th className="font-medium">Mã</th>
+                          <th className="font-medium">Địa chỉ</th>
+                          <th className="font-medium">Trạng thái</th>
+                          <th className="font-medium text-right">Thao tác</th>
                         </tr>
                       </thead>
                       <tbody>
                         {warehouses.map((item) => (
-                          <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                            <td className="px-2 py-3 font-medium">{item.name}</td>
-                            <td className="px-2 py-3 text-[var(--color-text-inverse)]">{item.code}</td>
-                            <td className="max-w-xs truncate px-2 py-3 text-[var(--color-text-inverse)]">
+                          <tr key={item.id}>
+                            <td className="font-medium">{item.name}</td>
+                            <td className="text-[var(--color-text-inverse)]">{item.code}</td>
+                            <td className="max-w-xs truncate text-[var(--color-text-inverse)]">
                               {item.address || "—"}
                             </td>
-                            <td className="px-2 py-3">
+                            <td>
                               <Badge variant={item.status === "active" ? "success" : "muted"}>
                                 {item.status === "active" ? "Hoạt động" : "Ngưng"}
                               </Badge>
                             </td>
-                            <td className="px-2 py-3">
+                            <td>
                               <div className="flex justify-end gap-2">
                                 <Button variant="outline" size="sm" onClick={() => openEditWarehouse(item)}>
                                   <Pencil className="h-4 w-4" />
@@ -581,6 +582,7 @@ export default function InventoryPage() {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </>
               )}
@@ -672,23 +674,24 @@ export default function InventoryPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-                <table className="w-full min-w-[920px] text-left text-sm">
+                <div className="crm-table-frame">
+                  <table className="crm-data-table min-w-[920px]">
                   <thead>
-                    <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                      <th className="px-2 py-3 font-medium">Ảnh</th>
-                      <th className="px-2 py-3 font-medium">Kho</th>
-                      <th className="px-2 py-3 font-medium">Sản phẩm</th>
-                      <th className="px-2 py-3 font-medium">SKU</th>
-                      <th className="px-2 py-3 font-medium">Tồn kho</th>
-                      <th className="px-2 py-3 font-medium">Cập nhật</th>
+                    <tr>
+                      <th className="font-medium">Ảnh</th>
+                      <th className="font-medium">Kho</th>
+                      <th className="font-medium">Sản phẩm</th>
+                      <th className="font-medium">SKU</th>
+                      <th className="font-medium">Tồn kho</th>
+                      <th className="font-medium">Cập nhật</th>
                     </tr>
                   </thead>
                   <tbody>
                     {stocks.map((item) => {
                       const thumb = item.productImage;
                       return (
-                        <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                          <td className="px-2 py-3">
+                        <tr key={item.id}>
+                          <td>
                             <div className="relative h-11 w-11 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]">
                               {thumb ? (
                                 <Image
@@ -705,15 +708,15 @@ export default function InventoryPage() {
                               )}
                             </div>
                           </td>
-                          <td className="px-2 py-3 font-medium">{item.warehouseName || "—"}</td>
-                          <td className="px-2 py-3">{item.productName || "—"}</td>
-                          <td className="px-2 py-3 text-[var(--color-text-inverse)]">
+                          <td className="font-medium">{item.warehouseName || "—"}</td>
+                          <td>{item.productName || "—"}</td>
+                          <td className="text-[var(--color-text-inverse)]">
                             {item.productSku || "—"}
                           </td>
-                          <td className="px-2 py-3 font-medium">
+                          <td className="font-medium">
                             {formatStockDisplay(item.quantity, item.unitsPerCase)}
                           </td>
-                          <td className="px-2 py-3 text-[var(--color-text-inverse)]">
+                          <td className="text-[var(--color-text-inverse)]">
                             {formatDate(item.updatedAt)}
                           </td>
                         </tr>
@@ -721,6 +724,7 @@ export default function InventoryPage() {
                     })}
                   </tbody>
                 </table>
+                </div>
               </div>
 
               <Pagination
@@ -835,32 +839,33 @@ export default function InventoryPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-                <table className="w-full min-w-[900px] text-left text-sm">
+                <div className="crm-table-frame">
+                  <table className="crm-data-table min-w-[900px]">
                   <thead>
-                    <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                      <th className="px-2 py-3 font-medium">Thời gian</th>
-                      <th className="px-2 py-3 font-medium">Loại</th>
-                      <th className="px-2 py-3 font-medium">Kho</th>
-                      <th className="px-2 py-3 font-medium">Sản phẩm</th>
-                      <th className="px-2 py-3 font-medium">Số lượng</th>
-                      <th className="px-2 py-3 font-medium">Tồn sau</th>
-                      <th className="px-2 py-3 font-medium">Ghi chú</th>
+                    <tr>
+                      <th className="font-medium">Thời gian</th>
+                      <th className="font-medium">Loại</th>
+                      <th className="font-medium">Kho</th>
+                      <th className="font-medium">Sản phẩm</th>
+                      <th className="font-medium">Số lượng</th>
+                      <th className="font-medium">Tồn sau</th>
+                      <th className="font-medium">Ghi chú</th>
                     </tr>
                   </thead>
                   <tbody>
                     {transactions.map((item) => (
-                      <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                        <td className="px-2 py-3 text-[var(--color-text-inverse)]">
+                      <tr key={item.id}>
+                        <td className="text-[var(--color-text-inverse)]">
                           {formatDate(item.createdAt)}
                         </td>
-                        <td className="px-2 py-3">
+                        <td>
                           <Badge variant={item.type === "import" ? "success" : "muted"}>
                             {item.type === "import" ? "Nhập" : "Xuất"}
                           </Badge>
                         </td>
-                        <td className="px-2 py-3">{item.warehouseName || "—"}</td>
-                        <td className="px-2 py-3">{item.productName || "—"}</td>
-                        <td className="px-2 py-3 font-medium">
+                        <td>{item.warehouseName || "—"}</td>
+                        <td>{item.productName || "—"}</td>
+                        <td className="font-medium">
                           {formatMovementQuantity(
                             item.quantity,
                             item.unitType,
@@ -868,16 +873,17 @@ export default function InventoryPage() {
                             item.unitsPerCase
                           )}
                         </td>
-                        <td className="px-2 py-3">
+                        <td>
                           {formatStockDisplay(item.balanceAfter, item.unitsPerCase)}
                         </td>
-                        <td className="max-w-xs truncate px-2 py-3 text-[var(--color-text-inverse)]">
+                        <td className="max-w-xs truncate text-[var(--color-text-inverse)]">
                           {item.note || "—"}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
 
               <Pagination

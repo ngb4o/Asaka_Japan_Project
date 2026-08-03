@@ -185,6 +185,7 @@ export type InventoryMovementFormValues = {
   quantity: number | "";
   unitType: "chai" | "thung";
   note?: string;
+  unitCost?: number | "";
 };
 
 export function buildInventoryMovementPayload(
@@ -198,6 +199,9 @@ export function buildInventoryMovementPayload(
   };
 
   if (form.note?.trim()) payload.note = form.note.trim();
+  if (form.unitCost !== "" && form.unitCost !== undefined) {
+    payload.unitCost = Number(form.unitCost) || 0;
+  }
 
   return payload;
 }

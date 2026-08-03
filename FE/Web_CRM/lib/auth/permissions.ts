@@ -158,6 +158,11 @@ export function canViewReports(roleOrRoles?: RoleInput) {
   return hasAnyRole(roleOrRoles, "accountant");
 }
 
+/** Xem giá vốn / lãi gộp — admin & kế toán */
+export function canViewProfit(roleOrRoles?: RoleInput) {
+  return hasAnyRole(roleOrRoles, "accountant");
+}
+
 /** Sổ công nợ đại lý — admin, kế toán, sales */
 export function canViewReceivables(roleOrRoles?: RoleInput) {
   return hasAnyRole(roleOrRoles, "accountant", "sales");

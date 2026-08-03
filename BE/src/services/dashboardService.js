@@ -107,6 +107,8 @@ const getKpis = async (from, to) => {
             orderCount: { $sum: 1 },
             revenue: { $sum: '$total' },
             paidAmount: { $sum: { $ifNull: ['$paidAmount', 0] } },
+            costTotal: { $sum: { $ifNull: ['$costTotal', 0] } },
+            grossProfit: { $sum: { $ifNull: ['$grossProfit', 0] } },
             completedCount: {
               $sum: {
                 $cond: [{ $eq: ['$status', orderModel.ORDER_STATUS.COMPLETED] }, 1, 0]
@@ -141,7 +143,8 @@ const getKpis = async (from, to) => {
               _id: null,
               revenue: { $sum: '$total' },
               orderCount: { $sum: 1 },
-              paidAmount: { $sum: { $ifNull: ['$paidAmount', 0] } }
+              paidAmount: { $sum: { $ifNull: ['$paidAmount', 0] } },
+              grossProfit: { $sum: { $ifNull: ['$grossProfit', 0] } }
             }
           }
         ])
@@ -153,10 +156,17 @@ const getKpis = async (from, to) => {
     orderCount: 0,
     revenue: 0,
     paidAmount: 0,
+    costTotal: 0,
+    grossProfit: 0,
     completedCount: 0,
     completedRevenue: 0
   }
-  const prev = previousPeriod[0] || { revenue: 0, orderCount: 0, paidAmount: 0 }
+  const prev = previousPeriod[0] || {
+    revenue: 0,
+    orderCount: 0,
+    paidAmount: 0,
+    grossProfit: 0
+  }
   const debt = Math.max(0, cur.revenue - cur.paidAmount)
 
   const pct = (nowVal, prevVal) => {
@@ -169,12 +179,15 @@ const getKpis = async (from, to) => {
     revenue: cur.revenue,
     paidAmount: cur.paidAmount,
     debt,
+    costTotal: cur.costTotal,
+    grossProfit: cur.grossProfit,
     completedCount: cur.completedCount,
     completedRevenue: cur.completedRevenue,
     avgOrderValue: cur.orderCount ? Math.round(cur.revenue / cur.orderCount) : 0,
     revenueChangePercent: pct(cur.revenue, prev.revenue),
     orderChangePercent: pct(cur.orderCount, prev.orderCount),
-    paidChangePercent: pct(cur.paidAmount, prev.paidAmount)
+    paidChangePercent: pct(cur.paidAmount, prev.paidAmount),
+    grossProfitChangePercent: pct(cur.grossProfit, prev.grossProfit)
   }
 }
 

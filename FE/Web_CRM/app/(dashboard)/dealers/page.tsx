@@ -400,27 +400,28 @@ export default function DealersPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-                <table className="w-full min-w-[900px] text-left text-sm">
+                <div className="crm-table-frame">
+                  <table className="crm-data-table min-w-[900px]">
                   <thead>
-                    <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                      <th className="px-2 py-3 font-medium">Tên</th>
-                      <th className="px-2 py-3 font-medium">Liên hệ</th>
-                      <th className="px-2 py-3 font-medium">Khu vực</th>
-                      <th className="px-2 py-3 font-medium">Hạng</th>
-                      <th className="px-2 py-3 font-medium">Trạng thái</th>
-                      <th className="px-2 py-3 font-medium text-right">Thao tác</th>
+                    <tr>
+                      <th className="font-medium">Tên</th>
+                      <th className="font-medium">Liên hệ</th>
+                      <th className="font-medium">Khu vực</th>
+                      <th className="font-medium">Hạng</th>
+                      <th className="font-medium">Trạng thái</th>
+                      <th className="font-medium text-right">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((item) => (
-                      <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                        <td className="px-2 py-3 font-medium">{item.name}</td>
-                        <td className="px-2 py-3">
+                      <tr key={item.id}>
+                        <td className="font-medium">{item.name}</td>
+                        <td>
                           <p>{item.contactName || "—"}</p>
                           <p className="text-xs text-[var(--color-text-inverse)]">{item.phone}</p>
                         </td>
-                        <td className="px-2 py-3">{item.region || "—"}</td>
-                        <td className="px-2 py-3">
+                        <td>{item.region || "—"}</td>
+                        <td>
                           {canWrite ? (
                             <div className="w-[140px]">
                               <SearchableSelect
@@ -441,7 +442,7 @@ export default function DealersPage() {
                               ?.label || item.tier
                           )}
                         </td>
-                        <td className="px-2 py-3">
+                        <td>
                           {canWrite ? (
                             <div className="w-[140px]">
                               <SearchableSelect
@@ -464,7 +465,7 @@ export default function DealersPage() {
                             </Badge>
                           )}
                         </td>
-                        <td className="px-2 py-3">
+                        <td>
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="outline"
@@ -499,6 +500,7 @@ export default function DealersPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
 
               <Pagination

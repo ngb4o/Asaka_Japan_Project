@@ -617,33 +617,34 @@ export default function TripsPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-              <table className="w-full min-w-[900px] text-left text-sm">
+              <div className="crm-table-frame">
+                <table className="crm-data-table min-w-[900px]">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                    <th className="px-2 py-3 font-medium">Mã</th>
-                    <th className="px-2 py-3 font-medium">Thời gian</th>
-                    <th className="px-2 py-3 font-medium">Người đi</th>
-                    <th className="px-2 py-3 font-medium">Đơn hàng</th>
-                    <th className="px-2 py-3 font-medium">Trạng thái</th>
-                    <th className="px-2 py-3 text-right font-medium">Thao tác</th>
+                  <tr>
+                    <th className="font-medium">Mã</th>
+                    <th className="font-medium">Thời gian</th>
+                    <th className="font-medium">Người đi</th>
+                    <th className="font-medium">Đơn hàng</th>
+                    <th className="font-medium">Trạng thái</th>
+                    <th className="text-right font-medium">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                      <td className="px-2 py-3">
+                    <tr key={item.id}>
+                      <td>
                         <p className="font-medium">{item.code}</p>
                         <p className="text-xs text-[var(--color-text-inverse)]">
                           {item.title || item.region || "—"}
                         </p>
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         {formatDateDisplay(item.startDate)} → {formatDateDisplay(item.endDate)}
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         {item.members.map((member) => member.fullName).join(", ") || "—"}
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         {item.orders.length === 0 ? (
                           <span className="text-[var(--color-text-inverse)]">—</span>
                         ) : (
@@ -660,12 +661,12 @@ export default function TripsPage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         <Badge variant={item.status === "closed" ? "success" : "muted"}>
                           {TRIP_STATUS_LABEL[item.status]}
                         </Badge>
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
                             Chi tiết
@@ -686,6 +687,7 @@ export default function TripsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
             </>
           )}

@@ -30,16 +30,12 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { canAccessPath, ROLE_LABELS, ROLE_WORKSPACE_SUBTITLE, primaryRole, rolesOf } from "@/lib/auth/permissions";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/providers/ToastProvider";
-import { useNotifications } from "@/lib/notifications/NotificationProvider";
 import { ChangePasswordDialog } from "@/components/layout/ChangePasswordDialog";
-
-type BadgeKey = "leads" | "dealers" | "orders" | "stock";
 
 type NavItem = {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  badgeKey?: BadgeKey | null;
 };
 
 type NavGroup = {
@@ -59,13 +55,11 @@ const NAV_GROUPS: NavGroup[] = [
         href: "/dashboard",
         label: "Tổng quan",
         icon: LayoutDashboard,
-        badgeKey: null,
       },
       {
         href: "/reports",
         label: "Báo cáo doanh số",
         icon: ChartColumn,
-        badgeKey: null,
       },
     ],
   },
@@ -78,20 +72,17 @@ const NAV_GROUPS: NavGroup[] = [
         href: "/leads",
         label: "Khách tiềm năng",
         icon: MessageSquare,
-        badgeKey: "leads",
       },
-      { href: "/dealers", label: "Đại lý", icon: Handshake, badgeKey: "dealers" },
+      { href: "/dealers", label: "Đại lý", icon: Handshake },
       {
         href: "/orders",
         label: "Đơn hàng",
         icon: ShoppingCart,
-        badgeKey: "orders",
       },
       {
         href: "/receivables",
         label: "Công nợ",
         icon: AlertTriangle,
-        badgeKey: null,
       },
     ],
   },
@@ -104,14 +95,12 @@ const NAV_GROUPS: NavGroup[] = [
         href: "/product-categories",
         label: "Loại sản phẩm",
         icon: Tags,
-        badgeKey: null,
       },
-      { href: "/products", label: "Sản phẩm", icon: Package, badgeKey: null },
+      { href: "/products", label: "Sản phẩm", icon: Package },
       {
         href: "/inventory",
         label: "Kho hàng",
         icon: Warehouse,
-        badgeKey: "stock",
       },
     ],
   },
@@ -124,24 +113,23 @@ const NAV_GROUPS: NavGroup[] = [
         href: "/employees",
         label: "Hồ sơ nhân viên",
         icon: UsersRound,
-        badgeKey: null,
       },
-      { href: "/trips", label: "Chuyến công tác", icon: Route, badgeKey: null },
-      { href: "/payroll", label: "Bảng lương", icon: Wallet, badgeKey: null },
+      { href: "/trips", label: "Chuyến công tác", icon: Route },
+      { href: "/payroll", label: "Bảng lương", icon: Wallet },
     ],
   },
   {
     id: "content",
     label: "Nội dung",
     icon: Newspaper,
-    items: [{ href: "/news", label: "Tin tức", icon: Newspaper, badgeKey: null }],
+    items: [{ href: "/news", label: "Tin tức", icon: Newspaper }],
   },
   {
     id: "system",
     label: "Hệ thống",
     icon: Settings,
     items: [
-      { href: "/users", label: "Tài khoản CRM", icon: Users, badgeKey: null },
+      { href: "/users", label: "Tài khoản CRM", icon: Users },
     ],
   },
 ];
@@ -162,7 +150,6 @@ export function Sidebar({
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const toast = useToast();
-  const { counts } = useNotifications();
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [loggingOut, setLoggingOut] = useState(false);
@@ -264,10 +251,6 @@ export function Sidebar({
           const groupActive = group.items.some((item) =>
             isActivePath(pathname, item.href)
           );
-          const groupBadge = group.items.reduce((sum, item) => {
-            if (!item.badgeKey) return sum;
-            return sum + (counts[item.badgeKey] || 0);
-          }, 0);
 
           return (
             <div key={group.id} className="space-y-1">
@@ -285,11 +268,6 @@ export function Sidebar({
                 <span className="flex-1 truncate normal-case tracking-normal">
                   {group.label}
                 </span>
-                {groupBadge > 0 ? (
-                  <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                    {groupBadge > 99 ? "99+" : groupBadge}
-                  </span>
-                ) : null}
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 shrink-0 transition-transform duration-200",
@@ -309,9 +287,6 @@ export function Sidebar({
                     {group.items.map((item) => {
                       const Icon = item.icon;
                       const active = isActivePath(pathname, item.href);
-                      const badgeCount = item.badgeKey
-                        ? counts[item.badgeKey]
-                        : 0;
 
                       return (
                         <Link
@@ -330,11 +305,6 @@ export function Sidebar({
                           ) : null}
                           <Icon className="h-4 w-4 shrink-0" />
                           <span className="flex-1 truncate">{item.label}</span>
-                          {badgeCount > 0 ? (
-                            <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                              {badgeCount > 99 ? "99+" : badgeCount}
-                            </span>
-                          ) : null}
                         </Link>
                       );
                     })}

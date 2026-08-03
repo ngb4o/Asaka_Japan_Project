@@ -41,7 +41,8 @@ const stopSchema = Joi.object({
 
 const advanceSchema = Joi.object({
   amount: Joi.number().positive().required(),
-  note: optionalText.max(1000)
+  note: optionalText.max(1000),
+  receiptUrl: optionalText.max(500)
 })
 
 const expenseSchema = Joi.object({
@@ -51,6 +52,12 @@ const expenseSchema = Joi.object({
   amount: Joi.number().positive().required(),
   date: Joi.alternatives().try(Joi.date(), Joi.string()).optional(),
   funding: Joi.string().valid('advance', 'reimburse').required(),
+  /** NV trong chuyến đã tự bỏ tiền — bắt buộc khi funding=reimburse */
+  paidByEmployeeId: Joi.when('funding', {
+    is: 'reimburse',
+    then: objectId.required(),
+    otherwise: objectId.allow(null, '').optional()
+  }),
   receiptUrl: optionalText.max(500),
   note: optionalText.max(1000)
 })

@@ -331,20 +331,21 @@ export default function LeadsPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-                <table className="w-full min-w-[900px] text-left text-sm">
+                <div className="crm-table-frame">
+                  <table className="crm-data-table min-w-[900px]">
                   <thead>
-                    <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                      <th className="px-2 py-3 font-medium">Tên</th>
-                      <th className="px-2 py-3 font-medium">SĐT</th>
-                      <th className="px-2 py-3 font-medium">Trạng thái</th>
-                      <th className="px-2 py-3 font-medium">Ngày</th>
-                      <th className="px-2 py-3 font-medium text-right">Thao tác</th>
+                    <tr>
+                      <th className="font-medium">Tên</th>
+                      <th className="font-medium">SĐT</th>
+                      <th className="font-medium">Trạng thái</th>
+                      <th className="font-medium">Ngày</th>
+                      <th className="font-medium text-right">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((item) => (
-                      <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                        <td className="px-2 py-3">
+                      <tr key={item.id}>
+                        <td>
                           <button
                             type="button"
                             className="font-medium text-left hover:text-[var(--color-text-secondary)]"
@@ -356,8 +357,8 @@ export default function LeadsPage() {
                             <p className="text-xs text-[var(--color-text-inverse)]">{item.company}</p>
                           ) : null}
                         </td>
-                        <td className="px-2 py-3">{item.phone}</td>
-                        <td className="px-2 py-3">
+                        <td>{item.phone}</td>
+                        <td>
                           <div className="w-[160px]">
                             <SearchableSelect
                               options={STATUS_OPTIONS.lead}
@@ -371,10 +372,10 @@ export default function LeadsPage() {
                             />
                           </div>
                         </td>
-                        <td className="px-2 py-3 text-[var(--color-text-inverse)]">
+                        <td className="text-[var(--color-text-inverse)]">
                           {new Date(item.createdAt).toLocaleDateString("vi-VN")}
                         </td>
-                        <td className="px-2 py-3">
+                        <td>
                           <div className="flex justify-end gap-2">
                             <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
                               <Pencil className="h-4 w-4" />
@@ -403,6 +404,7 @@ export default function LeadsPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
 
               <Pagination

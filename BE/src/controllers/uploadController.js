@@ -90,7 +90,21 @@ const uploadNewsImage = async (req, res, next) => {
   }
 }
 
+const uploadTripReceipt = async (req, res, next) => {
+  try {
+    const data = await persistImage(req.file, 'trip-receipts')
+
+    res.status(StatusCodes.CREATED).json({
+      message: 'Tải chứng từ lên thành công!',
+      data
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const uploadController = {
   uploadProductImage,
-  uploadNewsImage
+  uploadNewsImage,
+  uploadTripReceipt
 }

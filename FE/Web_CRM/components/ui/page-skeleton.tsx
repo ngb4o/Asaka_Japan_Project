@@ -191,9 +191,10 @@ function TableCardSkeleton({
         </MobileCardList>
 
         <div className="crm-table-scroll hidden md:block">
-          <table className="w-full text-left text-sm" style={{ minWidth }}>
+          <div className="crm-table-frame">
+            <table className="crm-data-table" style={{ minWidth }}>
             <thead>
-              <tr className="border-b border-[var(--color-border-subtle)]">
+              <tr>
                 {columns.map((_, index) => (
                   <th key={index} className="px-2 py-3">
                     <Skeleton className="h-4 w-16" />
@@ -207,6 +208,7 @@ function TableCardSkeleton({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </CardContent>
     </Card>

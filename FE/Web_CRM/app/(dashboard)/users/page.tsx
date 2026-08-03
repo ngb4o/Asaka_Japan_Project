@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { KeyRound, Plus, RefreshCw, Trash2 } from "@/components/ui/icons";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -25,7 +24,6 @@ import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canManageUsers, ROLE_LABELS, ALL_USER_ROLES, rolesOf } from "@/lib/auth/permissions";
-import { statusBadgeVariant } from "@/lib/status-badge";
 import { getEmployees } from "@/lib/api/employees";
 import {
   createUser,
@@ -62,10 +60,12 @@ function RoleCheckboxes({
   value,
   onChange,
   disabled,
+  compact,
 }: {
   value: UserRole[];
   onChange: (roles: UserRole[]) => void;
   disabled?: boolean;
+  compact?: boolean;
 }) {
   function toggle(role: UserRole) {
     if (disabled) return;
@@ -78,14 +78,19 @@ function RoleCheckboxes({
   }
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div
+      className={cn(
+        compact ? "flex flex-wrap gap-1.5" : "grid grid-cols-2 gap-2"
+      )}
+    >
       {ALL_USER_ROLES.map((role) => {
         const checked = value.includes(role);
         return (
           <label
             key={role}
             className={cn(
-              "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm",
+              "flex cursor-pointer items-center gap-1.5 rounded-lg border text-sm",
+              compact ? "px-2 py-1 text-xs" : "gap-2 px-3 py-2",
               checked
                 ? "border-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]"
                 : "border-[var(--color-border-subtle)]",
@@ -94,7 +99,7 @@ function RoleCheckboxes({
           >
             <input
               type="checkbox"
-              className="h-4 w-4 accent-[var(--color-text-secondary)]"
+              className="h-3.5 w-3.5 accent-[var(--color-text-secondary)]"
               checked={checked}
               disabled={disabled}
               onChange={() => toggle(role)}
@@ -103,18 +108,6 @@ function RoleCheckboxes({
           </label>
         );
       })}
-    </div>
-  );
-}
-
-function RoleBadges({ roles }: { roles: UserRole[] }) {
-  return (
-    <div className="flex flex-wrap gap-1">
-      {roles.map((role) => (
-        <Badge key={role} variant={statusBadgeVariant(role)} className="shrink-0">
-          {ROLE_LABELS[role] || role}
-        </Badge>
-      ))}
     </div>
   );
 }
@@ -148,8 +141,6 @@ export default function UsersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [passwordTarget, setPasswordTarget] = useState<UserProfile | null>(null);
   const [newPassword, setNewPassword] = useState("");
-  const [rolesTarget, setRolesTarget] = useState<UserProfile | null>(null);
-  const [rolesDraft, setRolesDraft] = useState<UserRole[]>(["sales"]);
   const [createdCreds, setCreatedCreds] = useState<{
     email: string;
     password: string;
@@ -161,8 +152,8 @@ export default function UsersPage() {
     [employees]
   );
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     try {
       const [usersResult, employeesResult] = await Promise.all([
         getUsers(),
@@ -175,13 +166,13 @@ export default function UsersPage() {
         err instanceof ApiClientError ? err.message : "Không tải được danh sách user"
       );
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }, [toast]);
 
   useEffect(() => {
     if (canManageUsers(rolesOf(user))) {
-      loadData();
+      void loadData();
     } else {
       setLoading(false);
     }
@@ -204,31 +195,36 @@ export default function UsersPage() {
     }));
   }
 
-  function openRolesEditor(item: UserProfile) {
-    setRolesTarget(item);
-    setRolesDraft(rolesOf(item));
-  }
-
-  async function handleRolesSave(event: React.FormEvent) {
-    event.preventDefault();
-    if (!rolesTarget) return;
-    if (!rolesDraft.length) {
+  async function handleRolesChange(item: UserProfile, roles: UserRole[]) {
+    if (!roles.length) {
       toast.warning("Chọn ít nhất một vai trò");
       return;
     }
-    const current = rolesOf(rolesTarget).slice().sort().join(",");
-    const next = rolesDraft.slice().sort().join(",");
-    if (current === next) {
-      setRolesTarget(null);
-      return;
-    }
-    setUpdatingId(`role:${rolesTarget.id}`);
+    const current = rolesOf(item).slice().sort().join(",");
+    const next = roles.slice().sort().join(",");
+    if (current === next) return;
+
+    const previous = item;
+    setItems((prev) =>
+      prev.map((row) =>
+        row.id === item.id
+          ? normalizeUser({ ...row, roles, role: roles[0] })
+          : row
+      )
+    );
+    setUpdatingId(`role:${item.id}`);
     try {
-      await updateUserRole(rolesTarget.id, rolesDraft);
+      const updated = await updateUserRole(item.id, roles);
+      setItems((prev) =>
+        prev.map((row) =>
+          row.id === updated.id ? normalizeUser(updated) : row
+        )
+      );
       toast.success("Đã cập nhật quyền");
-      setRolesTarget(null);
-      await loadData();
     } catch (err) {
+      setItems((prev) =>
+        prev.map((row) => (row.id === previous.id ? previous : row))
+      );
       toast.error(err instanceof ApiClientError ? err.message : "Cập nhật thất bại");
     } finally {
       setUpdatingId(null);
@@ -264,7 +260,7 @@ export default function UsersPage() {
         employeeName: created.employeeName || "Nhân viên",
       });
       toast.success("Đã cấp tài khoản");
-      await loadData();
+      await loadData({ silent: true });
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Tạo tài khoản thất bại");
     } finally {
@@ -315,8 +311,13 @@ export default function UsersPage() {
     setUpdatingId(`delete:${item.id}`);
     try {
       await deleteUser(item.id);
+      setItems((prev) => prev.filter((row) => row.id !== item.id));
+      setEmployees((prev) =>
+        prev.map((employee) =>
+          employee.userId === item.id ? { ...employee, userId: null } : employee
+        )
+      );
       toast.success("Đã xóa tài khoản");
-      await loadData();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Xóa thất bại");
     } finally {
@@ -371,40 +372,38 @@ export default function UsersPage() {
                 <div className="flex flex-col gap-3">
                   {items.map((item) => (
                     <MobileRecordCard key={item.id} className="p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
-                            {item.employeeName || "—"}
-                            {item.employeeCode ? (
-                              <span className="ml-2 text-xs font-normal text-[var(--color-text-inverse)]">
-                                {item.employeeCode}
-                              </span>
-                            ) : null}
-                            {item.id === user?.id ? (
-                              <span className="ml-2 text-xs font-normal text-[var(--color-text-inverse)]">
-                                (bạn)
-                              </span>
-                            ) : null}
-                          </p>
-                          <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
-                            {item.email}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 flex-col items-end gap-1">
-                          <RoleBadges roles={rolesOf(item)} />
-                        </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                          {item.employeeName || "—"}
+                          {item.employeeCode ? (
+                            <span className="ml-2 text-xs font-normal text-[var(--color-text-inverse)]">
+                              {item.employeeCode}
+                            </span>
+                          ) : null}
+                          {item.id === user?.id ? (
+                            <span className="ml-2 text-xs font-normal text-[var(--color-text-inverse)]">
+                              (bạn)
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                          {item.email}
+                        </p>
+                      </div>
+
+                      <div className="mt-3">
+                        <p className="mb-1.5 text-xs font-medium text-[var(--color-text-inverse)]">
+                          Vai trò
+                        </p>
+                        <RoleCheckboxes
+                          compact
+                          value={rolesOf(item)}
+                          disabled={isUserAction(item.id, "role")}
+                          onChange={(roles) => handleRolesChange(item, roles)}
+                        />
                       </div>
 
                       <MobileRecordActions>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-9 min-w-9"
-                          title="Đổi quyền"
-                          onClick={() => openRolesEditor(item)}
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -436,19 +435,20 @@ export default function UsersPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-              <table className="w-full min-w-[820px] text-left text-sm">
+              <div className="crm-table-frame">
+                <table className="crm-data-table min-w-[820px]">
                 <thead>
-                  <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                    <th className="px-2 py-3 font-medium">Nhân viên</th>
-                    <th className="px-2 py-3 font-medium">Email đăng nhập</th>
-                    <th className="px-2 py-3 font-medium">Vai trò</th>
-                    <th className="px-2 py-3 text-right font-medium">Thao tác</th>
+                  <tr>
+                    <th className="font-medium">Nhân viên</th>
+                    <th className="font-medium">Email đăng nhập</th>
+                    <th className="font-medium">Vai trò</th>
+                    <th className="text-right font-medium">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <tr key={item.id} className="border-b border-[var(--color-border-subtle)]">
-                      <td className="px-2 py-3 font-medium">
+                    <tr key={item.id}>
+                      <td className="font-medium">
                         {item.employeeName || "—"}
                         {item.employeeCode ? (
                           <span className="ml-2 text-xs text-[var(--color-text-inverse)]">
@@ -461,20 +461,17 @@ export default function UsersPage() {
                           </span>
                         ) : null}
                       </td>
-                      <td className="px-2 py-3">{item.email}</td>
-                      <td className="px-2 py-3">
-                        <RoleBadges roles={rolesOf(item)} />
+                      <td>{item.email}</td>
+                      <td>
+                        <RoleCheckboxes
+                          compact
+                          value={rolesOf(item)}
+                          disabled={isUserAction(item.id, "role")}
+                          onChange={(roles) => handleRolesChange(item, roles)}
+                        />
                       </td>
-                      <td className="px-2 py-3">
+                      <td>
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openRolesEditor(item)}
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                            Đổi quyền
-                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -502,6 +499,7 @@ export default function UsersPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
             </>
           )}
@@ -576,43 +574,6 @@ export default function UsersPage() {
               </Button>
               <Button type="submit" loading={submitting}>
                 Cấp tài khoản
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={rolesTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setRolesTarget(null);
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              Đổi quyền — {rolesTarget?.employeeName || rolesTarget?.email}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleRolesSave} className="space-y-4">
-            <RoleCheckboxes
-              value={rolesDraft}
-              onChange={setRolesDraft}
-              disabled={Boolean(rolesTarget && isUserAction(rolesTarget.id, "role"))}
-            />
-            <p className="text-xs text-[var(--color-text-inverse)]">
-              Quyền thực tế = hợp các vai trò đã chọn. Vai trò đầu tiên dùng để hiển thị.
-            </p>
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setRolesTarget(null)}
-              >
-                Hủy
-              </Button>
-              <Button type="submit" loading={Boolean(rolesTarget && isUserAction(rolesTarget.id, "role"))}>
-                Lưu
               </Button>
             </div>
           </form>

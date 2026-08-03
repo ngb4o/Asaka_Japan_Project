@@ -29,7 +29,10 @@ const ORDER_ITEM_SCHEMA = Joi.object({
   unitType: Joi.string().valid('chai', 'thung').default('chai'),
   quantityBase: Joi.number().integer().min(1).optional(),
   unitPrice: Joi.number().min(0).required(),
-  lineTotal: Joi.number().min(0).required()
+  lineTotal: Joi.number().min(0).required(),
+  /** Snapshot giá vốn / đơn vị bán (chai hoặc thùng) lúc tạo/sửa dòng */
+  unitCost: Joi.number().min(0).default(0),
+  lineCost: Joi.number().min(0).default(0)
 })
 
 const ORDER_COLLECTION_SCHEMA = Joi.object({
@@ -61,6 +64,10 @@ const ORDER_COLLECTION_SCHEMA = Joi.object({
   subtotal: Joi.number().min(0).required(),
   discount: Joi.number().min(0).default(0),
   total: Joi.number().min(0).required(),
+  /** Tổng giá vốn snapshot của các dòng */
+  costTotal: Joi.number().min(0).default(0),
+  /** Lãi gộp = total − costTotal (đơn hủy = 0) */
+  grossProfit: Joi.number().default(0),
   status: Joi.string()
     .valid(
       ORDER_STATUS.PENDING,
@@ -72,6 +79,8 @@ const ORDER_COLLECTION_SCHEMA = Joi.object({
     .default(ORDER_STATUS.PENDING),
   note: optionalText(1000).default(''),
   inventoryExported: Joi.boolean().default(false),
+  /** Khóa tạm khi đang xuất kho — chặn double-click / race */
+  inventoryExportClaimedAt: Joi.date().allow(null).default(null),
   paymentStatus: Joi.string()
     .valid(PAYMENT_STATUS.UNPAID, PAYMENT_STATUS.PARTIAL, PAYMENT_STATUS.PAID)
     .default(PAYMENT_STATUS.UNPAID),
@@ -202,6 +211,15 @@ const update = async (id, updateData) => {
     dataToUpdate.tripId = dataToUpdate.tripId ? new ObjectId(dataToUpdate.tripId) : null
   }
 
+  if (Array.isArray(dataToUpdate.deliveryEmployeeIds)) {
+    const deliveryIds = new Set()
+    for (const id of dataToUpdate.deliveryEmployeeIds) {
+      if (id) deliveryIds.add(String(id))
+    }
+    dataToUpdate.deliveryEmployeeIds = [...deliveryIds].map((id) => new ObjectId(id))
+    dataToUpdate.deliveryEmployeeId = null
+  }
+
   if (Array.isArray(dataToUpdate.items)) {
     dataToUpdate.items = dataToUpdate.items.map((item) => ({
       ...item,
@@ -212,6 +230,45 @@ const update = async (id, updateData) => {
   return await GET_DB()
     .collection(ORDER_COLLECTION_NAME)
     .updateOne({ _id: new ObjectId(id), _destroy: false }, { $set: dataToUpdate })
+}
+
+const claimInventoryExport = async (id) => {
+  const staleBefore = new Date(Date.now() - 2 * 60 * 1000)
+  return await GET_DB()
+    .collection(ORDER_COLLECTION_NAME)
+    .findOneAndUpdate(
+      {
+        _id: new ObjectId(id),
+        _destroy: false,
+        status: ORDER_STATUS.PENDING,
+        inventoryExported: { $ne: true },
+        $or: [
+          { inventoryExportClaimedAt: null },
+          { inventoryExportClaimedAt: { $lt: staleBefore } }
+        ]
+      },
+      {
+        $set: {
+          inventoryExportClaimedAt: new Date(),
+          updatedAt: new Date()
+        }
+      },
+      { returnDocument: 'after' }
+    )
+}
+
+const releaseInventoryExportClaim = async (id) => {
+  return await GET_DB()
+    .collection(ORDER_COLLECTION_NAME)
+    .updateOne(
+      { _id: new ObjectId(id), _destroy: false },
+      {
+        $set: {
+          inventoryExportClaimedAt: null,
+          updatedAt: new Date()
+        }
+      }
+    )
 }
 
 const deleteOne = async (id) => {
@@ -265,6 +322,8 @@ export const orderModel = {
   findOneByCode,
   findMany,
   update,
+  claimInventoryExport,
+  releaseInventoryExportClaim,
   deleteOne,
   countByStatus,
   sumCompletedTotal

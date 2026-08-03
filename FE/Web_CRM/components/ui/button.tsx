@@ -15,6 +15,24 @@ const buttonVariants = cva(
           "border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] shadow-sm hover:bg-[var(--color-surface-muted)]",
         ghost: "text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]",
         danger: "bg-red-600 text-white shadow-sm hover:bg-red-700",
+        /** Icon actions — soft tinted chips */
+        view:
+          "border border-sky-200/90 bg-sky-50 text-sky-700 shadow-sm hover:bg-sky-100 dark:border-sky-500/35 dark:bg-sky-500/15 dark:text-sky-300 dark:hover:bg-sky-500/25",
+        edit:
+          "border border-amber-200/90 bg-amber-50 text-amber-800 shadow-sm hover:bg-amber-100 dark:border-amber-500/35 dark:bg-amber-500/15 dark:text-amber-300 dark:hover:bg-amber-500/25",
+        success:
+          "border border-emerald-200/90 bg-emerald-50 text-emerald-700 shadow-sm hover:bg-emerald-100 dark:border-emerald-500/35 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25",
+        /** Soft red — từ chối / hủy nhẹ (khác danger đặc) */
+        reject:
+          "border border-rose-200/90 bg-rose-50 text-rose-700 shadow-sm hover:bg-rose-100 dark:border-rose-500/35 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25",
+        /** In PDF */
+        print:
+          "border border-cyan-200/90 bg-cyan-50 text-cyan-700 shadow-sm hover:bg-cyan-100 dark:border-cyan-500/35 dark:bg-cyan-500/15 dark:text-cyan-300 dark:hover:bg-cyan-500/25",
+        /** Thu tiền / ghi nhận thanh toán */
+        pay:
+          "border border-teal-200/90 bg-teal-50 text-teal-700 shadow-sm hover:bg-teal-100 dark:border-teal-500/35 dark:bg-teal-500/15 dark:text-teal-300 dark:hover:bg-teal-500/25",
+        mute:
+          "border border-slate-200/90 bg-slate-50 text-slate-600 shadow-sm hover:bg-slate-100 dark:border-slate-500/35 dark:bg-slate-500/15 dark:text-slate-300 dark:hover:bg-slate-500/25",
       },
       size: {
         default: "h-10 px-4 text-sm rounded-[var(--radius-button)]",

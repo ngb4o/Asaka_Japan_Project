@@ -46,17 +46,62 @@ export async function removeTripStop(id: string, stopId: string) {
   return apiRequest<Trip>(`/trips/${id}/stops/${stopId}`, { method: "DELETE" });
 }
 
-export async function addTripAdvance(id: string, data: { amount: number; note?: string }) {
+export async function addTripAdvance(
+  id: string,
+  data: { amount: number; note?: string; receiptUrl?: string }
+) {
   return apiRequest<Trip>(`/trips/${id}/advances`, { method: "POST", body: data });
 }
 
-export async function addTripExpense(
+export async function updateTripAdvance(
   id: string,
-  data: Partial<
-    Pick<TripExpense, "category" | "amount" | "date" | "funding" | "receiptUrl" | "note">
-  >
+  advanceId: string,
+  data: { amount: number; note?: string; receiptUrl?: string }
 ) {
+  return apiRequest<Trip>(`/trips/${id}/advances/${advanceId}`, {
+    method: "PUT",
+    body: data,
+  });
+}
+
+export async function removeTripAdvance(id: string, advanceId: string) {
+  return apiRequest<Trip>(`/trips/${id}/advances/${advanceId}`, {
+    method: "DELETE",
+  });
+}
+
+type TripExpenseInput = Partial<
+  Pick<
+    TripExpense,
+    | "category"
+    | "amount"
+    | "date"
+    | "funding"
+    | "paidByEmployeeId"
+    | "receiptUrl"
+    | "note"
+  >
+>;
+
+export async function addTripExpense(id: string, data: TripExpenseInput) {
   return apiRequest<Trip>(`/trips/${id}/expenses`, { method: "POST", body: data });
+}
+
+export async function updateTripExpense(
+  id: string,
+  expenseId: string,
+  data: TripExpenseInput
+) {
+  return apiRequest<Trip>(`/trips/${id}/expenses/${expenseId}`, {
+    method: "PUT",
+    body: data,
+  });
+}
+
+export async function removeTripExpense(id: string, expenseId: string) {
+  return apiRequest<Trip>(`/trips/${id}/expenses/${expenseId}`, {
+    method: "DELETE",
+  });
 }
 
 export async function reviewTripExpense(

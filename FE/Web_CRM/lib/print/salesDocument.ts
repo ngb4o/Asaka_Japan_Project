@@ -12,13 +12,86 @@ type PrintDocumentInput = {
   subtotal: number;
   discount?: number;
   total: number;
-  /** Nhãn dòng tổng cuối (mặc định: Tổng cộng). Dùng "Còn lại" khi còn nợ. */
-  grandLabel?: string;
-  /** Số tiền dòng tổng cuối (mặc định: total). */
-  grandAmount?: number;
+  /** Dòng trước Tổng cộng (vd: phí giao hàng). */
   extraRows?: InfoRow[];
+  /** Dòng sau Tổng cộng (vd: Đã thu, Còn lại). */
+  afterGrandRows?: InfoRow[];
   note?: string;
 };
+
+const UNIT_LABELS: Record<string, string> = {
+  chai: "Chai",
+  thung: "Thùng",
+};
+
+const ONES = [
+  "",
+  "một",
+  "hai",
+  "ba",
+  "bốn",
+  "năm",
+  "sáu",
+  "bảy",
+  "tám",
+  "chín",
+];
+
+function readTriple(n: number, full: boolean): string {
+  const tram = Math.floor(n / 100);
+  const chuc = Math.floor((n % 100) / 10);
+  const donvi = n % 10;
+  const parts: string[] = [];
+
+  if (tram > 0 || full) {
+    if (tram > 0) parts.push(`${ONES[tram]} trăm`);
+    else if (full && (chuc > 0 || donvi > 0)) parts.push("không trăm");
+  }
+
+  if (chuc > 1) {
+    parts.push(`${ONES[chuc]} mươi`);
+    if (donvi === 1) parts.push("mốt");
+    else if (donvi === 5) parts.push("lăm");
+    else if (donvi > 0) parts.push(ONES[donvi]);
+  } else if (chuc === 1) {
+    parts.push("mười");
+    if (donvi === 5) parts.push("lăm");
+    else if (donvi > 0) parts.push(ONES[donvi]);
+  } else if (donvi > 0) {
+    if (full || tram > 0) parts.push(`lẻ ${ONES[donvi]}`);
+    else parts.push(ONES[donvi]);
+  }
+
+  return parts.join(" ");
+}
+
+/** Đọc số tiền VND bằng chữ (làm tròn đến đồng). */
+function amountInWords(amount: number): string {
+  const n = Math.round(Math.abs(amount));
+  if (n === 0) return "Không đồng";
+
+  const scales = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ"];
+  const groups: number[] = [];
+  let rest = n;
+  while (rest > 0) {
+    groups.push(rest % 1000);
+    rest = Math.floor(rest / 1000);
+  }
+
+  const parts: string[] = [];
+  for (let i = groups.length - 1; i >= 0; i -= 1) {
+    const g = groups[i];
+    if (g === 0) continue;
+    const full = i < groups.length - 1;
+    const words = readTriple(g, full);
+    if (!words) continue;
+    parts.push(i > 0 ? `${words} ${scales[i]}` : words);
+  }
+
+  const text = parts.join(" ").replace(/\s+/g, " ").trim();
+  const capitalized = text.charAt(0).toUpperCase() + text.slice(1);
+  return `${capitalized} đồng`;
+}
 
 const PRINT_FRAME_ID = "asaka-sales-print-frame";
 
@@ -65,6 +138,9 @@ function buildPrintHtml(doc: PrintDocumentInput) {
       <tr>
         <td class="center">${index + 1}</td>
         <td class="product">${escapeHtml(item.productName || "—")}</td>
+        <td class="center">${escapeHtml(
+          (item.unitType && UNIT_LABELS[item.unitType]) || "—"
+        )}</td>
         <td class="num">${item.quantity}</td>
         <td class="num">${formatCurrency(item.unitPrice)}</td>
         <td class="num strong">${formatCurrency(item.lineTotal)}</td>
@@ -72,15 +148,20 @@ function buildPrintHtml(doc: PrintDocumentInput) {
     )
     .join("");
 
-  const extraHtml = (doc.extraRows || [])
-    .map(
-      (row) => `
-        <div class="total-row">
+  const renderTotalRows = (rowsList: InfoRow[] = [], rowClass = "total-row") =>
+    rowsList
+      .map(
+        (row) => `
+        <div class="${rowClass}">
           <span>${escapeHtml(row.label)}</span>
           <span>${escapeHtml(row.value)}</span>
         </div>`
-    )
-    .join("");
+      )
+      .join("");
+
+  const extraHtml = renderTotalRows(doc.extraRows);
+  const afterGrandHtml = renderTotalRows(doc.afterGrandRows, "total-row after");
+  const words = amountInWords(doc.total);
 
   return `<!DOCTYPE html>
 <html lang="vi">
@@ -237,6 +318,20 @@ function buildPrintHtml(doc: PrintDocumentInput) {
     }
     .total-row.grand span:last-child { color: #fff; font-size: 18px; }
 
+    .total-row.after {
+      background: var(--soft);
+      color: var(--ink);
+    }
+    .total-row.after span:last-child { font-weight: 700; }
+
+    .amount-words {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      text-align: right;
+    }
+    .amount-words strong { color: var(--ink); font-weight: 600; }
+
     /* Note */
     .note {
       margin-top: 22px;
@@ -309,9 +404,10 @@ function buildPrintHtml(doc: PrintDocumentInput) {
         <tr>
           <th style="width:44px">#</th>
           <th>Sản phẩm</th>
+          <th class="center" style="width:70px">ĐVT</th>
           <th class="num" style="width:70px">SL</th>
-          <th class="num" style="width:130px">Đơn giá</th>
-          <th class="num" style="width:140px">Thành tiền</th>
+          <th class="num" style="width:120px">Đơn giá</th>
+          <th class="num" style="width:130px">Thành tiền</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -330,11 +426,13 @@ function buildPrintHtml(doc: PrintDocumentInput) {
         }
         ${extraHtml}
         <div class="total-row grand">
-          <span>${escapeHtml(doc.grandLabel || "Tổng cộng")}</span>
-          <span>${formatCurrency(doc.grandAmount ?? doc.total)}</span>
+          <span>Tổng cộng</span>
+          <span>${formatCurrency(doc.total)}</span>
         </div>
+        ${afterGrandHtml}
       </div>
     </div>
+    <div class="amount-words">Bằng chữ: <strong>${escapeHtml(words)}</strong></div>
 
     ${
       doc.note

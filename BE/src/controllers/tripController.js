@@ -62,7 +62,11 @@ const update = async (req, res, next) => {
 
 const deleteOne = async (req, res, next) => {
   try {
-    const result = await tripService.deleteOne(req.params.id)
+    const result = await tripService.deleteOne(
+      req.params.id,
+      req.userId,
+      actorRolesOf(req)
+    )
     res.status(StatusCodes.OK).json({
       message: result.message,
       data: result
@@ -109,6 +113,28 @@ const addAdvance = async (req, res, next) => {
   }
 }
 
+const updateAdvance = async (req, res, next) => {
+  try {
+    const result = await tripService.updateAdvance(
+      req.params.id,
+      req.params.advanceId,
+      req.body
+    )
+    res.status(StatusCodes.OK).json({ message: 'Đã cập nhật tạm ứng!', data: result })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const removeAdvance = async (req, res, next) => {
+  try {
+    const result = await tripService.removeAdvance(req.params.id, req.params.advanceId)
+    res.status(StatusCodes.OK).json({ message: 'Đã xóa tạm ứng!', data: result })
+  } catch (error) {
+    next(error)
+  }
+}
+
 const addExpense = async (req, res, next) => {
   try {
     const result = await tripService.addExpense(
@@ -118,6 +144,35 @@ const addExpense = async (req, res, next) => {
       actorRolesOf(req)
     )
     res.status(StatusCodes.OK).json({ message: 'Đã thêm khoản chi!', data: result })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const updateExpense = async (req, res, next) => {
+  try {
+    const result = await tripService.updateExpense(
+      req.params.id,
+      req.params.expenseId,
+      req.body,
+      req.userId,
+      actorRolesOf(req)
+    )
+    res.status(StatusCodes.OK).json({ message: 'Đã cập nhật khoản chi!', data: result })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const removeExpense = async (req, res, next) => {
+  try {
+    const result = await tripService.removeExpense(
+      req.params.id,
+      req.params.expenseId,
+      req.userId,
+      actorRolesOf(req)
+    )
+    res.status(StatusCodes.OK).json({ message: 'Đã xóa khoản chi!', data: result })
   } catch (error) {
     next(error)
   }
@@ -155,7 +210,11 @@ export const tripController = {
   addStop,
   removeStop,
   addAdvance,
+  updateAdvance,
+  removeAdvance,
   addExpense,
+  updateExpense,
+  removeExpense,
   reviewExpense,
   settle
 }

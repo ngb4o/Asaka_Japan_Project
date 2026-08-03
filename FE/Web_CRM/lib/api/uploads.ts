@@ -28,6 +28,10 @@ export async function uploadNewsImage(file: File): Promise<UploadResult> {
   return uploadImage(file, "/uploads/news-image");
 }
 
+export async function uploadTripReceipt(file: File): Promise<UploadResult> {
+  return uploadImage(file, "/uploads/trip-receipt");
+}
+
 async function uploadImage(file: File, endpoint: string): Promise<UploadResult> {
   const formData = new FormData();
   formData.append("image", file);

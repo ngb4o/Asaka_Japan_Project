@@ -304,41 +304,39 @@ export default function ReceivablesPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden md:block">
-                <table className="w-full min-w-[720px] text-left text-sm">
+                <div className="crm-table-frame">
+                  <table className="crm-data-table min-w-[720px]">
                   <thead>
-                    <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-inverse)]">
-                      <th className="px-2 py-3 font-medium">Đại lý</th>
-                      <th className="px-2 py-3 font-medium">Liên hệ</th>
-                      <th className="px-2 py-3 font-medium">Khu vực</th>
-                      <th className="px-2 py-3 text-right font-medium">Đơn nợ</th>
-                      <th className="px-2 py-3 text-right font-medium">Đã thu</th>
-                      <th className="px-2 py-3 text-right font-medium">Còn nợ</th>
-                      <th className="px-2 py-3 text-right font-medium">Thao tác</th>
+                    <tr>
+                      <th className="font-medium">Đại lý</th>
+                      <th className="font-medium">Liên hệ</th>
+                      <th className="font-medium">Khu vực</th>
+                      <th className="text-right font-medium">Đơn nợ</th>
+                      <th className="text-right font-medium">Đã thu</th>
+                      <th className="text-right font-medium">Còn nợ</th>
+                      <th className="text-right font-medium">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((item) => (
-                      <tr
-                        key={item.dealerId}
-                        className="border-b border-[var(--color-border-subtle)]"
-                      >
-                        <td className="px-2 py-3 font-medium">{item.dealerName}</td>
-                        <td className="px-2 py-3 text-[var(--color-text-inverse)]">
+                      <tr key={item.dealerId}>
+                        <td className="font-medium">{item.dealerName}</td>
+                        <td className="text-[var(--color-text-inverse)]">
                           {[item.contactName, item.phone]
                             .filter(Boolean)
                             .join(" · ") || "—"}
                         </td>
-                        <td className="px-2 py-3">{item.region || "—"}</td>
-                        <td className="px-2 py-3 text-right tabular-nums">
+                        <td>{item.region || "—"}</td>
+                        <td className="text-right tabular-nums">
                           {item.debtOrderCount}
                         </td>
-                        <td className="px-2 py-3 text-right tabular-nums">
+                        <td className="text-right tabular-nums">
                           {formatCurrency(item.paidAmount)}
                         </td>
-                        <td className="px-2 py-3 text-right font-semibold tabular-nums text-red-600">
+                        <td className="text-right font-semibold tabular-nums text-red-600">
                           {formatCurrency(item.debtAmount)}
                         </td>
-                        <td className="px-2 py-3">
+                        <td>
                           <div className="flex justify-end">
                             <Button
                               variant="outline"
@@ -354,6 +352,7 @@ export default function ReceivablesPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </>
           )}

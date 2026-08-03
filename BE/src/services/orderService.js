@@ -170,6 +170,17 @@ const withPaymentDefaults = (order) => {
   const total = Number(order.total) || 0
   const paidAmount = Number(order.paidAmount) || 0
   const resolved = resolvePaymentStatus(paidAmount, total, order.paymentStatus)
+  const items = Array.isArray(order.items) ? order.items : []
+  const costTotal =
+    order.costTotal !== undefined && order.costTotal !== null
+      ? Math.max(0, Number(order.costTotal) || 0)
+      : items.reduce((sum, line) => sum + (Number(line.lineCost) || 0), 0)
+  const grossProfit =
+    order.status === orderModel.ORDER_STATUS.CANCELLED
+      ? 0
+      : order.grossProfit !== undefined && order.grossProfit !== null
+        ? Number(order.grossProfit) || 0
+        : Math.round(total - costTotal)
 
   return {
     ...order,
@@ -185,7 +196,9 @@ const withPaymentDefaults = (order) => {
     shippingDate: order.shippingDate || null,
     deliveredAt: order.deliveredAt || null,
     shippingFee: Number(order.shippingFee) || 0,
-    shippingNote: order.shippingNote || ''
+    shippingNote: order.shippingNote || '',
+    costTotal,
+    grossProfit
   }
 }
 
@@ -227,6 +240,12 @@ const buildLineItems = async (items = []) => {
       : Number(product.price)
     const lineTotal = quantity * unitPrice
 
+    // costPrice trên SP là giá vốn / chai; nhân theo thùng nếu dòng bán theo thùng
+    const costPerBottle = Math.max(0, Number(product.costPrice) || 0)
+    const unitCost =
+      unitType === UNIT_TYPE.CASE ? costPerBottle * unitsPerCase : costPerBottle
+    const lineCost = quantity * unitCost
+
     lineItems.push({
       productId: product._id.toString(),
       productName: product.name,
@@ -235,15 +254,19 @@ const buildLineItems = async (items = []) => {
       unitType,
       quantityBase,
       unitPrice,
-      lineTotal
+      lineTotal,
+      unitCost,
+      lineCost
     })
   }
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.lineTotal, 0)
+  const costTotal = lineItems.reduce((sum, item) => sum + item.lineCost, 0)
 
   return {
     items: lineItems,
-    subtotal
+    subtotal,
+    costTotal
   }
 }
 
@@ -487,6 +510,8 @@ const createNew = async (reqBody, userId) => {
   const code = await generateDocumentCode(orderModel.ORDER_COLLECTION_NAME, 'O')
   const discount = reqBody.discount ?? 0
   const total = Math.max(0, totals.subtotal - discount)
+  const costTotal = totals.costTotal
+  const grossProfit = Math.round(total - costTotal)
   const payment = resolvePaymentStatus(
     reqBody.paidAmount ?? 0,
     total,
@@ -505,6 +530,8 @@ const createNew = async (reqBody, userId) => {
     subtotal: totals.subtotal,
     discount,
     total,
+    costTotal,
+    grossProfit,
     status: reqBody.status || orderModel.ORDER_STATUS.PENDING,
     note: reqBody.note || '',
     inventoryExported: false,
@@ -526,7 +553,7 @@ const createNew = async (reqBody, userId) => {
 
   const order = await orderModel.findOneById(created.insertedId)
   const [formatted] = await enrichOrders([order])
-  staffNotifyService.onOrderCreated(formatted)
+  staffNotifyService.onOrderCreated(formatted, userId)
   await orderAuditService.log({
     orderId: formatted.id,
     orderCode: formatted.code,
@@ -567,32 +594,37 @@ const getList = async (query) => {
   }
 
   if (query.deliveryEmployeeIds) {
-    const ids = String(query.deliveryEmployeeIds)
+    const idStrings = String(query.deliveryEmployeeIds)
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean)
-      .map((id) => new ObjectId(id))
+    // Match cả ObjectId lẫn string (đơn cũ/update từng lưu string)
+    const idVariants = idStrings.flatMap((id) => [new ObjectId(id), id])
 
-    // match=all: đơn phải gắn đủ mọi NV đã chọn (dùng khi tạo chuyến)
+    // match=all: đơn phải gắn đủ mọi NV đã chọn
     // match=any (mặc định): đơn gắn ít nhất 1 NV
     const matchAll =
       query.deliveryEmployeeMatch === 'all' ||
       query.deliveryEmployeeMatch === '1' ||
       query.deliveryEmployeeMatch === 'true'
 
-    if (ids.length) {
+    if (idStrings.length) {
       findQuery.$and = findQuery.$and || []
       if (matchAll) {
-        for (const id of ids) {
+        for (const id of idStrings) {
+          const variants = [new ObjectId(id), id]
           findQuery.$and.push({
-            $or: [{ deliveryEmployeeIds: id }, { deliveryEmployeeId: id }]
+            $or: [
+              { deliveryEmployeeIds: { $in: variants } },
+              { deliveryEmployeeId: { $in: variants } }
+            ]
           })
         }
       } else {
         findQuery.$and.push({
           $or: [
-            { deliveryEmployeeIds: { $in: ids } },
-            { deliveryEmployeeId: { $in: ids } }
+            { deliveryEmployeeIds: { $in: idVariants } },
+            { deliveryEmployeeId: { $in: idVariants } }
           ]
         })
       }
@@ -745,6 +777,8 @@ const update = async (orderId, updateData, userId) => {
     dataToUpdate.subtotal = totals.subtotal
     dataToUpdate.discount = updateData.discount ?? order.discount ?? 0
     dataToUpdate.total = Math.max(0, totals.subtotal - dataToUpdate.discount)
+    dataToUpdate.costTotal = totals.costTotal
+    dataToUpdate.grossProfit = Math.round(dataToUpdate.total - totals.costTotal)
     nextTotal = dataToUpdate.total
   } else if (updateData.discount !== undefined) {
     if (order.inventoryExported) {
@@ -758,6 +792,9 @@ const update = async (orderId, updateData, userId) => {
 
     dataToUpdate.discount = updateData.discount
     dataToUpdate.total = Math.max(0, order.subtotal - updateData.discount)
+    const costTotal = Math.max(0, Number(order.costTotal) || 0)
+    dataToUpdate.costTotal = costTotal
+    dataToUpdate.grossProfit = Math.round(dataToUpdate.total - costTotal)
     nextTotal = dataToUpdate.total
   }
 
@@ -806,6 +843,17 @@ const update = async (orderId, updateData, userId) => {
     ) {
       dataToUpdate.deliveredAt = new Date()
     }
+
+    const profitTotal =
+      dataToUpdate.total !== undefined ? dataToUpdate.total : order.total
+    const profitCost =
+      dataToUpdate.costTotal !== undefined
+        ? dataToUpdate.costTotal
+        : Math.max(0, Number(order.costTotal) || 0)
+    dataToUpdate.grossProfit =
+      updateData.status === orderModel.ORDER_STATUS.CANCELLED
+        ? 0
+        : Math.round((Number(profitTotal) || 0) - profitCost)
   }
 
   const shouldRestoreInventory =
@@ -831,27 +879,58 @@ const update = async (orderId, updateData, userId) => {
   }
 
   if (shouldExportInventory) {
+    const claimed = await orderModel.claimInventoryExport(orderId)
+    if (!claimed) {
+      throw new ApiError(
+        StatusCodes.CONFLICT,
+        'Đơn hàng đang được xuất kho hoặc đã xuất kho. Vui lòng tải lại trang!'
+      )
+    }
+
     const exportOrder = {
       ...order,
       warehouseId: nextWarehouseId ? new ObjectId(nextWarehouseId) : null,
       code: order.code
     }
 
-    await exportInventoryForOrder(exportOrder, userId)
-    dataToUpdate.inventoryExported = true
+    try {
+      await exportInventoryForOrder(exportOrder, userId)
+      dataToUpdate.inventoryExported = true
+      dataToUpdate.inventoryExportClaimedAt = null
+    } catch (error) {
+      await orderModel.releaseInventoryExportClaim(orderId)
+      throw error
+    }
   }
 
   await orderModel.update(orderId, dataToUpdate)
 
   const formatted = await getDetails(orderId)
 
-  staffNotifyService.onOrderStatusChanged(order.status, formatted)
+  staffNotifyService.onOrderStatusChanged(order.status, formatted, userId)
 
   if (
     dataToUpdate.paymentStatus !== undefined &&
     dataToUpdate.paymentStatus !== order.paymentStatus
   ) {
-    staffNotifyService.onPaymentUpdated(formatted)
+    staffNotifyService.onPaymentUpdated(formatted, userId)
+  }
+
+  if (
+    dataToUpdate.deliveryEmployeeIds !== undefined ||
+    dataToUpdate.deliveryEmployeeId !== undefined
+  ) {
+    const prevDelivery = new Set(getOrderDeliveryEmployeeIds(order))
+    const newlyAssigned = getOrderDeliveryEmployeeIds(formatted).filter(
+      (id) => !prevDelivery.has(id)
+    )
+    if (newlyAssigned.length) {
+      staffNotifyService.onOrderDeliveryAssigned(
+        formatted,
+        newlyAssigned,
+        userId
+      )
+    }
   }
 
   if (shouldExportInventory) {
@@ -939,7 +1018,7 @@ const recordPayment = async (orderId, { amount, note }, options = {}) => {
   })
 
   const formatted = await getDetails(orderId)
-  staffNotifyService.onPaymentUpdated(formatted)
+  staffNotifyService.onPaymentUpdated(formatted, userId)
 
   await orderAuditService.log({
     orderId,

@@ -59,12 +59,13 @@
   --crm-danger-soft-bg: #fef2f2;
   --crm-shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.04);
   --crm-shadow-elevated: 0 10px 30px rgb(15 23 42 / 0.1);
-  --crm-sidebar-bg: #0b1220;
-  --crm-sidebar-fg: #e2e8f0;
-  --crm-sidebar-muted: #94a3b8;
-  --crm-sidebar-border: rgb(148 163 184 / 0.14);
-  --crm-sidebar-active-bg: rgb(1 125 3 / 0.18);
-  --crm-sidebar-active-fg: #4ade80;
+  /* Sidebar: xanh đậm từ brand — tránh primary thuần trên diện rộng */
+  --crm-sidebar-bg: #0c2810;
+  --crm-sidebar-fg: #ecfdf3;
+  --crm-sidebar-muted: #8faf96;
+  --crm-sidebar-border: rgb(255 255 255 / 0.08);
+  --crm-sidebar-active-bg: rgb(1 125 3 / 0.32);
+  --crm-sidebar-active-fg: #86efac;
 }
 
 .dark {
@@ -198,6 +199,51 @@
       margin-inline: 0;
       padding-inline: 0;
     }
+  }
+
+  /** Khung bảng list CRM (bo góc + viền ngoài) */
+  .crm-table-frame {
+    overflow: hidden;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-border-subtle);
+  }
+
+  /**
+   * Bảng dữ liệu CRM — kẻ ô kiểu Excel, header nền muted, hover dòng.
+   * Dùng: <div class="crm-table-frame"><table class="crm-data-table min-w-[…]">
+   */
+  .crm-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .crm-data-table thead tr {
+    background: var(--color-text-secondary);
+    color: #fff;
+  }
+
+  .crm-data-table th,
+  .crm-data-table td {
+    border: 1px solid var(--color-border-subtle);
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+  }
+
+  .crm-data-table th {
+    font-weight: 600;
+    color: #fff;
+    border-color: color-mix(in srgb, var(--color-text-secondary) 75%, #000);
+  }
+
+  .crm-data-table tbody tr {
+    transition: background-color 150ms ease;
+  }
+
+  .crm-data-table tbody tr:hover {
+    background: color-mix(in srgb, var(--color-surface-muted) 50%, transparent);
   }
 
   .auth-fade-in {

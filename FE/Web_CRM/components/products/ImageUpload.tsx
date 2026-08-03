@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ImagePlus, X } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { useToast } from "@/components/providers/ToastProvider";
 import {
   uploadProductImage,
@@ -37,6 +38,7 @@ export function ImageUpload({
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
   const isMulti = max > 1;
   const images = isMulti
@@ -126,7 +128,12 @@ export function ImageUpload({
       <div className={cn("flex flex-wrap gap-3", isMulti && "gap-3")}>
         {images.map((url, index) => (
           <div key={`${url}-${index}`} className="relative block w-fit">
-            <div className="relative h-28 w-28 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]">
+            <button
+              type="button"
+              className="relative h-28 w-28 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] transition hover:ring-2 hover:ring-[var(--color-text-secondary)]/30"
+              onClick={() => setPreviewSrc(url)}
+              aria-label={`Xem ảnh ${index + 1}`}
+            >
               <Image
                 src={getImageUrl(url)}
                 alt={`Ảnh ${index + 1}`}
@@ -134,7 +141,7 @@ export function ImageUpload({
                 className="object-cover"
                 unoptimized
               />
-            </div>
+            </button>
             {isMulti && index === 0 ? (
               <span className="absolute bottom-1 left-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-medium text-white">
                 Chính
@@ -181,6 +188,12 @@ export function ImageUpload({
         className="hidden"
         multiple={isMulti && remaining > 1}
         onChange={handleFileChange}
+      />
+
+      <ImageLightbox
+        src={previewSrc}
+        alt={label}
+        onClose={() => setPreviewSrc(null)}
       />
     </div>
   );

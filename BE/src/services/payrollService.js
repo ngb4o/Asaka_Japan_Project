@@ -74,6 +74,56 @@ const resolveTripCompanyPay = (trip) => {
   return expenseReimburseTotal + Math.max(0, expenseAdvanceTotal - advanceTotal)
 }
 
+/** Phân bổ hoàn CT theo NV — ưu tiên settlement.companyPayByEmployee */
+const resolveTripPayByEmployee = (trip) => {
+  const settlement = trip.settlement || {}
+  const payByEmployee = new Map()
+
+  if (Array.isArray(settlement.companyPayByEmployee) && settlement.companyPayByEmployee.length) {
+    for (const row of settlement.companyPayByEmployee) {
+      const id = row.employeeId?.toString?.() || row.employeeId
+      if (!id) continue
+      payByEmployee.set(id, (payByEmployee.get(id) || 0) + (Number(row.amount) || 0))
+    }
+    return payByEmployee
+  }
+
+  // Fallback: tính lại từ chi phí (chi cũ / chưa có breakdown)
+  const members = (trip.memberIds || []).map((id) => id.toString())
+  const approved = (trip.expenses || []).filter((item) => item.status === 'approved')
+  for (const expense of approved) {
+    if (expense.funding !== 'reimburse') continue
+    const amount = Number(expense.amount) || 0
+    const paidBy =
+      expense.paidByEmployeeId?.toString?.() || expense.paidByEmployeeId || null
+    if (paidBy) {
+      payByEmployee.set(paidBy, (payByEmployee.get(paidBy) || 0) + amount)
+    } else if (members.length) {
+      const share = amount / members.length
+      for (const memberId of members) {
+        payByEmployee.set(memberId, (payByEmployee.get(memberId) || 0) + share)
+      }
+    }
+  }
+
+  const advanceTotal = (trip.advances || []).reduce(
+    (sum, item) => sum + (Number(item.amount) || 0),
+    0
+  )
+  const expenseAdvanceTotal = approved
+    .filter((item) => item.funding === 'advance')
+    .reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+  const advanceTopUp = Math.max(0, expenseAdvanceTotal - advanceTotal)
+  if (advanceTopUp > 0 && members.length) {
+    const share = advanceTopUp / members.length
+    for (const memberId of members) {
+      payByEmployee.set(memberId, (payByEmployee.get(memberId) || 0) + share)
+    }
+  }
+
+  return payByEmployee
+}
+
 const formatPayroll = (doc) => {
   const formatted = formatDocument(doc)
   if (!formatted) return null
@@ -117,17 +167,16 @@ const buildLinesForPeriod = async (period) => {
     salesByUser.set(userId, (salesByUser.get(userId) || 0) + (Number(order.total) || 0))
   }
 
-  // Split companyPay equally among trip members for the period.
-  // Tính lại từ chi phí (giống settlementPreview trên UI) để khớp schema cũ
-  // (seed dùng totalExpenseReimburse thay vì companyPay).
+  // Hoàn CT theo NV đã tự bỏ (không chia đều cả chuyến)
   const tripPayByEmployee = new Map()
   for (const trip of closedTrips.items) {
-    const companyPay = resolveTripCompanyPay(trip)
-    const members = (trip.memberIds || []).map((id) => id.toString())
-    if (!members.length || companyPay <= 0) continue
-    const share = companyPay / members.length
-    for (const memberId of members) {
-      tripPayByEmployee.set(memberId, (tripPayByEmployee.get(memberId) || 0) + share)
+    const payMap = resolveTripPayByEmployee(trip)
+    for (const [memberId, amount] of payMap.entries()) {
+      if (amount <= 0) continue
+      tripPayByEmployee.set(
+        memberId,
+        (tripPayByEmployee.get(memberId) || 0) + amount
+      )
     }
   }
 

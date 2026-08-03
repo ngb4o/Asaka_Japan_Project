@@ -55,6 +55,7 @@ const EMPTY_COUNTS: NotificationSummary["counts"] = {
   dealers: 0,
   orders: 0,
   stock: 0,
+  trips: 0,
 };
 
 const DEFAULT_PUSH: PushUiState = {
@@ -136,10 +137,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             next.leads = Math.max(0, next.leads - 1);
           } else if (markedType === "dealer") {
             next.dealers = Math.max(0, next.dealers - 1);
-          } else if (markedType === "order") {
+          } else if (markedType === "order" || markedType === "payment") {
             next.orders = Math.max(0, next.orders - 1);
           } else if (markedType === "stock") {
             next.stock = Math.max(0, next.stock - 1);
+          } else if (markedType === "trip") {
+            next.trips = Math.max(0, (next.trips || 0) - 1);
           }
           return next;
         });
