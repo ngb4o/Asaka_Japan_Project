@@ -299,24 +299,29 @@ export default function OrdersPage() {
   } = useMobilePagedList<Order>({ fetchPage, onError });
 
   const loadAuxData = useCallback(async () => {
-    try {
-      const [dealersResult, productsResult, warehousesResult, employeesResult] =
-        await Promise.all([
-        getDealers({ limit: 100, page: 1 }),
-        getProducts({ limit: 100, page: 1, status: "active" }),
-        getWarehouses({ limit: 100, page: 1 }),
-        getEmployees({ status: "active", limit: 100, page: 1 }),
-      ]);
-      setDealers(dealersResult.items);
-      setProducts(productsResult.items);
-      setWarehouses(warehousesResult.items);
-      setEmployees(employeesResult.items);
-    } catch (err) {
-      toast.error(
-        err instanceof ApiClientError ? err.message : "Không tải được dữ liệu"
-      );
+    const results = await Promise.allSettled([
+      getDealers({ limit: 100, page: 1 }),
+      getProducts({ limit: 100, page: 1, status: "active" }),
+      getWarehouses({ limit: 100, page: 1 }),
+      getEmployees({ status: "active", limit: 100, page: 1 }),
+    ]);
+
+    const [dealersResult, productsResult, warehousesResult, employeesResult] =
+      results;
+
+    if (dealersResult.status === "fulfilled") {
+      setDealers(dealersResult.value.items);
     }
-  }, [toast]);
+    if (productsResult.status === "fulfilled") {
+      setProducts(productsResult.value.items);
+    }
+    if (warehousesResult.status === "fulfilled") {
+      setWarehouses(warehousesResult.value.items);
+    }
+    if (employeesResult.status === "fulfilled") {
+      setEmployees(employeesResult.value.items);
+    }
+  }, []);
 
   useEffect(() => {
     void reload();
@@ -341,6 +346,10 @@ export default function OrdersPage() {
   }
 
   function openEdit(item: Order) {
+    if (!canEditOrderItems(role)) {
+      toast.warning("Bạn không có quyền sửa đơn hàng.");
+      return;
+    }
     if (!isOrderEditable(item)) {
       toast.warning("Đơn đã hoàn tất hoặc đã hủy — không thể sửa.");
       return;
@@ -711,7 +720,7 @@ export default function OrdersPage() {
     (row) => row.available < row.required
   );
   const confirmationSubmitting =
-    confirmingOrder !== null && updatingStatusId === confirmingOrder.id;
+    confirmingOrder !== null && isOrderAction(confirmingOrder.id, "status");
 
   function toggleDeliveryEmployee(id: string) {
     setForm((prev) => ({
@@ -1081,7 +1090,7 @@ export default function OrdersPage() {
                             Thu
                           </Button>
                         ) : null}
-                        {isOrderEditable(item) ? (
+                        {canEditOrderItems(role) && isOrderEditable(item) ? (
                           <Button
                             variant="outline"
                             size="sm"
@@ -1242,7 +1251,7 @@ export default function OrdersPage() {
                                   Thu
                                 </Button>
                               ) : null}
-                              {isOrderEditable(item) ? (
+                              {canEditOrderItems(role) && isOrderEditable(item) ? (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -1297,7 +1306,11 @@ export default function OrdersPage() {
           if (!open) setViewing(null);
         }}
         onEdit={
-          viewing && isOrderEditable(viewing) ? openEdit : undefined
+          viewing &&
+          canEditOrderItems(role) &&
+          isOrderEditable(viewing)
+            ? openEdit
+            : undefined
         }
       />
 

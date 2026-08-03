@@ -8,8 +8,8 @@ const Router = express.Router()
 
 Router.use(verifyToken, attachUserRole)
 
-Router.get('/', requireRoles('sales', 'warehouse'), warehouseController.getList)
-Router.get('/:id', requireRoles('sales', 'warehouse'), warehouseController.getDetails)
+Router.get('/', requireRoles('sales', 'warehouse', 'accountant'), warehouseController.getList)
+Router.get('/:id', requireRoles('sales', 'warehouse', 'accountant'), warehouseController.getDetails)
 Router.post('/', requireRoles('admin'), warehouseValidation.createNew, warehouseController.createNew)
 Router.put('/:id', requireRoles('admin'), warehouseValidation.update, warehouseController.update)
 Router.delete('/:id', requireRoles('admin'), warehouseController.deleteOne)
