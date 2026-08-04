@@ -312,6 +312,19 @@ const onTripStarted = async (trip) => {
   })
 }
 
+/** Chờ quyết toán → admin (qua dispatch) + kế toán */
+const onTripAwaitingSettlement = async (trip, excludeUserId = null) => {
+  const accountantIds = await findUserIdsByRoles([USER_ROLES.ACCOUNTANT])
+  const userIds = excludeUser(accountantIds, excludeUserId)
+  const preview = trip.settlementPreview || {}
+  const copy = webPushCopy.tripAwaitingSettlement(trip, preview)
+  await dispatch(copy, userIds, {
+    type: NOTIFICATION_TYPES.TRIP,
+    entityType: 'trip',
+    entityId: trip.id || trip._id?.toString?.() || null
+  })
+}
+
 const onTripAdvance = async (trip, advance = {}, excludeUserId = null) => {
   const copy = webPushCopy.tripAdvance(trip, advance)
   const userIds = excludeUser(
@@ -467,6 +480,8 @@ export const staffNotifyService = {
   onDealerCreated: (dealer) => fireAndForget(onDealerCreated(dealer)),
   onTripCreated: (trip) => fireAndForget(onTripCreated(trip)),
   onTripStarted: (trip) => fireAndForget(onTripStarted(trip)),
+  onTripAwaitingSettlement: (trip, excludeUserId) =>
+    fireAndForget(onTripAwaitingSettlement(trip, excludeUserId)),
   onTripAdvance: (trip, advance, excludeUserId) =>
     fireAndForget(onTripAdvance(trip, advance, excludeUserId)),
   onTripExpensePending: (trip, expense, excludeUserId) =>

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { ImageIcon, Pencil, Plus, Trash2 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -34,7 +33,6 @@ import type { News } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
-import { statusBadgeVariant } from "@/lib/status-badge";
 import {
   buildNewsPayload,
   validateNewsForm,
@@ -158,6 +156,29 @@ export default function NewsPage() {
       toast.error(err instanceof ApiClientError ? err.message : "Lưu thất bại");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleQuickStatus(item: News, status: News["status"]) {
+    if (status === item.status) return;
+
+    setActionId(`status:${item.id}`);
+    setItems((prev) =>
+      prev.map((row) => (row.id === item.id ? { ...row, status } : row))
+    );
+
+    try {
+      await updateNews(item.id, { status });
+      toast.success("Đã cập nhật trạng thái");
+    } catch (err) {
+      setItems((prev) =>
+        prev.map((row) => (row.id === item.id ? item : row))
+      );
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Cập nhật thất bại"
+      );
+    } finally {
+      setActionId(null);
     }
   }
 
@@ -299,9 +320,21 @@ export default function NewsPage() {
                       title={item.title}
                       subtitle={truncateText(item.content, 90)}
                       badge={
-                        <Badge variant={statusBadgeVariant(item.status)}>
-                          {item.status === "active" ? "Hiển thị" : "Ẩn"}
-                        </Badge>
+                        <div className="w-[120px]">
+                          <SearchableSelect
+                            options={STATUS_OPTIONS.news}
+                            value={item.status}
+                            onChange={(value) =>
+                              void handleQuickStatus(
+                                item,
+                                value as News["status"]
+                              )
+                            }
+                            searchable={false}
+                            disabled={actionId === `status:${item.id}`}
+                            triggerClassName="h-8 text-xs"
+                          />
+                        </div>
                       }
                       actions={
                         <>
@@ -403,9 +436,21 @@ export default function NewsPage() {
                         {truncateText(item.content)}
                       </td>
                       <td>
-                        <Badge variant={item.status === "active" ? "success" : "muted"}>
-                          {item.status === "active" ? "Hiển thị" : "Ẩn"}
-                        </Badge>
+                        <div className="w-[140px]">
+                          <SearchableSelect
+                            options={STATUS_OPTIONS.news}
+                            value={item.status}
+                            onChange={(value) =>
+                              void handleQuickStatus(
+                                item,
+                                value as News["status"]
+                              )
+                            }
+                            searchable={false}
+                            disabled={actionId === `status:${item.id}`}
+                            triggerClassName="h-8 text-xs"
+                          />
+                        </div>
                       </td>
                       <td>
                         <div className="flex justify-end gap-2">

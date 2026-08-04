@@ -13,6 +13,7 @@ export {
   Eye,
   FileText,
   Handshake,
+  Camera,
   ImageIcon,
   ImagePlus,
   Info,

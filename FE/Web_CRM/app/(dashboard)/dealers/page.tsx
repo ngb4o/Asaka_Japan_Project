@@ -339,6 +339,11 @@ export default function DealersPage() {
                           {item.phone ? <MobileMetaChip>{item.phone}</MobileMetaChip> : null}
                           {item.region ? <MobileMetaChip>{item.region}</MobileMetaChip> : null}
                           <MobileMetaChip>Hạng: {tierLabel}</MobileMetaChip>
+                          {item.discountPercent > 0 ? (
+                            <MobileMetaChip>
+                              CK: {item.discountPercent}%
+                            </MobileMetaChip>
+                          ) : null}
                         </div>
 
                         <MobileRecordActions>
@@ -408,6 +413,7 @@ export default function DealersPage() {
                       <th className="font-medium">Liên hệ</th>
                       <th className="font-medium">Khu vực</th>
                       <th className="font-medium">Hạng</th>
+                      <th className="font-medium">Chiết khấu</th>
                       <th className="font-medium">Trạng thái</th>
                       <th className="font-medium text-right">Thao tác</th>
                     </tr>
@@ -441,6 +447,11 @@ export default function DealersPage() {
                             STATUS_OPTIONS.dealerTier.find((o) => o.value === item.tier)
                               ?.label || item.tier
                           )}
+                        </td>
+                        <td>
+                          {item.discountPercent > 0
+                            ? `${item.discountPercent}%`
+                            : "—"}
                         </td>
                         <td>
                           {canWrite ? (

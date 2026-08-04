@@ -92,8 +92,28 @@ type OrderFormValues = {
   deliveredAt: string;
   shippingFee: number | "";
   shippingNote: string;
+  /** Chiết khấu đơn (VND) — có thể auto từ % đại lý */
+  discount: number | "";
   items: LineItemFormRow[];
 };
+
+function calcFormSubtotal(items: LineItemFormRow[]) {
+  return items.reduce((sum, item) => {
+    const qty = Number(item.quantity) || 0;
+    const price = Number(item.unitPrice) || 0;
+    return sum + qty * price;
+  }, 0);
+}
+
+function dealerDiscountFromPercent(subtotal: number, discountPercent: number) {
+  const percent = Math.max(0, Math.min(100, Number(discountPercent) || 0));
+  if (subtotal <= 0 || percent <= 0) return 0;
+  return Math.min(Math.round((subtotal * percent) / 100), subtotal);
+}
+
+function clampOrderDiscount(discount: number, subtotal: number) {
+  return Math.min(Math.max(0, discount), Math.max(0, subtotal));
+}
 
 type ConfirmationStockRow = {
   productId: string;
@@ -124,6 +144,7 @@ const EMPTY_FORM: OrderFormValues = {
   deliveredAt: "",
   shippingFee: 0,
   shippingNote: "",
+  discount: 0,
   items: [],
 };
 
@@ -376,6 +397,7 @@ export default function OrdersPage() {
       deliveredAt: toDateInput(item.deliveredAt),
       shippingFee: item.shippingFee || 0,
       shippingNote: item.shippingNote || "",
+      discount: item.discount || 0,
       items: item.items.map((line) => ({
         productId: line.productId,
         quantity: line.quantity,
@@ -437,8 +459,6 @@ export default function OrdersPage() {
             value: item.customerPhone || item.shippingPhone || "—",
           },
           { label: "Địa chỉ giao", value: item.shippingAddress || "—" },
-          { label: "ĐVVC", value: item.carrier || "—" },
-          { label: "Mã vận đơn", value: item.trackingCode || "—" },
         ],
         items: item.items,
         subtotal: item.subtotal,
@@ -490,6 +510,11 @@ export default function OrdersPage() {
 
     setSubmitting(true);
     try {
+      const formSubtotal = calcFormSubtotal(form.items);
+      const discount = canEditOrderItems(role)
+        ? clampOrderDiscount(Number(form.discount) || 0, formSubtotal)
+        : undefined;
+
       const basePayload = {
         dealerId: form.dealerId || undefined,
         warehouseId: form.warehouseId || undefined,
@@ -522,17 +547,25 @@ export default function OrdersPage() {
       };
 
       if (editing) {
+        const canPatchLines =
+          !editing.inventoryExported && canEditOrderItems(role);
         await updateOrder(editing.id, {
           ...basePayload,
-          ...(editing.inventoryExported || !canEditOrderItems(role)
-            ? {}
-            : { items: buildLineItemsPayload(form.items) }),
+          ...(canPatchLines
+            ? {
+                items: buildLineItemsPayload(form.items),
+                discount: discount ?? 0,
+              }
+            : discount !== undefined && !editing.inventoryExported
+              ? { discount }
+              : {}),
         });
         toast.success("Đã cập nhật đơn hàng");
       } else {
         await createOrder({
           ...basePayload,
           items: buildLineItemsPayload(form.items),
+          discount: discount ?? 0,
         });
         toast.success("Đã tạo đơn hàng");
       }
@@ -722,6 +755,16 @@ export default function OrdersPage() {
   const confirmationSubmitting =
     confirmingOrder !== null && isOrderAction(confirmingOrder.id, "status");
 
+  const formSubtotal = calcFormSubtotal(form.items);
+  const formDiscount = clampOrderDiscount(
+    Number(form.discount) || 0,
+    formSubtotal
+  );
+  const formTotal = Math.max(0, formSubtotal - formDiscount);
+  const selectedDealerPercent =
+    Number(dealers.find((item) => item.id === form.dealerId)?.discountPercent) ||
+    0;
+
   function toggleDeliveryEmployee(id: string) {
     setForm((prev) => ({
       ...prev,
@@ -743,14 +786,34 @@ export default function OrdersPage() {
       return;
     }
 
-    setForm((prev) => ({
-      ...prev,
-      dealerId,
-      customerName: dealer.contactName || dealer.name || "",
-      customerPhone: dealer.phone || "",
-      customerEmail: dealer.email || "",
-      shippingAddress: prev.shippingAddress || dealer.address || "",
-    }));
+    setForm((prev) => {
+      const subtotal = calcFormSubtotal(prev.items);
+      return {
+        ...prev,
+        dealerId,
+        customerName: dealer.contactName || dealer.name || "",
+        customerPhone: dealer.phone || "",
+        customerEmail: dealer.email || "",
+        shippingAddress: prev.shippingAddress || dealer.address || "",
+        discount: dealerDiscountFromPercent(
+          subtotal,
+          dealer.discountPercent || 0
+        ),
+      };
+    });
+  }
+
+  function handleLineItemsChange(items: LineItemFormRow[]) {
+    setForm((prev) => {
+      const subtotal = calcFormSubtotal(items);
+      const dealer = dealers.find((item) => item.id === prev.dealerId);
+      const percent = Number(dealer?.discountPercent) || 0;
+      const nextDiscount =
+        percent > 0
+          ? dealerDiscountFromPercent(subtotal, percent)
+          : clampOrderDiscount(Number(prev.discount) || 0, subtotal);
+      return { ...prev, items, discount: nextDiscount };
+    });
   }
 
   return (
@@ -1371,7 +1434,7 @@ export default function OrdersPage() {
               <LineItemsField
                 items={form.items}
                 products={products}
-                onChange={(items) => setForm({ ...form, items })}
+                onChange={handleLineItemsChange}
               />
             ) : editing ? (
               <div className="rounded-lg border border-[var(--color-border-subtle)] p-3 text-sm">
@@ -1382,6 +1445,69 @@ export default function OrdersPage() {
                   </p>
                 ))}
               </div>
+            ) : null}
+
+            {canEditOrderItems(role) && !editing?.inventoryExported ? (
+              <div className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="orderDiscount">Chiết khấu (VND)</Label>
+                    <VndInput
+                      id="orderDiscount"
+                      value={form.discount}
+                      onValueChange={(discount) => {
+                        const subtotal = calcFormSubtotal(form.items);
+                        setForm({
+                          ...form,
+                          discount:
+                            discount === ""
+                              ? ""
+                              : clampOrderDiscount(Number(discount) || 0, subtotal),
+                        });
+                      }}
+                      placeholder="0"
+                    />
+                    {selectedDealerPercent > 0 ? (
+                      <p className="text-xs text-[var(--color-text-inverse)]">
+                        Theo đại lý: {selectedDealerPercent}% ≈{" "}
+                        {formatCurrency(
+                          dealerDiscountFromPercent(
+                            formSubtotal,
+                            selectedDealerPercent
+                          )
+                        )}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-[var(--color-text-inverse)]">
+                        Có thể nhập tay hoặc chọn đại lý có % chiết khấu
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-1 self-end text-right text-sm">
+                    <p className="text-[var(--color-text-inverse)]">
+                      Tạm tính:{" "}
+                      <span className="font-medium text-[var(--color-text-primary)]">
+                        {formatCurrency(formSubtotal)}
+                      </span>
+                    </p>
+                    {formDiscount > 0 ? (
+                      <p className="text-[var(--color-text-inverse)]">
+                        Chiết khấu:{" "}
+                        <span className="font-medium text-[var(--color-text-primary)]">
+                          −{formatCurrency(formDiscount)}
+                        </span>
+                      </p>
+                    ) : null}
+                    <p className="font-semibold text-[var(--color-text-primary)]">
+                      Tổng cộng: {formatCurrency(formTotal)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : editing && editing.discount > 0 ? (
+              <p className="text-sm text-[var(--color-text-inverse)]">
+                Chiết khấu: −{formatCurrency(editing.discount)}
+              </p>
             ) : null}
 
             {canManagePayments(role) ? (
@@ -1552,21 +1678,63 @@ export default function OrdersPage() {
             <DialogTitle>Xác nhận đơn hàng và xuất kho</DialogTitle>
           </DialogHeader>
 
-          <div className="shrink-0 border-b border-[var(--color-border-subtle)] px-4 pb-4 sm:px-6">
-            <div className="grid gap-3 rounded-xl border border-[var(--color-border-subtle)] p-3 text-sm sm:grid-cols-3 sm:p-4">
+          <div className="mt-3 shrink-0 border-b border-[var(--color-border-subtle)] px-4 pb-4 sm:px-6">
+            <div className="grid grid-cols-2 gap-3 rounded-xl border border-[var(--color-border-subtle)] p-3 text-sm sm:grid-cols-3 sm:gap-4 sm:p-4">
               <div>
                 <p className="text-xs text-[var(--color-text-inverse)]">Mã đơn</p>
                 <p className="mt-1 font-semibold">{confirmingOrder?.code}</p>
               </div>
               <div>
-                <p className="text-xs text-[var(--color-text-inverse)]">Khách hàng</p>
+                <p className="text-xs text-[var(--color-text-inverse)]">Kho xuất</p>
                 <p className="mt-1 font-semibold">
-                  {confirmingOrder?.dealerName || confirmingOrder?.customerName || "—"}
+                  {confirmingOrder?.warehouseName || "—"}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-[var(--color-text-inverse)]">Kho xuất</p>
-                <p className="mt-1 font-semibold">{confirmingOrder?.warehouseName || "—"}</p>
+                <p className="text-xs text-[var(--color-text-inverse)]">Khách hàng</p>
+                <p className="mt-1 font-semibold">
+                  {confirmingOrder?.dealerName ||
+                    confirmingOrder?.customerName ||
+                    "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--color-text-inverse)]">SĐT</p>
+                <p className="mt-1 font-semibold">
+                  {confirmingOrder?.customerPhone ||
+                    confirmingOrder?.shippingPhone ||
+                    "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--color-text-inverse)]">Tổng đơn</p>
+                <p className="mt-1 font-semibold text-[var(--color-text-secondary)]">
+                  {formatCurrency(confirmingOrder?.total || 0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--color-text-inverse)]">Thanh toán</p>
+                <p className="mt-1 font-semibold">
+                  {PAYMENT_LABELS[
+                    confirmingOrder?.paymentStatus || "unpaid"
+                  ]}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--color-text-inverse)]">Đã thu</p>
+                <p className="mt-1 font-semibold">
+                  {formatCurrency(confirmingOrder?.paidAmount || 0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--color-text-inverse)]">Ngày tạo</p>
+                <p className="mt-1 font-semibold">
+                  {confirmingOrder?.createdAt
+                    ? new Date(confirmingOrder.createdAt).toLocaleDateString(
+                        "vi-VN"
+                      )
+                    : "—"}
+                </p>
               </div>
             </div>
           </div>

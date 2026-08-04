@@ -15,6 +15,27 @@ import { hasAnyRole } from '~/utils/roles'
 
 const newId = () => new ObjectId().toString()
 
+const MAX_RECEIPT_IMAGES = 5
+
+/** Chuẩn hoá chứng từ: ưu tiên receiptUrls[], fallback receiptUrl (legacy). */
+const normalizeReceiptUrls = (body = {}) => {
+  const fromArray = Array.isArray(body.receiptUrls)
+    ? body.receiptUrls.map((url) => String(url || '').trim()).filter(Boolean)
+    : []
+  if (fromArray.length) return fromArray.slice(0, MAX_RECEIPT_IMAGES)
+
+  const single = String(body.receiptUrl || '').trim()
+  return single ? [single] : []
+}
+
+const formatReceiptFields = (item = {}) => {
+  const urls = normalizeReceiptUrls(item)
+  return {
+    receiptUrls: urls,
+    receiptUrl: urls[0] || ''
+  }
+}
+
 const getOrderDeliveryEmployeeIds = (order) => {
   const ids = []
   if (Array.isArray(order.deliveryEmployeeIds)) {
@@ -389,7 +410,7 @@ const formatTrip = async (trip) => {
     advances: (trip.advances || []).map((advance) => ({
       ...advance,
       createdBy: advance.createdBy?.toString?.() || advance.createdBy || null,
-      receiptUrl: advance.receiptUrl || ''
+      ...formatReceiptFields(advance)
     })),
     expenses: (trip.expenses || []).map((expense) => {
       const paidBy =
@@ -399,7 +420,8 @@ const formatTrip = async (trip) => {
         createdBy: expense.createdBy?.toString?.() || expense.createdBy || null,
         reviewedBy: expense.reviewedBy?.toString?.() || expense.reviewedBy || null,
         paidByEmployeeId: paidBy,
-        paidByEmployeeName: paidBy ? memberMap.get(paidBy) || '' : ''
+        paidByEmployeeName: paidBy ? memberMap.get(paidBy) || '' : '',
+        ...formatReceiptFields(expense)
       }
     }),
     settlementPreview: preview,
@@ -631,6 +653,13 @@ const update = async (tripId, updateData, actorUserId, actorRole) => {
     staffNotifyService.onTripStarted(formatted)
   }
 
+  if (
+    dataToUpdate.status === tripModel.TRIP_STATUS.SETTLEMENT &&
+    trip.status !== tripModel.TRIP_STATUS.SETTLEMENT
+  ) {
+    staffNotifyService.onTripAwaitingSettlement(formatted, actorUserId)
+  }
+
   return formatted
 }
 
@@ -689,11 +718,13 @@ const addAdvance = async (tripId, body, userId) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Số tiền ứng phải lớn hơn 0!')
   }
 
+  const receiptUrls = normalizeReceiptUrls(body)
   const advance = {
     id: newId(),
     amount,
     note: body.note || '',
-    receiptUrl: body.receiptUrl || '',
+    receiptUrls,
+    receiptUrl: receiptUrls[0] || '',
     createdBy: userId,
     createdAt: new Date()
   }
@@ -739,13 +770,15 @@ const resolveExpenseFunding = (trip, body) => {
     }
   }
 
+  const receiptUrls = normalizeReceiptUrls(body)
   return {
     amount,
     funding,
     paidByEmployeeId,
     category: body.category || tripModel.EXPENSE_CATEGORY.OTHER,
     date: parseDate(body.date, 'Ngày chi') || new Date(),
-    receiptUrl: body.receiptUrl || '',
+    receiptUrls,
+    receiptUrl: receiptUrls[0] || '',
     note: body.note || ''
   }
 }
@@ -803,8 +836,15 @@ const updateAdvance = async (tripId, advanceId, body) => {
             ...item,
             amount,
             note: body.note !== undefined ? body.note || '' : item.note,
-            receiptUrl:
-              body.receiptUrl !== undefined ? body.receiptUrl || '' : item.receiptUrl,
+            ...(body.receiptUrls !== undefined || body.receiptUrl !== undefined
+              ? (() => {
+                  const receiptUrls = normalizeReceiptUrls(body)
+                  return {
+                    receiptUrls,
+                    receiptUrl: receiptUrls[0] || ''
+                  }
+                })()
+              : {}),
             updatedAt: new Date()
           }
     )

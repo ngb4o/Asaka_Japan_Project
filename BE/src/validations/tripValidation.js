@@ -42,7 +42,8 @@ const stopSchema = Joi.object({
 const advanceSchema = Joi.object({
   amount: Joi.number().positive().required(),
   note: optionalText.max(1000),
-  receiptUrl: optionalText.max(500)
+  receiptUrl: optionalText.max(500),
+  receiptUrls: Joi.array().items(Joi.string().max(500)).max(5).optional()
 })
 
 const expenseSchema = Joi.object({
@@ -59,6 +60,7 @@ const expenseSchema = Joi.object({
     otherwise: objectId.allow(null, '').optional()
   }),
   receiptUrl: optionalText.max(500),
+  receiptUrls: Joi.array().items(Joi.string().max(500)).max(5).optional(),
   note: optionalText.max(1000)
 })
 

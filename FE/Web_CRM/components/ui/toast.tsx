@@ -91,7 +91,7 @@ export function ToastViewport({ toasts, onDismiss }: ToastViewportProps) {
 
   return (
     <div
-      className="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-[min(100vw-2rem,24rem)] flex-col-reverse gap-2.5"
+      className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[400] mx-auto flex w-auto max-w-sm flex-col-reverse gap-2.5 sm:inset-x-auto sm:right-4 sm:mx-0 sm:w-[min(100vw-2rem,24rem)]"
       aria-label="Thông báo"
     >
       {toasts.map((toast) => (

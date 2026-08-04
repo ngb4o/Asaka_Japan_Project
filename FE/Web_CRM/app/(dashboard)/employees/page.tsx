@@ -118,6 +118,7 @@ export default function EmployeesPage() {
 
   const {
     items,
+    setItems,
     page,
     total,
     totalPages,
@@ -229,6 +230,32 @@ export default function EmployeesPage() {
     }
   }
 
+  async function handleQuickStatus(
+    item: Employee,
+    status: Employee["status"]
+  ) {
+    if (!canEdit || status === item.status) return;
+
+    setActionId(`status:${item.id}`);
+    setItems((prev) =>
+      prev.map((row) => (row.id === item.id ? { ...row, status } : row))
+    );
+
+    try {
+      await updateEmployee(item.id, { status });
+      toast.success("Đã cập nhật trạng thái");
+    } catch (err) {
+      setItems((prev) =>
+        prev.map((row) => (row.id === item.id ? item : row))
+      );
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Cập nhật thất bại"
+      );
+    } finally {
+      setActionId(null);
+    }
+  }
+
   async function handleDelete(item: Employee) {
     const ok = await confirm({
       title: "Xóa nhân viên",
@@ -316,12 +343,30 @@ export default function EmployeesPage() {
                           {item.email ? ` · ${item.email}` : ""}
                         </p>
                       </div>
-                      <Badge
-                        variant={statusBadgeVariant(item.status)}
-                        className="shrink-0"
-                      >
-                        {item.status === "active" ? "Đang làm" : "Ngưng"}
-                      </Badge>
+                      {canEdit ? (
+                        <div className="w-[120px] shrink-0">
+                          <SearchableSelect
+                            options={STATUS_OPTIONS.employee}
+                            value={item.status}
+                            onChange={(value) =>
+                              void handleQuickStatus(
+                                item,
+                                value as Employee["status"]
+                              )
+                            }
+                            searchable={false}
+                            disabled={actionId === `status:${item.id}`}
+                            triggerClassName="h-8 text-xs"
+                          />
+                        </div>
+                      ) : (
+                        <Badge
+                          variant={statusBadgeVariant(item.status)}
+                          className="shrink-0"
+                        >
+                          {item.status === "active" ? "Đang làm" : "Ngưng"}
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-2">
@@ -412,9 +457,27 @@ export default function EmployeesPage() {
                       </td>
                       <td>{item.userName || "—"}</td>
                       <td>
-                        <Badge variant={item.status === "active" ? "success" : "muted"}>
-                          {item.status === "active" ? "Đang làm" : "Ngưng"}
-                        </Badge>
+                        {canEdit ? (
+                          <div className="w-[140px]">
+                            <SearchableSelect
+                              options={STATUS_OPTIONS.employee}
+                              value={item.status}
+                              onChange={(value) =>
+                                void handleQuickStatus(
+                                  item,
+                                  value as Employee["status"]
+                                )
+                              }
+                              searchable={false}
+                              disabled={actionId === `status:${item.id}`}
+                              triggerClassName="h-8 text-xs"
+                            />
+                          </div>
+                        ) : (
+                          <Badge variant={item.status === "active" ? "success" : "muted"}>
+                            {item.status === "active" ? "Đang làm" : "Ngưng"}
+                          </Badge>
+                        )}
                       </td>
                       <td>
                         <div className="flex justify-end gap-2">

@@ -206,6 +206,32 @@ export default function ProductsPage() {
     }
   }
 
+  async function handleQuickStatus(
+    item: Product,
+    status: Product["status"]
+  ) {
+    if (!canEdit || status === item.status) return;
+
+    setActionId(`status:${item.id}`);
+    setItems((prev) =>
+      prev.map((row) => (row.id === item.id ? { ...row, status } : row))
+    );
+
+    try {
+      await updateProduct(item.id, { status });
+      toast.success("Đã cập nhật trạng thái");
+    } catch (err) {
+      setItems((prev) =>
+        prev.map((row) => (row.id === item.id ? item : row))
+      );
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Cập nhật thất bại"
+      );
+    } finally {
+      setActionId(null);
+    }
+  }
+
   async function saveDisplayOrder(item: Product) {
     const raw = orderDrafts[item.id];
     const nextOrder =
@@ -381,9 +407,27 @@ export default function ProductsPage() {
                       title={item.name}
                       subtitle={item.categoryName || "Chưa phân loại"}
                       badge={
-                        <Badge variant={statusBadgeVariant(item.status)}>
-                          {item.status === "active" ? "Đang bán" : "Ngưng"}
-                        </Badge>
+                        canEdit ? (
+                          <div className="w-[120px]">
+                            <SearchableSelect
+                              options={STATUS_OPTIONS.product}
+                              value={item.status}
+                              onChange={(value) =>
+                                void handleQuickStatus(
+                                  item,
+                                  value as Product["status"]
+                                )
+                              }
+                              searchable={false}
+                              disabled={actionId === `status:${item.id}`}
+                              triggerClassName="h-8 text-xs"
+                            />
+                          </div>
+                        ) : (
+                          <Badge variant={statusBadgeVariant(item.status)}>
+                            {item.status === "active" ? "Đang bán" : "Ngưng"}
+                          </Badge>
+                        )
                       }
                       meta={
                         <>
@@ -513,9 +557,27 @@ export default function ProductsPage() {
                         {formatStockDisplay(item.totalStock ?? 0, item.unitsPerCase)}
                       </td>
                       <td>
-                        <Badge variant={item.status === "active" ? "success" : "muted"}>
-                          {item.status === "active" ? "Đang bán" : "Ngưng"}
-                        </Badge>
+                        {canEdit ? (
+                          <div className="w-[140px]">
+                            <SearchableSelect
+                              options={STATUS_OPTIONS.product}
+                              value={item.status}
+                              onChange={(value) =>
+                                void handleQuickStatus(
+                                  item,
+                                  value as Product["status"]
+                                )
+                              }
+                              searchable={false}
+                              disabled={actionId === `status:${item.id}`}
+                              triggerClassName="h-8 text-xs"
+                            />
+                          </div>
+                        ) : (
+                          <Badge variant={item.status === "active" ? "success" : "muted"}>
+                            {item.status === "active" ? "Đang bán" : "Ngưng"}
+                          </Badge>
+                        )}
                       </td>
                       {canEdit ? (
                       <td>

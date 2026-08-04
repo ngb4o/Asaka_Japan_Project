@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -40,7 +39,6 @@ import type { ProductCategory } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
-import { statusBadgeVariant } from "@/lib/status-badge";
 import { cn } from "@/lib/utils";
 import {
   buildProductCategoryPayload,
@@ -84,6 +82,7 @@ export default function ProductCategoriesPage() {
 
   const {
     items,
+    setItems,
     page,
     total,
     totalPages,
@@ -115,6 +114,36 @@ export default function ProductCategoriesPage() {
       status: item.status,
     });
     setDialogOpen(true);
+  }
+
+  async function handleQuickStatus(
+    item: ProductCategory,
+    status: ProductCategory["status"]
+  ) {
+    if (status === item.status) return;
+
+    setActionId(`status:${item.id}`);
+    setItems((prev) =>
+      prev.map((row) => (row.id === item.id ? { ...row, status } : row))
+    );
+
+    try {
+      await updateProductCategory(item.id, {
+        name: item.name,
+        description: item.description,
+        status,
+      });
+      toast.success("Đã cập nhật trạng thái");
+    } catch (err) {
+      setItems((prev) =>
+        prev.map((row) => (row.id === item.id ? item : row))
+      );
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Cập nhật thất bại"
+      );
+    } finally {
+      setActionId(null);
+    }
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -221,12 +250,23 @@ export default function ProductCategoriesPage() {
                       <MobileRecordCardHeader
                         title={item.name}
                         subtitle={item.description || undefined}
-                        trailing={
-                          <Badge variant={statusBadgeVariant(item.status)}>
-                            {item.status === "active" ? "Hoạt động" : "Ngưng"}
-                          </Badge>
-                        }
                       />
+
+                      <div className="mt-3 w-full max-w-[160px]">
+                        <SearchableSelect
+                          options={STATUS_OPTIONS.category}
+                          value={item.status}
+                          onChange={(value) =>
+                            void handleQuickStatus(
+                              item,
+                              value as ProductCategory["status"]
+                            )
+                          }
+                          searchable={false}
+                          disabled={actionId === `status:${item.id}`}
+                          triggerClassName="h-8 text-xs"
+                        />
+                      </div>
 
                       <MobileRecordActions>
                         <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
@@ -264,9 +304,21 @@ export default function ProductCategoriesPage() {
                       <td className="font-medium">{item.name}</td>
                       <td className="text-[var(--color-text-inverse)]">{item.slug}</td>
                       <td>
-                        <Badge variant={item.status === "active" ? "success" : "muted"}>
-                          {item.status === "active" ? "Hoạt động" : "Ngưng"}
-                        </Badge>
+                        <div className="w-[140px]">
+                          <SearchableSelect
+                            options={STATUS_OPTIONS.category}
+                            value={item.status}
+                            onChange={(value) =>
+                              void handleQuickStatus(
+                                item,
+                                value as ProductCategory["status"]
+                              )
+                            }
+                            searchable={false}
+                            disabled={actionId === `status:${item.id}`}
+                            triggerClassName="h-8 text-xs"
+                          />
+                        </div>
                       </td>
                       <td className="max-w-xs truncate text-[var(--color-text-inverse)]">
                         {item.description || "—"}

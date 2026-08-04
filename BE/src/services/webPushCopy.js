@@ -219,6 +219,22 @@ export const webPushCopy = {
     )
   },
 
+  tripAwaitingSettlement: (trip, preview = {}) => {
+    const id = entityId(trip)
+    return push(
+      '⏳ Chuyến chờ quyết toán',
+      lines(
+        line('🧾', 'Mã chuyến', trip.code),
+        line('📍', 'Khu vực', trip.region || trip.title),
+        line('💵', 'Tổng ứng', money(preview.advanceTotal)),
+        line('💸', 'Cty trả NV', money(preview.companyPay)),
+        line('📥', 'NV nộp lại', money(preview.employeeReturn))
+      ),
+      withId('/trips', id),
+      id ? `trip-settlement-${id}` : 'trip-settlement'
+    )
+  },
+
   tripAdvance: (trip, advance = {}) => {
     const id = entityId(trip)
     return push(

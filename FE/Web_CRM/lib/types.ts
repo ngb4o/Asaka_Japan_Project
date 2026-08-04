@@ -543,6 +543,7 @@ export type TripAdvance = {
   amount: number;
   note: string;
   receiptUrl?: string;
+  receiptUrls?: string[];
   createdBy: string;
   createdAt: string;
 };
@@ -557,6 +558,7 @@ export type TripExpense = {
   paidByEmployeeId?: string | null;
   paidByEmployeeName?: string;
   receiptUrl: string;
+  receiptUrls?: string[];
   note: string;
   status: "pending" | "approved" | "rejected";
   createdBy: string | null;

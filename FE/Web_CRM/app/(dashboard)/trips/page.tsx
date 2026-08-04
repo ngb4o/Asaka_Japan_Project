@@ -31,9 +31,11 @@ import {
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
+import { ImageUpload } from "@/components/products/ImageUpload";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canManageTripsFinance, canOperateTrip, rolesOf } from "@/lib/auth/permissions";
+import { canManageTripsFinance, canOperateTrip, canViewProfit, rolesOf } from "@/lib/auth/permissions";
 import { getEmployees } from "@/lib/api/employees";
 import { getDealers } from "@/lib/api/dealers";
 import { getOrders } from "@/lib/api/orders";
@@ -50,6 +52,7 @@ import {
   settleTrip,
   updateTrip,
 } from "@/lib/api/trips";
+import { getImageUrl, uploadTripReceipt } from "@/lib/api/uploads";
 import type { Dealer, Employee, Order, Trip } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
@@ -98,11 +101,22 @@ const PURPOSE_LABEL: Record<string, string> = {
   other: "Khác",
 };
 
+function tripReceiptUrls(item: {
+  receiptUrls?: string[];
+  receiptUrl?: string;
+}) {
+  if (Array.isArray(item.receiptUrls) && item.receiptUrls.length) {
+    return item.receiptUrls.filter(Boolean);
+  }
+  return item.receiptUrl ? [item.receiptUrl] : [];
+}
+
 export default function TripsPage() {
   const confirm = useConfirm();
   const toast = useToast();
   const { user } = useAuth();
   const canFinance = canManageTripsFinance(rolesOf(user));
+  const showProfit = canViewProfit(rolesOf(user));
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [dealers, setDealers] = useState<Dealer[]>([]);
@@ -139,11 +153,15 @@ export default function TripsPage() {
   });
   const [advanceAmount, setAdvanceAmount] = useState<number | "">("");
   const [advanceNote, setAdvanceNote] = useState("");
+  const [advanceReceiptUrls, setAdvanceReceiptUrls] = useState<string[]>([]);
+  const [receiptPreviewSrc, setReceiptPreviewSrc] = useState<string | null>(null);
   const [expenseForm, setExpenseForm] = useState({
     category: "fuel",
     amount: "" as number | "",
     date: "",
     funding: "advance" as "advance" | "reimburse",
+    paidByEmployeeId: "",
+    receiptUrls: [] as string[],
     note: "",
   });
 
@@ -424,15 +442,22 @@ export default function TripsPage() {
       toast.warning("Nhập số tiền ứng");
       return;
     }
+    if (!advanceReceiptUrls.length) {
+      toast.warning("Thêm ảnh chứng từ tạm ứng (sao kê / biên nhận)");
+      return;
+    }
     setSubmittingKey("advance");
     try {
       await addTripAdvance(selected.id, {
         amount: Number(advanceAmount),
         note: advanceNote,
+        receiptUrls: advanceReceiptUrls,
+        receiptUrl: advanceReceiptUrls[0],
       });
       toast.success("Đã ghi nhận tạm ứng");
       setAdvanceAmount("");
       setAdvanceNote("");
+      setAdvanceReceiptUrls([]);
       await refreshSelected(selected.id);
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Ghi tạm ứng thất bại");
@@ -448,6 +473,10 @@ export default function TripsPage() {
       toast.warning("Nhập số tiền chi");
       return;
     }
+    if (expenseForm.funding === "reimburse" && !expenseForm.paidByEmployeeId) {
+      toast.warning("Chọn nhân viên đã tự bỏ tiền để hoàn đúng người");
+      return;
+    }
     setSubmittingKey("expense");
     try {
       await addTripExpense(selected.id, {
@@ -455,6 +484,14 @@ export default function TripsPage() {
         amount: Number(expenseForm.amount),
         date: expenseForm.date || undefined,
         funding: expenseForm.funding,
+        paidByEmployeeId:
+          expenseForm.funding === "reimburse"
+            ? expenseForm.paidByEmployeeId
+            : undefined,
+        receiptUrls: expenseForm.receiptUrls.length
+          ? expenseForm.receiptUrls
+          : undefined,
+        receiptUrl: expenseForm.receiptUrls[0] || undefined,
         note: expenseForm.note,
       });
       toast.success("Đã thêm khoản chi");
@@ -463,6 +500,8 @@ export default function TripsPage() {
         amount: "",
         date: "",
         funding: "advance",
+        paidByEmployeeId: "",
+        receiptUrls: [],
         note: "",
       });
       await refreshSelected(selected.id);
@@ -786,13 +825,13 @@ export default function TripsPage() {
                           onChange={() => toggleOrder(order.id)}
                         />
                         <div className="min-w-0 flex-1 space-y-1.5">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-semibold tracking-tight">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="min-w-0 truncate font-semibold tracking-tight">
                               {order.code}
                             </span>
                             <span
                               className={cn(
-                                "rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2 md:py-0.5 md:text-[11px]",
+                                "shrink-0 rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2 md:py-0.5 md:text-[11px]",
                                 ORDER_STATUS_TONE[order.status]
                               )}
                             >
@@ -919,7 +958,7 @@ export default function TripsPage() {
                 </div>
               </div>
 
-              <section className="space-y-3">
+              <section className="mt-6 space-y-3 md:mt-0">
                 <h4 className="font-semibold">Đơn hàng ({selected.orders.length})</h4>
                 {selected.orders.length === 0 ? (
                   <p className="text-sm text-[var(--color-text-inverse)]">Chưa gắn đơn</p>
@@ -930,17 +969,17 @@ export default function TripsPage() {
                         key={order.id}
                         className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border-subtle)] px-3 py-3 text-sm"
                       >
-                        <div className="min-w-0 space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center justify-between gap-2">
                             <Link
                               href="/orders"
-                              className="font-semibold text-[var(--color-text-secondary)] hover:underline"
+                              className="min-w-0 truncate font-semibold text-[var(--color-text-secondary)] hover:underline"
                             >
                               {order.code}
                             </Link>
                             <span
                               className={cn(
-                                "rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2 md:py-0.5 md:text-[11px]",
+                                "shrink-0 rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2 md:py-0.5 md:text-[11px]",
                                 ORDER_STATUS_TONE[
                                   (order.status as Order["status"]) || "pending"
                                 ] || ORDER_STATUS_TONE.pending
@@ -951,20 +990,22 @@ export default function TripsPage() {
                               ] || order.status}
                             </span>
                           </div>
-                          <p className="truncate text-[var(--color-text-inverse)]">
-                            {order.customerName || "—"}
-                          </p>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="min-w-0 truncate text-[var(--color-text-inverse)]">
+                              {order.customerName || "—"}
+                            </p>
+                            <p className="shrink-0 font-semibold tabular-nums">
+                              {formatCurrency(order.total)}
+                            </p>
+                          </div>
                         </div>
-                        <p className="shrink-0 font-semibold tabular-nums">
-                          {formatCurrency(order.total)}
-                        </p>
                       </div>
                     ))}
                   </div>
                 )}
               </section>
 
-              <section className="space-y-3">
+              <section className="mt-6 space-y-3 md:mt-0">
                 <h4 className="font-semibold">Lịch trình / điểm dừng</h4>
                 {selected.stops.map((stop) => (
                   <div
@@ -1036,92 +1077,221 @@ export default function TripsPage() {
                 ) : null}
               </section>
 
-              <section className="space-y-3">
-                <h4 className="font-semibold">Tạm ứng</h4>
-                {selected.advances.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex justify-between rounded-lg border border-[var(--color-border-subtle)] px-3 py-2 text-sm"
-                  >
-                    <span>{item.note || "Tạm ứng"}</span>
-                    <span className="font-medium">{formatCurrency(item.amount)}</span>
-                  </div>
-                ))}
+              {selected.advances.length > 0 ||
+              (canFinance && selected.status !== "closed") ? (
+              <section className="mt-6 space-y-3 md:mt-0">
+                {selected.advances.length > 0 || canFinance ? (
+                  <h4 className="font-semibold">Tạm ứng</h4>
+                ) : null}
+                {selected.advances.map((item) => {
+                  const receipts = tripReceiptUrls(item);
+                  const title = item.note?.trim() || "Tạm ứng";
+                  return (
+                    <div
+                      key={item.id}
+                      className="space-y-2.5 rounded-lg border border-[var(--color-border-subtle)] px-3 py-3 text-sm"
+                    >
+                      <div className="flex items-center gap-3">
+                        {receipts.length ? (
+                          <div className="min-w-0 shrink overflow-hidden">
+                            <div className="flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+                              {receipts.map((url, index) => (
+                                <button
+                                  key={`${url}-${index}`}
+                                  type="button"
+                                  onClick={() => setReceiptPreviewSrc(url)}
+                                  className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-md border border-[var(--color-border-subtle)]"
+                                  aria-label={`Xem chứng từ ${index + 1}`}
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={getImageUrl(url)}
+                                    alt={`Chứng từ ${index + 1}`}
+                                    className="h-full w-full object-cover"
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium">{title}</p>
+                          {item.createdAt ? (
+                            <p className="mt-0.5 text-xs text-[var(--color-text-inverse)]">
+                              {formatDateDisplay(item.createdAt)}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        {!receipts.length ? (
+                          <Badge variant="muted" className="shrink-0">
+                            Chưa có ảnh
+                          </Badge>
+                        ) : null}
+                      </div>
+
+                      <p className="w-full text-right font-semibold tabular-nums text-[var(--color-text-secondary)]">
+                        Số tiền: {formatCurrency(item.amount)}
+                      </p>
+                    </div>
+                  );
+                })}
                 {canFinance && selected.status !== "closed" ? (
-                  <form onSubmit={handleAddAdvance} className="grid gap-3 sm:grid-cols-3">
-                    <VndInput
-                      value={advanceAmount}
-                      onValueChange={setAdvanceAmount}
-                      placeholder="Số tiền ứng"
+                  <form
+                    onSubmit={handleAddAdvance}
+                    className="space-y-3 rounded-xl border border-dashed border-[var(--color-border-subtle)] p-3"
+                  >
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <VndInput
+                        value={advanceAmount}
+                        onValueChange={setAdvanceAmount}
+                        placeholder="Số tiền ứng"
+                      />
+                      <Input
+                        value={advanceNote}
+                        onChange={(e) => setAdvanceNote(e.target.value)}
+                        placeholder="Ghi chú"
+                      />
+                    </div>
+                    <ImageUpload
+                      label="Chứng từ tạm ứng (sao kê / biên nhận)"
+                      values={advanceReceiptUrls}
+                      onValuesChange={setAdvanceReceiptUrls}
+                      upload={uploadTripReceipt}
+                      max={5}
                     />
-                    <Input
-                      value={advanceNote}
-                      onChange={(e) => setAdvanceNote(e.target.value)}
-                      placeholder="Ghi chú"
-                    />
-                    <Button type="submit" loading={isSubmitting("advance")}>
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      loading={isSubmitting("advance")}
+                    >
                       Ghi tạm ứng
                     </Button>
                   </form>
                 ) : null}
               </section>
+              ) : null}
 
-              <section className="space-y-3">
+              <section className="mt-6 space-y-3 md:mt-0">
                 <h4 className="font-semibold">Chi phí</h4>
-                {selected.expenses.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--color-border-subtle)] px-3 py-2 text-sm"
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {EXPENSE_LABEL[item.category]} -{" "}
-                        {item.funding === "advance" ? "Trừ ứng" : "Hoàn lại"}
-                      </p>
-                      <p className="text-xs text-[var(--color-text-inverse)]">
-                        {formatDateDisplay(item.date)} - {item.note || "—"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={
-                          item.status === "approved"
-                            ? "success"
+                {selected.expenses.map((item) => {
+                  const receipts = tripReceiptUrls(item);
+                  const canReview =
+                    canFinance &&
+                    item.status === "pending" &&
+                    selected.status !== "closed";
+                  return (
+                    <div
+                      key={item.id}
+                      className="space-y-2.5 rounded-lg border border-[var(--color-border-subtle)] px-3 py-3 text-sm"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-medium">
+                            {EXPENSE_LABEL[item.category]} -{" "}
+                            {item.funding === "advance" ? "Trừ ứng" : "Hoàn lại"}
+                          </p>
+                          <p className="mt-0.5 text-xs text-[var(--color-text-inverse)]">
+                            {[
+                              formatDateDisplay(item.date),
+                              item.note?.trim() || null,
+                              item.funding === "reimburse" &&
+                              item.paidByEmployeeName
+                                ? `${item.paidByEmployeeName} tự bỏ`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" - ")}
+                          </p>
+                        </div>
+                        <Badge
+                          variant={
+                            item.status === "approved"
+                              ? "success"
+                              : item.status === "rejected"
+                                ? "muted"
+                                : "default"
+                          }
+                          className="shrink-0"
+                        >
+                          {item.status === "approved"
+                            ? "Đã duyệt"
                             : item.status === "rejected"
-                              ? "muted"
-                              : "default"
-                        }
-                      >
-                        {item.status === "approved"
-                          ? "Đã duyệt"
-                          : item.status === "rejected"
-                            ? "Từ chối"
-                            : "Chờ duyệt"}
-                      </Badge>
-                      <span className="font-medium">{formatCurrency(item.amount)}</span>
-                      {canFinance && item.status === "pending" && selected.status !== "closed" ? (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            loading={isTripAction(`approved:${item.id}`)}
-                            onClick={() => handleReviewExpense(item.id, "approved")}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            loading={isTripAction(`rejected:${item.id}`)}
-                            onClick={() => handleReviewExpense(item.id, "rejected")}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </>
+                              ? "Từ chối"
+                              : "Chờ duyệt"}
+                        </Badge>
+                      </div>
+
+                      {receipts.length ? (
+                        <div className="w-full min-w-0 max-w-full overflow-hidden">
+                          <div className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]">
+                          {receipts.map((url, index) => (
+                            <button
+                              key={`${url}-${index}`}
+                              type="button"
+                              onClick={() => setReceiptPreviewSrc(url)}
+                              className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-md border border-[var(--color-border-subtle)]"
+                              aria-label={`Xem chứng từ ${index + 1}`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={getImageUrl(url)}
+                                alt={`Chứng từ ${index + 1}`}
+                                className="h-full w-full object-cover"
+                              />
+                            </button>
+                          ))}
+                          </div>
+                        </div>
                       ) : null}
+
+                      <div
+                        className={cn(
+                          "flex w-full items-center gap-2",
+                          canReview
+                            ? "justify-between"
+                            : "justify-end"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "font-semibold tabular-nums text-red-600 dark:text-red-400",
+                            canReview ? "mr-auto text-left" : "ml-auto text-right"
+                          )}
+                        >
+                          {`Số tiền: ${formatCurrency(item.amount)}`}
+                        </span>
+                        {canReview ? (
+                          <div className="flex shrink-0 items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="success"
+                              loading={isTripAction(`approved:${item.id}`)}
+                              onClick={() =>
+                                handleReviewExpense(item.id, "approved")
+                              }
+                            >
+                              <Check className="h-4 w-4" />
+                              Duyệt
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="reject"
+                              loading={isTripAction(`rejected:${item.id}`)}
+                              onClick={() =>
+                                handleReviewExpense(item.id, "rejected")
+                              }
+                            >
+                              <X className="h-4 w-4" />
+                              Từ chối
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {canOperateSelected && selected.status !== "closed" ? (
                   <form
@@ -1147,13 +1317,35 @@ export default function TripsPage() {
                         setExpenseForm({
                           ...expenseForm,
                           funding: funding as "advance" | "reimburse",
+                          paidByEmployeeId:
+                            funding === "reimburse"
+                              ? expenseForm.paidByEmployeeId ||
+                                selected.members[0]?.id ||
+                                ""
+                              : "",
                         })
                       }
                       searchable={false}
                     />
+                    {expenseForm.funding === "reimburse" ? (
+                      <SearchableSelect
+                        options={selected.members.map((member) => ({
+                          value: member.id,
+                          label: member.fullName,
+                        }))}
+                        value={expenseForm.paidByEmployeeId}
+                        onChange={(paidByEmployeeId) =>
+                          setExpenseForm({ ...expenseForm, paidByEmployeeId })
+                        }
+                        placeholder="Ai tự bỏ tiền?"
+                        searchable={false}
+                      />
+                    ) : null}
                     <VndInput
                       value={expenseForm.amount}
-                      onValueChange={(amount) => setExpenseForm({ ...expenseForm, amount })}
+                      onValueChange={(amount) =>
+                        setExpenseForm({ ...expenseForm, amount })
+                      }
                       placeholder="Số tiền"
                     />
                     <DateInput
@@ -1164,38 +1356,138 @@ export default function TripsPage() {
                       className="sm:col-span-2"
                       placeholder="Ghi chú"
                       value={expenseForm.note}
-                      onChange={(e) => setExpenseForm({ ...expenseForm, note: e.target.value })}
+                      onChange={(e) =>
+                        setExpenseForm({ ...expenseForm, note: e.target.value })
+                      }
                     />
-                    <Button type="submit" loading={isSubmitting("expense")} className="sm:col-span-2">
+                    <div className="min-w-0 sm:col-span-2">
+                      <ImageUpload
+                        label="Chứng từ chi phí (tối đa 5 ảnh)"
+                        values={expenseForm.receiptUrls}
+                        onValuesChange={(receiptUrls) =>
+                          setExpenseForm({ ...expenseForm, receiptUrls })
+                        }
+                        upload={uploadTripReceipt}
+                        max={5}
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      loading={isSubmitting("expense")}
+                      className="sm:col-span-2"
+                    >
                       Thêm khoản chi
                     </Button>
                   </form>
                 ) : null}
               </section>
 
-              <section className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4">
+              <section className="mt-6 space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4 md:mt-0">
                 <h4 className="font-semibold">Quyết toán</h4>
                 {preview ? (
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm">
-                    <p>Tổng ứng: <strong>{formatCurrency(preview.advanceTotal)}</strong></p>
-                    <p>
-                      Chi trừ ứng:{" "}
-                      <strong>{formatCurrency(preview.expenseAdvanceTotal)}</strong>
+                  <div className="space-y-2 rounded-lg bg-[var(--color-surface-muted)] p-3 text-sm">
+                    <p className="flex items-baseline justify-between gap-3">
+                      <span>Tổng ứng</span>
+                      <strong className="tabular-nums">
+                        {formatCurrency(preview.advanceTotal)}
+                      </strong>
                     </p>
-                    <p>
-                      Chi hoàn:{" "}
-                      <strong>{formatCurrency(preview.expenseReimburseTotal)}</strong>
+                    <p className="flex items-baseline justify-between gap-3">
+                      <span>Chi trừ ứng</span>
+                      <strong className="tabular-nums">
+                        {formatCurrency(preview.expenseAdvanceTotal)}
+                      </strong>
                     </p>
-                    <p>
-                      NV nộp lại: <strong>{formatCurrency(preview.employeeReturn)}</strong>
+                    <p className="flex items-baseline justify-between gap-3">
+                      <span>Chi hoàn</span>
+                      <strong className="tabular-nums">
+                        {formatCurrency(preview.expenseReimburseTotal)}
+                      </strong>
                     </p>
-                    <p>
-                      Cty trả NV: <strong>{formatCurrency(preview.companyPay)}</strong>
+                    <p className="flex items-baseline justify-between gap-3">
+                      <span>NV nộp lại</span>
+                      <strong className="tabular-nums">
+                        {formatCurrency(preview.employeeReturn)}
+                      </strong>
+                    </p>
+                    <p className="flex items-baseline justify-between gap-3 border-t border-[var(--color-border-subtle)] pt-2">
+                      <span>Cty trả NV</span>
+                      <strong className="tabular-nums text-[var(--color-text-secondary)]">
+                        {formatCurrency(preview.companyPay)}
+                      </strong>
+                    </p>
+                    {preview.companyPayByEmployee &&
+                    preview.companyPayByEmployee.length > 0 ? (
+                      <div className="space-y-2 border-t border-[var(--color-border-subtle)] pt-2">
+                        <p className="text-xs text-[var(--color-text-inverse)]">
+                          Hoàn theo người
+                        </p>
+                        {preview.companyPayByEmployee.map((row) => {
+                          const name =
+                            selected.members.find((m) => m.id === row.employeeId)
+                              ?.fullName || row.employeeId;
+                          return (
+                            <p
+                              key={row.employeeId}
+                              className="flex items-baseline justify-between gap-3"
+                            >
+                              <span>{name}</span>
+                              <strong className="tabular-nums">
+                                {formatCurrency(row.amount)}
+                              </strong>
+                            </p>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                {showProfit && selected.profitSummary ? (
+                  <div className="space-y-2 rounded-lg bg-[var(--color-surface-muted)] p-3 text-sm">
+                    <p className="flex items-baseline justify-between gap-3">
+                      <span>Doanh thu đơn</span>
+                      <strong className="tabular-nums">
+                        {formatCurrency(selected.profitSummary.orderRevenue)}
+                      </strong>
+                    </p>
+                    <p className="flex items-baseline justify-between gap-3">
+                      <span>Giá vốn đơn</span>
+                      <strong className="tabular-nums">
+                        {formatCurrency(selected.profitSummary.orderCostTotal)}
+                      </strong>
+                    </p>
+                    <p className="flex items-baseline justify-between gap-3">
+                      <span>Lãi gộp đơn</span>
+                      <strong className="tabular-nums text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(selected.profitSummary.orderGrossProfit)}
+                      </strong>
+                    </p>
+                    <p className="flex items-baseline justify-between gap-3">
+                      <span>Chi phí đi đường</span>
+                      <strong className="tabular-nums">
+                        {formatCurrency(selected.profitSummary.tripExpenseTotal)}
+                      </strong>
+                    </p>
+                    <p className="flex items-baseline justify-between gap-3 border-t border-[var(--color-border-subtle)] pt-2">
+                      <span>Lãi còn lại (sau chi phí chuyến)</span>
+                      <strong
+                        className={
+                          selected.profitSummary.tripNetProfit >= 0
+                            ? "tabular-nums text-emerald-600 dark:text-emerald-400"
+                            : "tabular-nums text-red-600 dark:text-red-400"
+                        }
+                      >
+                        {formatCurrency(selected.profitSummary.tripNetProfit)}
+                      </strong>
                     </p>
                   </div>
                 ) : null}
                 {canFinance && selected.status !== "closed" ? (
-                  <Button onClick={handleSettle} loading={isSubmitting("settle")}>
+                  <Button
+                    className="w-full"
+                    onClick={handleSettle}
+                    loading={isSubmitting("settle")}
+                  >
                     Quyết toán & khóa chuyến
                   </Button>
                 ) : null}
@@ -1209,6 +1501,12 @@ export default function TripsPage() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <ImageLightbox
+        src={receiptPreviewSrc}
+        alt="Chứng từ"
+        onClose={() => setReceiptPreviewSrc(null)}
+      />
     </div>
   );
 }

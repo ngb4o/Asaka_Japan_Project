@@ -115,18 +115,6 @@ export function ImageLightbox({
       }}
       onClick={(event) => close(event)}
     >
-      <button
-        type="button"
-        className="absolute right-4 top-4 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30"
-        aria-label="Đóng ảnh"
-        onPointerDown={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-        }}
-        onClick={(event) => close(event)}
-      >
-        <X className="h-5 w-5" />
-      </button>
       <div
         className={cn(
           "relative max-h-[90vh] max-w-[min(96vw,1100px)] overflow-hidden rounded-xl bg-black/40 shadow-2xl"
@@ -140,6 +128,18 @@ export function ImageLightbox({
           event.stopPropagation();
         }}
       >
+        <button
+          type="button"
+          className="absolute right-2 top-2 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white shadow-sm transition hover:bg-black/70"
+          aria-label="Đóng ảnh"
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onClick={(event) => close(event)}
+        >
+          <X className="h-5 w-5" />
+        </button>
         <Image
           src={getImageUrl(src ?? undefined)}
           alt={alt}

@@ -231,7 +231,7 @@ export default function InventoryPage() {
   const loadMasterData = useCallback(async () => {
     try {
       const [warehousesResult, productsResult] = await Promise.all([
-        getWarehouses({ status: "active", limit: 100, page: 1 }),
+        getWarehouses({ limit: 100, page: 1 }),
         getProducts({ limit: 100, page: 1 }),
       ]);
       setWarehouses(warehousesResult.items);
@@ -294,6 +294,38 @@ export default function InventoryPage() {
       toast.error(err instanceof ApiClientError ? err.message : "Lưu thất bại");
     } finally {
       setWarehouseSubmitting(false);
+    }
+  }
+
+  async function handleQuickWarehouseStatus(
+    item: Warehouse,
+    status: Warehouse["status"]
+  ) {
+    if (status === item.status) return;
+
+    setActionId(`status:${item.id}`);
+    setWarehouses((prev) =>
+      prev.map((row) => (row.id === item.id ? { ...row, status } : row))
+    );
+
+    try {
+      await updateWarehouse(item.id, {
+        name: item.name,
+        code: item.code,
+        address: item.address,
+        note: item.note,
+        status,
+      });
+      toast.success("Đã cập nhật trạng thái kho");
+    } catch (err) {
+      setWarehouses((prev) =>
+        prev.map((row) => (row.id === item.id ? item : row))
+      );
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Cập nhật thất bại"
+      );
+    } finally {
+      setActionId(null);
     }
   }
 
@@ -508,12 +540,21 @@ export default function InventoryPage() {
                               {item.code}
                             </p>
                           </div>
-                          <Badge
-                            variant={statusBadgeVariant(item.status)}
-                            className="shrink-0"
-                          >
-                            {item.status === "active" ? "Hoạt động" : "Ngưng"}
-                          </Badge>
+                          <div className="w-[120px] shrink-0">
+                            <SearchableSelect
+                              options={STATUS_OPTIONS.warehouse}
+                              value={item.status}
+                              onChange={(value) =>
+                                void handleQuickWarehouseStatus(
+                                  item,
+                                  value as Warehouse["status"]
+                                )
+                              }
+                              searchable={false}
+                              disabled={actionId === `status:${item.id}`}
+                              triggerClassName="h-8 text-xs"
+                            />
+                          </div>
                         </div>
                         {item.address ? (
                           <p className="mt-2 truncate text-xs text-[var(--color-text-inverse)]">
@@ -559,9 +600,21 @@ export default function InventoryPage() {
                               {item.address || "—"}
                             </td>
                             <td>
-                              <Badge variant={item.status === "active" ? "success" : "muted"}>
-                                {item.status === "active" ? "Hoạt động" : "Ngưng"}
-                              </Badge>
+                              <div className="w-[140px]">
+                                <SearchableSelect
+                                  options={STATUS_OPTIONS.warehouse}
+                                  value={item.status}
+                                  onChange={(value) =>
+                                    void handleQuickWarehouseStatus(
+                                      item,
+                                      value as Warehouse["status"]
+                                    )
+                                  }
+                                  searchable={false}
+                                  disabled={actionId === `status:${item.id}`}
+                                  triggerClassName="h-8 text-xs"
+                                />
+                              </div>
                             </td>
                             <td>
                               <div className="flex justify-end gap-2">

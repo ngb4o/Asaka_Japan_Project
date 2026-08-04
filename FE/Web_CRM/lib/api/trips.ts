@@ -48,7 +48,7 @@ export async function removeTripStop(id: string, stopId: string) {
 
 export async function addTripAdvance(
   id: string,
-  data: { amount: number; note?: string; receiptUrl?: string }
+  data: { amount: number; note?: string; receiptUrl?: string; receiptUrls?: string[] }
 ) {
   return apiRequest<Trip>(`/trips/${id}/advances`, { method: "POST", body: data });
 }
@@ -56,7 +56,7 @@ export async function addTripAdvance(
 export async function updateTripAdvance(
   id: string,
   advanceId: string,
-  data: { amount: number; note?: string; receiptUrl?: string }
+  data: { amount: number; note?: string; receiptUrl?: string; receiptUrls?: string[] }
 ) {
   return apiRequest<Trip>(`/trips/${id}/advances/${advanceId}`, {
     method: "PUT",
@@ -79,6 +79,7 @@ type TripExpenseInput = Partial<
     | "funding"
     | "paidByEmployeeId"
     | "receiptUrl"
+    | "receiptUrls"
     | "note"
   >
 >;

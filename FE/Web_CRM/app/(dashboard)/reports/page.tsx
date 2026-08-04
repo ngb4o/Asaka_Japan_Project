@@ -221,7 +221,7 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Kpi
           title="Doanh số"
           value={kpis?.revenue}
@@ -254,31 +254,28 @@ export default function ReportsPage() {
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-[var(--color-text-inverse)]">Đơn hoàn tất</p>
-            <p className="mt-1 text-xl font-semibold text-emerald-600 dark:text-emerald-400">
-              {kpis?.completedCount ?? 0}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-[var(--color-text-inverse)]">Doanh thu hoàn tất</p>
-            <p className="mt-1 text-xl font-semibold text-[var(--color-text-secondary)]">
-              {formatCurrency(kpis?.completedRevenue || 0)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-[var(--color-text-inverse)]">Giá trị đơn TB</p>
-            <p className="mt-1 text-xl font-semibold text-sky-600 dark:text-sky-400">
-              {formatCurrency(kpis?.avgOrderValue || 0)}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <Kpi
+          title="Đơn hoàn tất"
+          value={kpis?.completedCount}
+          icon={ShoppingCart}
+          accent="green"
+        />
+        <Kpi
+          title="DT hoàn tất"
+          value={kpis?.completedRevenue}
+          icon={TrendingUp}
+          format="currency"
+          accent="green"
+        />
+        <Kpi
+          title="Đơn TB"
+          value={kpis?.avgOrderValue}
+          icon={Wallet}
+          format="currency"
+          accent="sky"
+          className="col-span-2 md:col-span-1"
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -371,7 +368,7 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4">
         <RankList
           title="Bảng đại lý"
           empty="Chưa có đại lý trong kỳ"
@@ -455,14 +452,15 @@ function ChangeBadge({ value }: { value?: number }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2 md:py-0.5 md:text-xs",
+        "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium leading-none",
         up
           ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
           : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
       )}
     >
       <Icon className="h-3.5 w-3.5" />
-      {Math.abs(value)}% so với kỳ trước
+      <span className="md:hidden">{Math.abs(value)}%</span>
+      <span className="hidden md:inline">{Math.abs(value)}% so với kỳ trước</span>
     </span>
   );
 }
@@ -474,6 +472,7 @@ function Kpi({
   icon: Icon,
   format,
   accent = "slate",
+  className,
 }: {
   title: string;
   value?: number;
@@ -481,50 +480,67 @@ function Kpi({
   icon: React.ComponentType<{ className?: string }>;
   format?: "currency";
   accent?: "green" | "sky" | "rose" | "slate" | "amber";
+  className?: string;
 }) {
   const tone = {
     green: {
-      icon: "bg-[var(--color-text-secondary)]/10 text-[var(--color-text-secondary)]",
+      icon: "bg-[var(--color-text-secondary)]/12 text-[var(--color-text-secondary)]",
+      bar: "bg-[var(--color-text-secondary)]",
       value: "text-[var(--color-text-secondary)]",
     },
     sky: {
-      icon: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+      icon: "bg-sky-500/12 text-sky-600 dark:text-sky-400",
+      bar: "bg-sky-500",
       value: "text-sky-600 dark:text-sky-400",
     },
     rose: {
-      icon: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+      icon: "bg-rose-500/12 text-rose-600 dark:text-rose-400",
+      bar: "bg-rose-500",
       value: "text-rose-600 dark:text-rose-400",
     },
     amber: {
-      icon: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+      icon: "bg-amber-500/12 text-amber-600 dark:text-amber-400",
+      bar: "bg-amber-500",
       value: "text-amber-600 dark:text-amber-400",
     },
     slate: {
-      icon: "bg-slate-500/10 text-slate-600 dark:text-slate-300",
+      icon: "bg-slate-500/12 text-slate-600 dark:text-slate-300",
+      bar: "bg-slate-500",
       value: "text-[var(--color-text-primary)]",
     },
   }[accent];
 
   return (
-    <Card>
-      <CardHeader showOnMobile className="border-none pb-0">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-[var(--color-text-inverse)]">{title}</p>
+    <Card className={cn("h-full overflow-hidden", className)}>
+      <CardContent className="space-y-3 p-3.5 md:space-y-4 md:p-5">
+        <div className="flex items-start justify-between gap-2 md:gap-3">
+          <p className="min-w-0 text-xs font-medium text-[var(--color-text-inverse)] md:text-sm">
+            {title}
+          </p>
           <span
             className={cn(
-              "inline-flex h-9 w-9 items-center justify-center rounded-xl",
+              "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl md:h-10 md:w-10",
               tone.icon
             )}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
           </span>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-2 pt-3">
-        <p className={cn("text-2xl font-semibold tracking-tight", tone.value)}>
-          {format === "currency" ? formatCurrency(value || 0) : value || 0}
-        </p>
-        <ChangeBadge value={change} />
+
+        <div className="space-y-2 md:space-y-3">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between sm:gap-2">
+            <p
+              className={cn(
+                "text-xl font-semibold leading-none tracking-tight md:text-[1.65rem]",
+                tone.value
+              )}
+            >
+              {format === "currency" ? formatCurrency(value || 0) : value || 0}
+            </p>
+            <ChangeBadge value={change} />
+          </div>
+          <div className={cn("h-1 w-10 rounded-full opacity-60", tone.bar)} />
+        </div>
       </CardContent>
     </Card>
   );
