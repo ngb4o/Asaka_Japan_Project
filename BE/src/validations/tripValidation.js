@@ -36,7 +36,12 @@ const stopSchema = Joi.object({
   dealerId: objectId.allow(null, '').optional(),
   location: optionalText.max(300),
   purpose: Joi.string().valid('delivery', 'collection', 'meeting', 'other').optional(),
-  note: optionalText.max(1000)
+  note: optionalText.max(1000),
+  lat: Joi.number().min(-90).max(90).optional(),
+  lng: Joi.number().min(-180).max(180).optional(),
+  accuracy: Joi.number().min(0).allow(null).optional(),
+  locationCapturedAt: Joi.alternatives().try(Joi.date(), Joi.string()).optional(),
+  locationSource: Joi.string().valid('gps', 'manual').optional()
 })
 
 const advanceSchema = Joi.object({
@@ -61,7 +66,12 @@ const expenseSchema = Joi.object({
   }),
   receiptUrl: optionalText.max(500),
   receiptUrls: Joi.array().items(Joi.string().max(500)).max(5).optional(),
-  note: optionalText.max(1000)
+  note: optionalText.max(1000),
+  lat: Joi.number().min(-90).max(90).optional(),
+  lng: Joi.number().min(-180).max(180).optional(),
+  accuracy: Joi.number().min(0).allow(null).optional(),
+  locationCapturedAt: Joi.alternatives().try(Joi.date(), Joi.string()).optional(),
+  locationSource: Joi.string().valid('gps', 'manual').optional()
 })
 
 const reviewSchema = Joi.object({

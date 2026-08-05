@@ -18,6 +18,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   OrdersBarChart,
   RevenueAreaChart,
@@ -26,6 +27,7 @@ import {
 import { useAuth } from "@/lib/auth/AuthProvider";
 import {
   canViewCompanyFinancials,
+  canViewProfit,
   canViewReports,
   DASHBOARD_HERO_SUBTITLE,
   hasRole,
@@ -94,6 +96,7 @@ export default function DashboardPage() {
   const mainRole = primaryRole(userRoles, user?.role);
   const canReports = canViewReports(userRoles);
   const canFinancials = canViewCompanyFinancials(userRoles);
+  const showProfit = canViewProfit(userRoles);
   const heroSubtitle =
     (mainRole && DASHBOARD_HERO_SUBTITLE[mainRole]) ||
     "Theo dõi công việc hàng ngày.";
@@ -223,7 +226,8 @@ export default function DashboardPage() {
           icon={ShoppingCart}
           accent="slate"
           href="/orders"
-        />      </section>
+        />
+      </section>
       ) : (
       <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {isWarehouseView ? (
@@ -299,6 +303,48 @@ export default function DashboardPage() {
         )}
       </section>
       )}
+
+      {showProfit ? (
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          <KpiCard
+            title="Giá vốn tháng"
+            hint="tổng cost đơn trong tháng"
+            value={loading ? null : stats?.monthCostTotal}
+            icon={Package}
+            accent="amber"
+            format="currency"
+            href="/reports"
+          />
+          <KpiCard
+            title="Lãi gộp tháng"
+            hint="so với tháng trước"
+            value={loading ? null : stats?.monthGrossProfit}
+            change={stats?.grossProfitChangePercent}
+            icon={TrendingUp}
+            accent="green"
+            format="currency"
+            href="/reports"
+          />
+          <KpiCard
+            title="Biên lãi gộp"
+            hint="lãi gộp / doanh số"
+            value={
+              loading
+                ? null
+                : stats?.monthRevenue
+                  ? Math.round(
+                      ((stats.monthGrossProfit || 0) / stats.monthRevenue) * 1000
+                    ) / 10
+                  : 0
+            }
+            icon={Wallet}
+            accent="sky"
+            format="percent"
+            href="/reports"
+            className="col-span-2 md:col-span-1"
+          />
+        </section>
+      ) : null}
 
       {canFinancials ? (
         <>
@@ -396,7 +442,7 @@ export default function DashboardPage() {
                     );
                   })
                 ) : (
-                  <p className="text-sm text-[var(--color-text-inverse)]">Chưa có dữ liệu</p>
+                  <EmptyState title="Chưa có dữ liệu" size="sm" />
                 )}
               </CardContent>
             </Card>
@@ -547,7 +593,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <EmptyState text="Chưa có đơn hàng" />
+              <EmptyState title="Chưa có đơn hàng" size="sm" />
             )}
           </CardContent>
         </Card>
@@ -609,20 +655,12 @@ export default function DashboardPage() {
                 ) : null}
               </div>
             ) : (
-              <EmptyState text="Tồn kho đang ổn định" />
+              <EmptyState title="Tồn kho đang ổn định" size="sm" />
             )}
           </CardContent>
         </Card>
         ) : null}
       </section>
-    </div>
-  );
-}
-
-function EmptyState({ text }: { text: string }) {
-  return (
-    <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/40">
-      <p className="text-sm text-[var(--color-text-inverse)]">{text}</p>
     </div>
   );
 }
@@ -689,6 +727,7 @@ function KpiCard({
   format,
   accent,
   progress,
+  className,
 }: {
   title: string;
   hint?: string;
@@ -696,13 +735,20 @@ function KpiCard({
   change?: number;
   icon: React.ComponentType<{ className?: string }>;
   href: string;
-  format?: "currency";
+  format?: "currency" | "percent";
   accent: keyof typeof ACCENT;
   progress?: number;
+  className?: string;
 }) {
   const tone = ACCENT[accent];
+  const displayValue =
+    format === "currency"
+      ? formatCurrency(value || 0)
+      : format === "percent"
+        ? `${value || 0}%`
+        : value;
   return (
-    <Link href={href} className="group block">
+    <Link href={href} className={cn("group block", className)}>
       <Card className="h-full overflow-hidden border-[var(--color-border-subtle)] transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[var(--shadow-elevated)]">
         <CardContent className="space-y-3 p-3.5 md:space-y-4 md:p-5">
           <div className="flex items-start justify-between gap-2 md:gap-3">
@@ -733,7 +779,7 @@ function KpiCard({
                     tone.value
                   )}
                 >
-                  {format === "currency" ? formatCurrency(value) : value}
+                  {displayValue}
                 </p>
                 <ChangeBadge value={change} />
               </div>

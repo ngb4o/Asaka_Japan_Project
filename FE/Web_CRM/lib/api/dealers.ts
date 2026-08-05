@@ -6,11 +6,13 @@ export async function getDealers(params?: {
   search?: string;
   status?: string;
   region?: string;
+  tier?: string;
 } & PaginationParams) {
   const query = new URLSearchParams();
   if (params?.search) query.set("search", params.search);
   if (params?.status) query.set("status", params.status);
   if (params?.region) query.set("region", params.region);
+  if (params?.tier) query.set("tier", params.tier);
   appendPaginationParams(query, params);
 
   const suffix = query.toString() ? `?${query.toString()}` : "";

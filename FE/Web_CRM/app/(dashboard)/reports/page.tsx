@@ -5,6 +5,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Download,
+  Package,
   ShoppingCart,
   TrendingUp,
   Wallet,
@@ -15,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { DateRangeInput } from "@/components/ui/date-range-input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import {
   OrdersBarChart,
@@ -23,7 +25,7 @@ import {
   StatusPieChart,
 } from "@/components/reports/Charts";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canViewReports, rolesOf } from "@/lib/auth/permissions";
+import { canViewProfit, canViewReports, rolesOf } from "@/lib/auth/permissions";
 import { getSalesReport } from "@/lib/api/dashboard";
 import { downloadSalesReportExcel } from "@/lib/export/salesReportExcel";
 import type { SalesReport } from "@/lib/types";
@@ -61,7 +63,9 @@ const PAYMENT_LABELS: Record<string, string> = {
 export default function ReportsPage() {
   const toast = useToast();
   const { user } = useAuth();
-  const allowed = canViewReports(rolesOf(user));
+  const userRoles = rolesOf(user);
+  const allowed = canViewReports(userRoles);
+  const showProfit = canViewProfit(userRoles);
   const [preset, setPreset] = useState<string>("thisMonth");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -254,6 +258,38 @@ export default function ReportsPage() {
         />
       </div>
 
+      {showProfit ? (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          <Kpi
+            title="Giá vốn"
+            value={kpis?.costTotal}
+            icon={Package}
+            format="currency"
+            accent="amber"
+          />
+          <Kpi
+            title="Lãi gộp"
+            value={kpis?.grossProfit}
+            change={kpis?.grossProfitChangePercent}
+            icon={TrendingUp}
+            format="currency"
+            accent="green"
+          />
+          <Kpi
+            title="Biên lãi gộp"
+            value={
+              kpis?.revenue
+                ? Math.round(((kpis.grossProfit || 0) / kpis.revenue) * 1000) / 10
+                : 0
+            }
+            icon={Wallet}
+            format="percent"
+            accent="sky"
+            className="col-span-2 md:col-span-1"
+          />
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <Kpi
           title="Đơn hoàn tất"
@@ -438,11 +474,7 @@ export default function ReportsPage() {
 }
 
 function Empty() {
-  return (
-    <p className="py-10 text-center text-sm text-[var(--color-text-inverse)]">
-      Chưa có dữ liệu trong kỳ
-    </p>
-  );
+  return <EmptyState title="Chưa có dữ liệu trong kỳ" size="sm" />;
 }
 
 function ChangeBadge({ value }: { value?: number }) {
@@ -478,7 +510,7 @@ function Kpi({
   value?: number;
   change?: number;
   icon: React.ComponentType<{ className?: string }>;
-  format?: "currency";
+  format?: "currency" | "percent";
   accent?: "green" | "sky" | "rose" | "slate" | "amber";
   className?: string;
 }) {
@@ -510,6 +542,13 @@ function Kpi({
     },
   }[accent];
 
+  const displayValue =
+    format === "currency"
+      ? formatCurrency(value || 0)
+      : format === "percent"
+        ? `${value || 0}%`
+        : value || 0;
+
   return (
     <Card className={cn("h-full overflow-hidden", className)}>
       <CardContent className="space-y-3 p-3.5 md:space-y-4 md:p-5">
@@ -535,7 +574,7 @@ function Kpi({
                 tone.value
               )}
             >
-              {format === "currency" ? formatCurrency(value || 0) : value || 0}
+              {displayValue}
             </p>
             <ChangeBadge value={change} />
           </div>
@@ -593,9 +632,7 @@ function RankList({
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
-          <p className="py-10 text-center text-sm text-[var(--color-text-inverse)]">
-            {empty}
-          </p>
+          <EmptyState title={empty} size="sm" />
         ) : (
           <>
             {/* Mobile: ranked cards */}

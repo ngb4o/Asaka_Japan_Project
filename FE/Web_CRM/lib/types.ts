@@ -378,8 +378,11 @@ export type DashboardSummary = {
     monthPaid: number;
     monthDebt: number;
     monthOrders: number;
+    monthCostTotal?: number;
+    monthGrossProfit?: number;
     revenueChangePercent: number;
     orderChangePercent: number;
+    grossProfitChangePercent?: number;
   };
   revenueSeries: ReportSeriesPoint[];
   statusBreakdown: ReportStatusItem[];
@@ -536,6 +539,11 @@ export type TripStop = {
   location: string;
   purpose: "delivery" | "collection" | "meeting" | "other";
   note: string;
+  lat?: number | null;
+  lng?: number | null;
+  accuracy?: number | null;
+  locationCapturedAt?: string | null;
+  locationSource?: "gps" | "manual" | null;
 };
 
 export type TripAdvance = {
@@ -565,6 +573,11 @@ export type TripExpense = {
   createdAt: string;
   reviewedBy: string | null;
   reviewedAt: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  accuracy?: number | null;
+  locationCapturedAt?: string | null;
+  locationSource?: "gps" | "manual" | null;
 };
 
 export type TripSettlementPreview = {

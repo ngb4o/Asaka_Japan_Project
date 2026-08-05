@@ -3,6 +3,7 @@
 import { Menu } from "lucide-react";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { ChatHeaderButton } from "@/components/chat/ChatWidget";
 import { useMobileChrome } from "@/components/layout/MobileChromeProvider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ export function DashboardHeader({ onOpenMenu }: DashboardHeaderProps) {
           </div>
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             <ThemeToggle />
+            <ChatHeaderButton />
             <NotificationBell />
           </div>
         </div>

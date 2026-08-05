@@ -36,6 +36,38 @@ const formatReceiptFields = (item = {}) => {
   }
 }
 
+/** GPS check-in — lat/lng hợp lệ mới lưu. */
+const normalizeGeoLocation = (body = {}) => {
+  const latRaw = body.lat ?? body.geo?.lat
+  const lngRaw = body.lng ?? body.geo?.lng
+  if (latRaw === undefined || latRaw === null || latRaw === '') return null
+  if (lngRaw === undefined || lngRaw === null || lngRaw === '') return null
+
+  const lat = Number(latRaw)
+  const lng = Number(lngRaw)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null
+
+  const accuracyRaw = body.accuracy ?? body.geo?.accuracy
+  const accuracy =
+    accuracyRaw === undefined || accuracyRaw === null || accuracyRaw === ''
+      ? null
+      : Number(accuracyRaw)
+
+  return {
+    lat,
+    lng,
+    accuracy: Number.isFinite(accuracy) ? accuracy : null,
+    locationCapturedAt:
+      parseDate(
+        body.locationCapturedAt || body.geo?.capturedAt || body.capturedAt,
+        'Thời điểm lấy vị trí'
+      ) || new Date(),
+    locationSource:
+      body.locationSource || body.geo?.source || body.source || 'gps'
+  }
+}
+
 const getOrderDeliveryEmployeeIds = (order) => {
   const ids = []
   if (Array.isArray(order.deliveryEmployeeIds)) {
@@ -684,13 +716,15 @@ const addStop = async (tripId, body, actorUserId, actorRole) => {
   await assertCanOperateTrip(trip, actorUserId, actorRole)
   assertEditable(trip)
 
+  const geo = normalizeGeoLocation(body)
   const stop = {
     id: newId(),
     date: parseDate(body.date, 'Ngày điểm dừng') || trip.startDate,
     dealerId: body.dealerId ? new ObjectId(body.dealerId) : null,
     location: body.location || '',
     purpose: body.purpose || tripModel.STOP_PURPOSE.DELIVERY,
-    note: body.note || ''
+    note: body.note || '',
+    ...(geo || {})
   }
 
   await tripModel.update(tripId, { stops: [...(trip.stops || []), stop] })
@@ -771,6 +805,7 @@ const resolveExpenseFunding = (trip, body) => {
   }
 
   const receiptUrls = normalizeReceiptUrls(body)
+  const geo = normalizeGeoLocation(body)
   return {
     amount,
     funding,
@@ -779,7 +814,8 @@ const resolveExpenseFunding = (trip, body) => {
     date: parseDate(body.date, 'Ngày chi') || new Date(),
     receiptUrls,
     receiptUrl: receiptUrls[0] || '',
-    note: body.note || ''
+    note: body.note || '',
+    ...(geo || {})
   }
 }
 

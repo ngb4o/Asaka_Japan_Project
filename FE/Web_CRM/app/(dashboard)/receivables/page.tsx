@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchInput } from "@/components/ui/search-input";
+import { EmptyState } from "@/components/ui/empty-state";
 import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
 import {
   MobileRecordActions,
@@ -34,6 +35,7 @@ import {
 import { getReceivablesSummary } from "@/lib/api/receivables";
 import { getOrders, recordOrderPayment } from "@/lib/api/orders";
 import { ApiClientError } from "@/lib/api/client";
+import { useCrmDataRefresh } from "@/lib/hooks/useCrmDataRefresh";
 import { statusBadgeVariant } from "@/lib/status-badge";
 import type { Order, ReceivableDealerSummary, ReceivablesSummary } from "@/lib/types";
 import { formatCurrency, formatDateDisplay } from "@/lib/utils";
@@ -121,6 +123,23 @@ export default function ReceivablesPage() {
     },
     [toast]
   );
+
+  useCrmDataRefresh(["receivables", "orders"], async () => {
+    if (!allowed) return;
+    try {
+      const data = await getReceivablesSummary({
+        q: search.trim() || undefined,
+      });
+      setSummary(data);
+      if (selected) {
+        const next = data.items.find((item) => item.dealerId === selected.dealerId);
+        if (next) setSelected(next);
+        await loadDebtOrders(selected.dealerId);
+      }
+    } catch {
+      /* ignore — toast already used by manual loads */
+    }
+  });
 
   function openDealer(item: ReceivableDealerSummary) {
     setSelected(item);
@@ -248,9 +267,7 @@ export default function ReceivablesPage() {
         </CardHeader>
         <CardContent className="max-md:px-0 max-md:pb-0 max-md:pt-3">
           {items.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-inverse)]">
-              Không có đại lý còn công nợ
-            </p>
+            <EmptyState title="Không có đại lý còn công nợ" />
           ) : (
             <>
               <MobileInfiniteList
@@ -389,9 +406,7 @@ export default function ReceivablesPage() {
                   <Skeleton className="h-28 w-full rounded-xl" />
                 </div>
               ) : debtOrders.length === 0 ? (
-                <p className="text-sm text-[var(--color-text-inverse)]">
-                  Không còn đơn nợ
-                </p>
+                <EmptyState title="Không còn đơn nợ" size="sm" />
               ) : (
                 <div className="space-y-3">
                   {debtOrders.map((order) => {

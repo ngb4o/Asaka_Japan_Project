@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import { formatCurrency } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const CHART_COLORS = ["#017d03", "#0ea5e9", "#f59e0b", "#ef4444", "#8b5cf6", "#64748b"];
 
@@ -211,11 +212,8 @@ export function StatusPieChart({
   const filtered = data.filter((item) => item.value > 0);
   if (!filtered.length) {
     return (
-      <div
-        className="flex items-center justify-center text-sm text-[var(--color-text-inverse)]"
-        style={{ height }}
-      >
-        Chưa có dữ liệu
+      <div className="flex items-center justify-center" style={{ height }}>
+        <EmptyState title="Chưa có dữ liệu" size="sm" hideIcon />
       </div>
     );
   }

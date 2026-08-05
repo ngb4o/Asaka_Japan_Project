@@ -13,6 +13,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
+import {
+  FilterDrawer,
+  FilterOptionList,
+  FilterTrigger,
+} from "@/components/ui/filter-drawer";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VndInput } from "@/components/ui/vnd-input";
@@ -44,6 +50,7 @@ import type { Employee, UserProfile } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { formatCurrency } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
 
@@ -83,6 +90,8 @@ const EMPTY_FORM: FormValues = {
   note: "",
 };
 
+const EMPTY_LIST_FILTERS = { status: "" };
+
 export default function EmployeesPage() {
   const confirm = useConfirm();
   const toast = useToast();
@@ -91,6 +100,7 @@ export default function EmployeesPage() {
   const allowed = canViewEmployeesPage(rolesOf(user));
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [search, setSearch] = useState("");
+  const filters = useDeferredFilters(EMPTY_LIST_FILTERS);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [viewing, setViewing] = useState<Employee | null>(null);
@@ -103,10 +113,11 @@ export default function EmployeesPage() {
     (pageNum: number) =>
       getEmployees({
         search: search || undefined,
+        status: filters.applied.status || undefined,
         page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
       }),
-    [search]
+    [search, filters.applied.status]
   );
 
   const onError = useCallback(
@@ -314,13 +325,39 @@ export default function EmployeesPage() {
           <CardTitle>Danh sách nhân viên</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <SearchInput
-            placeholder="Tìm theo tên, mã, SĐT..."
-            value={search}
-            onSearch={setSearch}
+          <div className="flex gap-2">
+            <SearchInput
+              placeholder="Tìm theo tên, mã, SĐT..."
+              value={search}
+              onSearch={setSearch}
+              className="flex-1"
             />
+            <FilterTrigger
+              open={filters.open}
+              activeCount={filters.appliedCount}
+              onClick={() => filters.setOpen(true)}
+            />
+          </div>
+          <FilterDrawer
+            open={filters.open}
+            onOpenChange={filters.setOpen}
+            title="Bộ lọc nhân viên"
+            onClear={filters.clearDraft}
+            onApply={filters.apply}
+            draftCount={filters.draftCount}
+          >
+            <FilterOptionList
+              label="Trạng thái"
+              value={filters.draft.status}
+              onChange={(value) => filters.setDraftValue("status", value)}
+              options={[
+                { value: "", label: "Tất cả trạng thái" },
+                ...STATUS_OPTIONS.employee,
+              ]}
+            />
+          </FilterDrawer>
           {items.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-inverse)]">Chưa có nhân viên</p>
+            <EmptyState title="Chưa có nhân viên" />
           ) : (
             <>
               <MobileInfiniteList

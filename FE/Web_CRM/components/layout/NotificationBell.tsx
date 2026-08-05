@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { useNotifications } from "@/lib/notifications/NotificationProvider";
@@ -113,9 +114,7 @@ function NotificationList({
         )}
       >
         {items.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-[var(--color-text-inverse)]">
-            Chưa có thông báo mới
-          </div>
+          <EmptyState title="Chưa có thông báo mới" size="sm" className="m-3" />
         ) : (
           <div
             role="list"

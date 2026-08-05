@@ -391,6 +391,25 @@ export const STATUS_OPTIONS = {
     { value: "silver", label: "Bạc" },
     { value: "gold", label: "Vàng" },
   ] as SelectOption[],
+  trip: [
+    { value: "draft", label: "Nháp" },
+    { value: "in_progress", label: "Đang đi" },
+    { value: "settlement", label: "Chờ quyết toán" },
+    { value: "closed", label: "Đã đóng" },
+    { value: "cancelled", label: "Hủy" },
+  ] as SelectOption[],
+  leadType: [
+    { value: "contact", label: "Khách liên hệ" },
+    { value: "dealer", label: "Đại lý tiềm năng" },
+  ] as SelectOption[],
+  inventoryTxn: [
+    { value: "import", label: "Nhập kho" },
+    { value: "export", label: "Xuất kho" },
+  ] as SelectOption[],
+  payroll: [
+    { value: "draft", label: "Nháp" },
+    { value: "locked", label: "Đã khóa" },
+  ] as SelectOption[],
   order: [
     { value: "pending", label: "Chờ xử lý" },
     { value: "confirmed", label: "Đã xác nhận" },

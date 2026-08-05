@@ -74,6 +74,22 @@ export function buildSalesReportSheets(report: SalesReport): ExcelSheetSpec[] {
         { label: "Đơn hoàn tất", value: kpis.completedCount, note: "" },
         { label: "Doanh thu hoàn tất", value: kpis.completedRevenue, note: "" },
         { label: "Giá trị đơn TB", value: kpis.avgOrderValue, note: "" },
+        { label: "Giá vốn", value: kpis.costTotal ?? 0, note: "" },
+        {
+          label: "Lãi gộp",
+          value: kpis.grossProfit ?? 0,
+          note:
+            kpis.grossProfitChangePercent != null
+              ? `${kpis.grossProfitChangePercent}% so với kỳ trước`
+              : "",
+        },
+        {
+          label: "Biên lãi gộp (%)",
+          value: kpis.revenue
+            ? Math.round(((kpis.grossProfit || 0) / kpis.revenue) * 1000) / 10
+            : 0,
+          note: "Lãi gộp / doanh số",
+        },
       ],
     },
     {

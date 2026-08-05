@@ -22,6 +22,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
+import {
+  FilterDrawer,
+  FilterOptionList,
+  FilterTrigger,
+} from "@/components/ui/filter-drawer";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Pagination } from "@/components/ui/pagination";
@@ -66,6 +72,7 @@ import type {
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
 import {
   formatMovementQuantity,
@@ -99,6 +106,8 @@ function formatDate(value: string) {
   return new Date(value).toLocaleString("vi-VN");
 }
 
+const EMPTY_HISTORY_FILTERS = { warehouseId: "", type: "" };
+
 export default function InventoryPage() {
   const { user } = useAuth();
   const confirm = useConfirm();
@@ -119,6 +128,7 @@ export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [warehouseFilter, setWarehouseFilter] = useState("");
   const [search, setSearch] = useState("");
+  const historyFilters = useDeferredFilters(EMPTY_HISTORY_FILTERS);
   const [movementType, setMovementType] = useState<"import" | "export" | null>(null);
   const [movementForm, setMovementForm] = useState<InventoryMovementFormValues>(
     EMPTY_MOVEMENT_FORM
@@ -187,11 +197,13 @@ export default function InventoryPage() {
   const fetchTransactionsPage = useCallback(
     (pageNum: number) =>
       getInventoryTransactions({
-        warehouseId: warehouseFilter || undefined,
+        warehouseId: historyFilters.applied.warehouseId || undefined,
+        type:
+          (historyFilters.applied.type as "import" | "export") || undefined,
         page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
       }),
-    [warehouseFilter]
+    [historyFilters.applied.warehouseId, historyFilters.applied.type]
   );
 
   const {
@@ -524,7 +536,7 @@ export default function InventoryPage() {
               </div>
 
               {warehouses.length === 0 ? (
-                <p className="text-sm text-[var(--color-text-inverse)]">Chưa có kho</p>
+                <EmptyState title="Chưa có kho" />
               ) : (
                 <>
                   {/* Mobile */}
@@ -676,7 +688,7 @@ export default function InventoryPage() {
           </div>
 
           {stocks.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-inverse)]">Chưa có tồn kho</p>
+            <EmptyState title="Chưa có tồn kho" />
           ) : (
             <div className="space-y-4">
               <MobileInfiniteList
@@ -800,25 +812,49 @@ export default function InventoryPage() {
           <CardTitle>Lịch sử nhập xuất</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="md:hidden">
-            <SearchableSelect
+          <div className="flex justify-end">
+            <FilterTrigger
+              open={historyFilters.open}
+              activeCount={historyFilters.appliedCount}
+              onClick={() => historyFilters.setOpen(true)}
+            />
+          </div>
+          <FilterDrawer
+            open={historyFilters.open}
+            onOpenChange={historyFilters.setOpen}
+            title="Bộ lọc lịch sử"
+            onClear={historyFilters.clearDraft}
+            onApply={historyFilters.apply}
+            draftCount={historyFilters.draftCount}
+          >
+            <FilterOptionList
+              label="Kho"
+              value={historyFilters.draft.warehouseId}
+              onChange={(value) =>
+                historyFilters.setDraftValue("warehouseId", value)
+              }
+              searchable
+              searchPlaceholder="Tìm kho..."
               options={[
                 { value: "", label: "Tất cả kho" },
                 ...warehouses.map((warehouse) => ({
                   value: warehouse.id,
                   label: warehouse.name,
-                  description: warehouse.code,
                 })),
               ]}
-              value={warehouseFilter}
-              onChange={setWarehouseFilter}
-              placeholder="Tất cả kho"
-              searchPlaceholder="Tìm kho..."
-              clearable
             />
-          </div>
+            <FilterOptionList
+              label="Loại phiếu"
+              value={historyFilters.draft.type}
+              onChange={(value) => historyFilters.setDraftValue("type", value)}
+              options={[
+                { value: "", label: "Tất cả loại" },
+                ...STATUS_OPTIONS.inventoryTxn,
+              ]}
+            />
+          </FilterDrawer>
           {transactions.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-inverse)]">Chưa có giao dịch</p>
+            <EmptyState title="Chưa có giao dịch" />
           ) : (
             <div className="space-y-4">
               <MobileInfiniteList

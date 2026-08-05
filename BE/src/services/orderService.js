@@ -593,6 +593,19 @@ const getList = async (query) => {
     findQuery.tripId = null
   }
 
+  const createdAtRange = {}
+  if (query.from) {
+    const from = new Date(query.from)
+    if (!Number.isNaN(from.getTime())) createdAtRange.$gte = from
+  }
+  if (query.to) {
+    const to = new Date(query.to)
+    if (!Number.isNaN(to.getTime())) createdAtRange.$lte = to
+  }
+  if (Object.keys(createdAtRange).length) {
+    findQuery.createdAt = createdAtRange
+  }
+
   if (query.deliveryEmployeeIds) {
     const idStrings = String(query.deliveryEmployeeIds)
       .split(',')

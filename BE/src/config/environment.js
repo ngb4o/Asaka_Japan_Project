@@ -25,5 +25,10 @@ export const env = {
   VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || '',
   VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || '',
   // Apple Web Push prefers a real contact mailto/https (avoid .local)
-  VAPID_SUBJECT: process.env.VAPID_SUBJECT || 'mailto:crm@asaka.jp'
+  VAPID_SUBJECT: process.env.VAPID_SUBJECT || 'mailto:crm@asaka.jp',
+
+  GROQ_API_KEY: process.env.GROQ_API_KEY || '',
+  GROQ_MODEL: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
+  /** Comma-separated extra fallbacks after GROQ_MODEL */
+  GROQ_MODEL_FALLBACKS: process.env.GROQ_MODEL_FALLBACKS || ''
 }

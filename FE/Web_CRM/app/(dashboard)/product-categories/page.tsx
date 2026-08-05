@@ -12,6 +12,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
+import {
+  FilterDrawer,
+  FilterOptionList,
+  FilterTrigger,
+} from "@/components/ui/filter-drawer";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
@@ -39,6 +45,7 @@ import type { ProductCategory } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { cn } from "@/lib/utils";
 import {
   buildProductCategoryPayload,
@@ -51,10 +58,13 @@ const EMPTY_FORM: ProductCategoryFormValues = {
   status: "active",
 };
 
+const EMPTY_LIST_FILTERS = { status: "" };
+
 export default function ProductCategoriesPage() {
   const confirm = useConfirm();
   const toast = useToast();
   const [search, setSearch] = useState("");
+  const filters = useDeferredFilters(EMPTY_LIST_FILTERS);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ProductCategory | null>(null);
   const [form, setForm] = useState<ProductCategoryFormValues>(EMPTY_FORM);
@@ -65,10 +75,11 @@ export default function ProductCategoriesPage() {
     (pageNum: number) =>
       getProductCategories({
         search: search || undefined,
+        status: filters.applied.status || undefined,
         page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
       }),
-    [search]
+    [search, filters.applied.status]
   );
 
   const onError = useCallback(
@@ -221,20 +232,48 @@ export default function ProductCategoriesPage() {
           <CardTitle>Danh sách</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <SearchInput
-            placeholder="Tìm theo tên..."
-            value={search}
-            onSearch={setSearch}
+          <div className="flex gap-2">
+            <SearchInput
+              placeholder="Tìm theo tên..."
+              value={search}
+              onSearch={setSearch}
+              className="flex-1"
             />
+            <FilterTrigger
+              open={filters.open}
+              activeCount={filters.appliedCount}
+              onClick={() => filters.setOpen(true)}
+            />
+          </div>
+          <FilterDrawer
+            open={filters.open}
+            onOpenChange={filters.setOpen}
+            title="Bộ lọc loại sản phẩm"
+            onClear={filters.clearDraft}
+            onApply={filters.apply}
+            draftCount={filters.draftCount}
+          >
+            <FilterOptionList
+              label="Trạng thái"
+              value={filters.draft.status}
+              onChange={(value) => filters.setDraftValue("status", value)}
+              options={[
+                { value: "", label: "Tất cả trạng thái" },
+                ...STATUS_OPTIONS.category,
+              ]}
+            />
+          </FilterDrawer>
 
           {items.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-inverse)]">
-              {search.trim()
-                ? loading
-                  ? "Đang tìm..."
-                  : "Không tìm thấy loại sản phẩm"
-                : "Chưa có loại sản phẩm"}
-            </p>
+            <EmptyState
+              title={
+                search.trim()
+                  ? loading
+                    ? "Đang tìm..."
+                    : "Không tìm thấy loại sản phẩm"
+                  : "Chưa có loại sản phẩm"
+              }
+            />
           ) : (
             <div className={cn("space-y-4", loading && "opacity-60")}>
               <MobileInfiniteList

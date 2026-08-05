@@ -26,6 +26,12 @@ import {
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
+import {
+  FilterDrawer,
+  FilterOptionList,
+  FilterTrigger,
+} from "@/components/ui/filter-drawer";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canManageDealers, rolesOf } from "@/lib/auth/permissions";
@@ -40,7 +46,9 @@ import type { Dealer } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
+import { useCrmDataRefresh } from "@/lib/hooks/useCrmDataRefresh";
 import { statusBadgeVariant } from "@/lib/status-badge";
 import { Badge } from "@/components/ui/badge";
 
@@ -70,12 +78,15 @@ const EMPTY_FORM: DealerFormValues = {
   note: "",
 };
 
+const EMPTY_LIST_FILTERS = { status: "", tier: "" };
+
 export default function DealersPage() {
   const confirm = useConfirm();
   const toast = useToast();
   const { user } = useAuth();
   const canWrite = canManageDealers(rolesOf(user));
   const [search, setSearch] = useState("");
+  const filters = useDeferredFilters(EMPTY_LIST_FILTERS);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [viewing, setViewing] = useState<Dealer | null>(null);
@@ -90,10 +101,12 @@ export default function DealersPage() {
     (pageNum: number) =>
       getDealers({
         search: search || undefined,
+        status: filters.applied.status || undefined,
+        tier: filters.applied.tier || undefined,
         page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
       }),
-    [search]
+    [search, filters.applied.status, filters.applied.tier]
   );
 
   const onError = useCallback(
@@ -119,6 +132,8 @@ export default function DealersPage() {
     loadMore,
     goToPage,
   } = useMobilePagedList<Dealer>({ fetchPage, onError });
+
+  useCrmDataRefresh(["dealers"], () => refresh());
 
   useEffect(() => {
     void reload();
@@ -291,14 +306,50 @@ export default function DealersPage() {
           <CardTitle>Danh sách đại lý</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <SearchInput
-            placeholder="Tìm theo tên, SĐT, khu vực..."
-            value={search}
-            onSearch={setSearch}
+          <div className="flex gap-2">
+            <SearchInput
+              placeholder="Tìm theo tên, SĐT, khu vực..."
+              value={search}
+              onSearch={setSearch}
+              className="flex-1"
             />
+            <FilterTrigger
+              open={filters.open}
+              activeCount={filters.appliedCount}
+              onClick={() => filters.setOpen(true)}
+            />
+          </div>
+
+          <FilterDrawer
+            open={filters.open}
+            onOpenChange={filters.setOpen}
+            title="Bộ lọc đại lý"
+            onClear={filters.clearDraft}
+            onApply={filters.apply}
+            draftCount={filters.draftCount}
+          >
+            <FilterOptionList
+              label="Trạng thái"
+              value={filters.draft.status}
+              onChange={(value) => filters.setDraftValue("status", value)}
+              options={[
+                { value: "", label: "Tất cả trạng thái" },
+                ...STATUS_OPTIONS.dealer,
+              ]}
+            />
+            <FilterOptionList
+              label="Hạng"
+              value={filters.draft.tier}
+              onChange={(value) => filters.setDraftValue("tier", value)}
+              options={[
+                { value: "", label: "Tất cả hạng" },
+                ...STATUS_OPTIONS.dealerTier,
+              ]}
+            />
+          </FilterDrawer>
 
           {items.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-inverse)]">Chưa có đại lý</p>
+            <EmptyState title="Chưa có đại lý" />
           ) : (
             <div className="space-y-4">
               <MobileInfiniteList

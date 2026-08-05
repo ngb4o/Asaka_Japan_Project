@@ -12,13 +12,20 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchInput } from "@/components/ui/search-input";
+import {
+  FilterDrawer,
+  FilterOptionList,
+  FilterTrigger,
+} from "@/components/ui/filter-drawer";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
 import {
   MobileRecordActions,
   MobileRecordCard,
 } from "@/components/ui/mobile-record-card";
-import { SearchableSelect } from "@/components/ui/searchable-select";
+import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -35,6 +42,7 @@ import {
 import type { Employee, UserProfile, UserRole } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 
 function randomPassword(length = 10) {
   const alphabet =
@@ -126,6 +134,8 @@ const EMPTY_FORM: CreateForm = {
   roles: ["sales"],
 };
 
+const EMPTY_LIST_FILTERS = { role: "" };
+
 export default function UsersPage() {
   const confirm = useConfirm();
   const toast = useToast();
@@ -133,6 +143,8 @@ export default function UsersPage() {
   const [items, setItems] = useState<UserProfile[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const filters = useDeferredFilters(EMPTY_LIST_FILTERS);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const isUserAction = (id: string, kind: "role" | "delete") =>
     updatingId === `${kind}:${id}`;
@@ -151,6 +163,31 @@ export default function UsersPage() {
     () => employees.filter((item) => !item.userId),
     [employees]
   );
+
+  const filteredItems = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    const roleFilter = filters.applied.role;
+    return items.filter((item) => {
+      if (roleFilter) {
+        const roles = item.roles?.length
+          ? item.roles
+          : item.role
+            ? [item.role]
+            : [];
+        if (!roles.includes(roleFilter as UserRole)) return false;
+      }
+      if (!keyword) return true;
+      const haystack = [
+        item.employeeName,
+        item.employeeCode,
+        item.email,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(keyword);
+    });
+  }, [items, search, filters.applied.role]);
 
   const loadData = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true);
@@ -356,11 +393,42 @@ export default function UsersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Danh sách tài khoản ({items.length})</CardTitle>
+          <CardTitle>Danh sách tài khoản ({filteredItems.length})</CardTitle>
         </CardHeader>
-        <CardContent>
-          {items.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-inverse)]">Chưa có user</p>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <SearchInput
+              placeholder="Tìm theo tên, mã, email..."
+              value={search}
+              onSearch={setSearch}
+              className="flex-1"
+            />
+            <FilterTrigger
+              open={filters.open}
+              activeCount={filters.appliedCount}
+              onClick={() => filters.setOpen(true)}
+            />
+          </div>
+          <FilterDrawer
+            open={filters.open}
+            onOpenChange={filters.setOpen}
+            title="Bộ lọc tài khoản"
+            onClear={filters.clearDraft}
+            onApply={filters.apply}
+            draftCount={filters.draftCount}
+          >
+            <FilterOptionList
+              label="Vai trò"
+              value={filters.draft.role}
+              onChange={(value) => filters.setDraftValue("role", value)}
+              options={[
+                { value: "", label: "Tất cả vai trò" },
+                ...STATUS_OPTIONS.userRole,
+              ]}
+            />
+          </FilterDrawer>
+          {filteredItems.length === 0 ? (
+            <EmptyState title="Chưa có tài khoản" />
           ) : (
             <>
               <MobileInfiniteList
@@ -370,7 +438,7 @@ export default function UsersPage() {
                 disabled={loading}
               >
                 <div className="flex flex-col gap-3">
-                  {items.map((item) => (
+                  {filteredItems.map((item) => (
                     <MobileRecordCard key={item.id} className="p-3">
                       <div className="min-w-0">
                         <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
@@ -446,7 +514,7 @@ export default function UsersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item) => (
+                  {filteredItems.map((item) => (
                     <tr key={item.id}>
                       <td className="font-medium">
                         {item.employeeName || "—"}

@@ -12,6 +12,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
+import {
+  FilterDrawer,
+  FilterOptionList,
+  FilterTrigger,
+} from "@/components/ui/filter-drawer";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
@@ -37,15 +43,19 @@ import type { Lead } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
+import { useCrmDataRefresh } from "@/lib/hooks/useCrmDataRefresh";
 import { leadStatusBadgeVariant } from "@/lib/status-badge";
 import { Badge } from "@/components/ui/badge";
+
+const EMPTY_LIST_FILTERS = { status: "", type: "" };
 
 export default function LeadsPage() {
   const confirm = useConfirm();
   const toast = useToast();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const filters = useDeferredFilters(EMPTY_LIST_FILTERS);
   const [selected, setSelected] = useState<Lead | null>(null);
   const [note, setNote] = useState("");
   const [status, setStatus] = useState<Lead["status"]>("new");
@@ -58,11 +68,12 @@ export default function LeadsPage() {
     (pageNum: number) =>
       getLeads({
         search: search || undefined,
-        status: statusFilter || undefined,
+        status: filters.applied.status || undefined,
+        type: filters.applied.type || undefined,
         page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
       }),
-    [search, statusFilter]
+    [search, filters.applied.status, filters.applied.type]
   );
 
   const onError = useCallback(
@@ -88,6 +99,20 @@ export default function LeadsPage() {
     loadMore,
     goToPage,
   } = useMobilePagedList<Lead>({ fetchPage, onError });
+
+  useCrmDataRefresh(["leads"], async () => {
+    await refresh();
+    if (selected) {
+      try {
+        const updated = await getLead(selected.id);
+        setSelected(updated);
+        setStatus(updated.status);
+        setNote(updated.note || "");
+      } catch {
+        /* ignore */
+      }
+    }
+  });
 
   useEffect(() => {
     void reload();
@@ -220,23 +245,49 @@ export default function LeadsPage() {
           <CardTitle>Danh sách lead</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="flex gap-2">
             <SearchInput
               placeholder="Tìm theo tên, SĐT, email..."
               value={search}
               onSearch={setSearch}
+              className="flex-1"
             />
-            <SearchableSelect
-              options={[{ value: "", label: "Tất cả trạng thái" }, ...STATUS_OPTIONS.lead]}
-              value={statusFilter}
-              onChange={setStatusFilter}
-              searchable={false}
-              clearable
+            <FilterTrigger
+              open={filters.open}
+              activeCount={filters.appliedCount}
+              onClick={() => filters.setOpen(true)}
             />
           </div>
+          <FilterDrawer
+            open={filters.open}
+            onOpenChange={filters.setOpen}
+            title="Bộ lọc lead"
+            onClear={filters.clearDraft}
+            onApply={filters.apply}
+            draftCount={filters.draftCount}
+          >
+            <FilterOptionList
+              label="Trạng thái"
+              value={filters.draft.status}
+              onChange={(value) => filters.setDraftValue("status", value)}
+              options={[
+                { value: "", label: "Tất cả trạng thái" },
+                ...STATUS_OPTIONS.lead,
+              ]}
+            />
+            <FilterOptionList
+              label="Loại"
+              value={filters.draft.type}
+              onChange={(value) => filters.setDraftValue("type", value)}
+              options={[
+                { value: "", label: "Tất cả loại" },
+                ...STATUS_OPTIONS.leadType,
+              ]}
+            />
+          </FilterDrawer>
 
           {items.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-inverse)]">Chưa có lead</p>
+            <EmptyState title="Chưa có lead" />
           ) : (
             <div className="space-y-4">
               <MobileInfiniteList

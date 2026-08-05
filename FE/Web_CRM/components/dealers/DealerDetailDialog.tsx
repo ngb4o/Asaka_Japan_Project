@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { TabSwitcher } from "@/components/ui/tab-switcher";
 import { OrderLineItemsList } from "@/components/orders/OrderLineItemsList";
 import { getOrders } from "@/lib/api/orders";
@@ -252,7 +253,7 @@ function OrdersSection({
         {title} ({orders.length})
       </h4>
       {orders.length === 0 ? (
-        <p className="text-sm text-[var(--color-text-inverse)]">{emptyText}</p>
+        <EmptyState title={emptyText} size="sm" />
       ) : (
         <div className="space-y-3">
           {orders.map((order) => (

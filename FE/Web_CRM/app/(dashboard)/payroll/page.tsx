@@ -13,6 +13,13 @@ import {
 } from "@/components/ui/dialog";
 import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
+import {
+  FilterDrawer,
+  FilterOptionList,
+  FilterTrigger,
+} from "@/components/ui/filter-drawer";
+import { EmptyState } from "@/components/ui/empty-state";
+import { STATUS_OPTIONS } from "@/components/ui/searchable-select";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
@@ -39,6 +46,7 @@ import type { PayrollPeriod } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { formatCurrency } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
 
@@ -46,6 +54,8 @@ function currentPeriod() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
+
+const EMPTY_LIST_FILTERS = { status: "" };
 
 export default function PayrollPage() {
   const confirm = useConfirm();
@@ -59,11 +69,18 @@ export default function PayrollPage() {
     actionId === `${kind}:${id}`;
   const [period, setPeriod] = useState(currentPeriod());
   const [dialogOpen, setDialogOpen] = useState(false);
+  const filters = useDeferredFilters(EMPTY_LIST_FILTERS);
 
   const fetchPage = useCallback(
-    (pageNum: number) => getPayrollPeriods({ page: pageNum, limit: DEFAULT_PAGE_SIZE }),
-    []
+    (pageNum: number) =>
+      getPayrollPeriods({
+        status: filters.applied.status || undefined,
+        page: pageNum,
+        limit: DEFAULT_PAGE_SIZE,
+      }),
+    [filters.applied.status]
   );
+
 
   const onError = useCallback(
     (err: unknown) => {
@@ -226,8 +243,33 @@ export default function PayrollPage() {
           <CardTitle>Các kỳ lương</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex justify-end">
+            <FilterTrigger
+              open={filters.open}
+              activeCount={filters.appliedCount}
+              onClick={() => filters.setOpen(true)}
+            />
+          </div>
+          <FilterDrawer
+            open={filters.open}
+            onOpenChange={filters.setOpen}
+            title="Bộ lọc bảng lương"
+            onClear={filters.clearDraft}
+            onApply={filters.apply}
+            draftCount={filters.draftCount}
+          >
+            <FilterOptionList
+              label="Trạng thái"
+              value={filters.draft.status}
+              onChange={(value) => filters.setDraftValue("status", value)}
+              options={[
+                { value: "", label: "Tất cả trạng thái" },
+                ...STATUS_OPTIONS.payroll,
+              ]}
+            />
+          </FilterDrawer>
           {items.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-inverse)]">Chưa có bảng lương</p>
+            <EmptyState title="Chưa có bảng lương" />
           ) : (
             <>
               <MobileInfiniteList

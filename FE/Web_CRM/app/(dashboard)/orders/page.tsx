@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { AlertTriangle, Eye, Filter, PackageCheck, Pencil, Plus, Printer, RefreshCw, Trash2 } from "lucide-react";
+import { AlertTriangle, Eye, PackageCheck, Pencil, Plus, Printer, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
-import { FilterDrawer } from "@/components/ui/filter-drawer";
+import { FilterDrawer, FilterOptionList, FilterTrigger } from "@/components/ui/filter-drawer";
+import { EmptyState } from "@/components/ui/empty-state";
 import { DateRangeInput } from "@/components/ui/date-range-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,7 +68,9 @@ import type { Dealer, Employee, Order, Product } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
+import { useCrmDataRefresh } from "@/lib/hooks/useCrmDataRefresh";
 import { cn, formatCurrency, toDateValue } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
 
@@ -244,6 +247,14 @@ function OrderDetailDeepLink({
   return null;
 }
 
+const EMPTY_LIST_FILTERS = {
+  status: "",
+  payment: "",
+  dealerId: "",
+  deliveryEmployeeId: "",
+  withoutTrip: "",
+};
+
 export default function OrdersPage() {
   const confirm = useConfirm();
   const toast = useToast();
@@ -256,10 +267,7 @@ export default function OrdersPage() {
   const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [paymentFilter, setPaymentFilter] = useState("");
-  const [dealerFilter, setDealerFilter] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
+  const filters = useDeferredFilters(EMPTY_LIST_FILTERS);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [viewing, setViewing] = useState<Order | null>(null);
@@ -281,20 +289,27 @@ export default function OrdersPage() {
     (pageNum: number) =>
       getOrders({
         search: search || undefined,
-        status: statusFilter || undefined,
+        status: filters.applied.status || undefined,
         paymentStatus:
-          paymentFilter && paymentFilter !== "debt" ? paymentFilter : undefined,
-        hasDebt: paymentFilter === "debt" ? true : undefined,
-        dealerId: dealerFilter || undefined,
+          filters.applied.payment && filters.applied.payment !== "debt"
+            ? filters.applied.payment
+            : undefined,
+        hasDebt: filters.applied.payment === "debt" ? true : undefined,
+        dealerId: filters.applied.dealerId || undefined,
+        deliveryEmployeeIds: filters.applied.deliveryEmployeeId || undefined,
+        withoutTrip: filters.applied.withoutTrip === "1" ? true : undefined,
         page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
       }),
-    [search, statusFilter, paymentFilter, dealerFilter]
+    [
+      search,
+      filters.applied.status,
+      filters.applied.payment,
+      filters.applied.dealerId,
+      filters.applied.deliveryEmployeeId,
+      filters.applied.withoutTrip,
+    ]
   );
-
-  const activeFilterCount = [statusFilter, paymentFilter, dealerFilter].filter(
-    Boolean
-  ).length;
 
   const onError = useCallback(
     (err: unknown) => {
@@ -318,6 +333,18 @@ export default function OrdersPage() {
     loadMore,
     goToPage,
   } = useMobilePagedList<Order>({ fetchPage, onError });
+
+  useCrmDataRefresh(["orders"], async () => {
+    await refresh();
+    if (viewing) {
+      try {
+        const updated = await getOrder(viewing.id);
+        setViewing(updated);
+      } catch {
+        /* ignore */
+      }
+    }
+  });
 
   const loadAuxData = useCallback(async () => {
     const results = await Promise.allSettled([
@@ -848,151 +875,80 @@ export default function OrdersPage() {
               onSearch={setSearch}
               className="flex-1"
             />
-            <button
-              type="button"
-              aria-label="Bộ lọc"
-              aria-expanded={filterOpen}
-              onClick={() => setFilterOpen((open) => !open)}
-              className={cn(
-                "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]",
-                filterOpen &&
-                  "border-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]"
-              )}
-            >
-              <Filter className="h-4 w-4" />
-              {activeFilterCount > 0 ? (
-                <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-text-secondary)] px-1 text-[10px] font-bold text-white">
-                  {activeFilterCount}
-                </span>
-              ) : null}
-            </button>
+            <FilterTrigger
+              open={filters.open}
+              activeCount={filters.appliedCount}
+              onClick={() => filters.setOpen(true)}
+            />
           </div>
 
-          {/* Desktop: inline filters */}
-          {filterOpen ? (
-            <div className="hidden space-y-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/40 p-3 md:block">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                  Bộ lọc
-                </p>
-                {activeFilterCount > 0 ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setStatusFilter("");
-                      setPaymentFilter("");
-                      setDealerFilter("");
-                    }}
-                  >
-                    Xóa lọc
-                  </Button>
-                ) : null}
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="space-y-1.5">
-                  <Label>Trạng thái</Label>
-                  <SearchableSelect
-                    options={[
-                      { value: "", label: "Tất cả trạng thái" },
-                      ...STATUS_OPTIONS.order,
-                    ]}
-                    value={statusFilter}
-                    onChange={setStatusFilter}
-                    searchable={false}
-                    clearable
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Thanh toán / nợ</Label>
-                  <SearchableSelect
-                    options={[
-                      { value: "", label: "Tất cả thanh toán" },
-                      { value: "debt", label: "Còn nợ" },
-                      ...STATUS_OPTIONS.payment,
-                    ]}
-                    value={paymentFilter}
-                    onChange={setPaymentFilter}
-                    searchable={false}
-                    clearable
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Đại lý</Label>
-                  <SearchableSelect
-                    options={[
-                      { value: "", label: "Tất cả đại lý" },
-                      ...dealers.map((d) => ({ value: d.id, label: d.name })),
-                    ]}
-                    value={dealerFilter}
-                    onChange={setDealerFilter}
-                    searchable
-                    clearable
-                    placeholder="Chọn đại lý"
-                  />
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          {/* Mobile: right filter drawer */}
           <FilterDrawer
-            open={filterOpen}
-            onOpenChange={setFilterOpen}
+            open={filters.open}
+            onOpenChange={filters.setOpen}
             title="Bộ lọc đơn hàng"
-            activeCount={activeFilterCount}
-            onClear={() => {
-              setStatusFilter("");
-              setPaymentFilter("");
-              setDealerFilter("");
-            }}
+            onClear={filters.clearDraft}
+            onApply={filters.apply}
+            draftCount={filters.draftCount}
           >
-            <div className="space-y-1.5">
-              <Label>Trạng thái</Label>
-              <SearchableSelect
-                options={[
-                  { value: "", label: "Tất cả trạng thái" },
-                  ...STATUS_OPTIONS.order,
-                ]}
-                value={statusFilter}
-                onChange={setStatusFilter}
-                searchable={false}
-                clearable
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Thanh toán / nợ</Label>
-              <SearchableSelect
-                options={[
-                  { value: "", label: "Tất cả thanh toán" },
-                  { value: "debt", label: "Còn nợ" },
-                  ...STATUS_OPTIONS.payment,
-                ]}
-                value={paymentFilter}
-                onChange={setPaymentFilter}
-                searchable={false}
-                clearable
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Đại lý</Label>
-              <SearchableSelect
-                options={[
-                  { value: "", label: "Tất cả đại lý" },
-                  ...dealers.map((d) => ({ value: d.id, label: d.name })),
-                ]}
-                value={dealerFilter}
-                onChange={setDealerFilter}
-                searchable
-                clearable
-                placeholder="Chọn đại lý"
-              />
-            </div>
+            <FilterOptionList
+              label="Trạng thái"
+              value={filters.draft.status}
+              onChange={(value) => filters.setDraftValue("status", value)}
+              options={[
+                { value: "", label: "Tất cả trạng thái" },
+                ...STATUS_OPTIONS.order,
+              ]}
+            />
+            <FilterOptionList
+              label="Thanh toán / nợ"
+              value={filters.draft.payment}
+              onChange={(value) => filters.setDraftValue("payment", value)}
+              options={[
+                { value: "", label: "Tất cả thanh toán" },
+                { value: "debt", label: "Còn nợ" },
+                ...STATUS_OPTIONS.payment,
+              ]}
+            />
+            <FilterOptionList
+              label="Đại lý"
+              value={filters.draft.dealerId}
+              onChange={(value) => filters.setDraftValue("dealerId", value)}
+              searchable
+              searchPlaceholder="Tìm đại lý..."
+              options={[
+                { value: "", label: "Tất cả đại lý" },
+                ...dealers.map((d) => ({ value: d.id, label: d.name })),
+              ]}
+            />
+            <FilterOptionList
+              label="NV giao hàng"
+              value={filters.draft.deliveryEmployeeId}
+              onChange={(value) =>
+                filters.setDraftValue("deliveryEmployeeId", value)
+              }
+              searchable
+              searchPlaceholder="Tìm nhân viên..."
+              options={[
+                { value: "", label: "Tất cả NV giao" },
+                ...employees.map((employee) => ({
+                  value: employee.id,
+                  label: employee.fullName,
+                })),
+              ]}
+            />
+            <FilterOptionList
+              label="Gắn chuyến"
+              value={filters.draft.withoutTrip}
+              onChange={(value) => filters.setDraftValue("withoutTrip", value)}
+              options={[
+                { value: "", label: "Tất cả đơn" },
+                { value: "1", label: "Chưa gắn chuyến" },
+              ]}
+            />
           </FilterDrawer>
 
           {items.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-inverse)]">Chưa có đơn hàng</p>
+            <EmptyState title="Chưa có đơn hàng" />
           ) : (
             <div className="space-y-4">
               <MobileInfiniteList
@@ -1558,9 +1514,11 @@ export default function OrdersPage() {
                     
                     <div className="grid max-h-40 gap-2 overflow-y-auto rounded-lg border border-[var(--color-border-subtle)] p-3 sm:grid-cols-2">
                       {employeeOptions.length === 0 ? (
-                        <p className="text-sm text-[var(--color-text-inverse)] sm:col-span-2">
-                          Chưa có nhân viên
-                        </p>
+                        <EmptyState
+                          title="Chưa có nhân viên"
+                          size="sm"
+                          className="sm:col-span-2"
+                        />
                       ) : (
                         employeeOptions.map((option) => (
                           <label

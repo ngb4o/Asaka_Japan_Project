@@ -2,8 +2,11 @@ import { apiRequest } from "@/lib/api/client";
 import { appendPaginationParams, type PaginationParams } from "@/lib/pagination";
 import type { PaginatedResult, PayrollPeriod } from "@/lib/types";
 
-export async function getPayrollPeriods(params?: PaginationParams) {
+export async function getPayrollPeriods(
+  params?: { status?: string } & PaginationParams
+) {
   const query = new URLSearchParams();
+  if (params?.status) query.set("status", params.status);
   appendPaginationParams(query, params);
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return apiRequest<PaginatedResult<PayrollPeriod>>(`/payroll${suffix}`);

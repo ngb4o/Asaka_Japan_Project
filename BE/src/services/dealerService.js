@@ -33,6 +33,7 @@ const getList = async (query) => {
 
   if (query.status) findQuery.status = query.status
   if (query.region) findQuery.region = query.region
+  if (query.tier) findQuery.tier = query.tier
 
   const searchFilter = buildSearchFilter(
     ['name', 'contactName', 'phone', 'email', 'region'],

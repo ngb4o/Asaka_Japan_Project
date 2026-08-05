@@ -208,10 +208,12 @@ const buildLinesForPeriod = async (period) => {
 
 const getList = async (query, actorUserId, actorRole) => {
   const pagination = parsePaginationQuery(query)
+  const findQuery = {}
+  if (query.status) findQuery.status = query.status
 
   if (!canViewAllPayroll(actorRole)) {
     const employeeIds = await findEmployeeIdsForUser(actorUserId)
-    const all = await payrollModel.findMany({}, { limit: 500, skip: 0 })
+    const all = await payrollModel.findMany(findQuery, { limit: 500, skip: 0 })
     const filtered = all.items
       .map(formatPayroll)
       .map((item) => scopePayrollForViewer(item, employeeIds))
@@ -233,7 +235,7 @@ const getList = async (query, actorUserId, actorRole) => {
     )
   }
 
-  const result = await payrollModel.findMany({}, {
+  const result = await payrollModel.findMany(findQuery, {
     limit: pagination.limit,
     skip: pagination.skip
   })

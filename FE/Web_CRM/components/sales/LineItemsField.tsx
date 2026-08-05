@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { VndInput } from "@/components/ui/vnd-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Product } from "@/lib/types";
 import { cn, formatCurrency } from "@/lib/utils";
 
@@ -85,7 +86,7 @@ export function LineItemsField({
       </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-[var(--color-text-inverse)]">Chưa có sản phẩm</p>
+        <EmptyState title="Chưa có sản phẩm" size="sm" />
       ) : (
         <div className="space-y-3">
           {items.map((item, index) => {

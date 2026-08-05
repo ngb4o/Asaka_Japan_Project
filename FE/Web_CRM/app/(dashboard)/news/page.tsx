@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { ImageIcon, Pencil, Plus, Trash2 } from "@/components/ui/icons";
+import { ImageIcon, Pencil, Plus, RefreshCw, Trash2 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -13,6 +14,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
+import {
+  FilterDrawer,
+  FilterOptionList,
+  FilterTrigger,
+} from "@/components/ui/filter-drawer";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Label } from "@/components/ui/label";
 import { ImageUpload } from "@/components/products/ImageUpload";
 import { NewsContentField } from "@/components/news/NewsContentField";
@@ -33,11 +40,13 @@ import type { News } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import {
   buildNewsPayload,
   validateNewsForm,
   type NewsFormValues,
 } from "@/lib/validation/payloads";
+import { statusBadgeVariant } from "@/lib/status-badge";
 
 const EMPTY_FORM: NewsFormValues = {
   title: "",
@@ -50,10 +59,13 @@ function truncateText(text: string, maxLength = 120) {
   return `${text.slice(0, maxLength).trim()}...`;
 }
 
+const EMPTY_LIST_FILTERS = { status: "" };
+
 export default function NewsPage() {
   const confirm = useConfirm();
   const toast = useToast();
   const [search, setSearch] = useState("");
+  const filters = useDeferredFilters(EMPTY_LIST_FILTERS);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<News | null>(null);
   const [form, setForm] = useState<NewsFormValues>(EMPTY_FORM);
@@ -66,10 +78,11 @@ export default function NewsPage() {
     (pageNum: number) =>
       getNews({
         search: search || undefined,
+        status: filters.applied.status || undefined,
         page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
       }),
-    [search]
+    [search, filters.applied.status]
   );
 
   const onError = useCallback(
@@ -280,14 +293,40 @@ export default function NewsPage() {
           <CardTitle>Danh sách</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <SearchInput
-            placeholder="Tìm theo tiêu đề, nội dung..."
-            value={search}
-            onSearch={setSearch}
+          <div className="flex gap-2">
+            <SearchInput
+              placeholder="Tìm theo tiêu đề, nội dung..."
+              value={search}
+              onSearch={setSearch}
+              className="flex-1"
             />
+            <FilterTrigger
+              open={filters.open}
+              activeCount={filters.appliedCount}
+              onClick={() => filters.setOpen(true)}
+            />
+          </div>
+          <FilterDrawer
+            open={filters.open}
+            onOpenChange={filters.setOpen}
+            title="Bộ lọc tin tức"
+            onClear={filters.clearDraft}
+            onApply={filters.apply}
+            draftCount={filters.draftCount}
+          >
+            <FilterOptionList
+              label="Trạng thái"
+              value={filters.draft.status}
+              onChange={(value) => filters.setDraftValue("status", value)}
+              options={[
+                { value: "", label: "Tất cả trạng thái" },
+                ...STATUS_OPTIONS.news,
+              ]}
+            />
+          </FilterDrawer>
 
           {items.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-inverse)]">Chưa có tin tức</p>
+            <EmptyState title="Chưa có tin tức" />
           ) : (
             <div className="space-y-4">
               <MobileInfiniteList
@@ -320,21 +359,9 @@ export default function NewsPage() {
                       title={item.title}
                       subtitle={truncateText(item.content, 90)}
                       badge={
-                        <div className="w-[120px]">
-                          <SearchableSelect
-                            options={STATUS_OPTIONS.news}
-                            value={item.status}
-                            onChange={(value) =>
-                              void handleQuickStatus(
-                                item,
-                                value as News["status"]
-                              )
-                            }
-                            searchable={false}
-                            disabled={actionId === `status:${item.id}`}
-                            triggerClassName="h-8 text-xs"
-                          />
-                        </div>
+                        <Badge variant={statusBadgeVariant(item.status)}>
+                          {item.status === "active" ? "Hiển thị" : "Ẩn"}
+                        </Badge>
                       }
                       actions={
                         <>
@@ -358,14 +385,46 @@ export default function NewsPage() {
                               aria-label={`Thứ tự hiển thị ${item.title}`}
                             />
                           </div>
-                          <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                          <SearchableSelect
+                            options={STATUS_OPTIONS.news}
+                            value={item.status}
+                            onChange={(value) =>
+                              void handleQuickStatus(
+                                item,
+                                value as News["status"]
+                              )
+                            }
+                            searchable={false}
+                            placeholder="Đổi trạng thái"
+                            disabled={actionId === `status:${item.id}`}
+                            trigger={
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-9 min-w-9"
+                                title="Đổi trạng thái"
+                                loading={actionId === `status:${item.id}`}
+                              >
+                                <RefreshCw className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 min-w-9"
+                            onClick={() => openEdit(item)}
+                            title="Sửa"
+                          >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="danger"
                             size="sm"
+                            className="h-9 min-w-9"
                             loading={actionId === item.id}
                             onClick={() => handleDelete(item)}
+                            title="Xóa"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

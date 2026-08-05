@@ -6,6 +6,7 @@ import {
   MobileMediaCard,
   MobileMetaChip,
 } from "@/components/ui/mobile-record-card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getImageUrl } from "@/lib/api/uploads";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import type { LineItem } from "@/lib/types";
@@ -51,9 +52,7 @@ export function OrderLineItemsList({ items }: { items: LineItem[] }) {
   const isMobile = useIsMobile();
 
   if (!items.length) {
-    return (
-      <p className="text-sm text-[var(--color-text-inverse)]">Chưa có sản phẩm</p>
-    );
+    return <EmptyState title="Chưa có sản phẩm" size="sm" />;
   }
 
   if (isMobile) {

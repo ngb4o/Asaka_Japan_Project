@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { ImageIcon, Pencil, Plus, Trash2 } from "@/components/ui/icons";
+import { ImageIcon, Pencil, Plus, RefreshCw, Trash2 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
+import {
+  FilterDrawer,
+  FilterOptionList,
+  FilterTrigger,
+} from "@/components/ui/filter-drawer";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VndInput } from "@/components/ui/vnd-input";
@@ -47,6 +53,7 @@ import type { Product, ProductCategory } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { formatCurrency } from "@/lib/utils";
 import { formatStockDisplay } from "@/lib/inventoryUnits";
 import { statusBadgeVariant } from "@/lib/status-badge";
@@ -66,6 +73,8 @@ const EMPTY_FORM: ProductFormValues = {
   status: "active",
 };
 
+const EMPTY_LIST_FILTERS = { categoryId: "", status: "" };
+
 export default function ProductsPage() {
   const confirm = useConfirm();
   const toast = useToast();
@@ -73,7 +82,7 @@ export default function ProductsPage() {
   const canEdit = canManageProducts(rolesOf(user));
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const filters = useDeferredFilters(EMPTY_LIST_FILTERS);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductFormValues>(EMPTY_FORM);
@@ -86,14 +95,15 @@ export default function ProductsPage() {
     async (pageNum: number) => {
       const result = await getProducts({
         search: search || undefined,
-        categoryId: categoryFilter || undefined,
+        categoryId: filters.applied.categoryId || undefined,
+        status: filters.applied.status || undefined,
         page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
       });
       if (pageNum === 1) setOrderDrafts({});
       return result;
     },
-    [search, categoryFilter]
+    [search, filters.applied.categoryId, filters.applied.status]
   );
 
   const onError = useCallback(
@@ -350,13 +360,33 @@ export default function ProductsPage() {
           <CardTitle>Danh sách</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="flex gap-2">
             <SearchInput
               placeholder="Tìm theo tên sản phẩm..."
               value={search}
               onSearch={setSearch}
+              className="flex-1"
             />
-            <SearchableSelect
+            <FilterTrigger
+              open={filters.open}
+              activeCount={filters.appliedCount}
+              onClick={() => filters.setOpen(true)}
+            />
+          </div>
+          <FilterDrawer
+            open={filters.open}
+            onOpenChange={filters.setOpen}
+            title="Bộ lọc sản phẩm"
+            onClear={filters.clearDraft}
+            onApply={filters.apply}
+            draftCount={filters.draftCount}
+          >
+            <FilterOptionList
+              label="Loại sản phẩm"
+              value={filters.draft.categoryId}
+              onChange={(value) => filters.setDraftValue("categoryId", value)}
+              searchable
+              searchPlaceholder="Tìm loại..."
               options={[
                 { value: "", label: "Tất cả loại" },
                 ...categories.map((category) => ({
@@ -364,16 +394,20 @@ export default function ProductsPage() {
                   label: category.name,
                 })),
               ]}
-              value={categoryFilter}
-              onChange={setCategoryFilter}
-              placeholder="Tất cả loại"
-              searchPlaceholder="Tìm loại sản phẩm..."
-              clearable
             />
-          </div>
+            <FilterOptionList
+              label="Trạng thái"
+              value={filters.draft.status}
+              onChange={(value) => filters.setDraftValue("status", value)}
+              options={[
+                { value: "", label: "Tất cả trạng thái" },
+                ...STATUS_OPTIONS.product,
+              ]}
+            />
+          </FilterDrawer>
 
           {items.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-inverse)]">Chưa có sản phẩm</p>
+            <EmptyState title="Chưa có sản phẩm" />
           ) : (
             <div className="space-y-4">
               <MobileInfiniteList
@@ -407,27 +441,9 @@ export default function ProductsPage() {
                       title={item.name}
                       subtitle={item.categoryName || "Chưa phân loại"}
                       badge={
-                        canEdit ? (
-                          <div className="w-[120px]">
-                            <SearchableSelect
-                              options={STATUS_OPTIONS.product}
-                              value={item.status}
-                              onChange={(value) =>
-                                void handleQuickStatus(
-                                  item,
-                                  value as Product["status"]
-                                )
-                              }
-                              searchable={false}
-                              disabled={actionId === `status:${item.id}`}
-                              triggerClassName="h-8 text-xs"
-                            />
-                          </div>
-                        ) : (
-                          <Badge variant={statusBadgeVariant(item.status)}>
-                            {item.status === "active" ? "Đang bán" : "Ngưng"}
-                          </Badge>
-                        )
+                        <Badge variant={statusBadgeVariant(item.status)}>
+                          {item.status === "active" ? "Đang bán" : "Ngưng"}
+                        </Badge>
                       }
                       meta={
                         <>
@@ -460,14 +476,46 @@ export default function ProductsPage() {
                               aria-label={`Thứ tự hiển thị ${item.name}`}
                             />
                           </div>
-                          <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                          <SearchableSelect
+                            options={STATUS_OPTIONS.product}
+                            value={item.status}
+                            onChange={(value) =>
+                              void handleQuickStatus(
+                                item,
+                                value as Product["status"]
+                              )
+                            }
+                            searchable={false}
+                            placeholder="Đổi trạng thái"
+                            disabled={actionId === `status:${item.id}`}
+                            trigger={
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-9 min-w-9"
+                                title="Đổi trạng thái"
+                                loading={actionId === `status:${item.id}`}
+                              >
+                                <RefreshCw className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 min-w-9"
+                            onClick={() => openEdit(item)}
+                            title="Sửa"
+                          >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="danger"
                             size="sm"
+                            className="h-9 min-w-9"
                             loading={actionId === item.id}
                             onClick={() => handleDelete(item)}
+                            title="Xóa"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { TabSwitcher } from "@/components/ui/tab-switcher";
 import { OrderLineItemsList } from "@/components/orders/OrderLineItemsList";
 import { ApiClientError } from "@/lib/api/client";
@@ -183,9 +184,7 @@ function OrderAuditTimeline({
   }
 
   if (audits.length === 0) {
-    return (
-      <p className="text-sm text-[var(--color-text-inverse)]">{emptyMessage}</p>
-    );
+    return <EmptyState title={emptyMessage} size="sm" />;
   }
 
   return (

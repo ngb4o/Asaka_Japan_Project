@@ -225,6 +225,11 @@
     color: #fff;
   }
 
+  .dark .crm-data-table thead tr {
+    background: #14532d;
+    color: #ecfdf5;
+  }
+
   .crm-data-table th,
   .crm-data-table td {
     border: 1px solid var(--color-border-subtle);
@@ -236,6 +241,11 @@
     font-weight: 600;
     color: #fff;
     border-color: color-mix(in srgb, var(--color-text-secondary) 75%, #000);
+  }
+
+  .dark .crm-data-table th {
+    color: #ecfdf5;
+    border-color: #166534;
   }
 
   .crm-data-table tbody tr {
@@ -311,6 +321,31 @@
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
   }
+}
+
+@keyframes chat-typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.crm-chat-typing-dot {
+  animation: chat-typing-dot 1.05s ease-in-out infinite;
+}
+
+.crm-chat-typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.crm-chat-typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
 }
 
 @keyframes workspace-load {

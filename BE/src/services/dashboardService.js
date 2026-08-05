@@ -504,8 +504,11 @@ const getSummary = async () => {
       monthPaid: monthKpis.paidAmount,
       monthDebt: monthKpis.debt,
       monthOrders: monthKpis.orderCount,
+      monthCostTotal: monthKpis.costTotal,
+      monthGrossProfit: monthKpis.grossProfit,
       revenueChangePercent: monthKpis.revenueChangePercent,
-      orderChangePercent: monthKpis.orderChangePercent
+      orderChangePercent: monthKpis.orderChangePercent,
+      grossProfitChangePercent: monthKpis.grossProfitChangePercent
     },
     revenueSeries,
     statusBreakdown,

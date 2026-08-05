@@ -31,8 +31,16 @@ import {
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import {
+  FilterDrawer,
+  FilterOptionList,
+  FilterTrigger,
+} from "@/components/ui/filter-drawer";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { ImageUpload } from "@/components/products/ImageUpload";
+import { LocationCapture, type GeoLocationValue } from "@/components/trips/LocationCapture";
+import dynamic from "next/dynamic";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canManageTripsFinance, canOperateTrip, canViewProfit, rolesOf } from "@/lib/auth/permissions";
@@ -57,9 +65,21 @@ import type { Dealer, Employee, Order, Trip } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
+import { useCrmDataRefresh } from "@/lib/hooks/useCrmDataRefresh";
 import { formatCurrency, formatDateDisplay, toDateValue, cn } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
+
+const TripMap = dynamic(
+  () => import("@/components/trips/TripMap").then((mod) => mod.TripMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 animate-pulse rounded-xl bg-[var(--color-surface-muted)] sm:h-80" />
+    ),
+  }
+);
 
 const TRIP_STATUS_LABEL: Record<Trip["status"], string> = {
   draft: "Nháp",
@@ -111,6 +131,8 @@ function tripReceiptUrls(item: {
   return item.receiptUrl ? [item.receiptUrl] : [];
 }
 
+const EMPTY_LIST_FILTERS = { status: "" };
+
 export default function TripsPage() {
   const confirm = useConfirm();
   const toast = useToast();
@@ -123,6 +145,7 @@ export default function TripsPage() {
   const [tripOrders, setTripOrders] = useState<Order[]>([]);
   const [loadingTripOrders, setLoadingTripOrders] = useState(false);
   const [search, setSearch] = useState("");
+  const filters = useDeferredFilters(EMPTY_LIST_FILTERS);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -150,6 +173,7 @@ export default function TripsPage() {
     location: "",
     purpose: "delivery",
     note: "",
+    geo: null as GeoLocationValue | null,
   });
   const [advanceAmount, setAdvanceAmount] = useState<number | "">("");
   const [advanceNote, setAdvanceNote] = useState("");
@@ -163,17 +187,20 @@ export default function TripsPage() {
     paidByEmployeeId: "",
     receiptUrls: [] as string[],
     note: "",
+    geo: null as GeoLocationValue | null,
   });
 
   const fetchPage = useCallback(
     (pageNum: number) =>
       getTrips({
         search: search || undefined,
+        status: filters.applied.status || undefined,
         page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
       }),
-    [search]
+    [search, filters.applied.status]
   );
+
 
   const onError = useCallback(
     (err: unknown) => {
@@ -195,6 +222,18 @@ export default function TripsPage() {
     loadMore,
     goToPage,
   } = useMobilePagedList<Trip>({ fetchPage, onError });
+
+  useCrmDataRefresh(["trips"], async () => {
+    await refresh();
+    if (selected) {
+      try {
+        const updated = await getTrip(selected.id);
+        setSelected(updated);
+      } catch {
+        /* ignore */
+      }
+    }
+  });
 
   const loadAuxData = useCallback(async () => {
     try {
@@ -287,6 +326,7 @@ export default function TripsPage() {
       location: "",
       purpose: "delivery",
       note: "",
+      geo: null,
     });
   }
 
@@ -425,8 +465,25 @@ export default function TripsPage() {
         location: stopForm.location,
         purpose: stopForm.purpose as Trip["stops"][number]["purpose"],
         note: stopForm.note,
+        ...(stopForm.geo
+          ? {
+              lat: stopForm.geo.lat,
+              lng: stopForm.geo.lng,
+              accuracy: stopForm.geo.accuracy ?? null,
+              locationCapturedAt: stopForm.geo.locationCapturedAt,
+              locationSource: stopForm.geo.locationSource || "gps",
+            }
+          : {}),
       });
       toast.success("Đã thêm điểm dừng");
+      setStopForm({
+        date: "",
+        dealerId: "",
+        location: "",
+        purpose: "delivery",
+        note: "",
+        geo: null,
+      });
       await refreshSelected(selected.id);
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Thêm điểm dừng thất bại");
@@ -493,6 +550,15 @@ export default function TripsPage() {
           : undefined,
         receiptUrl: expenseForm.receiptUrls[0] || undefined,
         note: expenseForm.note,
+        ...(expenseForm.geo
+          ? {
+              lat: expenseForm.geo.lat,
+              lng: expenseForm.geo.lng,
+              accuracy: expenseForm.geo.accuracy ?? null,
+              locationCapturedAt: expenseForm.geo.locationCapturedAt,
+              locationSource: expenseForm.geo.locationSource || "gps",
+            }
+          : {}),
       });
       toast.success("Đã thêm khoản chi");
       setExpenseForm({
@@ -503,6 +569,7 @@ export default function TripsPage() {
         paidByEmployeeId: "",
         receiptUrls: [],
         note: "",
+        geo: null,
       });
       await refreshSelected(selected.id);
     } catch (err) {
@@ -579,13 +646,42 @@ export default function TripsPage() {
           <CardTitle>Danh sách chuyến</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <SearchInput
-            placeholder="Tìm mã / tiêu đề / khu vực..."
-            value={search}
-            onSearch={setSearch}
+          <div className="flex gap-2">
+            <SearchInput
+              placeholder="Tìm mã / tiêu đề / khu vực..."
+              value={search}
+              onSearch={setSearch}
+              className="flex-1"
             />
+            <FilterTrigger
+              open={filters.open}
+              activeCount={filters.appliedCount}
+              onClick={() => filters.setOpen(true)}
+            />
+          </div>
+          <FilterDrawer
+            open={filters.open}
+            onOpenChange={filters.setOpen}
+            title="Bộ lọc chuyến"
+            onClear={filters.clearDraft}
+            onApply={filters.apply}
+            draftCount={filters.draftCount}
+          >
+            <FilterOptionList
+              label="Trạng thái"
+              value={filters.draft.status}
+              onChange={(value) => filters.setDraftValue("status", value)}
+              options={[
+                { value: "", label: "Tất cả trạng thái" },
+                ...Object.entries(TRIP_STATUS_LABEL).map(([value, label]) => ({
+                  value,
+                  label,
+                })),
+              ]}
+            />
+          </FilterDrawer>
           {items.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-inverse)]">Chưa có chuyến công tác</p>
+            <EmptyState title="Chưa có chuyến công tác" />
           ) : (
             <>
               <MobileInfiniteList
@@ -961,7 +1057,7 @@ export default function TripsPage() {
               <section className="mt-6 space-y-3 md:mt-0">
                 <h4 className="font-semibold">Đơn hàng ({selected.orders.length})</h4>
                 {selected.orders.length === 0 ? (
-                  <p className="text-sm text-[var(--color-text-inverse)]">Chưa gắn đơn</p>
+                  <EmptyState title="Chưa gắn đơn" size="sm" />
                 ) : (
                   <div className="space-y-2">
                     {selected.orders.map((order) => (
@@ -1006,6 +1102,11 @@ export default function TripsPage() {
               </section>
 
               <section className="mt-6 space-y-3 md:mt-0">
+                <h4 className="font-semibold">Bản đồ chuyến</h4>
+                <TripMap stops={selected.stops} expenses={selected.expenses} />
+              </section>
+
+              <section className="mt-6 space-y-3 md:mt-0">
                 <h4 className="font-semibold">Lịch trình / điểm dừng</h4>
                 {selected.stops.map((stop) => (
                   <div
@@ -1020,6 +1121,11 @@ export default function TripsPage() {
                         {stop.dealerName || stop.location || "—"}
                       </p>
                       {stop.note ? <p className="mt-1 text-xs">{stop.note}</p> : null}
+                      {typeof stop.lat === "number" && typeof stop.lng === "number" ? (
+                        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                          GPS: {stop.lat.toFixed(5)}, {stop.lng.toFixed(5)}
+                        </p>
+                      ) : null}
                     </div>
                     {canOperateSelected && selected.status !== "closed" ? (
                       <Button
@@ -1070,6 +1176,12 @@ export default function TripsPage() {
                       value={stopForm.note}
                       onChange={(e) => setStopForm({ ...stopForm, note: e.target.value })}
                     />
+                    <div className="sm:col-span-2">
+                      <LocationCapture
+                        value={stopForm.geo}
+                        onChange={(geo) => setStopForm({ ...stopForm, geo })}
+                      />
+                    </div>
                     <Button type="submit" loading={isSubmitting("stop")} className="sm:col-span-2">
                       Thêm điểm dừng
                     </Button>
@@ -1202,8 +1314,14 @@ export default function TripsPage() {
                                 : null,
                             ]
                               .filter(Boolean)
-                              .join(" - ")}
+                              .join(" · ")}
                           </p>
+                          {typeof item.lat === "number" &&
+                          typeof item.lng === "number" ? (
+                            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                              GPS: {item.lat.toFixed(5)}, {item.lng.toFixed(5)}
+                            </p>
+                          ) : null}
                         </div>
                         <Badge
                           variant={
@@ -1369,6 +1487,12 @@ export default function TripsPage() {
                         }
                         upload={uploadTripReceipt}
                         max={5}
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <LocationCapture
+                        value={expenseForm.geo}
+                        onChange={(geo) => setExpenseForm({ ...expenseForm, geo })}
                       />
                     </div>
                     <Button

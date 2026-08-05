@@ -81,6 +81,11 @@ type TripExpenseInput = Partial<
     | "receiptUrl"
     | "receiptUrls"
     | "note"
+    | "lat"
+    | "lng"
+    | "accuracy"
+    | "locationCapturedAt"
+    | "locationSource"
   >
 >;
 
