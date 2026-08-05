@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader } from "@googlemaps/js-api-loader";
+import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { ExternalLink } from "@/components/ui/icons";
@@ -239,13 +239,12 @@ function GoogleTripMap({
     let directionsRenderer: google.maps.DirectionsRenderer | null = null;
     let infoWindow: google.maps.InfoWindow | null = null;
 
-    const loader = new Loader({
-      apiKey: GOOGLE_MAPS_API_KEY,
-      version: "weekly",
+    setOptions({
+      key: GOOGLE_MAPS_API_KEY,
+      v: "weekly",
     });
 
-    void loader
-      .importLibrary("maps")
+    void Promise.all([importLibrary("maps"), importLibrary("routes")])
       .then(async () => {
         if (cancelled || !containerRef.current) return;
 
