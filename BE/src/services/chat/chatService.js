@@ -16,9 +16,10 @@ import {
 } from '~/services/chat/pendingActions'
 
 const MAX_TOOL_ROUNDS = 4
-const MAX_HISTORY = 8
-const MAX_MSG_CHARS = 1500
+const MAX_HISTORY = 24
+const MAX_MSG_CHARS = 2000
 const MAX_TOOL_RESULT_CHARS = 3500
+const MAX_DIGEST_CHARS = 1200
 const RATE_WINDOW_MS = 60 * 1000
 const RATE_MAX = 30
 const rateMap = new Map()
@@ -62,6 +63,72 @@ const compactToolPayload = (payload) => {
   return `${text.slice(0, MAX_TOOL_RESULT_CHARS)}…[truncated]`
 }
 
+const pickEntityLine = (item) => {
+  if (!item || typeof item !== 'object') return null
+  const id = item._id || item.id
+  const code = item.code || item.orderCode || item.tripCode
+  const name =
+    item.name ||
+    item.dealerName ||
+    item.productName ||
+    item.title ||
+    item.fullName ||
+    item.employeeName
+  const parts = []
+  if (code) parts.push(String(code))
+  if (name) parts.push(String(name))
+  if (id) parts.push(`id=${String(id)}`)
+  if (!parts.length) return null
+  return parts.join(' · ')
+}
+
+/**
+ * Compact refs from tool data so follow-up turns keep IDs/codes
+ * (client stores this and re-sends as historyExtra).
+ */
+const buildContextDigest = (toolName, data) => {
+  if (!data || typeof data !== 'object') return null
+  const lines = []
+
+  const pushItem = (item, idx) => {
+    const line = pickEntityLine(item)
+    if (line) lines.push(`${idx + 1}. ${line}`)
+  }
+
+  if (Array.isArray(data.items) && data.items.length) {
+    data.items.slice(0, 8).forEach(pushItem)
+  } else if (data.item) {
+    pushItem(data.item, 0)
+  } else if (data.order || data.trip || data.dealer || data.lead || data.product) {
+    const entity =
+      data.order || data.trip || data.dealer || data.lead || data.product
+    pushItem(entity, 0)
+  } else {
+    const line = pickEntityLine(data)
+    if (line) lines.push(line)
+  }
+
+  if (data.topItem) {
+    const line = pickEntityLine(data.topItem)
+    if (line) lines.push(`top: ${line}`)
+  }
+  if (data.topTrip) {
+    const line = pickEntityLine(data.topTrip)
+    if (line) lines.push(`topTrip: ${line}`)
+  }
+  if (data.topDebtor) {
+    const line = pickEntityLine(data.topDebtor)
+    if (line) lines.push(`topDebtor: ${line}`)
+  }
+
+  if (!lines.length) return null
+  const body = lines.join('\n')
+  const text = `[Ngữ cảnh ${toolName}]\n${body}`
+  return text.length > MAX_DIGEST_CHARS
+    ? `${text.slice(0, MAX_DIGEST_CHARS)}…`
+    : text
+}
+
 const streamTokens = (res, text) => {
   if (!text) return
   const chunkSize = 48
@@ -69,6 +136,67 @@ const streamTokens = (res, text) => {
     sseWrite(res, 'token', { text: text.slice(i, i + chunkSize) })
   }
 }
+
+/**
+ * Some Groq/Llama models leak tool calls as plain text instead of
+ * native tool_calls, e.g. <function=query_crm>{...}</function>
+ */
+const parseTextToolCalls = (content) => {
+  const text = String(content || '')
+  if (!text.includes('<function') && !text.includes('tool_call')) {
+    return []
+  }
+
+  const calls = []
+  const patterns = [
+    /<function\s*=\s*([a-zA-Z0-9_]+)>\s*([\s\S]*?)\s*<\/function>/gi,
+    /<function\s*=\s*([a-zA-Z0-9_]+)\{([\s\S]*?)\}\s*(?:<\/function>)?/gi,
+    /<tool_call>\s*(?:name[=:]\s*)?([a-zA-Z0-9_]+)\s*([\s\S]*?)<\/tool_call>/gi
+  ]
+
+  for (const pattern of patterns) {
+    pattern.lastIndex = 0
+    let match = pattern.exec(text)
+    while (match) {
+      const name = String(match[1] || '').trim()
+      let argsRaw = String(match[2] || '').trim()
+      if (!name) {
+        match = pattern.exec(text)
+        continue
+      }
+      if (!argsRaw) argsRaw = '{}'
+      if (!argsRaw.startsWith('{') && !argsRaw.startsWith('[')) {
+        const jsonMatch = argsRaw.match(/\{[\s\S]*\}|\[[\s\S]*\]/)
+        argsRaw = jsonMatch ? jsonMatch[0] : '{}'
+      }
+      try {
+        JSON.parse(argsRaw)
+      } catch {
+        argsRaw = '{}'
+      }
+      calls.push({
+        id: `call_text_${Date.now()}_${calls.length}`,
+        type: 'function',
+        function: { name, arguments: argsRaw }
+      })
+      match = pattern.exec(text)
+    }
+    if (calls.length) break
+  }
+
+  return calls
+}
+
+const stripToolMarkup = (content) =>
+  String(content || '')
+    .replace(/<function\s*=\s*[a-zA-Z0-9_]+>[\s\S]*?<\/function>/gi, '')
+    .replace(/<function\s*=\s*[a-zA-Z0-9_]+\{[\s\S]*?\}\s*(?:<\/function>)?/gi, '')
+    .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+const looksLikeLeakedToolCall = (content) =>
+  /<function\s*=|<tool_call>/i.test(String(content || ''))
 
 /**
  * Stream a chat turn over SSE (Groq / OpenAI-compatible).
@@ -93,6 +221,7 @@ const streamMessage = async ({ res, userId, roles, messages, clientMessage }) =>
 
   let pendingEmitted = null
   let assistantText = ''
+  const digestParts = []
 
   try {
     const createCompletion = (messages, { withTools = true } = {}) =>
@@ -115,25 +244,10 @@ const streamMessage = async ({ res, userId, roles, messages, clientMessage }) =>
         }
       )
 
-    for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
-      sseWrite(res, 'status', { phase: 'thinking', round })
-
-      const completion = await createCompletion(openaiMessages, { withTools: true })
-
-      const message = completion.choices?.[0]?.message
-      if (!message) break
-
-      const toolCalls = message.tool_calls || []
-
-      if (!toolCalls.length) {
-        assistantText = message.content || ''
-        streamTokens(res, assistantText)
-        break
-      }
-
+    const runToolCalls = async (toolCalls) => {
       openaiMessages.push({
         role: 'assistant',
-        content: message.content || null,
+        content: null,
         tool_calls: toolCalls
       })
 
@@ -189,6 +303,10 @@ const streamMessage = async ({ res, userId, roles, messages, clientMessage }) =>
             ok: result.ok,
             error: result.error || null
           })
+          if (result.ok && result.data) {
+            const digest = buildContextDigest(name, result.data)
+            if (digest) digestParts.push(digest)
+          }
           openaiMessages.push({
             role: 'tool',
             tool_call_id: call.id,
@@ -198,10 +316,58 @@ const streamMessage = async ({ res, userId, roles, messages, clientMessage }) =>
           })
         }
       }
+    }
+
+    const finalizeAssistantText = async (rawText) => {
+      let text = stripToolMarkup(rawText || '')
+      // Model still tried to emit tools as text after wrap-up — ask once more
+      if (!text && looksLikeLeakedToolCall(rawText)) {
+        openaiMessages.push({
+          role: 'system',
+          content:
+            'Không được in thẻ <function=...>. Chỉ trả lời tiếng Việt dựa trên kết quả tool đã có.'
+        })
+        const retry = await createCompletion(openaiMessages, { withTools: false })
+        text = stripToolMarkup(retry.choices?.[0]?.message?.content || '')
+      }
+      return text
+    }
+
+    for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
+      sseWrite(res, 'status', { phase: 'thinking', round })
+
+      const completion = await createCompletion(openaiMessages, { withTools: true })
+
+      const message = completion.choices?.[0]?.message
+      if (!message) break
+
+      let toolCalls = message.tool_calls || []
+      if (!toolCalls.length) {
+        const parsed = parseTextToolCalls(message.content)
+        if (parsed.length) {
+          // eslint-disable-next-line no-console
+          console.info('[chat-text-tool-calls]', {
+            userId,
+            count: parsed.length,
+            names: parsed.map((c) => c.function?.name)
+          })
+          toolCalls = parsed
+        }
+      }
+
+      if (!toolCalls.length) {
+        assistantText = await finalizeAssistantText(message.content || '')
+        streamTokens(res, assistantText)
+        break
+      }
+
+      await runToolCalls(toolCalls)
 
       if (pendingEmitted) {
         const wrapUp = await createCompletion(openaiMessages, { withTools: false })
-        assistantText = wrapUp.choices?.[0]?.message?.content || ''
+        assistantText = await finalizeAssistantText(
+          wrapUp.choices?.[0]?.message?.content || ''
+        )
         streamTokens(res, assistantText)
         break
       }
@@ -210,7 +376,9 @@ const streamMessage = async ({ res, userId, roles, messages, clientMessage }) =>
     if (!assistantText && !pendingEmitted) {
       // Last round ended on tools without final text — ask once more without tools
       const wrapUp = await createCompletion(openaiMessages, { withTools: false })
-      assistantText = wrapUp.choices?.[0]?.message?.content || ''
+      assistantText = await finalizeAssistantText(
+        wrapUp.choices?.[0]?.message?.content || ''
+      )
       streamTokens(res, assistantText)
     }
   } catch (err) {
@@ -218,9 +386,24 @@ const streamMessage = async ({ res, userId, roles, messages, clientMessage }) =>
     throw mapGroqError(err)
   }
 
+  // Never leak raw function markup to the client
+  assistantText = stripToolMarkup(assistantText)
+  if (!assistantText && !pendingEmitted) {
+    assistantText =
+      'Xin lỗi, mình chưa lấy được dữ liệu. Bạn thử hỏi lại cụ thể hơn nhé.'
+  }
+
+  let contextDigest = digestParts.length
+    ? digestParts.join('\n')
+    : null
+  if (contextDigest && contextDigest.length > MAX_DIGEST_CHARS) {
+    contextDigest = `${contextDigest.slice(0, MAX_DIGEST_CHARS)}…`
+  }
+
   sseWrite(res, 'done', {
     content: assistantText,
-    pending: pendingEmitted
+    pending: pendingEmitted,
+    contextDigest
   })
 }
 

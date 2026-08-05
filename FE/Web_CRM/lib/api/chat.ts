@@ -36,6 +36,7 @@ export type ChatStreamHandlers = {
   onDone?: (data: {
     content: string;
     pending: PendingConfirmation | null;
+    contextDigest?: string | null;
   }) => void;
   onError?: (message: string) => void;
 };
@@ -139,7 +140,11 @@ export async function streamChatMessage(
           break;
         case "done":
           handlers.onDone?.(
-            data as { content: string; pending: PendingConfirmation | null }
+            data as {
+              content: string;
+              pending: PendingConfirmation | null;
+              contextDigest?: string | null;
+            }
           );
           break;
         case "error":

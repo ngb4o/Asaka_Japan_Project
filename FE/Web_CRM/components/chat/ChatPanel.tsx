@@ -27,6 +27,8 @@ type UiMessage = {
   content: string;
   pending?: PendingConfirmation | null;
   toolHint?: string | null;
+  /** IDs/mã từ tool — chỉ gửi lại API, không hiện UI */
+  contextDigest?: string | null;
 };
 
 type ChatPanelProps = {
@@ -238,23 +240,39 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
   const [streaming, setStreaming] = useState(false);
   const [pendingBusy, setPendingBusy] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const messagesRef = useRef<UiMessage[]>([]);
+  messagesRef.current = messages;
 
   const historyForApi = (): ChatHistoryMessage[] =>
-    messages
+    messagesRef.current
       .filter(
         (m) =>
           m.role === "user" || m.role === "assistant" || m.role === "system"
       )
-      .filter((m) => m.content.trim())
-      .map((m) => ({
-        // system = kết quả Xác nhận/Hủy — gửi như assistant để model biết đã xong
-        role: (m.role === "user" ? "user" : "assistant") as "user" | "assistant",
-        content: m.content,
-      }));
+      .filter((m) => m.content.trim() || m.contextDigest?.trim())
+      .map((m) => {
+        const digest = m.contextDigest?.trim();
+        const body = m.content.trim();
+        const content =
+          digest && m.role !== "user"
+            ? body
+              ? `${body}\n\n${digest}`
+              : digest
+            : body;
+        return {
+          // system = kết quả Xác nhận/Hủy — gửi như assistant để model biết đã xong
+          role: (m.role === "user" ? "user" : "assistant") as
+            | "user"
+            | "assistant",
+          content,
+        };
+      });
 
   const send = async () => {
     const text = input.trim();
     if (!text || streaming) return;
+
+    const priorHistory = historyForApi();
 
     setInput("");
     const userMsg: UiMessage = { id: uid(), role: "user", content: text };
@@ -275,7 +293,7 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
 
     try {
       await streamChatMessage(
-        { messages: historyForApi(), message: text },
+        { messages: priorHistory, message: text },
         {
           onToken: (chunk) => {
             assembled += chunk;
@@ -301,6 +319,7 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
                           ? "Đã chuẩn bị thao tác — vui lòng xác nhận bên dưới."
                           : "…"),
                       pending: data.pending || pending,
+                      contextDigest: data.contextDigest || null,
                     }
                   : m
               )

@@ -1,6 +1,7 @@
 export {
   AlertTriangle,
   Bell,
+  Bot,
   BriefcaseBusiness,
   ChartColumn,
   Check,

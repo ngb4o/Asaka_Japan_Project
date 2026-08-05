@@ -177,12 +177,15 @@ const BellButton = forwardRef<
   }
 >(function BellButton({ unreadCount, onClick }, ref) {
   return (
-    <button
+    <Button
       ref={ref}
       type="button"
+      variant="outline"
+      size="sm"
       aria-label="Thông báo"
+      title="Thông báo"
       onClick={onClick}
-      className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]"
+      className="relative h-10 w-10 px-0"
     >
       <Bell className="h-5 w-5" />
       {unreadCount > 0 ? (
@@ -190,7 +193,7 @@ const BellButton = forwardRef<
           {unreadCount > 99 ? "99+" : unreadCount}
         </span>
       ) : null}
-    </button>
+    </Button>
   );
 });
 BellButton.displayName = "BellButton";

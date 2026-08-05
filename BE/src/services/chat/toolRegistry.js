@@ -72,6 +72,33 @@ const resolveOrder = async (orderIdOrCode) => {
   return orderService.getDetails(byCode._id.toString())
 }
 
+/** Resolve trip by Mongo id or business code. */
+const resolveTrip = async (tripIdOrCode, userCtx) => {
+  const raw = String(tripIdOrCode || '').trim()
+  if (!raw) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Thiếu mã/id chuyến.')
+  }
+  if (ObjectId.isValid(raw) && String(new ObjectId(raw)) === raw) {
+    try {
+      return await tripService.getDetails(raw, userCtx.userId, userCtx.roles)
+    } catch (err) {
+      if (err?.statusCode !== StatusCodes.NOT_FOUND) throw err
+    }
+  }
+  const byCode = await tripModel.findOneByCode(raw)
+  if (!byCode) {
+    throw new ApiError(
+      StatusCodes.NOT_FOUND,
+      `Không tìm thấy chuyến "${raw}".`
+    )
+  }
+  return tripService.getDetails(
+    byCode._id.toString(),
+    userCtx.userId,
+    userCtx.roles
+  )
+}
+
 const truncateList = (result, limit = 20) => {
   if (!result || typeof result !== 'object') return result
   if (Array.isArray(result.items)) {
@@ -554,14 +581,19 @@ export const CHAT_TOOLS = [
     name: 'get_trip',
     kind: 'read',
     requiredRoles: ALL_STAFF,
-    description: 'Chi tiết chuyến theo id (điểm dừng, chi phí, đơn gắn).',
+    description:
+      'Chi tiết chuyến theo id Mongo hoặc mã chuyến (điểm dừng, chi phí, đơn gắn).',
     parameters: {
       type: 'object',
-      properties: { tripId: { type: 'string' } },
+      properties: {
+        tripId: {
+          type: 'string',
+          description: 'Mongo _id hoặc mã chuyến (code)'
+        }
+      },
       required: ['tripId']
     },
-    execute: async (args, userCtx) =>
-      tripService.getDetails(args.tripId, userCtx.userId, userCtx.roles)
+    execute: async (args, userCtx) => resolveTrip(args.tripId, userCtx)
   },
   {
     name: 'get_inventory_stocks',
@@ -1104,17 +1136,14 @@ export const CHAT_TOOLS = [
       required: ['tripId', 'amount', 'category']
     },
     prepareWrite: async (args, userCtx) => {
-      const trip = await tripService.getDetails(
-        args.tripId,
-        userCtx.userId,
-        userCtx.roles
-      )
+      const trip = await resolveTrip(args.tripId, userCtx)
       const amount = Number(args.amount)
+      const tripId = trip._id?.toString?.() || trip.id || args.tripId
       return {
-        preview: `Thêm chi ${amount.toLocaleString('vi-VN')} ₫ (${args.category}) vào chuyến ${trip.code || args.tripId}`,
+        preview: `Thêm chi ${amount.toLocaleString('vi-VN')} ₫ (${args.category}) vào chuyến ${trip.code || tripId}`,
         execute: async () =>
           tripService.addExpense(
-            args.tripId,
+            tripId,
             {
               amount,
               category: args.category,

@@ -87,6 +87,15 @@ const findOneById = async (id) => {
   })
 }
 
+const findOneByCode = async (code) => {
+  const raw = String(code || '').trim()
+  if (!raw) return null
+  return await GET_DB().collection(TRIP_COLLECTION_NAME).findOne({
+    code: raw,
+    _destroy: false
+  })
+}
+
 const findMany = async (query = {}, options = {}) => {
   const { limit = 50, skip = 0, sort = { startDate: -1 } } = options
   const findQuery = { _destroy: false, ...query }
@@ -144,6 +153,7 @@ export const tripModel = {
   STOP_PURPOSE,
   createNew,
   findOneById,
+  findOneByCode,
   findMany,
   update,
   deleteOne
