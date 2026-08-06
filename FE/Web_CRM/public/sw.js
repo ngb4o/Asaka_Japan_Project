@@ -47,6 +47,10 @@ function parsePushData(event) {
 
 self.addEventListener("push", (event) => {
   const data = parsePushData(event);
+  const baseTag = String(data.tag || "asaka-crm").slice(0, 48);
+  // Unique tag mỗi lần gửi: tránh OS thay tin cũ cùng tag mà không bật banner
+  // (sau thời gian dài còn tin cũ trong khay → tin mới “không hiện”).
+  const tag = `${baseTag}-${Date.now()}`;
 
   // iOS requires EVERY push to show a visible notification or it may revoke permission
   event.waitUntil(
@@ -55,13 +59,16 @@ self.addEventListener("push", (event) => {
         body: String(data.body || "Có cập nhật mới").slice(0, 240),
         icon: assetUrl(data.icon || "/icons/icon-192.png"),
         badge: assetUrl(data.badge || "/icons/icon-192.png"),
-        tag: data.tag || "asaka-crm",
+        tag,
+        renotify: true,
         data: { url: data.url || "/dashboard" },
       })
       .catch(function (err) {
         console.error("[sw] showNotification failed", err);
         return self.registration.showNotification("ASAKA CRM", {
           body: "Có cập nhật mới",
+          tag: `asaka-crm-${Date.now()}`,
+          renotify: true,
           data: { url: "/dashboard" },
         });
       })
