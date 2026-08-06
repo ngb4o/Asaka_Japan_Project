@@ -56,8 +56,7 @@ export function ToastCard({ toast, onDismiss }: ToastCardProps) {
         "pointer-events-auto relative flex w-full max-w-sm gap-3 overflow-hidden rounded-xl border border-[var(--color-border-subtle)] border-l-4 bg-[var(--color-surface-elevated)] p-3.5 shadow-[var(--shadow-elevated)]",
         "animate-[toast-in_0.28s_cubic-bezier(0.16,1,0.3,1)_both]",
         config.accent
-      )}
-    >
+      )}>
       <Icon className={cn("mt-0.5 h-5 w-5 shrink-0", config.iconClass)} />
       <div className="min-w-0 flex-1 pr-6">
         <p className="text-sm font-semibold text-[var(--color-text-primary)]">
@@ -73,8 +72,7 @@ export function ToastCard({ toast, onDismiss }: ToastCardProps) {
         type="button"
         aria-label="Đóng thông báo"
         onClick={() => onDismiss(toast.id)}
-        className="absolute right-2.5 top-2.5 rounded-md p-1 text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-      >
+        className="absolute right-2.5 top-2.5 rounded-md p-1 text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]">
         <X className="h-3.5 w-3.5" />
       </button>
     </div>
@@ -92,8 +90,7 @@ export function ToastViewport({ toasts, onDismiss }: ToastViewportProps) {
   return (
     <div
       className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[400] mx-auto flex w-auto max-w-sm flex-col-reverse gap-2.5 sm:inset-x-auto sm:right-4 sm:mx-0 sm:w-[min(100vw-2rem,24rem)]"
-      aria-label="Thông báo"
-    >
+      aria-label="Thông báo">
       {toasts.map((toast) => (
         <ToastCard key={toast.id} toast={toast} onDismiss={onDismiss} />
       ))}

@@ -67,8 +67,7 @@ export function MobileStatTile({
       className={cn(
         "rounded-xl bg-[var(--color-surface-muted)] px-3 py-2",
         className
-      )}
-    >
+      )}>
       <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
         {label}
       </p>
@@ -76,8 +75,7 @@ export function MobileStatTile({
         className={cn(
           "mt-1 text-base font-semibold tabular-nums text-[var(--color-text-primary)]",
           valueClassName
-        )}
-      >
+        )}>
         {children}
       </p>
     </div>
@@ -113,15 +111,13 @@ export function MobileMediaCard({
       className={cn(
         "rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-soft)]",
         className
-      )}
-    >
+      )}>
       <div className="flex gap-3">
         <div
           className={cn(
             "relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]",
             mediaClassName
-          )}
-        >
+          )}>
           {media}
         </div>
         <div className="min-w-0 flex-1">
@@ -169,8 +165,7 @@ export function MobileMetaChip({
       className={cn(
         "inline-flex max-w-full truncate rounded-md bg-[var(--color-surface-muted)] px-2.5 py-1 text-[13px] font-medium leading-none text-[var(--color-text-primary)]",
         className
-      )}
-    >
+      )}>
       {children}
     </span>
   );
@@ -188,8 +183,7 @@ export function MobileRecordRow({ label, children, className }: MobileRecordRowP
       className={cn(
         "grid gap-1 py-2.5 sm:grid-cols-[7rem_1fr] sm:items-center sm:gap-3",
         className
-      )}
-    >
+      )}>
       <span className="text-xs font-medium text-[var(--color-text-inverse)]">{label}</span>
       <div className="min-w-0 text-sm text-[var(--color-text-primary)]">{children}</div>
     </div>

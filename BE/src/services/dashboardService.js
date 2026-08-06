@@ -6,6 +6,8 @@ import { userModel } from '~/models/userModel'
 import { productModel } from '~/models/productModel'
 import { leadModel } from '~/models/leadModel'
 import { warehouseStockModel } from '~/models/warehouseStockModel'
+import { inventoryService } from '~/services/inventoryService'
+import { payablesService } from '~/services/payablesService'
 import { GET_DB } from '~/config/mongodb'
 import { formatDocuments } from '~/utils/formatters'
 
@@ -42,14 +44,49 @@ const formatMonthLabel = (date) =>
 
 const formatDayKey = (date) => date.toISOString().slice(0, 10)
 
+const parseLocalDateInput = (value, end = false) => {
+  const raw = String(value || '').trim()
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (match) {
+    const date = new Date(
+      Number(match[1]),
+      Number(match[2]) - 1,
+      Number(match[3])
+    )
+    return end ? endOfDay(date) : startOfDay(date)
+  }
+  const date = new Date(raw)
+  return end ? endOfDay(date) : startOfDay(date)
+}
+
 const parsePeriod = (query = {}) => {
   const now = new Date()
   let preset = String(query.preset || 'thisMonth')
 
+  // year + month (1–12) — chatbot hỏi "tháng 7/2026"
+  const year = Number(query.year)
+  const month = Number(query.month)
+  if (
+    Number.isFinite(year) &&
+    year >= 2000 &&
+    Number.isFinite(month) &&
+    month >= 1 &&
+    month <= 12
+  ) {
+    const from = startOfDay(new Date(year, month - 1, 1))
+    const to = endOfDay(new Date(year, month, 0))
+    return {
+      from,
+      to,
+      preset: 'custom',
+      groupBy: String(query.groupBy || 'day')
+    }
+  }
+
   if (query.from && query.to) {
     return {
-      from: startOfDay(new Date(query.from)),
-      to: endOfDay(new Date(query.to)),
+      from: parseLocalDateInput(query.from, false),
+      to: parseLocalDateInput(query.to, true),
       preset: 'custom',
       groupBy: String(query.groupBy || 'day')
     }
@@ -454,7 +491,9 @@ const getSummary = async () => {
     monthKpis,
     revenueSeries,
     statusBreakdown,
-    paymentBreakdown
+    paymentBreakdown,
+    stockValuation,
+    payablesSummary
   ] = await Promise.all([
     leadModel.countByStatus(leadModel.LEAD_STATUS.NEW),
     GET_DB().collection(leadModel.LEAD_COLLECTION_NAME).countDocuments({ _destroy: false }),
@@ -470,7 +509,9 @@ const getSummary = async () => {
     getKpis(thisMonthFrom, endOfDay(now)),
     getRevenueSeries(last6From, endOfDay(now), 'month'),
     getStatusBreakdown(thisMonthFrom, endOfDay(now)),
-    getPaymentBreakdown(thisMonthFrom, endOfDay(now))
+    getPaymentBreakdown(thisMonthFrom, endOfDay(now)),
+    inventoryService.getStockValuation(),
+    payablesService.getSummary()
   ])
 
   const lowStock = lowStockItems.items
@@ -506,6 +547,9 @@ const getSummary = async () => {
       monthOrders: monthKpis.orderCount,
       monthCostTotal: monthKpis.costTotal,
       monthGrossProfit: monthKpis.grossProfit,
+      inventoryStockValue: stockValuation.totalValue,
+      inventoryZeroCostLines: stockValuation.zeroCostLines,
+      supplierDebt: payablesSummary.totals?.debtAmount || 0,
       revenueChangePercent: monthKpis.revenueChangePercent,
       orderChangePercent: monthKpis.orderChangePercent,
       grossProfitChangePercent: monthKpis.grossProfitChangePercent

@@ -46,8 +46,7 @@ function FabButton({
         primary
           ? "shadow-[0_6px_16px_rgba(1,125,3,0.28)]"
           : "border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[0_6px_16px_rgba(0,0,0,0.1)]"
-      )}
-    >
+      )}>
       {icon ?? <Plus className="h-5 w-5" />}
     </Button>
   );
@@ -72,8 +71,7 @@ export function PageHeader({
           className={cn(
             "hidden flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-4",
             className
-          )}
-        >
+          )}>
           <div className="min-w-0 space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]">
               {title}
@@ -106,16 +104,14 @@ export function PageHeader({
               ? "calc(3rem + env(safe-area-inset-bottom, 0px) + 1rem)"
               : "calc(env(safe-area-inset-bottom, 0px) + 1rem)",
           }}
-          aria-hidden={!chromeVisible}
-        >
+          aria-hidden={!chromeVisible}>
           {fabs.map((item, index) => (
             <div
               key={`${item.label}-${index}`}
               className={cn(
                 "pointer-events-auto",
                 !chromeVisible && "pointer-events-none"
-              )}
-            >
+              )}>
               <FabButton {...item} primary={index === 0} />
             </div>
           ))}

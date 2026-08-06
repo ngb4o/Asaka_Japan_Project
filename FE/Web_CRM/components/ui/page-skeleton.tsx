@@ -236,8 +236,7 @@ export function PageSkeleton({
     <div
       className={cn("space-y-0 md:space-y-6")}
       aria-busy="true"
-      aria-label={label}
-    >
+      aria-label={label}>
       <div className="hidden flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-4">
         <div className="space-y-2">
           <Skeleton className="h-8 w-36" />

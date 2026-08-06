@@ -35,8 +35,7 @@ export default function LoginPage() {
   return (
     <AuthShell
       title="Đăng nhập"
-      subtitle="Truy cập hệ thống quản trị ASAKA CRM"
-    >
+      subtitle="Truy cập hệ thống quản trị ASAKA CRM">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>

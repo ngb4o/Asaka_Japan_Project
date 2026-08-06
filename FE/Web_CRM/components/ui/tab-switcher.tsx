@@ -28,8 +28,7 @@ export function TabSwitcher({
       className={cn(
         "flex h-10 items-center gap-0 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-0.5 shadow-[var(--shadow-soft)]",
         className
-      )}
-    >
+      )}>
       {tabs.map((tab, index) => {
         const isSelected = selectedIndex === index;
         return (
@@ -46,8 +45,7 @@ export function TabSwitcher({
               isSelected
                 ? "bg-[var(--color-text-secondary)] text-[var(--color-text-tertiary)] shadow-sm"
                 : "bg-transparent text-[var(--color-text-inverse)] hover:text-[var(--color-text-primary)]"
-            )}
-          >
+            )}>
             <span className="truncate">{tab}</span>
           </button>
         );

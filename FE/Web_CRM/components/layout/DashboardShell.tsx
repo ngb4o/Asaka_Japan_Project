@@ -20,8 +20,7 @@ function WorkspaceLoading() {
     <div
       className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-6"
       aria-busy="true"
-      aria-label="Đang tải workspace"
-    >
+      aria-label="Đang tải workspace">
       {/* Same hero as login AuthShell */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -51,8 +50,7 @@ function WorkspaceLoading() {
 
         <div
           className="h-1.5 w-36 overflow-hidden rounded-full bg-white/20"
-          aria-hidden
-        >
+          aria-hidden>
           <div className="crm-workspace-loader h-full w-1/2 rounded-full bg-white/90" />
         </div>
       </div>
@@ -129,15 +127,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <DashboardHeader onOpenMenu={() => setMobileMenuOpen(true)} />
                 <main
                   ref={mainRef}
-                  className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(3rem+env(safe-area-inset-bottom,0px))] lg:pb-0"
-                >
+                  className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(3rem+env(safe-area-inset-bottom,0px))] lg:pb-0">
                   <div
                     className={
                       paddedMobile
                         ? "crm-page-padded w-full max-w-[1600px] space-y-3 p-3 sm:space-y-4 sm:p-4 md:space-y-5 md:p-5 lg:p-6"
                         : "crm-page-flush w-full max-w-[1600px] space-y-0 p-0 md:space-y-5 md:p-5 lg:p-6"
-                    }
-                  >
+                    }>
                     {children}
                   </div>
                 </main>

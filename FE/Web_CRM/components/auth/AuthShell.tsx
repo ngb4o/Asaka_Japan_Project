@@ -69,8 +69,7 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
           className="flex shrink-0 items-center justify-center px-4 sm:px-8 lg:min-h-0 lg:flex-1 lg:px-12 lg:py-12"
           style={{
             paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
-          }}
-        >
+          }}>
           <div className="auth-fade-in-up auth-delay w-full max-w-[420px] rounded-[20px] border border-white/20 bg-[var(--color-surface-elevated)]/95 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-8">
             <div className="mb-6">
               <h2 className="text-2xl font-semibold text-[var(--color-text-primary)]">

@@ -151,14 +151,12 @@ export function ImageUpload({
           {images.map((url, index) => (
             <div
               key={`${url}-${index}`}
-              className="relative block w-fit shrink-0"
-            >
+              className="relative block w-fit shrink-0">
               <button
                 type="button"
                 className="relative h-28 w-28 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] transition hover:ring-2 hover:ring-[var(--color-text-secondary)]/30"
                 onClick={() => setPreviewSrc(url)}
-                aria-label={`Xem ảnh ${index + 1}`}
-              >
+                aria-label={`Xem ảnh ${index + 1}`}>
                 <Image
                   src={getImageUrl(url)}
                   alt={`Ảnh ${index + 1}`}
@@ -177,8 +175,7 @@ export function ImageUpload({
                 variant="danger"
                 size="sm"
                 className="absolute right-1 top-1 h-7 w-7 rounded-full p-0"
-                onClick={() => removeAt(index)}
-              >
+                onClick={() => removeAt(index)}>
                 <X className="h-3.5 w-3.5" />
               </Button>
             </div>
@@ -190,8 +187,7 @@ export function ImageUpload({
               variant="outline"
               loading={uploading}
               onClick={openAddPicker}
-              className="h-28 w-28 shrink-0 rounded-lg border-dashed bg-[var(--color-surface-muted)] text-xs text-[var(--color-text-inverse)] shadow-none hover:border-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-            >
+              className="h-28 w-28 shrink-0 rounded-lg border-dashed bg-[var(--color-surface-muted)] text-xs text-[var(--color-text-inverse)] shadow-none hover:border-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]">
               <span className="flex flex-col items-center gap-1.5">
                 <ImagePlus className="h-5 w-5" />
                 Thêm ảnh
@@ -227,22 +223,19 @@ export function ImageUpload({
       <BottomSheet
         open={sourcePickerOpen}
         onOpenChange={setSourcePickerOpen}
-        title="Thêm ảnh"
-      >
+        title="Thêm ảnh">
         <div className="-mx-1 divide-y divide-[var(--color-border-subtle)]">
           <button
             type="button"
             className="flex h-12 w-full items-center gap-3 px-3 text-left text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]"
-            onClick={pickFromCamera}
-          >
+            onClick={pickFromCamera}>
             <Camera className="h-5 w-5 shrink-0 text-[var(--color-text-inverse)]" />
             Chụp ảnh
           </button>
           <button
             type="button"
             className="flex h-12 w-full items-center gap-3 px-3 text-left text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]"
-            onClick={pickFromGallery}
-          >
+            onClick={pickFromGallery}>
             <ImageIcon className="h-5 w-5 shrink-0 text-[var(--color-text-inverse)]" />
             Chọn từ thư viện
           </button>

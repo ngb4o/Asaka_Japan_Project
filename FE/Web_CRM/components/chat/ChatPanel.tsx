@@ -46,8 +46,7 @@ function TypingBubble() {
       <div
         className="max-w-[92%] rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3.5 py-3 text-[var(--color-text-primary)] shadow-sm"
         aria-live="polite"
-        aria-label="Đang trả lời"
-      >
+        aria-label="Đang trả lời">
         <div className="flex h-5 items-center gap-1.5 px-0.5">
           <span className="crm-chat-typing-dot h-2 w-2 rounded-full bg-[var(--color-text-inverse)]" />
           <span className="crm-chat-typing-dot h-2 w-2 rounded-full bg-[var(--color-text-inverse)]" />
@@ -99,8 +98,7 @@ function ChatEmptyState({ onSuggest }: { onSuggest: (text: string) => void }) {
             key={item}
             type="button"
             onClick={() => onSuggest(item)}
-            className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3.5 py-2.5 text-left text-sm text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-text-secondary)]/40 hover:bg-[var(--color-surface-muted)]"
-          >
+            className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3.5 py-2.5 text-left text-sm text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-text-secondary)]/40 hover:bg-[var(--color-surface-muted)]">
             {item}
           </button>
         ))}
@@ -143,8 +141,7 @@ function ChatBody({
         className={cn(
           "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3",
           messages.length === 0 ? "flex" : "space-y-3"
-        )}
-      >
+        )}>
         {messages.length === 0 ? (
           <ChatEmptyState
             onSuggest={(text) => {
@@ -166,8 +163,7 @@ function ChatBody({
               className={cn(
                 "flex",
                 msg.role === "user" ? "justify-end" : "justify-start"
-              )}
-            >
+              )}>
               <div
                 className={cn(
                   "max-w-[92%] space-y-2 rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
@@ -176,8 +172,7 @@ function ChatBody({
                     : msg.role === "system"
                       ? "border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] text-[var(--color-text-inverse)]"
                       : "border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)]"
-                )}
-              >
+                )}>
                 {msg.content ? (
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                 ) : null}
@@ -203,8 +198,7 @@ function ChatBody({
         onSubmit={(event) => {
           event.preventDefault();
           onSend();
-        }}
-      >
+        }}>
         <div className="flex gap-2">
           <input
             value={input}
@@ -218,8 +212,7 @@ function ChatBody({
             size="sm"
             className="h-10 w-10 shrink-0 px-0"
             disabled={streaming || !input.trim()}
-            aria-label="Gửi"
-          >
+            aria-label="Gửi">
             {streaming ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -434,8 +427,7 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
         open={open}
         onOpenChange={onOpenChange}
         title="Trợ lý AI"
-        maxHeight="88dvh"
-      >
+        maxHeight="88dvh">
         <div className="flex h-[min(70dvh,560px)] flex-col">{body}</div>
       </BottomSheet>
     );
@@ -455,8 +447,7 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
           type="button"
           aria-label="Đóng"
           onClick={() => onOpenChange(false)}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-        >
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]">
           <X className="h-4 w-4" />
         </button>
       </div>

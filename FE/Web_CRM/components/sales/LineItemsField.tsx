@@ -105,8 +105,7 @@ export function LineItemsField({
                   readOnly
                     ? "md:grid md:grid-cols-[minmax(0,1fr)_5.5rem_8.5rem] md:items-end md:gap-3 md:space-y-0"
                     : "md:grid md:grid-cols-[minmax(0,1fr)_5.5rem_8.5rem_2.5rem] md:items-end md:gap-3 md:space-y-0"
-                )}
-              >
+                )}>
                 <div className="min-w-0 space-y-1.5">
                   <Label className="text-xs text-[var(--color-text-inverse)] md:sr-only">
                     Sản phẩm
@@ -129,8 +128,7 @@ export function LineItemsField({
                   className={cn(
                     "grid items-end gap-2 md:contents",
                     readOnly ? "grid-cols-2" : "grid-cols-[1fr_1.4fr_auto]"
-                  )}
-                >
+                  )}>
                   <div className="min-w-0 space-y-1.5">
                     <Label className="text-xs text-[var(--color-text-inverse)] md:sr-only">
                       SL
@@ -169,8 +167,7 @@ export function LineItemsField({
                       size="sm"
                       className="h-10 w-10 shrink-0 gap-0 p-0"
                       onClick={() => removeRow(index)}
-                      aria-label="Xóa dòng"
-                    >
+                      aria-label="Xóa dòng">
                       <Trash2 className="h-4 w-4 shrink-0" />
                     </Button>
                   ) : null}

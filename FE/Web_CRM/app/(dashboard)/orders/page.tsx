@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
@@ -43,6 +44,7 @@ import {
   canCancelExportedOrder,
   canConfirmAndExport,
   canEditOrderItems,
+  canEditOrderProducts,
   canManageOrders,
   canManagePayments,
   canManageShipping,
@@ -511,7 +513,7 @@ export default function OrdersPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (canEditOrderItems(role)) {
+    if (canEditOrderItems(role) && canEditOrderProducts(editing)) {
       const lineError = validateLineItems(form.items);
       if (lineError) {
         toast.warning(lineError);
@@ -538,7 +540,9 @@ export default function OrdersPage() {
     setSubmitting(true);
     try {
       const formSubtotal = calcFormSubtotal(form.items);
-      const discount = canEditOrderItems(role)
+      const productsEditable =
+        canEditOrderItems(role) && canEditOrderProducts(editing);
+      const discount = productsEditable
         ? clampOrderDiscount(Number(form.discount) || 0, formSubtotal)
         : undefined;
 
@@ -575,7 +579,7 @@ export default function OrdersPage() {
 
       if (editing) {
         const canPatchLines =
-          !editing.inventoryExported && canEditOrderItems(role);
+          productsEditable && !editing.inventoryExported;
         await updateOrder(editing.id, {
           ...basePayload,
           ...(canPatchLines
@@ -583,9 +587,7 @@ export default function OrdersPage() {
                 items: buildLineItemsPayload(form.items),
                 discount: discount ?? 0,
               }
-            : discount !== undefined && !editing.inventoryExported
-              ? { discount }
-              : {}),
+            : {}),
         });
         toast.success("Đã cập nhật đơn hàng");
       } else {
@@ -888,8 +890,7 @@ export default function OrdersPage() {
             title="Bộ lọc đơn hàng"
             onClear={filters.clearDraft}
             onApply={filters.apply}
-            draftCount={filters.draftCount}
-          >
+            draftCount={filters.draftCount}>
             <FilterOptionList
               label="Trạng thái"
               value={filters.draft.status}
@@ -956,8 +957,7 @@ export default function OrdersPage() {
                 onLoadMore={loadMore}
                 hasMore={hasMore}
                 loadingMore={loadingMore}
-                disabled={loading}
-              >
+                disabled={loading}>
                 <div className="flex flex-col gap-3">
                 {items.map((item) => {
                   const remaining =
@@ -1021,8 +1021,7 @@ export default function OrdersPage() {
                               remaining > 0
                                 ? "text-red-600 dark:text-red-400"
                                 : "text-[var(--color-text-inverse)]"
-                            )}
-                          >
+                            )}>
                             {formatCurrency(remaining)}
                           </p>
                         </div>
@@ -1066,8 +1065,7 @@ export default function OrdersPage() {
                               className="h-9 min-w-9"
                               title="Đổi trạng thái"
                               disabled={item.status === "cancelled"}
-                              loading={isOrderAction(item.id, "status")}
-                            >
+                              loading={isOrderAction(item.id, "status")}>
                               <RefreshCw className="h-4 w-4" />
                             </Button>
                           }
@@ -1077,8 +1075,7 @@ export default function OrdersPage() {
                           size="sm"
                           className="h-9 min-w-9"
                           onClick={() => openDetail(item)}
-                          title="Xem chi tiết"
-                        >
+                          title="Xem chi tiết">
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
@@ -1087,8 +1084,7 @@ export default function OrdersPage() {
                           className="h-9 min-w-9"
                           onClick={() => handlePrint(item)}
                           title="In / PDF"
-                          loading={isOrderAction(item.id, "print")}
-                        >
+                          loading={isOrderAction(item.id, "print")}>
                           <Printer className="h-4 w-4" />
                         </Button>
                         {canManagePayments(role) && item.paymentStatus !== "paid" ? (
@@ -1104,8 +1100,7 @@ export default function OrdersPage() {
                               );
                               setPaymentNote("");
                               setPaymentOpen(true);
-                            }}
-                          >
+                            }}>
                             Thu
                           </Button>
                         ) : null}
@@ -1115,8 +1110,7 @@ export default function OrdersPage() {
                             size="sm"
                             className="h-9 min-w-9"
                             onClick={() => openEdit(item)}
-                            title="Sửa"
-                          >
+                            title="Sửa">
                             <Pencil className="h-4 w-4" />
                           </Button>
                         ) : null}
@@ -1128,8 +1122,7 @@ export default function OrdersPage() {
                             size="sm"
                             className="h-9 min-w-9"
                             loading={isOrderAction(item.id, "delete")}
-                            onClick={() => handleDelete(item)}
-                          >
+                            onClick={() => handleDelete(item)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         ) : null}
@@ -1185,8 +1178,7 @@ export default function OrdersPage() {
                                 remaining > 0
                                   ? "font-semibold text-red-600 dark:text-red-400"
                                   : "text-[var(--color-text-inverse)]"
-                              )}
-                            >
+                              )}>
                               Còn: {formatCurrency(remaining)}
                             </p>
                           </td>
@@ -1198,8 +1190,7 @@ export default function OrdersPage() {
                                   : item.paymentStatus === "partial"
                                     ? "muted"
                                     : "muted"
-                              }
-                            >
+                              }>
                               {PAYMENT_LABELS[item.paymentStatus || "unpaid"]}
                             </Badge>
                           </td>
@@ -1238,8 +1229,7 @@ export default function OrdersPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => openDetail(item)}
-                                title="Xem chi tiết"
-                              >
+                                title="Xem chi tiết">
                                 <Eye className="h-4 w-4" />
                               </Button>
                               <Button
@@ -1247,8 +1237,7 @@ export default function OrdersPage() {
                                 size="sm"
                                 onClick={() => handlePrint(item)}
                                 title="In / PDF"
-                                loading={isOrderAction(item.id, "print")}
-                              >
+                                loading={isOrderAction(item.id, "print")}>
                                 <Printer className="h-4 w-4" />
                               </Button>
                               {canManagePayments(role) && item.paymentStatus !== "paid" ? (
@@ -1265,8 +1254,7 @@ export default function OrdersPage() {
                                     );
                                     setPaymentNote("");
                                     setPaymentOpen(true);
-                                  }}
-                                >
+                                  }}>
                                   Thu
                                 </Button>
                               ) : null}
@@ -1275,8 +1263,7 @@ export default function OrdersPage() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => openEdit(item)}
-                                  title="Sửa"
-                                >
+                                  title="Sửa">
                                   <Pencil className="h-4 w-4" />
                                 </Button>
                               ) : null}
@@ -1287,8 +1274,7 @@ export default function OrdersPage() {
                                   variant="danger"
                                   size="sm"
                                   loading={isOrderAction(item.id, "delete")}
-                                  onClick={() => handleDelete(item)}
-                                >
+                                  onClick={() => handleDelete(item)}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               ) : null}
@@ -1391,6 +1377,7 @@ export default function OrdersPage() {
                 items={form.items}
                 products={products}
                 onChange={handleLineItemsChange}
+                readOnly={!canEditOrderProducts(editing)}
               />
             ) : editing ? (
               <div className="rounded-lg border border-[var(--color-border-subtle)] p-3 text-sm">
@@ -1403,7 +1390,9 @@ export default function OrdersPage() {
               </div>
             ) : null}
 
-            {canEditOrderItems(role) && !editing?.inventoryExported ? (
+            {canEditOrderItems(role) &&
+            canEditOrderProducts(editing) &&
+            !editing?.inventoryExported ? (
               <div className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
@@ -1461,7 +1450,7 @@ export default function OrdersPage() {
                 </div>
               </div>
             ) : editing && editing.discount > 0 ? (
-              <p className="text-sm text-[var(--color-text-inverse)]">
+              <p className="text-right text-sm text-[var(--color-text-inverse)]">
                 Chiết khấu: −{formatCurrency(editing.discount)}
               </p>
             ) : null}
@@ -1523,8 +1512,7 @@ export default function OrdersPage() {
                         employeeOptions.map((option) => (
                           <label
                             key={option.value}
-                            className="flex items-center gap-2 text-sm"
-                          >
+                            className="flex items-center gap-2 text-sm">
                             <input
                               type="checkbox"
                               className="h-4 w-4 accent-[var(--color-text-secondary)]"
@@ -1610,14 +1598,14 @@ export default function OrdersPage() {
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy
               </Button>
               <Button type="submit" loading={submitting}>
                 Lưu
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -1629,8 +1617,7 @@ export default function OrdersPage() {
             setConfirmingOrder(null);
             setConfirmationStocks([]);
           }
-        }}
-      >
+        }}>
         <DialogContent bodyScroll={false} className="max-h-[90vh] max-w-2xl">
           <DialogHeader>
             <DialogTitle>Xác nhận đơn hàng và xuất kho</DialogTitle>
@@ -1724,8 +1711,7 @@ export default function OrdersPage() {
                       enough
                         ? "border-[var(--color-border-subtle)]"
                         : "border-red-300 bg-red-50/50"
-                    }`}
-                  >
+                    }`}>
                     <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-white sm:h-16 sm:w-16">
                       {row.productImage ? (
                         <Image
@@ -1758,8 +1744,7 @@ export default function OrdersPage() {
                             Tồn hiện tại
                           </p>
                           <p
-                            className={`truncate font-semibold ${enough ? "" : "text-red-600"}`}
-                          >
+                            className={`truncate font-semibold ${enough ? "" : "text-red-600"}`}>
                             {row.available}
                           </p>
                         </div>
@@ -1770,8 +1755,7 @@ export default function OrdersPage() {
                           <p
                             className={`truncate font-semibold ${
                               enough ? "text-emerald-700" : "text-red-600"
-                            }`}
-                          >
+                            }`}>
                             {Math.max(0, row.available - row.required)}
                           </p>
                         </div>
@@ -1793,32 +1777,26 @@ export default function OrdersPage() {
             ) : null}
           </div>
 
-          <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[var(--color-border-subtle)] px-4 py-4 sm:px-6">
-            <div className="ml-auto flex w-full gap-2 sm:w-auto">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1 sm:flex-none"
-                disabled={confirmationSubmitting}
-                onClick={() => {
-                  setConfirmingOrder(null);
-                  setConfirmationStocks([]);
-                }}
-              >
-                Hủy
-              </Button>
-              <Button
-                type="button"
-                className="flex-1 sm:flex-none"
-                loading={confirmationSubmitting}
-                disabled={loadingConfirmation || confirmationHasInsufficient}
-                onClick={confirmOrderAndExport}
-              >
-                <PackageCheck className="h-4 w-4" />
-                Xác nhận & xuất kho
-              </Button>
-            </div>
-          </div>
+          <DialogFooter className="shrink-0 px-4 py-4 sm:px-6">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={confirmationSubmitting}
+              onClick={() => {
+                setConfirmingOrder(null);
+                setConfirmationStocks([]);
+              }}>
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              loading={confirmationSubmitting}
+              disabled={loadingConfirmation || confirmationHasInsufficient}
+              onClick={confirmOrderAndExport}>
+              <PackageCheck className="h-4 w-4" />
+              Xác nhận & xuất kho
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1849,14 +1827,14 @@ export default function OrdersPage() {
                 onChange={(e) => setPaymentNote(e.target.value)}
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setPaymentOpen(false)}>
                 Hủy
               </Button>
               <Button type="submit" loading={submitting}>
                 Ghi nhận
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

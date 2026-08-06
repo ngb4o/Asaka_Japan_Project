@@ -23,8 +23,7 @@ export function DashboardHeader({ onOpenMenu }: DashboardHeaderProps) {
           ? "max-h-28 opacity-100"
           : "max-lg:max-h-0 max-lg:border-transparent max-lg:opacity-0"
       )}
-      aria-hidden={!visible}
-    >
+      aria-hidden={!visible}>
       <div style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="flex h-12 items-center justify-between gap-3 px-3 sm:h-14 sm:px-4 md:px-5 lg:px-6">
           <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -35,8 +34,7 @@ export function DashboardHeader({ onOpenMenu }: DashboardHeaderProps) {
               className="shrink-0 lg:hidden"
               onClick={onOpenMenu}
               aria-label="Mở menu"
-              tabIndex={visible ? undefined : -1}
-            >
+              tabIndex={visible ? undefined : -1}>
               <Menu className="h-5 w-5" />
             </Button>
             <div className="min-w-0">

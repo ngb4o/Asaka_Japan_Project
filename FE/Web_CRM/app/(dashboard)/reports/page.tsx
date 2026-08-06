@@ -171,8 +171,7 @@ export default function ReportsPage() {
             variant="outline"
             onClick={() => void handleExportExcel()}
             loading={exporting}
-            disabled={!report || loading}
-          >
+            disabled={!report || loading}>
             <Download className="h-4 w-4" />
             Xuất Excel
           </Button>
@@ -188,8 +187,7 @@ export default function ReportsPage() {
                 type="button"
                 size="sm"
                 variant={preset === item.value ? "default" : "outline"}
-                onClick={() => setPreset(item.value)}
-              >
+                onClick={() => setPreset(item.value)}>
                 {item.label}
               </Button>
             ))}
@@ -217,8 +215,7 @@ export default function ReportsPage() {
             className="ml-auto md:hidden"
             onClick={() => void handleExportExcel()}
             loading={exporting}
-            disabled={!report || loading}
-          >
+            disabled={!report || loading}>
             <Download className="h-4 w-4" />
             Xuất Excel
           </Button>
@@ -357,8 +354,7 @@ export default function ReportsPage() {
               return (
                 <div
                   key={item.status}
-                  className="flex items-center justify-between rounded-lg border border-[var(--color-border-subtle)] px-3 py-2.5"
-                >
+                  className="flex items-center justify-between rounded-lg border border-[var(--color-border-subtle)] px-3 py-2.5">
                   <div>
                     <p className="text-sm font-medium">
                       {PAYMENT_LABELS[item.status] || item.status}
@@ -488,8 +484,7 @@ function ChangeBadge({ value }: { value?: number }) {
         up
           ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
           : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
-      )}
-    >
+      )}>
       <Icon className="h-3.5 w-3.5" />
       <span className="md:hidden">{Math.abs(value)}%</span>
       <span className="hidden md:inline">{Math.abs(value)}% so với kỳ trước</span>
@@ -560,8 +555,7 @@ function Kpi({
             className={cn(
               "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl md:h-10 md:w-10",
               tone.icon
-            )}
-          >
+            )}>
             <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
           </span>
         </div>
@@ -572,8 +566,7 @@ function Kpi({
               className={cn(
                 "text-xl font-semibold leading-none tracking-tight md:text-[1.65rem]",
                 tone.value
-              )}
-            >
+              )}>
               {displayValue}
             </p>
             <ChangeBadge value={change} />
@@ -646,8 +639,7 @@ function RankList({
                         item.rank <= 3
                           ? "bg-[var(--color-text-secondary)]/12 text-[var(--color-text-secondary)]"
                           : "bg-[var(--color-surface-muted)] text-[var(--color-text-inverse)]"
-                      )}
-                    >
+                      )}>
                       {item.rank}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -665,14 +657,12 @@ function RankList({
                     className={cn(
                       "mt-3 grid gap-2",
                       item.stats.length === 2 ? "grid-cols-2" : "grid-cols-3"
-                    )}
-                  >
+                    )}>
                     {item.stats.map((stat) => (
                       <MobileStatTile
                         key={stat.label}
                         label={stat.label}
-                        valueClassName={cn("text-sm", stat.valueClassName)}
-                      >
+                        valueClassName={cn("text-sm", stat.valueClassName)}>
                         {stat.value}
                       </MobileStatTile>
                     ))}
@@ -698,8 +688,7 @@ function RankList({
                         className={cn(
                           "font-medium",
                           index === 0 ? "text-left" : "text-right"
-                        )}
-                      >
+                        )}>
                         {header}
                       </th>
                     ))}
@@ -722,8 +711,7 @@ function RankList({
                           className={cn(
                             "whitespace-nowrap text-right align-top tabular-nums",
                             stat.valueClassName || "text-[var(--color-text-inverse)]"
-                          )}
-                        >
+                          )}>
                           {stat.value}
                         </td>
                       ))}

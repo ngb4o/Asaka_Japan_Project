@@ -137,8 +137,7 @@ export function SearchInput({
           aria-label="Xóa tìm kiếm"
           className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--color-text-inverse)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
           onMouseDown={(e) => e.preventDefault()}
-          onClick={handleClear}
-        >
+          onClick={handleClear}>
           <X className="h-4 w-4" />
         </button>
       ) : null}

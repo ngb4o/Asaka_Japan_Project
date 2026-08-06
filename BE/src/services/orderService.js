@@ -776,6 +776,12 @@ const update = async (orderId, updateData, userId) => {
   let nextTotal = order.total
 
   if (Array.isArray(updateData.items)) {
+    if (order.status !== orderModel.ORDER_STATUS.PENDING) {
+      throw new ApiError(
+        StatusCodes.CONFLICT,
+        'Không thể sửa sản phẩm sau khi đơn đã xác nhận!'
+      )
+    }
     if (order.inventoryExported) {
       throw new ApiError(
         StatusCodes.CONFLICT,
@@ -794,6 +800,12 @@ const update = async (orderId, updateData, userId) => {
     dataToUpdate.grossProfit = Math.round(dataToUpdate.total - totals.costTotal)
     nextTotal = dataToUpdate.total
   } else if (updateData.discount !== undefined) {
+    if (order.status !== orderModel.ORDER_STATUS.PENDING) {
+      throw new ApiError(
+        StatusCodes.CONFLICT,
+        'Không thể sửa chiết khấu sau khi đơn đã xác nhận!'
+      )
+    }
     if (order.inventoryExported) {
       throw new ApiError(
         StatusCodes.CONFLICT,

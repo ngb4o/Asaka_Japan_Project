@@ -146,8 +146,7 @@ export function SearchableSelect({
         className={cn(
           "min-w-0 flex-1 truncate",
           !selected && "text-[var(--color-text-inverse)]"
-        )}
-      >
+        )}>
         {selected ? selected.label : placeholder}
       </span>
       <span className="flex shrink-0 items-center gap-1 text-[var(--color-text-inverse)]">
@@ -159,8 +158,7 @@ export function SearchableSelect({
               event.preventDefault();
               event.stopPropagation();
               onChange("");
-            }}
-          >
+            }}>
             <X className="h-3.5 w-3.5" />
           </span>
         ) : null}
@@ -176,8 +174,7 @@ export function SearchableSelect({
           className={cn(
             "border-b border-[var(--color-border-subtle)] p-3 md:p-2",
             isMobile && "sticky top-0 z-10 bg-[var(--color-surface-elevated)]"
-          )}
-        >
+          )}>
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-inverse)]" />
             <input
@@ -207,8 +204,7 @@ export function SearchableSelect({
         onWheel={(event) => event.stopPropagation()}
         onScroll={() => {
           if (pointerStartRef.current) pointerStartRef.current.moved = true;
-        }}
-      >
+        }}>
         {filtered.length === 0 ? (
           <p className="px-3 py-6 text-center text-sm text-[var(--color-text-inverse)]">
             {emptyText}
@@ -243,8 +239,7 @@ export function SearchableSelect({
                     event.preventDefault();
                     handleSelect(option.value);
                   }
-                }}
-              >
+                }}>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{option.label}</span>
                   {option.description ? (
@@ -293,16 +288,14 @@ export function SearchableSelect({
             className={triggerClassNameMerged}
             onClick={() => {
               if (!disabled) setOpen(true);
-            }}
-          >
+            }}>
             {triggerInner}
           </button>
         )}
         <BottomSheet
           open={open}
           onOpenChange={setOpen}
-          title={placeholder === "Chọn..." ? "Chọn" : placeholder}
-        >
+          title={placeholder === "Chọn..." ? "Chọn" : placeholder}>
           {panel}
         </BottomSheet>
       </div>
@@ -324,8 +317,7 @@ export function SearchableSelect({
               disabled={disabled}
               aria-expanded={open}
               aria-controls={listId}
-              className={triggerClassNameMerged}
-            >
+              className={triggerClassNameMerged}>
               {triggerInner}
             </button>
           </Popover.Trigger>
@@ -343,8 +335,7 @@ export function SearchableSelect({
             onOpenAutoFocus={(event) => event.preventDefault()}
             onCloseAutoFocus={(event) => event.preventDefault()}
             onWheel={(event) => event.stopPropagation()}
-            onTouchMove={(event) => event.stopPropagation()}
-          >
+            onTouchMove={(event) => event.stopPropagation()}>
             {panel}
           </Popover.Content>
         </Popover.Portal>

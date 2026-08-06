@@ -113,8 +113,7 @@ export function ImageLightbox({
         event.preventDefault();
         event.stopPropagation();
       }}
-      onClick={(event) => close(event)}
-    >
+      onClick={(event) => close(event)}>
       <div
         className={cn(
           "relative max-h-[90vh] max-w-[min(96vw,1100px)] overflow-hidden rounded-xl bg-black/40 shadow-2xl"
@@ -126,8 +125,7 @@ export function ImageLightbox({
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
-        }}
-      >
+        }}>
         <button
           type="button"
           className="absolute right-2 top-2 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white shadow-sm transition hover:bg-black/70"
@@ -136,8 +134,7 @@ export function ImageLightbox({
             event.preventDefault();
             event.stopPropagation();
           }}
-          onClick={(event) => close(event)}
-        >
+          onClick={(event) => close(event)}>
           <X className="h-5 w-5" />
         </button>
         <Image

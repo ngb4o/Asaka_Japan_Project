@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
@@ -665,8 +666,7 @@ export default function TripsPage() {
             title="Bộ lọc chuyến"
             onClear={filters.clearDraft}
             onApply={filters.apply}
-            draftCount={filters.draftCount}
-          >
+            draftCount={filters.draftCount}>
             <FilterOptionList
               label="Trạng thái"
               value={filters.draft.status}
@@ -689,8 +689,7 @@ export default function TripsPage() {
                 onLoadMore={loadMore}
                 hasMore={hasMore}
                 loadingMore={loadingMore}
-                disabled={loading}
-              >
+                disabled={loading}>
                 <div className="flex flex-col gap-3">
                 {items.map((item) => {
                   const memberNames =
@@ -708,8 +707,7 @@ export default function TripsPage() {
                         </div>
                         <Badge
                           variant={statusBadgeVariant(item.status)}
-                          className="shrink-0"
-                        >
+                          className="shrink-0">
                           {TRIP_STATUS_LABEL[item.status]}
                         </Badge>
                       </div>
@@ -739,8 +737,7 @@ export default function TripsPage() {
                             variant="danger"
                             size="sm"
                             loading={isTripAction(`delete:${item.id}`)}
-                            onClick={() => handleDelete(item)}
-                          >
+                            onClick={() => handleDelete(item)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         ) : null}
@@ -788,8 +785,7 @@ export default function TripsPage() {
                               <span
                                 key={order.id}
                                 className="inline-flex items-center rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-2 py-0.5 text-xs font-medium"
-                                title={`${order.customerName || ""} - ${ORDER_STATUS_LABEL[(order.status as Order["status"]) || "pending"] || order.status}`}
-                              >
+                                title={`${order.customerName || ""} - ${ORDER_STATUS_LABEL[(order.status as Order["status"]) || "pending"] || order.status}`}>
                                 {order.code}
                               </span>
                             ))}
@@ -811,8 +807,7 @@ export default function TripsPage() {
                               variant="danger"
                               size="sm"
                               loading={isTripAction(`delete:${item.id}`)}
-                              onClick={() => handleDelete(item)}
-                            >
+                              onClick={() => handleDelete(item)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           ) : null}
@@ -912,8 +907,7 @@ export default function TripsPage() {
                           checked
                             ? "border-[var(--color-text-secondary)] ring-2 ring-[var(--color-text-secondary)]/15"
                             : "border-[var(--color-border-subtle)] hover:border-[var(--color-text-secondary)]/35"
-                        )}
-                      >
+                        )}>
                         <input
                           type="checkbox"
                           className="mt-1 h-4 w-4 accent-[var(--color-text-secondary)]"
@@ -929,8 +923,7 @@ export default function TripsPage() {
                               className={cn(
                                 "shrink-0 rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2 md:py-0.5 md:text-[11px]",
                                 ORDER_STATUS_TONE[order.status]
-                              )}
-                            >
+                              )}>
                               {ORDER_STATUS_LABEL[order.status]}
                             </span>
                           </div>
@@ -969,14 +962,14 @@ export default function TripsPage() {
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
                 Hủy
               </Button>
               <Button type="submit" loading={isSubmitting("create")}>
                 Tạo chuyến
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -988,8 +981,7 @@ export default function TripsPage() {
           if (!open) {
             setDetailLoading(false);
           }
-        }}
-      >
+        }}>
         <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -1012,9 +1004,8 @@ export default function TripsPage() {
               className={cn(
                 "space-y-0 md:space-y-6",
                 detailLoading && "pointer-events-none opacity-60"
-              )}
-            >
-              <div className="grid gap-3 rounded-xl border border-[var(--color-border-subtle)] p-4 sm:grid-cols-4">
+              )}>
+              <div className="grid gap-3 rounded-xl border border-[var(--color-border-subtle)] p-4 sm:grid-cols-3">
                 <div>
                   <p className="text-xs text-[var(--color-text-inverse)]">Thời gian</p>
                   <p className="font-medium">
@@ -1031,27 +1022,27 @@ export default function TripsPage() {
                   <p className="text-xs text-[var(--color-text-inverse)]">Khu vực</p>
                   <p className="font-medium">{selected.region || selected.title || "—"}</p>
                 </div>
-                <div className="flex flex-wrap items-center justify-end gap-2 sm:col-start-4">
-                  {canOperateSelected && selected.status === "draft" ? (
-                    <Button
-                      size="sm"
-                      loading={isTripAction("status:in_progress")}
-                      onClick={() => handleStatus("in_progress")}
-                    >
-                      Bắt đầu đi
-                    </Button>
-                  ) : null}
-                  {canOperateSelected && selected.status === "in_progress" ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      loading={isTripAction("status:settlement")}
-                      onClick={() => handleStatus("settlement")}
-                    >
-                      Chờ quyết toán
-                    </Button>
-                  ) : null}
-                </div>
+                {(canOperateSelected &&
+                  (selected.status === "draft" ||
+                    selected.status === "in_progress")) ? (
+                  <DialogFooter className="border-0 pt-1 sm:col-span-3">
+                    {selected.status === "draft" ? (
+                      <Button
+                        loading={isTripAction("status:in_progress")}
+                        onClick={() => handleStatus("in_progress")}>
+                        Bắt đầu đi
+                      </Button>
+                    ) : null}
+                    {selected.status === "in_progress" ? (
+                      <Button
+                        variant="outline"
+                        loading={isTripAction("status:settlement")}
+                        onClick={() => handleStatus("settlement")}>
+                        Chờ quyết toán
+                      </Button>
+                    ) : null}
+                  </DialogFooter>
+                ) : null}
               </div>
 
               <section className="mt-6 space-y-3 md:mt-0">
@@ -1063,14 +1054,12 @@ export default function TripsPage() {
                     {selected.orders.map((order) => (
                       <div
                         key={order.id}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border-subtle)] px-3 py-3 text-sm"
-                      >
+                        className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border-subtle)] px-3 py-3 text-sm">
                         <div className="min-w-0 flex-1 space-y-1">
                           <div className="flex items-center justify-between gap-2">
                             <Link
                               href="/orders"
-                              className="min-w-0 truncate font-semibold text-[var(--color-text-secondary)] hover:underline"
-                            >
+                              className="min-w-0 truncate font-semibold text-[var(--color-text-secondary)] hover:underline">
                               {order.code}
                             </Link>
                             <span
@@ -1079,8 +1068,7 @@ export default function TripsPage() {
                                 ORDER_STATUS_TONE[
                                   (order.status as Order["status"]) || "pending"
                                 ] || ORDER_STATUS_TONE.pending
-                              )}
-                            >
+                              )}>
                               {ORDER_STATUS_LABEL[
                                 (order.status as Order["status"]) || "pending"
                               ] || order.status}
@@ -1111,8 +1099,7 @@ export default function TripsPage() {
                 {selected.stops.map((stop) => (
                   <div
                     key={stop.id}
-                    className="flex items-start justify-between gap-3 rounded-lg border border-[var(--color-border-subtle)] p-3 text-sm"
-                  >
+                    className="flex items-start justify-between gap-3 rounded-lg border border-[var(--color-border-subtle)] p-3 text-sm">
                     <div>
                       <p className="font-medium">
                         {formatDateDisplay(stop.date)} - {PURPOSE_LABEL[stop.purpose]}
@@ -1132,8 +1119,7 @@ export default function TripsPage() {
                         variant="danger"
                         size="sm"
                         loading={isTripAction(`stop:${stop.id}`)}
-                        onClick={() => handleRemoveStop(stop.id)}
-                      >
+                        onClick={() => handleRemoveStop(stop.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     ) : null}
@@ -1142,8 +1128,7 @@ export default function TripsPage() {
                 {canOperateSelected && selected.status !== "closed" ? (
                   <form
                     onSubmit={handleAddStop}
-                    className="grid gap-3 rounded-xl border border-dashed border-[var(--color-border-subtle)] p-3 sm:grid-cols-2"
-                  >
+                    className="grid gap-3 rounded-xl border border-dashed border-[var(--color-border-subtle)] p-3 sm:grid-cols-2">
                     <DateInput
                       value={stopForm.date}
                       onChange={(date) => setStopForm({ ...stopForm, date })}
@@ -1201,8 +1186,7 @@ export default function TripsPage() {
                   return (
                     <div
                       key={item.id}
-                      className="space-y-2.5 rounded-lg border border-[var(--color-border-subtle)] px-3 py-3 text-sm"
-                    >
+                      className="space-y-2.5 rounded-lg border border-[var(--color-border-subtle)] px-3 py-3 text-sm">
                       <div className="flex items-center gap-3">
                         {receipts.length ? (
                           <div className="min-w-0 shrink overflow-hidden">
@@ -1213,8 +1197,7 @@ export default function TripsPage() {
                                   type="button"
                                   onClick={() => setReceiptPreviewSrc(url)}
                                   className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-md border border-[var(--color-border-subtle)]"
-                                  aria-label={`Xem chứng từ ${index + 1}`}
-                                >
+                                  aria-label={`Xem chứng từ ${index + 1}`}>
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
                                     src={getImageUrl(url)}
@@ -1252,8 +1235,7 @@ export default function TripsPage() {
                 {canFinance && selected.status !== "closed" ? (
                   <form
                     onSubmit={handleAddAdvance}
-                    className="space-y-3 rounded-xl border border-dashed border-[var(--color-border-subtle)] p-3"
-                  >
+                    className="space-y-3 rounded-xl border border-dashed border-[var(--color-border-subtle)] p-3">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <VndInput
                         value={advanceAmount}
@@ -1276,8 +1258,7 @@ export default function TripsPage() {
                     <Button
                       type="submit"
                       className="w-full"
-                      loading={isSubmitting("advance")}
-                    >
+                      loading={isSubmitting("advance")}>
                       Ghi tạm ứng
                     </Button>
                   </form>
@@ -1296,8 +1277,7 @@ export default function TripsPage() {
                   return (
                     <div
                       key={item.id}
-                      className="space-y-2.5 rounded-lg border border-[var(--color-border-subtle)] px-3 py-3 text-sm"
-                    >
+                      className="space-y-2.5 rounded-lg border border-[var(--color-border-subtle)] px-3 py-3 text-sm">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-medium">
@@ -1331,8 +1311,7 @@ export default function TripsPage() {
                                 ? "muted"
                                 : "default"
                           }
-                          className="shrink-0"
-                        >
+                          className="shrink-0">
                           {item.status === "approved"
                             ? "Đã duyệt"
                             : item.status === "rejected"
@@ -1350,8 +1329,7 @@ export default function TripsPage() {
                               type="button"
                               onClick={() => setReceiptPreviewSrc(url)}
                               className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-md border border-[var(--color-border-subtle)]"
-                              aria-label={`Xem chứng từ ${index + 1}`}
-                            >
+                              aria-label={`Xem chứng từ ${index + 1}`}>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={getImageUrl(url)}
@@ -1364,24 +1342,12 @@ export default function TripsPage() {
                         </div>
                       ) : null}
 
-                      <div
-                        className={cn(
-                          "flex w-full items-center gap-2",
-                          canReview
-                            ? "justify-between"
-                            : "justify-end"
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "font-semibold tabular-nums text-red-600 dark:text-red-400",
-                            canReview ? "mr-auto text-left" : "ml-auto text-right"
-                          )}
-                        >
+                      <div className="space-y-2">
+                        <p className="text-right font-semibold tabular-nums text-red-600 dark:text-red-400">
                           {`Số tiền: ${formatCurrency(item.amount)}`}
-                        </span>
+                        </p>
                         {canReview ? (
-                          <div className="flex shrink-0 items-center gap-2">
+                          <DialogFooter className="border-0 p-0 pt-0">
                             <Button
                               size="sm"
                               variant="success"
@@ -1404,7 +1370,7 @@ export default function TripsPage() {
                               <X className="h-4 w-4" />
                               Từ chối
                             </Button>
-                          </div>
+                          </DialogFooter>
                         ) : null}
                       </div>
                     </div>
@@ -1414,8 +1380,7 @@ export default function TripsPage() {
                 {canOperateSelected && selected.status !== "closed" ? (
                   <form
                     onSubmit={handleAddExpense}
-                    className="grid gap-3 rounded-xl border border-dashed border-[var(--color-border-subtle)] p-3 sm:grid-cols-2"
-                  >
+                    className="grid gap-3 rounded-xl border border-dashed border-[var(--color-border-subtle)] p-3 sm:grid-cols-2">
                     <SearchableSelect
                       options={Object.entries(EXPENSE_LABEL).map(([value, label]) => ({
                         value,
@@ -1498,8 +1463,7 @@ export default function TripsPage() {
                     <Button
                       type="submit"
                       loading={isSubmitting("expense")}
-                      className="sm:col-span-2"
-                    >
+                      className="sm:col-span-2">
                       Thêm khoản chi
                     </Button>
                   </form>
@@ -1553,8 +1517,7 @@ export default function TripsPage() {
                           return (
                             <p
                               key={row.employeeId}
-                              className="flex items-baseline justify-between gap-3"
-                            >
+                              className="flex items-baseline justify-between gap-3">
                               <span>{name}</span>
                               <strong className="tabular-nums">
                                 {formatCurrency(row.amount)}
@@ -1599,8 +1562,7 @@ export default function TripsPage() {
                           selected.profitSummary.tripNetProfit >= 0
                             ? "tabular-nums text-emerald-600 dark:text-emerald-400"
                             : "tabular-nums text-red-600 dark:text-red-400"
-                        }
-                      >
+                        }>
                         {formatCurrency(selected.profitSummary.tripNetProfit)}
                       </strong>
                     </p>
@@ -1610,8 +1572,7 @@ export default function TripsPage() {
                   <Button
                     className="w-full"
                     onClick={handleSettle}
-                    loading={isSubmitting("settle")}
-                  >
+                    loading={isSubmitting("settle")}>
                     Quyết toán & khóa chuyến
                   </Button>
                 ) : null}

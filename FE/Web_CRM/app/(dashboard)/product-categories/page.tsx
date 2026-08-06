@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
@@ -251,8 +252,7 @@ export default function ProductCategoriesPage() {
             title="Bộ lọc loại sản phẩm"
             onClear={filters.clearDraft}
             onApply={filters.apply}
-            draftCount={filters.draftCount}
-          >
+            draftCount={filters.draftCount}>
             <FilterOptionList
               label="Trạng thái"
               value={filters.draft.status}
@@ -281,8 +281,7 @@ export default function ProductCategoriesPage() {
                 onLoadMore={loadMore}
                 hasMore={hasMore}
                 loadingMore={loadingMore}
-                disabled={loading}
-              >
+                disabled={loading}>
                 <div className="flex flex-col gap-3">
                   {items.map((item) => (
                     <MobileRecordCard key={item.id}>
@@ -315,8 +314,7 @@ export default function ProductCategoriesPage() {
                           variant="danger"
                           size="sm"
                           loading={actionId === item.id}
-                          onClick={() => handleDelete(item)}
-                        >
+                          onClick={() => handleDelete(item)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </MobileRecordActions>
@@ -371,8 +369,7 @@ export default function ProductCategoriesPage() {
                             variant="danger"
                             size="sm"
                             loading={actionId === item.id}
-                            onClick={() => handleDelete(item)}
-                          >
+                            onClick={() => handleDelete(item)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -436,14 +433,14 @@ export default function ProductCategoriesPage() {
                 searchable={false}
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy
               </Button>
               <Button type="submit" loading={submitting}>
                 Lưu
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

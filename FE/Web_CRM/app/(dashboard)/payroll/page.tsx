@@ -256,8 +256,7 @@ export default function PayrollPage() {
             title="Bộ lọc bảng lương"
             onClear={filters.clearDraft}
             onApply={filters.apply}
-            draftCount={filters.draftCount}
-          >
+            draftCount={filters.draftCount}>
             <FilterOptionList
               label="Trạng thái"
               value={filters.draft.status}
@@ -277,8 +276,7 @@ export default function PayrollPage() {
                 onLoadMore={loadMore}
                 hasMore={hasMore}
                 loadingMore={loadingMore}
-                disabled={loading}
-              >
+                disabled={loading}>
                 <div className="flex flex-col gap-3">
                   {items.map((item) => {
                     const net = item.lines.reduce((sum, line) => sum + (line.net || 0), 0);
@@ -292,8 +290,7 @@ export default function PayrollPage() {
                           </div>
                           <Badge
                             variant={statusBadgeVariant(item.status)}
-                            className="shrink-0"
-                          >
+                            className="shrink-0">
                             {item.status === "locked" ? "Đã khóa" : "Nháp"}
                           </Badge>
                         </div>
@@ -323,16 +320,14 @@ export default function PayrollPage() {
                                 variant="outline"
                                 size="sm"
                                 loading={isPayrollAction(item.id, "lock")}
-                                onClick={() => handleLock(item)}
-                              >
+                                onClick={() => handleLock(item)}>
                                 <Lock className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="danger"
                                 size="sm"
                                 loading={isPayrollAction(item.id, "delete")}
-                                onClick={() => handleDelete(item)}
-                              >
+                                onClick={() => handleDelete(item)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </>
@@ -388,16 +383,14 @@ export default function PayrollPage() {
                                   variant="outline"
                                   size="sm"
                                   loading={isPayrollAction(item.id, "lock")}
-                                  onClick={() => handleLock(item)}
-                                >
+                                  onClick={() => handleLock(item)}>
                                   <Lock className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="danger"
                                   size="sm"
                                   loading={isPayrollAction(item.id, "delete")}
-                                  onClick={() => handleDelete(item)}
-                                >
+                                  onClick={() => handleDelete(item)}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </>

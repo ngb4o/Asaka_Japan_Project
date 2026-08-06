@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
@@ -264,8 +265,7 @@ export default function LeadsPage() {
             title="Bộ lọc lead"
             onClear={filters.clearDraft}
             onApply={filters.apply}
-            draftCount={filters.draftCount}
-          >
+            draftCount={filters.draftCount}>
             <FilterOptionList
               label="Trạng thái"
               value={filters.draft.status}
@@ -295,8 +295,7 @@ export default function LeadsPage() {
                 onLoadMore={loadMore}
                 hasMore={hasMore}
                 loadingMore={loadingMore}
-                disabled={loading}
-              >
+                disabled={loading}>
                 <div className="flex flex-col gap-3">
                   {items.map((item) => (
                     <MobileRecordCard key={item.id} className="p-3">
@@ -305,8 +304,7 @@ export default function LeadsPage() {
                           <button
                             type="button"
                             className="font-semibold tracking-tight text-[var(--color-text-primary)] hover:text-[var(--color-text-secondary)]"
-                            onClick={() => openDetail(item)}
-                          >
+                            onClick={() => openDetail(item)}>
                             {item.name}
                           </button>
                           {item.company ? (
@@ -317,8 +315,7 @@ export default function LeadsPage() {
                         </div>
                         <Badge
                           variant={leadStatusBadgeVariant(item.status)}
-                          className="shrink-0"
-                        >
+                          className="shrink-0">
                           {STATUS_OPTIONS.lead.find((o) => o.value === item.status)?.label ||
                             item.status}
                         </Badge>
@@ -348,8 +345,7 @@ export default function LeadsPage() {
                               variant="outline"
                               size="sm"
                               title="Đổi trạng thái"
-                              loading={isLeadAction(item.id, "status")}
-                            >
+                              loading={isLeadAction(item.id, "status")}>
                               <RefreshCw className="h-4 w-4" />
                             </Button>
                           }
@@ -362,8 +358,7 @@ export default function LeadsPage() {
                             variant="outline"
                             size="sm"
                             loading={isLeadAction(item.id, "convert")}
-                            onClick={() => handleConvert(item)}
-                          >
+                            onClick={() => handleConvert(item)}>
                             <UserPlus className="h-4 w-4" />
                           </Button>
                         ) : null}
@@ -371,8 +366,7 @@ export default function LeadsPage() {
                           variant="danger"
                           size="sm"
                           loading={isLeadAction(item.id, "delete")}
-                          onClick={() => handleDelete(item)}
-                        >
+                          onClick={() => handleDelete(item)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </MobileRecordActions>
@@ -400,8 +394,7 @@ export default function LeadsPage() {
                           <button
                             type="button"
                             className="font-medium text-left hover:text-[var(--color-text-secondary)]"
-                            onClick={() => openDetail(item)}
-                          >
+                            onClick={() => openDetail(item)}>
                             {item.name}
                           </button>
                           {item.company ? (
@@ -436,8 +429,7 @@ export default function LeadsPage() {
                                 variant="outline"
                                 size="sm"
                                 loading={isLeadAction(item.id, "convert")}
-                                onClick={() => handleConvert(item)}
-                              >
+                                onClick={() => handleConvert(item)}>
                                 <UserPlus className="h-4 w-4" />
                               </Button>
                             ) : null}
@@ -445,8 +437,7 @@ export default function LeadsPage() {
                               variant="danger"
                               size="sm"
                               loading={isLeadAction(item.id, "delete")}
-                              onClick={() => handleDelete(item)}
-                            >
+                              onClick={() => handleDelete(item)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
@@ -519,14 +510,14 @@ export default function LeadsPage() {
                   onChange={(e) => setNote(e.target.value)}
                 />
               </div>
-              <div className="flex justify-end gap-2">
+              <DialogFooter>
                 <Button variant="outline" onClick={() => setSelected(null)}>
                   Đóng
                 </Button>
                 <Button onClick={handleSave} loading={submitting}>
                   Lưu
                 </Button>
-              </div>
+              </DialogFooter>
             </div>
           ) : null}
         </DialogContent>

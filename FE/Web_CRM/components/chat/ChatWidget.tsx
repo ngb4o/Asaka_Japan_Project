@@ -67,8 +67,7 @@ function ChatTriggerButton({
         "h-10 w-10 px-0",
         open && "bg-[var(--color-surface-muted)]",
         className
-      )}
-    >
+      )}>
       <AiAssistantIcon />
     </Button>
   );

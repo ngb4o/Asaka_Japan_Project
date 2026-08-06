@@ -676,10 +676,12 @@ export const CHAT_TOOLS = [
     kind: 'read',
     requiredRoles: ['accountant'],
     description:
-      'Báo cáo bán hàng theo kỳ. preset: today|thisWeek|thisMonth|lastMonth|thisQuarter|thisYear hoặc from/to.',
+      'Báo cáo bán hàng theo kỳ. Ưu tiên year+month (vd tháng 7/2026 → year:2026,month:7). Hoặc from/to YYYY-MM-DD, hoặc preset thisMonth|lastMonth|…',
     parameters: {
       type: 'object',
       properties: {
+        year: { type: 'integer', description: 'Năm, vd 2026' },
+        month: { type: 'integer', description: 'Tháng 1–12' },
         preset: {
           type: 'string',
           description: 'today|thisWeek|thisMonth|lastMonth|thisQuarter|thisYear'
@@ -689,8 +691,68 @@ export const CHAT_TOOLS = [
       }
     },
     execute: async (args, userCtx) => {
-      const data = await dashboardService.getReports(args)
-      return canViewProfit(userCtx) ? data : stripProfit(data)
+      const query = {}
+      if (args.year != null && args.month != null) {
+        query.year = args.year
+        query.month = args.month
+      } else if (args.from && args.to) {
+        query.from = args.from
+        query.to = args.to
+      } else if (args.preset) {
+        query.preset = args.preset
+      } else {
+        query.preset = 'thisMonth'
+      }
+
+      const data = await dashboardService.getReports(query)
+      const cleaned = canViewProfit(userCtx) ? data : stripProfit(data)
+      const kpis = cleaned.kpis || {}
+      const period = cleaned.period || {}
+      const from = period.from ? new Date(period.from) : null
+      const to = period.to ? new Date(period.to) : null
+      let periodLabel = period.preset || 'custom'
+      if (from && to) {
+        const sameMonth =
+          from.getFullYear() === to.getFullYear() &&
+          from.getMonth() === to.getMonth()
+        periodLabel = sameMonth
+          ? `Tháng ${from.getMonth() + 1}/${from.getFullYear()}`
+          : `${from.toISOString().slice(0, 10)} → ${to.toISOString().slice(0, 10)}`
+      }
+
+      const orderCount = Number(kpis.orderCount) || 0
+      return {
+        periodLabel,
+        period: {
+          preset: period.preset,
+          from: period.from,
+          to: period.to
+        },
+        empty: orderCount === 0,
+        emptyNote:
+          orderCount === 0
+            ? `Không có đơn hàng (không hủy) trong ${periodLabel}. Không lấy số liệu kỳ khác.`
+            : undefined,
+        definitions: {
+          revenue: 'Tổng tiền đơn không hủy (theo ngày tạo)',
+          orderCount: 'Số đơn không hủy',
+          completedCount: 'Số đơn status=completed',
+          completedRevenue: 'Doanh thu chỉ đơn completed'
+        },
+        kpis: {
+          orderCount,
+          revenue: Number(kpis.revenue) || 0,
+          completedCount: Number(kpis.completedCount) || 0,
+          completedRevenue: Number(kpis.completedRevenue) || 0,
+          paidAmount: Number(kpis.paidAmount) || 0,
+          debt: Number(kpis.debt) || 0,
+          avgOrderValue: Number(kpis.avgOrderValue) || 0,
+          revenueChangePercent: kpis.revenueChangePercent
+        },
+        statusBreakdown: cleaned.statusBreakdown || [],
+        topDealers: (cleaned.topDealers || []).slice(0, 5),
+        topProducts: (cleaned.topProducts || []).slice(0, 5)
+      }
     }
   },
   {

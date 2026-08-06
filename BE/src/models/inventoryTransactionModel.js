@@ -27,6 +27,16 @@ const INVENTORY_TRANSACTION_SCHEMA = Joi.object({
   /** Đơn giá nhập/xuất theo unitType của phiếu (optional; chủ yếu dùng khi nhập) */
   unitCost: Joi.number().min(0).default(0),
   totalCost: Joi.number().min(0).default(0),
+  supplierId: Joi.string()
+    .allow(null, '')
+    .pattern(OBJECT_ID_RULE)
+    .message(OBJECT_ID_RULE_MESSAGE)
+    .default(null),
+  purchaseId: Joi.string()
+    .allow(null, '')
+    .pattern(OBJECT_ID_RULE)
+    .message(OBJECT_ID_RULE_MESSAGE)
+    .default(null),
   balanceAfter: Joi.number().required().min(0),
   createdBy: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
   createdAt: Joi.date().default(() => new Date())
@@ -41,6 +51,16 @@ const createNew = async (data, session = null) => {
   validData.warehouseId = new ObjectId(validData.warehouseId)
   validData.productId = new ObjectId(validData.productId)
   validData.createdBy = new ObjectId(validData.createdBy)
+  if (validData.supplierId) {
+    validData.supplierId = new ObjectId(validData.supplierId)
+  } else {
+    validData.supplierId = null
+  }
+  if (validData.purchaseId) {
+    validData.purchaseId = new ObjectId(validData.purchaseId)
+  } else {
+    validData.purchaseId = null
+  }
 
   const options = session ? { session } : {}
 

@@ -62,8 +62,7 @@ export function FilterTrigger({
         open &&
           "border-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]",
         className
-      )}
-    >
+      )}>
       <Filter className="h-4 w-4" />
       {activeCount > 0 ? (
         <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-text-secondary)] px-1 text-[10px] font-bold text-white">
@@ -114,8 +113,7 @@ function FilterFooter({
       className={cn(
         "grid gap-2",
         canClear && onClear ? "grid-cols-2" : "grid-cols-1"
-      )}
-    >
+      )}>
       {canClear && onClear ? (
         <Button type="button" variant="outline" onClick={onClear}>
           Xóa lọc
@@ -191,13 +189,11 @@ export function FilterDrawer({
         onOpenChange={onOpenChange}
         title={title}
         maxHeight="85dvh"
-        className={className}
-      >
+        className={className}>
         <FilterPanelBody
           canClear={draftCount > 0}
           onClear={onClear}
-          onDone={onApply}
-        >
+          onDone={onApply}>
           {children}
         </FilterPanelBody>
       </BottomSheet>
@@ -215,8 +211,7 @@ export function FilterDrawer({
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      aria-hidden={!open}
-    >
+      aria-hidden={!open}>
       <button
         type="button"
         tabIndex={open ? 0 : -1}
@@ -233,8 +228,7 @@ export function FilterDrawer({
         style={{
           paddingTop: "env(safe-area-inset-top)",
           paddingBottom: "env(safe-area-inset-bottom)",
-        }}
-      >
+        }}>
         <div className="flex shrink-0 items-center gap-2 border-b border-[var(--color-border-subtle)] px-4 py-3">
           <div className="min-w-0 flex-1">
             <p className="truncate text-base font-semibold tracking-tight">
@@ -245,8 +239,7 @@ export function FilterDrawer({
             type="button"
             aria-label="Đóng"
             onClick={() => onOpenChange(false)}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-          >
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]">
             <X className="h-5 w-5" />
           </button>
         </div>

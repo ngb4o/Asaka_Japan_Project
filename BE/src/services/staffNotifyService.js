@@ -156,11 +156,18 @@ const entityFromCopy = (copy = {}) => {
 
 /**
  * Ghi inbox per-user rồi gửi web push cùng audience.
- * Admin luôn được gắn vào mọi thông báo.
+ * Admin được gắn vào mọi thông báo trừ khi options.includeAdmins === false
+ * (thông báo cá nhân kiểu "Bạn được gắn…").
  */
 const dispatch = async (copy, userIds, options = {}) => {
-  const adminIds = await findUserIdsByRoles([USER_ROLES.ADMIN])
-  const recipients = uniqueIds([...(userIds || []), ...adminIds])
+  const includeAdmins = options.includeAdmins !== false
+  const adminIds = includeAdmins
+    ? await findUserIdsByRoles([USER_ROLES.ADMIN])
+    : []
+  let recipients = uniqueIds([...(userIds || []), ...adminIds])
+  if (options.excludeUserId) {
+    recipients = excludeUser(recipients, options.excludeUserId)
+  }
   if (!copy || !recipients.length) return { written: 0, pushed: 0 }
 
   const type = options.type || inferTypeFromCopy(copy)
@@ -412,7 +419,7 @@ const onOrderCreated = async (order, excludeUserId = null) => {
   })
 }
 
-/** NV giao mới được gắn vào đơn */
+/** NV giao mới được gắn vào đơn — chỉ gửi cho chính NV đó (không broadcast admin). */
 const onOrderDeliveryAssigned = async (
   order,
   newlyAssignedEmployeeIds = [],
@@ -420,16 +427,15 @@ const onOrderDeliveryAssigned = async (
 ) => {
   const employeeIds = uniqueIds(newlyAssignedEmployeeIds)
   if (!employeeIds.length) return
-  // Luôn dispatch (kể cả khi NV chưa link user) để admin vẫn nhận
-  const userIds = excludeUser(
-    await findUserIdsByEmployeeIds(employeeIds),
-    excludeUserId
-  )
+  const userIds = await findUserIdsByEmployeeIds(employeeIds)
+  if (!userIds.length) return
   const copy = webPushCopy.orderDeliveryAssigned(order)
   await dispatch(copy, userIds, {
     type: NOTIFICATION_TYPES.ORDER,
     entityType: 'order',
-    entityId: order.id || order._id?.toString?.() || null
+    entityId: order.id || order._id?.toString?.() || null,
+    includeAdmins: false,
+    excludeUserId
   })
 }
 

@@ -83,8 +83,7 @@ export function LocationCapture({
           variant="outline"
           size="sm"
           loading={loading}
-          onClick={() => void capture()}
-        >
+          onClick={() => void capture()}>
           <MapPin className="h-4 w-4" />
           {value ? "Cập nhật vị trí" : label}
         </Button>
@@ -94,8 +93,7 @@ export function LocationCapture({
             variant="ghost"
             size="sm"
             onClick={() => onChange(null)}
-            aria-label="Xóa vị trí"
-          >
+            aria-label="Xóa vị trí">
             <X className="h-4 w-4" />
             Xóa
           </Button>

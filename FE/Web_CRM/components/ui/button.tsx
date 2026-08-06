@@ -81,8 +81,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         <Comp
           className={cn(buttonVariants({ variant, size }), className)}
           ref={ref}
-          {...props}
-        >
+          {...props}>
           {children}
         </Comp>
       );
@@ -94,15 +93,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={isDisabled}
         aria-busy={loading || undefined}
-        {...props}
-      >
+        {...props}>
         <span
           className={cn(
             "inline-flex items-center justify-center gap-2",
             loading && "invisible"
           )}
-          aria-hidden={loading || undefined}
-        >
+          aria-hidden={loading || undefined}>
           {children}
         </span>
         {loading ? (

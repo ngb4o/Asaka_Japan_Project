@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -89,8 +90,7 @@ function RoleCheckboxes({
     <div
       className={cn(
         compact ? "flex flex-wrap gap-1.5" : "grid grid-cols-2 gap-2"
-      )}
-    >
+      )}>
       {ALL_USER_ROLES.map((role) => {
         const checked = value.includes(role);
         return (
@@ -103,8 +103,7 @@ function RoleCheckboxes({
                 ? "border-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]"
                 : "border-[var(--color-border-subtle)]",
               disabled && "cursor-not-allowed opacity-50"
-            )}
-          >
+            )}>
             <input
               type="checkbox"
               className="h-3.5 w-3.5 accent-[var(--color-text-secondary)]"
@@ -415,8 +414,7 @@ export default function UsersPage() {
             title="Bộ lọc tài khoản"
             onClear={filters.clearDraft}
             onApply={filters.apply}
-            draftCount={filters.draftCount}
-          >
+            draftCount={filters.draftCount}>
             <FilterOptionList
               label="Vai trò"
               value={filters.draft.role}
@@ -435,8 +433,7 @@ export default function UsersPage() {
                 onRefresh={loadData}
                 onLoadMore={() => {}}
                 hasMore={false}
-                disabled={loading}
-              >
+                disabled={loading}>
                 <div className="flex flex-col gap-3">
                   {filteredItems.map((item) => (
                     <MobileRecordCard key={item.id} className="p-3">
@@ -480,8 +477,7 @@ export default function UsersPage() {
                           onClick={() => {
                             setPasswordTarget(item);
                             setNewPassword(randomPassword());
-                          }}
-                        >
+                          }}>
                           <KeyRound className="h-4 w-4" />
                         </Button>
                         {item.id !== user?.id ? (
@@ -491,8 +487,7 @@ export default function UsersPage() {
                             className="h-9 min-w-9"
                             title="Xóa tài khoản"
                             loading={isUserAction(item.id, "delete")}
-                            onClick={() => handleDelete(item)}
-                          >
+                            onClick={() => handleDelete(item)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         ) : null}
@@ -546,8 +541,7 @@ export default function UsersPage() {
                             onClick={() => {
                               setPasswordTarget(item);
                               setNewPassword(randomPassword());
-                            }}
-                          >
+                            }}>
                             <KeyRound className="h-4 w-4" />
                             Đặt lại MK
                           </Button>
@@ -556,8 +550,7 @@ export default function UsersPage() {
                               variant="danger"
                               size="sm"
                               loading={isUserAction(item.id, "delete")}
-                              onClick={() => handleDelete(item)}
-                            >
+                              onClick={() => handleDelete(item)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           ) : null}
@@ -617,8 +610,7 @@ export default function UsersPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setForm({ ...form, password: randomPassword() })}
-                >
+                  onClick={() => setForm({ ...form, password: randomPassword() })}>
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
@@ -636,14 +628,14 @@ export default function UsersPage() {
                 Ví dụ: Kinh doanh + Kho nếu một người vừa bán vừa xuất hàng.
               </p>
             </div>
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
                 Hủy
               </Button>
               <Button type="submit" loading={submitting}>
                 Cấp tài khoản
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -652,8 +644,7 @@ export default function UsersPage() {
         open={passwordTarget !== null}
         onOpenChange={(open) => {
           if (!open) setPasswordTarget(null);
-        }}
-      >
+        }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
@@ -673,24 +664,22 @@ export default function UsersPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setNewPassword(randomPassword())}
-                >
+                  onClick={() => setNewPassword(randomPassword())}>
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
             </div>
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setPasswordTarget(null)}
-              >
+                onClick={() => setPasswordTarget(null)}>
                 Hủy
               </Button>
               <Button type="submit" loading={submitting}>
                 Lưu
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -699,8 +688,7 @@ export default function UsersPage() {
         open={createdCreds !== null}
         onOpenChange={(open) => {
           if (!open) setCreatedCreds(null);
-        }}
-      >
+        }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Thông tin đăng nhập</DialogTitle>
@@ -721,23 +709,22 @@ export default function UsersPage() {
                   <span className="font-mono font-medium">{createdCreds.password}</span>
                 </p>
               </div>
-              <div className="flex justify-end gap-2">
+              <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={async () => {
-                    await navigator.clipboard.writeText(
-                      `Email: ${createdCreds.email}\nMật khẩu: ${createdCreds.password}`
-                    );
-                    toast.success("Đã copy");
-                  }}
-                >
+                  await navigator.clipboard.writeText(
+                  `Email: ${createdCreds.email}\nMật khẩu: ${createdCreds.password}`
+                  );
+                  toast.success("Đã copy");
+                  }}>
                   Copy
                 </Button>
                 <Button type="button" onClick={() => setCreatedCreds(null)}>
                   Đóng
                 </Button>
-              </div>
+              </DialogFooter>
             </div>
           ) : null}
         </DialogContent>

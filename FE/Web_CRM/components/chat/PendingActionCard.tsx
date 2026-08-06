@@ -24,8 +24,7 @@ export function PendingActionCard({
       className={cn(
         "rounded-xl border border-amber-200/80 bg-amber-50/90 p-3 text-sm text-amber-950 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100",
         className
-      )}
-    >
+      )}>
       <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
         Cần xác nhận
       </p>
@@ -36,8 +35,7 @@ export function PendingActionCard({
           variant="outline"
           size="sm"
           disabled={busy}
-          onClick={onCancel}
-        >
+          onClick={onCancel}>
           Hủy
         </Button>
         <Button type="button" size="sm" loading={busy} onClick={onConfirm}>

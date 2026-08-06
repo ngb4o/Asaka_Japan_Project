@@ -232,8 +232,7 @@ export function DateRangeInput({
             picking === "from"
               ? "border-[var(--color-text-secondary)] bg-[var(--color-text-secondary)]/8 ring-1 ring-[var(--color-text-secondary)]/20"
               : "border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-muted)]"
-          )}
-        >
+          )}>
           <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
             {fromLabel}
           </p>
@@ -255,8 +254,7 @@ export function DateRangeInput({
               ? "border-[var(--color-text-secondary)] bg-[var(--color-text-secondary)]/8 ring-1 ring-[var(--color-text-secondary)]/20"
               : "border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-muted)]",
             !draftFrom && "opacity-50"
-          )}
-        >
+          )}>
           <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
             {toLabel}
           </p>
@@ -266,8 +264,7 @@ export function DateRangeInput({
               previewEnd && !draftTo
                 ? "text-[var(--color-text-secondary)]"
                 : "text-[var(--color-text-primary)]"
-            )}
-          >
+            )}>
             {previewToLabel ? formatDateDisplay(previewToLabel) : "—"}
           </p>
         </button>
@@ -284,8 +281,7 @@ export function DateRangeInput({
           type="button"
           aria-label="Tháng trước"
           className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-          onClick={() => setViewMonth((month) => addMonths(month, -1))}
-        >
+          onClick={() => setViewMonth((month) => addMonths(month, -1))}>
           <ChevronLeft className="h-4 w-4" />
         </button>
         <p className="text-sm font-semibold tracking-tight text-[var(--color-text-primary)]">
@@ -295,8 +291,7 @@ export function DateRangeInput({
           type="button"
           aria-label="Tháng sau"
           className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-          onClick={() => setViewMonth((month) => addMonths(month, 1))}
-        >
+          onClick={() => setViewMonth((month) => addMonths(month, 1))}>
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
@@ -305,8 +300,7 @@ export function DateRangeInput({
         {WEEKDAYS.map((day) => (
           <div
             key={day}
-            className="flex h-8 items-center justify-center text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-inverse)]"
-          >
+            className="flex h-8 items-center justify-center text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-inverse)]">
             {day}
           </div>
         ))}
@@ -314,8 +308,7 @@ export function DateRangeInput({
 
       <div
         className="grid grid-cols-7 gap-1"
-        onMouseLeave={() => setHoverIso("")}
-      >
+        onMouseLeave={() => setHoverIso("")}>
         {days.map((day) => {
           const inMonth = day.getMonth() === viewMonth.getMonth();
           const isFrom = rangeStart ? sameDay(day, rangeStart) : false;
@@ -377,8 +370,7 @@ export function DateRangeInput({
                   isToday &&
                   "font-semibold text-[var(--color-text-secondary)] ring-1 ring-[var(--color-text-secondary)]/35",
                 disabledBeforeFrom && "cursor-not-allowed opacity-30"
-              )}
-            >
+              )}>
               {day.getDate()}
             </button>
           );
@@ -397,8 +389,7 @@ export function DateRangeInput({
             setViewMonth(startOfMonth(new Date()));
             setOpen(false);
             setPicking("from");
-          }}
-        >
+          }}>
           Hôm nay
         </button>
         <div className="flex items-center gap-1">
@@ -409,16 +400,14 @@ export function DateRangeInput({
               onClick={() => {
                 clearValue();
                 setOpen(false);
-              }}
-            >
+              }}>
               Xóa
             </button>
           ) : null}
           <button
             type="button"
             className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-            onClick={() => setOpen(false)}
-          >
+            onClick={() => setOpen(false)}>
             Đóng
           </button>
         </div>
@@ -434,8 +423,7 @@ export function DateRangeInput({
         open &&
           "border-[var(--color-text-secondary)] ring-2 ring-[var(--color-text-secondary)]/20",
         disabled && "cursor-not-allowed opacity-50"
-      )}
-    >
+      )}>
       <button
         type="button"
         id={id}
@@ -443,8 +431,7 @@ export function DateRangeInput({
         className="min-w-0 flex-1 truncate bg-transparent text-left text-base tabular-nums tracking-wide text-[var(--color-text-primary)] outline-none disabled:cursor-not-allowed md:text-sm"
         onClick={() => {
           if (!disabled && isMobile) handleOpenChange(true);
-        }}
-      >
+        }}>
         {displayText ? (
           displayText
         ) : (
@@ -465,8 +452,7 @@ export function DateRangeInput({
               event.preventDefault();
               event.stopPropagation();
               clearValue(event);
-            }}
-          >
+            }}>
             <X className="h-3.5 w-3.5" />
           </button>
         ) : null}
@@ -483,8 +469,7 @@ export function DateRangeInput({
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => {
             if (!disabled && isMobile) handleOpenChange(true);
-          }}
-        >
+          }}>
           <CalendarDays className="h-4 w-4" />
         </button>
       </div>
@@ -498,8 +483,7 @@ export function DateRangeInput({
         <BottomSheet
           open={open}
           onOpenChange={handleOpenChange}
-          title="Chọn khoảng ngày"
-        >
+          title="Chọn khoảng ngày">
           <div className="p-4">{panel}</div>
         </BottomSheet>
       </div>
@@ -523,8 +507,7 @@ export function DateRangeInput({
               "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
             )}
             onOpenAutoFocus={(event) => event.preventDefault()}
-            onCloseAutoFocus={(event) => event.preventDefault()}
-          >
+            onCloseAutoFocus={(event) => event.preventDefault()}>
             {panel}
           </Popover.Content>
         </Popover.Portal>

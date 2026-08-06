@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
@@ -344,8 +345,7 @@ export default function EmployeesPage() {
             title="Bộ lọc nhân viên"
             onClear={filters.clearDraft}
             onApply={filters.apply}
-            draftCount={filters.draftCount}
-          >
+            draftCount={filters.draftCount}>
             <FilterOptionList
               label="Trạng thái"
               value={filters.draft.status}
@@ -365,8 +365,7 @@ export default function EmployeesPage() {
                 onLoadMore={loadMore}
                 hasMore={hasMore}
                 loadingMore={loadingMore}
-                disabled={loading}
-              >
+                disabled={loading}>
                 <div className="flex flex-col gap-3">
                 {items.map((item) => (
                   <MobileRecordCard key={item.id} className="p-3">
@@ -399,8 +398,7 @@ export default function EmployeesPage() {
                       ) : (
                         <Badge
                           variant={statusBadgeVariant(item.status)}
-                          className="shrink-0"
-                        >
+                          className="shrink-0">
                           {item.status === "active" ? "Đang làm" : "Ngưng"}
                         </Badge>
                       )}
@@ -431,8 +429,7 @@ export default function EmployeesPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => openDetail(item)}
-                        title="Xem chi tiết"
-                      >
+                        title="Xem chi tiết">
                         <Eye className="h-4 w-4" />
                       </Button>
                       {canEdit ? (
@@ -444,8 +441,7 @@ export default function EmployeesPage() {
                             variant="danger"
                             size="sm"
                             loading={actionId === item.id}
-                            onClick={() => handleDelete(item)}
-                          >
+                            onClick={() => handleDelete(item)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </>
@@ -522,8 +518,7 @@ export default function EmployeesPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => openDetail(item)}
-                            title="Xem chi tiết"
-                          >
+                            title="Xem chi tiết">
                             <Eye className="h-4 w-4" />
                           </Button>
                           {canEdit ? (
@@ -535,8 +530,7 @@ export default function EmployeesPage() {
                                 variant="danger"
                                 size="sm"
                                 loading={actionId === item.id}
-                                onClick={() => handleDelete(item)}
-                              >
+                                onClick={() => handleDelete(item)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </>
@@ -696,14 +690,14 @@ export default function EmployeesPage() {
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
               />
             </div>
-            <div className="flex justify-end gap-2 sm:col-span-2">
+            <DialogFooter className="sm:col-span-2">
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy
               </Button>
               <Button type="submit" loading={submitting}>
                 Lưu
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

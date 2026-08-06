@@ -28,8 +28,7 @@ function ProductThumb({
       className={cn(
         "relative shrink-0 overflow-hidden border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]",
         box
-      )}
-    >
+      )}>
       {src ? (
         <Image
           src={getImageUrl(src)}
@@ -47,12 +46,45 @@ function ProductThumb({
   );
 }
 
-/** Mobile: product cards with image. Desktop: table with thumbnail. */
-export function OrderLineItemsList({ items }: { items: LineItem[] }) {
+type OrderLineItemsListProps = {
+  items: LineItem[];
+  /** Default true — set false for compact debt dialogs */
+  showImages?: boolean;
+};
+
+/** Mobile: product cards. Desktop: table. */
+export function OrderLineItemsList({
+  items,
+  showImages = true,
+}: OrderLineItemsListProps) {
   const isMobile = useIsMobile();
 
   if (!items.length) {
     return <EmptyState title="Chưa có sản phẩm" size="sm" />;
+  }
+
+  if (!showImages) {
+    return (
+      <div className="overflow-hidden rounded-xl border border-[var(--color-border-subtle)]">
+        {items.map((item, index) => (
+          <div
+            key={`${item.productId}-${index}`}
+            className="flex items-start justify-between gap-3 border-b border-[var(--color-border-subtle)] px-3 py-2.5 last:border-b-0">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">
+                {item.productName || "—"}
+              </p>
+              <p className="mt-0.5 truncate text-xs text-[var(--color-text-inverse)]">
+                {item.quantity} × {formatCurrency(item.unitPrice)}
+              </p>
+            </div>
+            <p className="shrink-0 text-sm font-semibold tabular-nums text-[var(--color-text-primary)]">
+              {formatCurrency(item.lineTotal)}
+            </p>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   if (isMobile) {
@@ -75,8 +107,7 @@ export function OrderLineItemsList({ items }: { items: LineItem[] }) {
                   Đơn giá: {formatCurrency(item.unitPrice)}
                 </MobileMetaChip>
               </>
-            }
-          >
+            }>
             <p className="mt-2 text-right text-sm font-semibold tabular-nums text-[var(--color-text-secondary)]">
               {formatCurrency(item.lineTotal)}
             </p>

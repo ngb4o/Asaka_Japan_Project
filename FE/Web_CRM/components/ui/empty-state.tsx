@@ -34,15 +34,13 @@ export function EmptyState({
         "flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/40 text-center",
         compact ? "gap-2 px-4 py-8" : "gap-3 px-6 py-12",
         className
-      )}
-    >
+      )}>
       {hideIcon ? null : (
         <div
           className={cn(
             "inline-flex items-center justify-center rounded-full bg-[var(--color-surface-elevated)] text-[var(--color-text-inverse)] shadow-sm ring-1 ring-[var(--color-border-subtle)]",
             compact ? "h-10 w-10" : "h-12 w-12"
-          )}
-        >
+          )}>
           {icon ?? (
             <Inbox
               className={cn(compact ? "h-4 w-4" : "h-5 w-5")}
@@ -56,8 +54,7 @@ export function EmptyState({
           className={cn(
             "font-medium text-[var(--color-text-primary)]",
             compact ? "text-sm" : "text-sm sm:text-[15px]"
-          )}
-        >
+          )}>
           {title}
         </p>
         {description ? (

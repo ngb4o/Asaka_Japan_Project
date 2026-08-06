@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
@@ -326,8 +327,7 @@ export default function DealersPage() {
             title="Bộ lọc đại lý"
             onClear={filters.clearDraft}
             onApply={filters.apply}
-            draftCount={filters.draftCount}
-          >
+            draftCount={filters.draftCount}>
             <FilterOptionList
               label="Trạng thái"
               value={filters.draft.status}
@@ -357,8 +357,7 @@ export default function DealersPage() {
                 onLoadMore={loadMore}
                 hasMore={hasMore}
                 loadingMore={loadingMore}
-                disabled={loading}
-              >
+                disabled={loading}>
                 <div className="flex flex-col gap-3">
                   {items.map((item) => {
                     const tierLabel =
@@ -379,8 +378,7 @@ export default function DealersPage() {
                           </div>
                           <Badge
                             variant={statusBadgeVariant(item.status)}
-                            className="shrink-0"
-                          >
+                            className="shrink-0">
                             {STATUS_OPTIONS.dealer.find((o) => o.value === item.status)?.label ||
                               item.status}
                           </Badge>
@@ -414,8 +412,7 @@ export default function DealersPage() {
                                   variant="outline"
                                   size="sm"
                                   title="Đổi trạng thái"
-                                  loading={isDealerAction(item.id, "update")}
-                                >
+                                  loading={isDealerAction(item.id, "update")}>
                                   <RefreshCw className="h-4 w-4" />
                                 </Button>
                               }
@@ -425,8 +422,7 @@ export default function DealersPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => openDetail(item)}
-                            title="Xem sản phẩm / đơn hàng"
-                          >
+                            title="Xem sản phẩm / đơn hàng">
                             <Eye className="h-4 w-4" />
                           </Button>
                           {canWrite ? (
@@ -434,16 +430,14 @@ export default function DealersPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => openEdit(item)}
-                              >
+                                onClick={() => openEdit(item)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="danger"
                                 size="sm"
                                 loading={isDealerAction(item.id, "delete")}
-                                onClick={() => handleDelete(item)}
-                              >
+                                onClick={() => handleDelete(item)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </>
@@ -533,8 +527,7 @@ export default function DealersPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => openDetail(item)}
-                              title="Xem sản phẩm / đơn hàng"
-                            >
+                              title="Xem sản phẩm / đơn hàng">
                               <Eye className="h-4 w-4" />
                             </Button>
                             {canWrite ? (
@@ -542,16 +535,14 @@ export default function DealersPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => openEdit(item)}
-                                >
+                                  onClick={() => openEdit(item)}>
                                   <Pencil className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="danger"
                                   size="sm"
                                   loading={isDealerAction(item.id, "delete")}
-                                  onClick={() => handleDelete(item)}
-                                >
+                                  onClick={() => handleDelete(item)}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </>
@@ -692,14 +683,14 @@ export default function DealersPage() {
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy
               </Button>
               <Button type="submit" loading={submitting}>
                 Lưu
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

@@ -158,19 +158,16 @@ export function MobileInfiniteList({
         pulling.current = false;
         pullStartY.current = null;
         setPullDistance(0);
-      }}
-    >
+      }}>
       <div
         className="pointer-events-none flex items-center justify-center overflow-hidden transition-[height] duration-150"
         style={{ height: indicatorOffset }}
-        aria-hidden={!refreshing && pullDistance === 0}
-      >
+        aria-hidden={!refreshing && pullDistance === 0}>
         <div
           className={cn(
             "flex items-center gap-2 text-xs font-medium text-[var(--color-text-inverse)]",
             (readyToRefresh || refreshing) && "text-[var(--color-text-secondary)]"
-          )}
-        >
+          )}>
           {refreshing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (

@@ -53,9 +53,37 @@ const getTransactions = async (req, res, next) => {
   }
 }
 
+const getStockValuation = async (req, res, next) => {
+  try {
+    const result = await inventoryService.getStockValuation(req.query)
+
+    res.status(StatusCodes.OK).json({
+      message: 'Lấy vốn tồn kho thành công!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const getFlowReport = async (req, res, next) => {
+  try {
+    const result = await inventoryService.getFlowReport(req.query)
+
+    res.status(StatusCodes.OK).json({
+      message: 'Lấy báo cáo dòng vốn kho thành công!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const inventoryController = {
   importStock,
   exportStock,
   getStocks,
+  getStockValuation,
+  getFlowReport,
   getTransactions
 }

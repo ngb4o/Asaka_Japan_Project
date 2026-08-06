@@ -19,6 +19,7 @@ import {
   Settings,
   ShoppingCart,
   Tags,
+  Truck,
   Users,
   UsersRound,
   Wallet,
@@ -74,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
         icon: MessageSquare,
       },
       { href: "/dealers", label: "Đại lý", icon: Handshake },
+      { href: "/suppliers", label: "Nhà cung cấp", icon: Truck },
       {
         href: "/orders",
         label: "Đơn hàng",
@@ -280,8 +282,7 @@ export function Sidebar({
                 className={cn(
                   "grid transition-[grid-template-rows] duration-200 ease-out",
                   open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-                )}
-              >
+                )}>
                 <div className="overflow-hidden">
                   <div className="space-y-0.5 pb-1 pl-2">
                     {group.items.map((item) => {
@@ -298,8 +299,7 @@ export function Sidebar({
                             active
                               ? "bg-[var(--color-sidebar-active-bg)] text-[var(--color-sidebar-active-fg)]"
                               : "text-[var(--color-sidebar-muted)] hover:bg-white/5 hover:text-white"
-                          )}
-                        >
+                          )}>
                           {active ? (
                             <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-[var(--color-sidebar-active-fg)]" />
                           ) : null}
@@ -334,8 +334,7 @@ export function Sidebar({
           variant="outline"
           size="sm"
           className="w-full border-white/10 bg-transparent text-white hover:bg-white/10 hover:text-white"
-          onClick={() => setPasswordOpen(true)}
-        >
+          onClick={() => setPasswordOpen(true)}>
           <KeyRound className="h-4 w-4" />
           Đổi mật khẩu
         </Button>
@@ -344,8 +343,7 @@ export function Sidebar({
           size="sm"
           className="w-full border-white/10 bg-transparent text-white hover:bg-white/10 hover:text-white"
           loading={loggingOut}
-          onClick={handleLogout}
-        >
+          onClick={handleLogout}>
           <LogOut className="h-4 w-4" />
           Đăng xuất
         </Button>
@@ -359,8 +357,7 @@ export function Sidebar({
         className={cn(
           panelClassName,
           "sticky top-0 hidden h-screen w-[272px] lg:flex"
-        )}
-      >
+        )}>
         {navPanel}
       </aside>
 
@@ -374,8 +371,7 @@ export function Sidebar({
           />
           <aside
             className={cn(panelClassName, "relative z-10 h-full shadow-2xl")}
-            style={{ paddingTop: "env(safe-area-inset-top)" }}
-          >
+            style={{ paddingTop: "env(safe-area-inset-top)" }}>
             {navPanel}
           </aside>
         </div>

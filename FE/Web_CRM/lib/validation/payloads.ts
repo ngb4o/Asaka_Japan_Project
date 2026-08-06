@@ -186,6 +186,9 @@ export type InventoryMovementFormValues = {
   unitType: "chai" | "thung";
   note?: string;
   unitCost?: number | "";
+  supplierId?: string;
+  dueDate?: string;
+  paymentStatus?: "unpaid" | "paid";
 };
 
 export function buildInventoryMovementPayload(
@@ -202,12 +205,20 @@ export function buildInventoryMovementPayload(
   if (form.unitCost !== "" && form.unitCost !== undefined) {
     payload.unitCost = Number(form.unitCost) || 0;
   }
+  if (form.supplierId) {
+    payload.supplierId = form.supplierId;
+    payload.paymentStatus = form.paymentStatus || "unpaid";
+    if (form.paymentStatus !== "paid" && form.dueDate?.trim()) {
+      payload.dueDate = form.dueDate.trim();
+    }
+  }
 
   return payload;
 }
 
 export function validateInventoryMovementForm(
-  form: InventoryMovementFormValues
+  form: InventoryMovementFormValues,
+  type?: "import" | "export"
 ): string | null {
   if (!form.warehouseId) return "Vui lòng chọn kho";
   if (!form.productId) return "Vui lòng chọn sản phẩm";
@@ -215,5 +226,11 @@ export function validateInventoryMovementForm(
     return "Số lượng phải lớn hơn 0";
   }
   if (!form.unitType) return "Vui lòng chọn đơn vị nhập/xuất";
+  if (type === "import") {
+    if (form.unitCost === "" || form.unitCost === undefined) {
+      return "Vui lòng nhập giá nhập";
+    }
+    if (Number(form.unitCost) < 0) return "Giá nhập không hợp lệ";
+  }
   return null;
 }

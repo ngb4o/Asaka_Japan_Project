@@ -162,8 +162,7 @@ export function BottomSheet({
       style={{ pointerEvents: "auto" }}
       role="dialog"
       aria-modal="true"
-      aria-label={title || "Hộp thoại"}
-    >
+      aria-label={title || "Hộp thoại"}>
       <div
         aria-label="Đóng"
         className={cn(
@@ -180,8 +179,7 @@ export function BottomSheet({
 
       <div
         className="absolute inset-x-0 bottom-0 z-10 flex max-h-[80dvh] flex-col overflow-hidden"
-        style={{ maxHeight }}
-      >
+        style={{ maxHeight }}>
         <div
           className={cn(
             "relative flex max-h-full min-h-0 w-full flex-col overflow-hidden rounded-t-2xl bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] shadow-[0_-12px_40px_rgba(0,0,0,0.22)]",
@@ -191,8 +189,7 @@ export function BottomSheet({
             className
           )}
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-          onTransitionEnd={handlePanelTransitionEnd}
-        >
+          onTransitionEnd={handlePanelTransitionEnd}>
           <div className="flex shrink-0 flex-col items-center pt-2">
             <div
               className="mb-1 h-1 w-10 rounded-full bg-[var(--color-border-subtle)]"
@@ -212,8 +209,7 @@ export function BottomSheet({
                       event.stopPropagation();
                       close();
                     }}
-                    className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-                  >
+                    className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]">
                     <X className="h-5 w-5" />
                   </button>
                 ) : null}
@@ -238,8 +234,7 @@ export function BottomSheet({
             style={{
               WebkitOverflowScrolling: "touch",
               touchAction: "pan-y",
-            }}
-          >
+            }}>
             {children}
           </div>
         </div>

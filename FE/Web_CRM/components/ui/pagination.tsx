@@ -47,8 +47,7 @@ export function Pagination({
       className={cn(
         "hidden flex-col gap-3 border-t border-[var(--color-border-subtle)] pt-4 md:flex md:flex-row md:items-center md:justify-between",
         className
-      )}
-    >
+      )}>
       <p className="text-sm text-[var(--color-text-inverse)]">
         Hiển thị <span className="font-medium text-[var(--color-text-primary)]">{from}</span>
         {" - "}
@@ -64,8 +63,7 @@ export function Pagination({
           size="sm"
           disabled={disabled || page <= 1}
           onClick={() => onPageChange(page - 1)}
-          aria-label="Trang trước"
-        >
+          aria-label="Trang trước">
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
@@ -85,8 +83,7 @@ export function Pagination({
                 className="min-w-9"
                 disabled={disabled}
                 onClick={() => onPageChange(pageNumber)}
-                aria-current={pageNumber === page ? "page" : undefined}
-              >
+                aria-current={pageNumber === page ? "page" : undefined}>
                 {pageNumber}
               </Button>
             </span>
@@ -99,8 +96,7 @@ export function Pagination({
           size="sm"
           disabled={disabled || page >= totalPages}
           onClick={() => onPageChange(page + 1)}
-          aria-label="Trang sau"
-        >
+          aria-label="Trang sau">
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>

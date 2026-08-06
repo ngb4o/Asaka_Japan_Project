@@ -124,8 +124,7 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
       aria-label="Điều hướng chính"
-      aria-hidden={!visible}
-    >
+      aria-hidden={!visible}>
       <div className="mx-auto flex h-12 max-w-lg items-stretch justify-around px-1 pt-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -140,8 +139,7 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
                 active
                   ? "text-[var(--color-text-secondary)]"
                   : "text-[var(--color-text-inverse)]"
-              )}
-            >
+              )}>
               <Icon className="h-5 w-5 shrink-0" />
               <span className="max-w-full truncate text-[10px] font-medium leading-tight">
                 {tab.label}

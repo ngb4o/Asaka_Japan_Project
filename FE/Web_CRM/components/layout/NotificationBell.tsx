@@ -87,8 +87,7 @@ function NotificationList({
           className={cn(
             "flex items-center gap-3 border-b border-[var(--color-border-subtle)]",
             compact ? "justify-between px-3 py-2.5" : "justify-end px-4 py-2.5"
-          )}
-        >
+          )}>
           {compact ? (
             <p className="text-sm font-semibold text-[var(--color-text-primary)]">
               Thông báo
@@ -99,8 +98,7 @@ function NotificationList({
               variant="outline"
               size="sm"
               loading={markingAllRead}
-              onClick={onMarkAllRead}
-            >
+              onClick={onMarkAllRead}>
               Đánh dấu đã đọc
             </Button>
           ) : null}
@@ -111,15 +109,13 @@ function NotificationList({
         className={cn(
           "overflow-y-auto",
           compact ? "max-h-[420px]" : "max-h-[min(60dvh,480px)]"
-        )}
-      >
+        )}>
         {items.length === 0 ? (
           <EmptyState title="Chưa có thông báo mới" size="sm" className="m-3" />
         ) : (
           <div
             role="list"
-            className="divide-y divide-[var(--color-border-subtle)]"
-          >
+            className="divide-y divide-[var(--color-border-subtle)]">
             {items.map((item) => {
               const meta = TYPE_META[item.type] || TYPE_META.order;
               const Icon = meta.icon;
@@ -133,14 +129,12 @@ function NotificationList({
                   className={cn(
                     "flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[var(--color-surface-muted)]",
                     item.unread && "bg-[var(--color-text-secondary)]/5"
-                  )}
-                >
+                  )}>
                   <span
                     className={cn(
                       "mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
                       meta.tone
-                    )}
-                  >
+                    )}>
                     <Icon className="h-4 w-4" />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -185,8 +179,7 @@ const BellButton = forwardRef<
       aria-label="Thông báo"
       title="Thông báo"
       onClick={onClick}
-      className="relative h-10 w-10 px-0"
-    >
+      className="relative h-10 w-10 px-0">
       <Bell className="h-5 w-5" />
       {unreadCount > 0 ? (
         <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
@@ -241,8 +234,7 @@ export function NotificationBell() {
           open={open}
           onOpenChange={(next) => void handleOpenChange(next)}
           title="Thông báo"
-          maxHeight="85dvh"
-        >
+          maxHeight="85dvh">
           <NotificationList
             items={items}
             unreadCount={unreadCount}
@@ -265,8 +257,7 @@ export function NotificationBell() {
         <Popover.Content
           align="end"
           sideOffset={8}
-          className="z-50 w-[min(92vw,380px)] rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-0 shadow-[var(--shadow-elevated)]"
-        >
+          className="z-50 w-[min(92vw,380px)] rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-0 shadow-[var(--shadow-elevated)]">
           <NotificationList
             items={items}
             unreadCount={unreadCount}

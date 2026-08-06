@@ -120,6 +120,21 @@ const buildContextDigest = (toolName, data) => {
     const line = pickEntityLine(data.topDebtor)
     if (line) lines.push(`topDebtor: ${line}`)
   }
+  if (data.periodLabel || data.kpis) {
+    const k = data.kpis || {}
+    lines.push(
+      [
+        data.periodLabel || 'kỳ',
+        data.empty ? 'empty' : null,
+        k.orderCount != null ? `đơn=${k.orderCount}` : null,
+        k.revenue != null ? `DT=${k.revenue}` : null,
+        k.completedCount != null ? `xong=${k.completedCount}` : null,
+        k.completedRevenue != null ? `DT_xong=${k.completedRevenue}` : null
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    )
+  }
 
   if (!lines.length) return null
   const body = lines.join('\n')

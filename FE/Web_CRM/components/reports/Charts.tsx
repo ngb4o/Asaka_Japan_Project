@@ -75,8 +75,7 @@ function RankingYAxisTick(props: {
         dy={4}
         textAnchor="end"
         fill="var(--color-text-inverse)"
-        fontSize={12}
-      >
+        fontSize={12}>
         {lines.map((line, index) => (
           <tspan key={`${line}-${index}`} x={0} dy={index === 0 ? 0 : 14}>
             {line}
@@ -230,8 +229,7 @@ export function StatusPieChart({
             outerRadius={92}
             paddingAngle={3}
             stroke="var(--color-surface-elevated)"
-            strokeWidth={3}
-          >
+            strokeWidth={3}>
             {filtered.map((_, index) => (
               <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
             ))}
@@ -267,8 +265,7 @@ export function RankingBarChart({
           data={data}
           layout="vertical"
           barCategoryGap={12}
-          margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
-        >
+          margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-subtle)" horizontal={false} />
           <XAxis
             type="number"

@@ -15,6 +15,9 @@ import { tripRoute } from '~/routes/v1/tripRoute'
 import { payrollRoute } from '~/routes/v1/payrollRoute'
 import { dashboardRoute } from '~/routes/v1/dashboardRoute'
 import { receivablesRoute } from '~/routes/v1/receivablesRoute'
+import { supplierRoute } from '~/routes/v1/supplierRoute'
+import { purchaseRoute } from '~/routes/v1/purchaseRoute'
+import { payablesRoute } from '~/routes/v1/payablesRoute'
 import { notificationRoute } from '~/routes/v1/notificationRoute'
 import { chatRoute } from '~/routes/v1/chatRoute'
 
@@ -47,6 +50,9 @@ Router.use('/trips', tripRoute)
 Router.use('/payroll', payrollRoute)
 Router.use('/dashboard', dashboardRoute)
 Router.use('/receivables', receivablesRoute)
+Router.use('/suppliers', supplierRoute)
+Router.use('/purchases', purchaseRoute)
+Router.use('/payables', payablesRoute)
 Router.use('/notifications', notificationRoute)
 Router.use('/chat', chatRoute)
 

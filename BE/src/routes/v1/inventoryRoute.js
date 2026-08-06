@@ -10,12 +10,22 @@ Router.use(verifyToken, attachUserRole)
 
 Router.get(
   '/stocks',
-  requireRoles('sales', 'warehouse'),
+  requireRoles('sales', 'warehouse', 'accountant'),
   inventoryController.getStocks
 )
 Router.get(
+  '/valuation',
+  requireRoles('sales', 'warehouse', 'accountant'),
+  inventoryController.getStockValuation
+)
+Router.get(
+  '/flow-report',
+  requireRoles('warehouse', 'accountant'),
+  inventoryController.getFlowReport
+)
+Router.get(
   '/transactions',
-  requireRoles('sales', 'warehouse'),
+  requireRoles('sales', 'warehouse', 'accountant'),
   inventoryController.getTransactions
 )
 Router.post(

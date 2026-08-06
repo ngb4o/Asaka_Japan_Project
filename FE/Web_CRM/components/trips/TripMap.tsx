@@ -531,8 +531,7 @@ export function TripMap({ stops, expenses, className }: TripMapProps) {
             className="shrink-0"
             onClick={() =>
               window.open(googleMapsUrl, "_blank", "noopener,noreferrer")
-            }
-          >
+            }>
             <ExternalLink className="h-4 w-4" />
             {stopPoints.length >= 2
               ? "Mở lộ trình trên Google Maps"

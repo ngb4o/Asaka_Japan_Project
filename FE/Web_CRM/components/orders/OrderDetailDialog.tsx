@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -366,8 +366,7 @@ export function OrderDetailDialog({
                       {STATUS_LABELS[order.status]}
                     </Badge>
                     <Badge
-                      variant={statusBadgeVariant(order.paymentStatus || "unpaid")}
-                    >
+                      variant={statusBadgeVariant(order.paymentStatus || "unpaid")}>
                       {PAYMENT_LABELS[order.paymentStatus || "unpaid"]}
                     </Badge>
                   </div>
@@ -400,8 +399,7 @@ export function OrderDetailDialog({
                         remaining > 0
                           ? "text-red-600 dark:text-red-400"
                           : "text-[var(--color-text-inverse)]"
-                      )}
-                    >
+                      )}>
                       {formatCurrency(remaining)}
                     </p>
                   </div>
@@ -454,8 +452,7 @@ export function OrderDetailDialog({
                         (order.grossProfit || 0) >= 0
                           ? "text-emerald-600 dark:text-emerald-400"
                           : "text-red-600 dark:text-red-400"
-                      )}
-                    >
+                      )}>
                       Lãi gộp: {formatCurrency(order.grossProfit || 0)}
                     </span>
                   </div>
@@ -524,8 +521,7 @@ export function OrderDetailDialog({
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+              onClick={() => onOpenChange(false)}>
               Đóng
             </Button>
             {showDetailPanel && onEdit ? (
@@ -533,8 +529,7 @@ export function OrderDetailDialog({
                 onClick={() => {
                   onOpenChange(false);
                   onEdit(order);
-                }}
-              >
+                }}>
                 Sửa đơn
               </Button>
             ) : null}

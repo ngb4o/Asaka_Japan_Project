@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
@@ -312,8 +313,7 @@ export default function NewsPage() {
             title="Bộ lọc tin tức"
             onClear={filters.clearDraft}
             onApply={filters.apply}
-            draftCount={filters.draftCount}
-          >
+            draftCount={filters.draftCount}>
             <FilterOptionList
               label="Trạng thái"
               value={filters.draft.status}
@@ -334,8 +334,7 @@ export default function NewsPage() {
                 onLoadMore={loadMore}
                 hasMore={hasMore}
                 loadingMore={loadingMore}
-                disabled={loading}
-              >
+                disabled={loading}>
                 <div className="flex flex-col gap-3">
                   {items.map((item) => (
                     <MobileMediaCard
@@ -403,8 +402,7 @@ export default function NewsPage() {
                                 size="sm"
                                 className="h-9 min-w-9"
                                 title="Đổi trạng thái"
-                                loading={actionId === `status:${item.id}`}
-                              >
+                                loading={actionId === `status:${item.id}`}>
                                 <RefreshCw className="h-4 w-4" />
                               </Button>
                             }
@@ -414,8 +412,7 @@ export default function NewsPage() {
                             size="sm"
                             className="h-9 min-w-9"
                             onClick={() => openEdit(item)}
-                            title="Sửa"
-                          >
+                            title="Sửa">
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
@@ -424,8 +421,7 @@ export default function NewsPage() {
                             className="h-9 min-w-9"
                             loading={actionId === item.id}
                             onClick={() => handleDelete(item)}
-                            title="Xóa"
-                          >
+                            title="Xóa">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </>
@@ -520,8 +516,7 @@ export default function NewsPage() {
                             variant="danger"
                             size="sm"
                             loading={actionId === item.id}
-                            onClick={() => handleDelete(item)}
-                          >
+                            onClick={() => handleDelete(item)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -585,14 +580,14 @@ export default function NewsPage() {
                 searchable={false}
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy
               </Button>
               <Button type="submit" loading={submitting}>
                 Lưu
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

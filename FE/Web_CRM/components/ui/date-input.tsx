@@ -317,8 +317,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
         onOpenChange={(next) => {
           if (disabled) return;
           setOpen(next);
-        }}
-      >
+        }}>
         <div className={cn("relative w-full", className)}>
           <div
             className={cn(
@@ -327,8 +326,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
               open &&
                 "border-[var(--color-text-secondary)] ring-2 ring-[var(--color-text-secondary)]/20",
               disabled && "cursor-not-allowed opacity-50"
-            )}
-          >
+            )}>
             <input
               ref={textRef}
               id={id}
@@ -354,8 +352,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                   aria-label={isMonth ? "Xóa tháng" : "Xóa ngày"}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={clearValue}
-                >
+                  onClick={clearValue}>
                   <X className="h-3.5 w-3.5" />
                 </button>
               ) : null}
@@ -373,8 +370,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
                     if (isMobile && !disabled) setOpen(true);
-                  }}
-                >
+                  }}>
                   <CalendarDays className="h-4 w-4" />
                 </button>
               </Popover.Trigger>
@@ -392,8 +388,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                   "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
                 )}
                 onOpenAutoFocus={(event) => event.preventDefault()}
-                onCloseAutoFocus={(event) => event.preventDefault()}
-              >
+                onCloseAutoFocus={(event) => event.preventDefault()}>
 
               {isMonth ? (
                 <>
@@ -402,8 +397,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                       type="button"
                       aria-label="Năm trước"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-                      onClick={() => setViewYear((year) => year - 1)}
-                    >
+                      onClick={() => setViewYear((year) => year - 1)}>
                       <ChevronLeft className="h-4 w-4" />
                     </button>
                     <p className="text-sm font-semibold tracking-tight text-[var(--color-text-primary)]">
@@ -413,8 +407,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                       type="button"
                       aria-label="Năm sau"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-                      onClick={() => setViewYear((year) => year + 1)}
-                    >
+                      onClick={() => setViewYear((year) => year + 1)}>
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
@@ -443,8 +436,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                             !isSelected &&
                               isCurrent &&
                               "font-semibold text-[var(--color-text-secondary)] ring-1 ring-[var(--color-text-secondary)]/35"
-                          )}
-                        >
+                          )}>
                           {label}
                         </button>
                       );
@@ -458,8 +450,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                       type="button"
                       aria-label="Tháng trước"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-                      onClick={() => setViewMonth((month) => addMonths(month, -1))}
-                    >
+                      onClick={() => setViewMonth((month) => addMonths(month, -1))}>
                       <ChevronLeft className="h-4 w-4" />
                     </button>
                     <p className="text-sm font-semibold tracking-tight text-[var(--color-text-primary)]">
@@ -469,8 +460,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                       type="button"
                       aria-label="Tháng sau"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-                      onClick={() => setViewMonth((month) => addMonths(month, 1))}
-                    >
+                      onClick={() => setViewMonth((month) => addMonths(month, 1))}>
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
@@ -479,8 +469,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                     {WEEKDAYS.map((day) => (
                       <div
                         key={day}
-                        className="flex h-8 items-center justify-center text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-inverse)]"
-                      >
+                        className="flex h-8 items-center justify-center text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-inverse)]">
                         {day}
                       </div>
                     ))}
@@ -512,8 +501,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                             !isSelected &&
                               isToday &&
                               "font-semibold text-[var(--color-text-secondary)] ring-1 ring-[var(--color-text-secondary)]/35"
-                          )}
-                        >
+                          )}>
                           {day.getDate()}
                         </button>
                       );
@@ -526,8 +514,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                 <button
                   type="button"
                   className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-text-secondary)]/10"
-                  onClick={selectToday}
-                >
+                  onClick={selectToday}>
                   {isMonth ? "Tháng này" : "Hôm nay"}
                 </button>
                 <div className="flex items-center gap-1">
@@ -538,16 +525,14 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                       onClick={() => {
                         clearValue();
                         setOpen(false);
-                      }}
-                    >
+                      }}>
                       Xóa
                     </button>
                   ) : null}
                   <button
                     type="button"
                     className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-                    onClick={() => setOpen(false)}
-                  >
+                    onClick={() => setOpen(false)}>
                     Đóng
                   </button>
                 </div>
@@ -558,8 +543,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
             <BottomSheet
               open={open}
               onOpenChange={(next) => !disabled && setOpen(next)}
-              title={isMonth ? "Chọn tháng" : "Chọn ngày"}
-            >
+              title={isMonth ? "Chọn tháng" : "Chọn ngày"}>
               <div className="p-4">
 
               {isMonth ? (
@@ -569,8 +553,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                       type="button"
                       aria-label="Năm trước"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-                      onClick={() => setViewYear((year) => year - 1)}
-                    >
+                      onClick={() => setViewYear((year) => year - 1)}>
                       <ChevronLeft className="h-4 w-4" />
                     </button>
                     <p className="text-sm font-semibold tracking-tight text-[var(--color-text-primary)]">
@@ -580,8 +563,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                       type="button"
                       aria-label="Năm sau"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-                      onClick={() => setViewYear((year) => year + 1)}
-                    >
+                      onClick={() => setViewYear((year) => year + 1)}>
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
@@ -610,8 +592,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                             !isSelected &&
                               isCurrent &&
                               "font-semibold text-[var(--color-text-secondary)] ring-1 ring-[var(--color-text-secondary)]/35"
-                          )}
-                        >
+                          )}>
                           {label}
                         </button>
                       );
@@ -625,8 +606,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                       type="button"
                       aria-label="Tháng trước"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-                      onClick={() => setViewMonth((month) => addMonths(month, -1))}
-                    >
+                      onClick={() => setViewMonth((month) => addMonths(month, -1))}>
                       <ChevronLeft className="h-4 w-4" />
                     </button>
                     <p className="text-sm font-semibold tracking-tight text-[var(--color-text-primary)]">
@@ -636,8 +616,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                       type="button"
                       aria-label="Tháng sau"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-                      onClick={() => setViewMonth((month) => addMonths(month, 1))}
-                    >
+                      onClick={() => setViewMonth((month) => addMonths(month, 1))}>
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
@@ -646,8 +625,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                     {WEEKDAYS.map((day) => (
                       <div
                         key={day}
-                        className="flex h-8 items-center justify-center text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-inverse)]"
-                      >
+                        className="flex h-8 items-center justify-center text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-inverse)]">
                         {day}
                       </div>
                     ))}
@@ -679,8 +657,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                             !isSelected &&
                               isToday &&
                               "font-semibold text-[var(--color-text-secondary)] ring-1 ring-[var(--color-text-secondary)]/35"
-                          )}
-                        >
+                          )}>
                           {day.getDate()}
                         </button>
                       );
@@ -693,8 +670,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                 <button
                   type="button"
                   className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-text-secondary)]/10"
-                  onClick={selectToday}
-                >
+                  onClick={selectToday}>
                   {isMonth ? "Tháng này" : "Hôm nay"}
                 </button>
                 <div className="flex items-center gap-1">
@@ -705,16 +681,14 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                       onClick={() => {
                         clearValue();
                         setOpen(false);
-                      }}
-                    >
+                      }}>
                       Xóa
                     </button>
                   ) : null}
                   <button
                     type="button"
                     className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-                    onClick={() => setOpen(false)}
-                  >
+                    onClick={() => setOpen(false)}>
                     Đóng
                   </button>
                 </div>

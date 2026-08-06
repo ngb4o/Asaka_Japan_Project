@@ -28,6 +28,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import {
   canViewCompanyFinancials,
   canViewProfit,
+  canViewInventoryValue,
   canViewReports,
   DASHBOARD_HERO_SUBTITLE,
   hasRole,
@@ -97,6 +98,7 @@ export default function DashboardPage() {
   const canReports = canViewReports(userRoles);
   const canFinancials = canViewCompanyFinancials(userRoles);
   const showProfit = canViewProfit(userRoles);
+  const showInventoryValue = canViewInventoryValue(userRoles);
   const heroSubtitle =
     (mainRole && DASHBOARD_HERO_SUBTITLE[mainRole]) ||
     "Theo dõi công việc hàng ngày.";
@@ -249,6 +251,15 @@ export default function DashboardPage() {
               href="/inventory"
             />
             <KpiCard
+              title="Vốn tồn kho"
+              hint="tồn × giá vốn hiện tại"
+              value={loading ? null : stats?.inventoryStockValue}
+              icon={Wallet}
+              accent="green"
+              format="currency"
+              href="/inventory"
+            />
+            <KpiCard
               title="Đơn tháng này"
               hint="so với tháng trước"
               value={loading ? null : stats?.monthOrders}
@@ -256,14 +267,6 @@ export default function DashboardPage() {
               icon={Package}
               accent="slate"
               href="/orders"
-            />
-            <KpiCard
-              title="Sản phẩm"
-              hint="đang quản lý"
-              value={loading ? null : stats?.totalProducts}
-              icon={Package}
-              accent="green"
-              href="/products"
             />
           </>
         ) : (
@@ -305,7 +308,7 @@ export default function DashboardPage() {
       )}
 
       {showProfit ? (
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
           <KpiCard
             title="Giá vốn tháng"
             hint="tổng cost đơn trong tháng"
@@ -341,7 +344,40 @@ export default function DashboardPage() {
             accent="sky"
             format="percent"
             href="/reports"
-            className="col-span-2 md:col-span-1"
+          />
+          <KpiCard
+            title="Vốn tồn kho"
+            hint={
+              stats?.inventoryZeroCostLines
+                ? `${stats.inventoryZeroCostLines} dòng thiếu giá vốn`
+                : "tồn × giá vốn hiện tại"
+            }
+            value={loading ? null : stats?.inventoryStockValue}
+            icon={Package}
+            accent="slate"
+            format="currency"
+            href="/inventory"
+          />
+          <KpiCard
+            title="Nợ NCC"
+            hint="phiếu nhập mua chưa trả"
+            value={loading ? null : stats?.supplierDebt}
+            icon={AlertTriangle}
+            accent="rose"
+            format="currency"
+            href="/receivables?tab=ncc"
+          />
+        </section>
+      ) : showInventoryValue && !isWarehouseView ? (
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-2">
+          <KpiCard
+            title="Vốn tồn kho"
+            hint="tồn × giá vốn hiện tại"
+            value={loading ? null : stats?.inventoryStockValue}
+            icon={Wallet}
+            accent="green"
+            format="currency"
+            href="/inventory"
           />
         </section>
       ) : null}
@@ -360,8 +396,7 @@ export default function DashboardPage() {
                   </div>
                   <Link
                     href="/reports"
-                    className="shrink-0 text-xs font-medium text-[var(--color-text-secondary)] hover:underline"
-                  >
+                    className="shrink-0 text-xs font-medium text-[var(--color-text-secondary)] hover:underline">
                     Chi tiết
                   </Link>
                 </div>
@@ -521,8 +556,7 @@ export default function DashboardPage() {
         className={cn(
           "grid gap-4",
           isSalesView ? "xl:grid-cols-1" : "xl:grid-cols-5"
-        )}
-      >
+        )}>
         <Card className={isSalesView ? "" : "xl:col-span-3"}>
           <CardHeader showOnMobile className="flex flex-row items-center justify-between border-none pb-0">
             <div>
@@ -533,8 +567,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/orders"
-              className="text-xs font-medium text-[var(--color-text-secondary)] hover:underline"
-            >
+              className="text-xs font-medium text-[var(--color-text-secondary)] hover:underline">
               Xem tất cả
             </Link>
           </CardHeader>
@@ -550,8 +583,7 @@ export default function DashboardPage() {
                 {summary.recentOrders.map((order) => (
                   <div
                     key={order.id}
-                    className="flex items-center justify-between gap-4 px-4 py-3.5 transition-colors hover:bg-[var(--color-surface-muted)]/60"
-                  >
+                    className="flex items-center justify-between gap-4 px-4 py-3.5 transition-colors hover:bg-[var(--color-surface-muted)]/60">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold tracking-tight">{order.code}</p>
@@ -559,8 +591,7 @@ export default function DashboardPage() {
                           className={cn(
                             "rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2.5 md:py-1 md:text-[13px]",
                             ORDER_STATUS_TONE[order.status] || ORDER_STATUS_TONE.pending
-                          )}
-                        >
+                          )}>
                           {ORDER_STATUS_LABELS[order.status] || order.status}
                         </span>
                       </div>
@@ -577,8 +608,7 @@ export default function DashboardPage() {
                             : order.paymentStatus === "partial"
                               ? "text-amber-600 dark:text-amber-400"
                               : "text-rose-600 dark:text-rose-400"
-                        )}
-                      >
+                        )}>
                         {formatCurrency(order.total)}
                       </p>
                       <p className="mt-0.5 text-xs text-[var(--color-text-inverse)]">
@@ -615,8 +645,7 @@ export default function DashboardPage() {
               </div>
               <Link
                 href="/inventory"
-                className="text-xs font-medium text-[var(--color-text-secondary)] hover:underline"
-              >
+                className="text-xs font-medium text-[var(--color-text-secondary)] hover:underline">
                 Tồn kho
               </Link>
             </div>
@@ -631,8 +660,7 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={item.productId}
-                      className="rounded-xl border border-[var(--color-border-subtle)] px-3.5 py-3"
-                    >
+                      className="rounded-xl border border-[var(--color-border-subtle)] px-3.5 py-3">
                       <div className="flex items-center justify-between gap-3">
                         <p className="truncate text-sm font-medium">{item.productName}</p>
                         <span className="shrink-0 text-sm font-semibold text-amber-600">
@@ -676,8 +704,7 @@ function ChangeBadge({ value }: { value?: number }) {
         up
           ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
           : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
-      )}
-    >
+      )}>
       <Icon className="h-3.5 w-3.5" />
       {Math.abs(value)}%
     </span>
@@ -762,8 +789,7 @@ function KpiCard({
               className={cn(
                 "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl md:h-10 md:w-10",
                 tone.icon
-              )}
-            >
+              )}>
               <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
             </span>
           </div>
@@ -777,8 +803,7 @@ function KpiCard({
                   className={cn(
                     "text-xl font-semibold leading-none tracking-tight md:text-[1.65rem]",
                     tone.value
-                  )}
-                >
+                  )}>
                   {displayValue}
                 </p>
                 <ChangeBadge value={change} />
@@ -823,14 +848,12 @@ function QuickStat({
         className={cn(
           "flex items-center gap-2.5 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 py-3 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[var(--shadow-elevated)] md:gap-3 md:px-4 md:py-3.5",
           highlight && "border-amber-300/70 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
-        )}
-      >
+        )}>
         <span
           className={cn(
             "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl md:h-10 md:w-10",
             tone.icon
-          )}
-        >
+          )}>
           <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
         </span>
         <div className="min-w-0">

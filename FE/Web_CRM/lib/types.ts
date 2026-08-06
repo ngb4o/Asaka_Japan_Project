@@ -148,6 +148,68 @@ export type WarehouseStock = {
   productUnit?: string;
   productImage?: string;
   unitsPerCase?: number;
+  /** Giá vốn / chai hiện tại */
+  costPrice?: number;
+  /** quantity × costPrice */
+  stockValue?: number;
+};
+
+export type InventoryStockValuation = {
+  totalValue: number;
+  totalQuantity: number;
+  lineCount: number;
+  zeroCostLines: number;
+  byWarehouse: Array<{
+    warehouseId: string;
+    warehouseName: string;
+    totalValue: number;
+    totalQuantity: number;
+    lineCount: number;
+  }>;
+};
+
+export type InventoryFlowProductRow = {
+  productId: string;
+  productName: string;
+  productSku: string;
+  totalValue: number;
+  totalQuantityBase: number;
+  txnCount: number;
+};
+
+export type InventoryFlowCapitalRow = {
+  productId: string;
+  productName: string;
+  productSku: string;
+  quantity: number;
+  costPrice: number;
+  stockValue: number;
+  exportValueInPeriod: number;
+};
+
+export type InventoryFlowReport = {
+  from: string;
+  to: string;
+  dayCount: number;
+  warehouseId: string | null;
+  importValue: number;
+  exportValue: number;
+  importQuantityBase: number;
+  exportQuantityBase: number;
+  importTxnCount: number;
+  exportTxnCount: number;
+  netFlowValue: number;
+  openingValue: number;
+  closingValue: number;
+  avgValue: number;
+  turnoverTimes: number;
+  daysOfInventory: number | null;
+  zeroCostLines: number;
+  series: Array<{ date: string; importValue: number; exportValue: number }>;
+  topImports: InventoryFlowProductRow[];
+  topExports: InventoryFlowProductRow[];
+  topCapital: InventoryFlowCapitalRow[];
+  slowMoving: InventoryFlowCapitalRow[];
 };
 
 export type InventoryUnitType = "chai" | "thung";
@@ -179,6 +241,10 @@ export type InventoryMovementInput = {
   unitType?: InventoryUnitType;
   note?: string;
   unitCost?: number;
+  supplierId?: string;
+  dueDate?: string;
+  /** unpaid | paid — khi gắn NCC */
+  paymentStatus?: "unpaid" | "paid";
 };
 
 export type Lead = {
@@ -380,6 +446,9 @@ export type DashboardSummary = {
     monthOrders: number;
     monthCostTotal?: number;
     monthGrossProfit?: number;
+    inventoryStockValue?: number;
+    inventoryZeroCostLines?: number;
+    supplierDebt?: number;
     revenueChangePercent: number;
     orderChangePercent: number;
     grossProfitChangePercent?: number;
@@ -417,6 +486,83 @@ export type ReceivablesSummary = {
     debtOrderCount: number;
   };
   items: ReceivableDealerSummary[];
+};
+
+export type Supplier = {
+  id: string;
+  name: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  address: string;
+  taxCode: string;
+  status: "active" | "inactive";
+  note: string;
+  createdAt: string;
+  updatedAt?: string | null;
+};
+
+export type SupplierInput = {
+  name: string;
+  contactName?: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  taxCode?: string;
+  status?: "active" | "inactive";
+  note?: string;
+};
+
+export type PurchaseInvoice = {
+  id: string;
+  code: string;
+  supplierId: string;
+  warehouseId?: string | null;
+  invoiceDate: string;
+  dueDate?: string | null;
+  items: Array<{
+    productId: string;
+    productName?: string;
+    quantity: number;
+    unitType?: "chai" | "thung";
+    quantityBase?: number;
+    unitCost?: number;
+    totalCost?: number;
+    transactionId?: string | null;
+  }>;
+  total: number;
+  paidAmount: number;
+  remainingAmount?: number;
+  paymentStatus: "unpaid" | "partial" | "paid";
+  status: "open" | "cancelled";
+  note: string;
+  createdAt: string;
+  supplierName?: string;
+  supplierPhone?: string;
+};
+
+export type PayableSupplierSummary = {
+  supplierId: string;
+  supplierName: string;
+  contactName: string;
+  phone: string;
+  taxCode: string;
+  status: string | null;
+  invoiceTotal: number;
+  paidAmount: number;
+  debtAmount: number;
+  debtInvoiceCount: number;
+};
+
+export type PayablesSummary = {
+  totals: {
+    debtAmount: number;
+    paidAmount: number;
+    invoiceTotal: number;
+    supplierCount: number;
+    debtInvoiceCount: number;
+  };
+  items: PayableSupplierSummary[];
 };
 
 export type ReportSeriesPoint = {

@@ -1,7 +1,9 @@
 import { apiRequest } from "@/lib/api/client";
 import { appendPaginationParams, type PaginationParams } from "@/lib/pagination";
 import type {
+  InventoryFlowReport,
   InventoryMovementInput,
+  InventoryStockValuation,
   InventoryTransaction,
   PaginatedResult,
   WarehouseStock,
@@ -20,6 +22,28 @@ export async function getWarehouseStocks(params?: {
 
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return apiRequest<PaginatedResult<WarehouseStock>>(`/inventory/stocks${suffix}`);
+}
+
+export async function getInventoryStockValuation(params?: {
+  warehouseId?: string;
+}) {
+  const query = new URLSearchParams();
+  if (params?.warehouseId) query.set("warehouseId", params.warehouseId);
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiRequest<InventoryStockValuation>(`/inventory/valuation${suffix}`);
+}
+
+export async function getInventoryFlowReport(params?: {
+  from?: string;
+  to?: string;
+  warehouseId?: string;
+}) {
+  const query = new URLSearchParams();
+  if (params?.from) query.set("from", params.from);
+  if (params?.to) query.set("to", params.to);
+  if (params?.warehouseId) query.set("warehouseId", params.warehouseId);
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiRequest<InventoryFlowReport>(`/inventory/flow-report${suffix}`);
 }
 
 export async function getInventoryTransactions(params?: {

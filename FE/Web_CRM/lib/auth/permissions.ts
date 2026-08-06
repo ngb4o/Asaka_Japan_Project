@@ -91,6 +91,7 @@ const OPS_NAV = [
   "/dealers",
   "/orders",
   "/receivables",
+  "/suppliers",
   "/products",
   "/inventory",
   "/news",
@@ -106,6 +107,7 @@ const NAV_BY_ROLE: Record<UserRole, string[]> = {
     "/dealers",
     "/orders",
     "/receivables",
+    "/suppliers",
     "/product-categories",
     "/products",
     "/inventory",
@@ -121,6 +123,8 @@ const NAV_BY_ROLE: Record<UserRole, string[]> = {
     "/leads",
     "/dealers",
     "/orders",
+    "/receivables",
+    "/suppliers",
     "/products",
     "/inventory",
     "/news",
@@ -133,6 +137,7 @@ const NAV_BY_ROLE: Record<UserRole, string[]> = {
     "/dealers",
     "/orders",
     "/receivables",
+    "/suppliers",
     "/employees",
     "/trips",
     "/payroll",
@@ -168,6 +173,25 @@ export function canViewReceivables(roleOrRoles?: RoleInput) {
   return hasAnyRole(roleOrRoles, "accountant", "sales");
 }
 
+/** Nhà cung cấp — kho & kế toán (admin) */
+export function canManageSuppliers(roleOrRoles?: RoleInput) {
+  return hasAnyRole(roleOrRoles, "warehouse", "accountant");
+}
+
+export function canViewSuppliers(roleOrRoles?: RoleInput) {
+  return hasAnyRole(roleOrRoles, "warehouse", "accountant", "sales");
+}
+
+/** Công nợ NCC — kho & kế toán */
+export function canViewPayables(roleOrRoles?: RoleInput) {
+  return hasAnyRole(roleOrRoles, "warehouse", "accountant");
+}
+
+/** Ghi thanh toán NCC — kế toán (+ kho) */
+export function canManagePayables(roleOrRoles?: RoleInput) {
+  return hasAnyRole(roleOrRoles, "accountant", "warehouse");
+}
+
 /** KPI / biểu đồ doanh thu, công nợ công ty */
 export function canViewCompanyFinancials(roleOrRoles?: RoleInput) {
   return canViewReports(roleOrRoles);
@@ -186,6 +210,12 @@ export function canEditOrderItems(roleOrRoles?: RoleInput) {
   return hasAnyRole(roleOrRoles, "sales", "warehouse");
 }
 
+/** Sửa SP / SL / đơn giá / chiết khấu — chỉ khi đơn còn chờ xử lý (chưa xác nhận). */
+export function canEditOrderProducts(order?: { status?: string } | null) {
+  if (!order?.status) return true;
+  return order.status === "pending";
+}
+
 /** Đơn hoàn tất / hủy — khóa form sửa (vẫn xem / thu tiền nếu còn nợ). */
 export function isOrderEditable(order?: { status?: string } | null) {
   if (!order?.status) return false;
@@ -195,6 +225,11 @@ export function isOrderEditable(order?: { status?: string } | null) {
 /** Xác nhận đơn + xuất kho — chỉ admin / kho (Phase B) */
 export function canConfirmAndExport(roleOrRoles?: RoleInput) {
   return hasAnyRole(roleOrRoles, "warehouse");
+}
+
+/** Xem vốn tồn kho / giá trị hàng — kho & kế toán (admin) */
+export function canViewInventoryValue(roleOrRoles?: RoleInput) {
+  return hasAnyRole(roleOrRoles, "warehouse", "accountant");
 }
 
 /** Nhập / xuất kho thủ công trên trang Kho — chỉ admin / kho */
