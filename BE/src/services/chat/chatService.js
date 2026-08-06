@@ -24,6 +24,34 @@ const RATE_WINDOW_MS = 60 * 1000
 const RATE_MAX = 30
 const rateMap = new Map()
 
+/** User asks for CRM facts / has business codes → prefer tool use. */
+const needsCrmTool = (text) =>
+  /\b(?:O|CT)-[A-Z0-9-]+/i.test(text) ||
+  /(đơn hàng|chuyến|công nợ|tạm ứng|tồn kho|doanh thu|báo cáo|đại lý|nhà cung cấp|\bNCC\b|lương|phiếu mua|xuất kho|nhập kho|còn nợ|đề xuất.*(chuyến|giao|đi))/i.test(
+    text
+  )
+
+const extractOrderCodes = (text) => [
+  ...new Set(
+    [...String(text || '').matchAll(/\b(O-\d{8}-\d+)\b/gi)].map((m) =>
+      m[1].toUpperCase()
+    )
+  )
+]
+
+const extractTripCodes = (text) => [
+  ...new Set(
+    [...String(text || '').matchAll(/\b(CT-\d{8}-\d+)\b/gi)].map((m) =>
+      m[1].toUpperCase()
+    )
+  )
+]
+
+const looksLikeRefusal = (text) =>
+  /không thể giúp|không thể thực hiện|không có quyền truy cập|chỉ có thể truy cập thông qua|không truy cập trực tiếp|i('| a)?m sorry.*can('| no)t help|i cannot (help|assist)|unable to (help|assist|fulfill)|against my (guidelines|programming)/i.test(
+    String(text || '')
+  )
+
 const assertRateLimit = (userId) => {
   const now = Date.now()
   const key = String(userId)
@@ -237,15 +265,122 @@ const streamMessage = async ({ res, userId, roles, messages, clientMessage }) =>
   let pendingEmitted = null
   let assistantText = ''
   const digestParts = []
+  const forceToolsFirstRound = needsCrmTool(userText)
+  let syntheticToolSeq = 0
+
+  const pushSyntheticToolResult = (name, result) => {
+    syntheticToolSeq += 1
+    const callId = `prefetch_${name}_${syntheticToolSeq}`
+    sseWrite(res, 'tool_start', { name, id: callId, prefetch: true })
+    sseWrite(res, 'tool_result', {
+      name,
+      ok: result.ok,
+      error: result.error || null,
+      prefetch: true
+    })
+    openaiMessages.push({
+      role: 'assistant',
+      content: null,
+      tool_calls: [
+        {
+          id: callId,
+          type: 'function',
+          function: {
+            name,
+            arguments: '{}'
+          }
+        }
+      ]
+    })
+    openaiMessages.push({
+      role: 'tool',
+      tool_call_id: callId,
+      content: compactToolPayload(
+        result.ok ? { data: result.data } : { error: result.error }
+      )
+    })
+    if (result.ok && result.data) {
+      const digest = buildContextDigest(name, result.data)
+      if (digest) digestParts.push(digest)
+    }
+  }
 
   try {
-    const createCompletion = (messages, { withTools = true } = {}) =>
+    // Prefetch by business codes so the model never "refuses DB access"
+    const orderCodes = extractOrderCodes(userText)
+    const tripCodes = extractTripCodes(userText)
+    for (const code of orderCodes) {
+      sseWrite(res, 'status', {
+        phase: 'prefetch',
+        message: `Đang lấy đơn ${code} từ CRM…`
+      })
+      const orderResult = await runChatTool('get_order', { orderId: code }, userCtx)
+      pushSyntheticToolResult('get_order', orderResult)
+      if (orderResult.ok && orderResult.data) {
+        const orderId = String(
+          orderResult.data.id || orderResult.data._id || ''
+        )
+        if (orderId) {
+          const tripsResult = await runChatTool(
+            'query_crm',
+            {
+              collection: 'trips',
+              operation: 'find',
+              filter: {
+                $or: [
+                  { orderIds: orderId },
+                  { orderIds: { $in: [orderId] } }
+                ]
+              },
+              projection: {
+                code: 1,
+                status: 1,
+                region: 1,
+                title: 1,
+                startDate: 1,
+                endDate: 1,
+                orderIds: 1,
+                memberIds: 1
+              },
+              limit: 10
+            },
+            userCtx
+          )
+          pushSyntheticToolResult('query_crm', tripsResult)
+        }
+      }
+    }
+    for (const code of tripCodes) {
+      sseWrite(res, 'status', {
+        phase: 'prefetch',
+        message: `Đang lấy chuyến ${code} từ CRM…`
+      })
+      const tripResult = await runChatTool('get_trip', { tripId: code }, userCtx)
+      pushSyntheticToolResult('get_trip', tripResult)
+    }
+    if (orderCodes.length || tripCodes.length) {
+      openaiMessages.push({
+        role: 'system',
+        content:
+          'User là nhân viên CRM đã đăng nhập. Dữ liệu đơn/chuyến ở trên đã lấy HỢP LỆ qua tool. Trả lời tiếng Việt dựa trên data đó: địa chỉ giao, đại lý, chuyến CT gắn đơn (nếu có). KHÔNG từ chối, KHÔNG bịa.'
+      })
+    }
+
+    const createCompletion = (
+      messages,
+      { withTools = true, forceTool = false } = {}
+    ) =>
       createChatCompletionWithFallback(
         {
           messages,
           tools: withTools && tools.length ? tools : undefined,
-          tool_choice: withTools && tools.length ? 'auto' : undefined,
-          temperature: 0.2
+          tool_choice:
+            withTools && tools.length
+              ? forceTool
+                ? 'required'
+                : 'auto'
+              : undefined,
+          temperature: 0.1
         },
         {
           onModelSwitch: ({ from, to }) => {
@@ -351,7 +486,16 @@ const streamMessage = async ({ res, userId, roles, messages, clientMessage }) =>
     for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
       sseWrite(res, 'status', { phase: 'thinking', round })
 
-      const completion = await createCompletion(openaiMessages, { withTools: true })
+      const completion = await createCompletion(openaiMessages, {
+        withTools: true,
+        // Already prefetched codes → don't force tool_choice=required (model may refuse)
+        forceTool:
+          forceToolsFirstRound &&
+          round === 0 &&
+          digestParts.length === 0 &&
+          !orderCodes.length &&
+          !tripCodes.length
+      })
 
       const message = completion.choices?.[0]?.message
       if (!message) break
@@ -371,7 +515,35 @@ const streamMessage = async ({ res, userId, roles, messages, clientMessage }) =>
       }
 
       if (!toolCalls.length) {
+        // CRM question answered without tools → one forced retry
+        if (forceToolsFirstRound && digestParts.length === 0 && round === 0) {
+          openaiMessages.push({
+            role: 'system',
+            content:
+              'Bạn là trợ lý CRM nội bộ đã được cấp quyền. BẮT BUỘC gọi tool get_order / get_trip / query_crm. Không từ chối. Không bịa số liệu.'
+          })
+          continue
+        }
         assistantText = await finalizeAssistantText(message.content || '')
+        // Wrong refusal / "no DB access" → rewrite once
+        if (looksLikeRefusal(assistantText)) {
+          openaiMessages.push({
+            role: 'assistant',
+            content: assistantText
+          })
+          openaiMessages.push({
+            role: 'system',
+            content: digestParts.length
+              ? 'Câu từ chối ở trên SAI. User là nhân viên CRM. Hãy trả lời lại bằng dữ liệu tool đã có. Không xin lỗi, không từ chối.'
+              : 'Câu trả lời ở trên SAI. User là nhân viên CRM đã đăng nhập. Bạn CÓ quyền đọc toàn bộ database nghiệp vụ qua query_crm + describe_crm_schema. Trả lời lại: có quyền đọc mọi bảng CRM; giới hạn là chỉ đọc (ghi cần xác nhận), tối đa 50 dòng/lần.'
+          })
+          const retry = await createCompletion(openaiMessages, {
+            withTools: false
+          })
+          assistantText = await finalizeAssistantText(
+            retry.choices?.[0]?.message?.content || ''
+          )
+        }
         streamTokens(res, assistantText)
         break
       }

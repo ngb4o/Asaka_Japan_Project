@@ -91,7 +91,51 @@ export const CRM_SCHEMA = {
     },
     tips: [
       'Chi phí nằm trong expenses[].amount; tạm ứng advances[].amount.',
-      'Xếp hạng chi phí: dùng tool rank_trips_by_expense (không tự viết aggregate phức tạp).'
+      'Xếp hạng chi phí: dùng tool rank_trips_by_expense (không tự viết aggregate phức tạp).',
+      'Hỏi tạm ứng / cần ứng bao nhiêu: dùng suggest_trip_advance(tripId=mã CT-…).',
+      'Ghi ứng: add_trip_advance; duyệt chi: review_trip_expense; khóa: settle_trip.'
+    ]
+  },
+  suppliers: {
+    label: 'Nhà cung cấp',
+    keyFields: [
+      'name',
+      'contactName',
+      'phone',
+      'email',
+      'taxCode',
+      'address',
+      'status',
+      'note'
+    ],
+    enums: {
+      status: 'active|inactive'
+    },
+    tips: [
+      'Công nợ NCC: get_payables_summary / search_purchases hasDebt=true.'
+    ]
+  },
+  purchase_invoices: {
+    label: 'Phiếu nhập mua',
+    keyFields: [
+      'code',
+      'supplierId',
+      'warehouseId',
+      'total',
+      'paidAmount',
+      'paymentStatus',
+      'status',
+      'invoiceDate',
+      'dueDate',
+      'items'
+    ],
+    enums: {
+      paymentStatus: 'unpaid|partial|paid',
+      status: 'open|cancelled'
+    },
+    tips: [
+      'Còn nợ = total - paidAmount.',
+      'Ưu tiên get_purchase / search_purchases / record_purchase_payment.'
     ]
   },
   products: {

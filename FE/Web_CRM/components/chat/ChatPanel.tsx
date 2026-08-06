@@ -19,6 +19,7 @@ import {
   emitCrmDataChanged,
   entitiesForChatTool,
 } from "@/lib/hooks/useCrmDataRefresh";
+import { renderChatMarkdown } from "@/lib/chatMarkdown";
 import { cn } from "@/lib/utils";
 
 type UiMessage = {
@@ -174,7 +175,9 @@ function ChatBody({
                       : "border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)]"
                 )}>
                 {msg.content ? (
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <div className="crm-chat-markdown space-y-2">
+                    {renderChatMarkdown(msg.content)}
+                  </div>
                 ) : null}
                 {msg.pending ? (
                   <PendingActionCard
