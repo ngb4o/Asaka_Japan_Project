@@ -1,4 +1,4 @@
-import { createElement, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   MobileRecordCard,
   MobileRecordCardHeader,
@@ -13,9 +13,7 @@ function renderInline(text: string): ReactNode[] {
   parts.forEach((part, index) => {
     if (!part) return;
     if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
-      nodes.push(
-        createElement("strong", { key: `b-${index}` }, part.slice(2, -2))
-      );
+      nodes.push(<strong key={`b-${index}`}>{part.slice(2, -2)}</strong>);
       return;
     }
     nodes.push(part);
@@ -131,97 +129,91 @@ function pickTitleColumn(headers: string[]): number {
   return idx >= 0 ? idx : 0;
 }
 
-function renderRecordCards(headers: string[], rows: string[][], key: number) {
+function RecordCards({
+  headers,
+  rows,
+}: {
+  headers: string[];
+  rows: string[][];
+}) {
   const titleCol = pickTitleColumn(headers);
 
-  return createElement(
-    "div",
-    { key: `cards-${key}`, className: "my-2 flex flex-col gap-2" },
-    rows.map((row, rowIndex) => {
-      const title = row[titleCol]?.trim() || `#${rowIndex + 1}`;
-      const detailHeaders = headers
-        .map((header, colIndex) => ({ header, colIndex }))
-        .filter(({ colIndex }) => colIndex !== titleCol);
+  return (
+    <div className="my-2 flex flex-col gap-2">
+      {rows.map((row, rowIndex) => {
+        const title = row[titleCol]?.trim() || `#${rowIndex + 1}`;
+        const detailHeaders = headers
+          .map((header, colIndex) => ({ header, colIndex }))
+          .filter(({ colIndex }) => colIndex !== titleCol);
 
-      return createElement(
-        MobileRecordCard,
-        {
-          key: `card-${rowIndex}`,
-          className:
-            "border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] p-3 shadow-none",
-        },
-        createElement(MobileRecordCardHeader, {
-          title: createElement("span", null, ...renderInline(title)),
-        }),
-        detailHeaders.length
-          ? createElement(
-              "div",
-              { className: "mt-2 divide-y divide-[var(--color-border-subtle)]" },
-              detailHeaders.map(({ header, colIndex }) => {
-                const value = row[colIndex]?.trim() || "—";
-                return createElement(
-                  MobileRecordRow,
-                  {
-                    key: `field-${colIndex}`,
-                    label: header,
-                    className: "py-1.5 sm:grid-cols-[5.5rem_1fr]",
-                  },
-                  createElement("span", null, ...renderInline(value))
-                );
-              })
-            )
-          : null
-      );
-    })
+        return (
+          <MobileRecordCard
+            key={`card-${rowIndex}`}
+            className="border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] p-3 shadow-none">
+            <MobileRecordCardHeader
+              title={<span>{renderInline(title)}</span>}
+            />
+            {detailHeaders.length ? (
+              <div className="mt-2 divide-y divide-[var(--color-border-subtle)]">
+                {detailHeaders.map(({ header, colIndex }) => {
+                  const value = row[colIndex]?.trim() || "—";
+                  return (
+                    <MobileRecordRow
+                      key={`field-${colIndex}`}
+                      label={header}
+                      className="py-1.5 sm:grid-cols-[5.5rem_1fr]">
+                      <span>{renderInline(value)}</span>
+                    </MobileRecordRow>
+                  );
+                })}
+              </div>
+            ) : null}
+          </MobileRecordCard>
+        );
+      })}
+    </div>
   );
 }
 
-function renderListCards(items: string[], key: number) {
-  return createElement(
-    "div",
-    { key: `list-cards-${key}`, className: "my-2 flex flex-col gap-2" },
-    items.map((item, itemIndex) =>
-      createElement(
-        MobileRecordCard,
-        {
-          key: `list-card-${itemIndex}`,
-          className:
-            "border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] p-3 shadow-none",
-        },
-        createElement(
-          "p",
-          { className: "text-sm leading-relaxed text-[var(--color-text-primary)]" },
-          ...renderInline(item)
-        )
-      )
-    )
+function ListCards({ items }: { items: string[] }) {
+  return (
+    <div className="my-2 flex flex-col gap-2">
+      {items.map((item, itemIndex) => (
+        <MobileRecordCard
+          key={`list-card-${itemIndex}`}
+          className="border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] p-3 shadow-none">
+          <p className="text-sm leading-relaxed text-[var(--color-text-primary)]">
+            {renderInline(item)}
+          </p>
+        </MobileRecordCard>
+      ))}
+    </div>
   );
 }
 
 /** Markdown renderer for chat bubbles: paragraphs, list/table → cards, bold. */
 export function renderChatMarkdown(markdown: string): ReactNode[] {
   const blocks = splitBlocks(markdown);
-  const nodes: ReactNode[] = [];
 
-  blocks.forEach((block, index) => {
+  return blocks.map((block, index) => {
     if (block.type === "paragraph") {
-      nodes.push(
-        createElement(
-          "p",
-          { key: `p-${index}`, className: "whitespace-pre-wrap" },
-          ...renderInline(block.lines.join("\n"))
-        )
+      return (
+        <p key={`p-${index}`} className="whitespace-pre-wrap">
+          {renderInline(block.lines.join("\n"))}
+        </p>
       );
-      return;
     }
 
     if (block.type === "list") {
-      nodes.push(renderListCards(block.items, index));
-      return;
+      return <ListCards key={`list-cards-${index}`} items={block.items} />;
     }
 
-    nodes.push(renderRecordCards(block.headers, block.rows, index));
+    return (
+      <RecordCards
+        key={`cards-${index}`}
+        headers={block.headers}
+        rows={block.rows}
+      />
+    );
   });
-
-  return nodes;
 }
