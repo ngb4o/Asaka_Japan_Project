@@ -93,7 +93,7 @@ function formatShippingRange(
 ) {
   const from = formatDateDisplay(shippingDate);
   const to = formatDateDisplay(deliveredAt);
-  if (from && to) return `${from}   ->   ${to}`;
+  if (from && to) return `${from}   →   ${to}`;
   if (from) return from;
   if (to) return to;
   return "";

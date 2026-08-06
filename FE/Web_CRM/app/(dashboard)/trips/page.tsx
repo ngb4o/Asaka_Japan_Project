@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Plus, Trash2, X } from "@/components/ui/icons";
+import { Check, ExternalLink, Plus, Trash2, X } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1100,7 +1100,7 @@ export default function TripsPage() {
                   <div
                     key={stop.id}
                     className="flex items-start justify-between gap-3 rounded-lg border border-[var(--color-border-subtle)] p-3 text-sm">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium">
                         {formatDateDisplay(stop.date)} - {PURPOSE_LABEL[stop.purpose]}
                       </p>
@@ -1114,15 +1114,34 @@ export default function TripsPage() {
                         </p>
                       ) : null}
                     </div>
-                    {canOperateSelected && selected.status !== "closed" ? (
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        loading={isTripAction(`stop:${stop.id}`)}
-                        onClick={() => handleRemoveStop(stop.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    ) : null}
+                    <div className="flex shrink-0 items-start gap-2">
+                      {typeof stop.lat === "number" && typeof stop.lng === "number" ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 gap-1 px-2 text-xs"
+                          onClick={() => {
+                            window.open(
+                              `https://www.google.com/maps?q=${stop.lat},${stop.lng}`,
+                              "_blank",
+                              "noopener,noreferrer"
+                            );
+                          }}>
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Maps
+                        </Button>
+                      ) : null}
+                      {canOperateSelected && selected.status !== "closed" ? (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          loading={isTripAction(`stop:${stop.id}`)}
+                          onClick={() => handleRemoveStop(stop.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                 ))}
                 {canOperateSelected && selected.status !== "closed" ? (
