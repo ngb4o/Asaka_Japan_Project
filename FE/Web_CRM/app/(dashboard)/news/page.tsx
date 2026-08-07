@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
 import { ImageIcon, Pencil, Plus, RefreshCw, Trash2 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +22,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { Label } from "@/components/ui/label";
 import { ImageUpload } from "@/components/products/ImageUpload";
+import { PreviewableImage } from "@/components/ui/previewable-image";
 import { NewsContentField } from "@/components/news/NewsContentField";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { createNews, deleteNews, getNews, updateNews } from "@/lib/api/news";
-import { getImageUrl, uploadNewsImage } from "@/lib/api/uploads";
+import { uploadNewsImage } from "@/lib/api/uploads";
 import type { News } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
@@ -342,12 +342,11 @@ export default function NewsPage() {
                       mediaClassName="h-[4.5rem] w-[6rem]"
                       media={
                         item.image ? (
-                          <Image
-                            src={getImageUrl(item.image)}
+                          <PreviewableImage
+                            src={item.image}
                             alt={item.title}
                             fill
-                            className="object-cover"
-                            unoptimized
+                            className="rounded-xl border-0"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-[var(--color-text-inverse)]">
@@ -473,13 +472,12 @@ export default function NewsPage() {
                       </td>
                       <td>
                         {item.image ? (
-                          <div className="relative h-12 w-16 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]">
-                            <Image
-                              src={getImageUrl(item.image)}
+                          <div className="relative h-12 w-16 overflow-hidden rounded-lg">
+                            <PreviewableImage
+                              src={item.image}
                               alt={item.title}
                               fill
-                              className="object-cover"
-                              unoptimized
+                              className="rounded-lg"
                             />
                           </div>
                         ) : (

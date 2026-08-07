@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
 import { AlertTriangle, Eye, PackageCheck, Pencil, Plus, Printer, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +27,7 @@ import {
   type LineItemFormRow,
 } from "@/components/sales/LineItemsField";
 import { OrderDetailDialog } from "@/components/orders/OrderDetailDialog";
+import { PreviewableImage } from "@/components/ui/previewable-image";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
@@ -64,7 +64,6 @@ import {
 import { getProducts } from "@/lib/api/products";
 import { getWarehouseStocks } from "@/lib/api/inventory";
 import { getWarehouses } from "@/lib/api/warehouses";
-import { getImageUrl } from "@/lib/api/uploads";
 import { printSalesDocument } from "@/lib/print/salesDocument";
 import type { Dealer, Employee, Order, Product } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
@@ -1714,12 +1713,11 @@ export default function OrdersPage() {
                     }`}>
                     <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-white sm:h-16 sm:w-16">
                       {row.productImage ? (
-                        <Image
-                          src={getImageUrl(row.productImage)}
+                        <PreviewableImage
+                          src={row.productImage}
                           alt={row.productName}
                           fill
-                          className="object-cover"
-                          unoptimized
+                          className="rounded-lg border-0"
                         />
                       ) : (
                         <PackageCheck className="h-7 w-7 text-[var(--color-text-inverse)]" />

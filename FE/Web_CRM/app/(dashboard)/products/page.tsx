@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
 import { ImageIcon, Pencil, Plus, RefreshCw, Trash2 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VndInput } from "@/components/ui/vnd-input";
 import { ImageUpload } from "@/components/products/ImageUpload";
+import { PreviewableImage } from "@/components/ui/previewable-image";
 import { ProductDescriptionField } from "@/components/products/ProductDescriptionField";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -49,7 +49,6 @@ import {
   getProducts,
   updateProduct,
 } from "@/lib/api/products";
-import { getImageUrl } from "@/lib/api/uploads";
 import type { Product, ProductCategory } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
@@ -424,12 +423,11 @@ export default function ProductsPage() {
                       key={item.id}
                       media={
                         thumb ? (
-                          <Image
-                            src={getImageUrl(thumb)}
+                          <PreviewableImage
+                            src={thumb}
                             alt={item.name}
                             fill
-                            className="object-cover"
-                            unoptimized
+                            className="rounded-xl border-0"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-[var(--color-text-inverse)]">
@@ -591,19 +589,19 @@ export default function ProductsPage() {
                       </td>
                       <td>
                         {item.image || item.images?.[0] ? (
-                          <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]">
-                            <Image
-                              src={getImageUrl(item.image || item.images[0])}
+                          <div className="relative h-12 w-12 overflow-hidden rounded-lg">
+                            <PreviewableImage
+                              src={item.image || item.images[0]}
                               alt={item.name}
                               fill
-                              className="object-cover"
-                              unoptimized
-                            />
-                            {(item.images?.length || (item.image ? 1 : 0)) > 1 ? (
-                              <span className="absolute bottom-0 right-0 rounded-tl bg-black/70 px-1 text-[10px] font-medium text-white">
-                                {item.images?.length || 1}
-                              </span>
-                            ) : null}
+                              className="rounded-lg">
+                              {(item.images?.length || (item.image ? 1 : 0)) >
+                              1 ? (
+                                <span className="pointer-events-none absolute bottom-0 right-0 z-[1] rounded-tl bg-black/70 px-1 text-[10px] font-medium text-white">
+                                  {item.images?.length || 1}
+                                </span>
+                              ) : null}
+                            </PreviewableImage>
                           </div>
                         ) : (
                           <span className="text-xs text-[var(--color-text-inverse)]">—</span>

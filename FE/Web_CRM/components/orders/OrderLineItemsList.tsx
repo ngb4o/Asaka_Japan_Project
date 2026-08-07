@@ -1,13 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { ImageIcon } from "lucide-react";
 import {
   MobileMediaCard,
   MobileMetaChip,
 } from "@/components/ui/mobile-record-card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { getImageUrl } from "@/lib/api/uploads";
+import { PreviewableImage } from "@/components/ui/previewable-image";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import type { LineItem } from "@/lib/types";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -23,25 +22,30 @@ function ProductThumb({
 }) {
   const box = size === "sm" ? "h-11 w-11 rounded-lg" : "h-full w-full";
 
+  if (src) {
+    if (size === "sm") {
+      return <PreviewableImage src={src} alt={alt} className={cn("shrink-0", box)} />;
+    }
+
+    return (
+      <PreviewableImage
+        src={src}
+        alt={alt}
+        fill
+        className="rounded-xl border-0"
+      />
+    );
+  }
+
   return (
     <div
       className={cn(
         "relative shrink-0 overflow-hidden border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]",
         box
       )}>
-      {src ? (
-        <Image
-          src={getImageUrl(src)}
-          alt={alt}
-          fill
-          className="object-cover"
-          unoptimized
-        />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center text-[var(--color-text-inverse)]">
-          <ImageIcon className={size === "sm" ? "h-4 w-4" : "h-6 w-6"} />
-        </div>
-      )}
+      <div className="flex h-full w-full items-center justify-center text-[var(--color-text-inverse)]">
+        <ImageIcon className={size === "sm" ? "h-4 w-4" : "h-6 w-6"} />
+      </div>
     </div>
   );
 }

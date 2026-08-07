@@ -104,6 +104,20 @@ const removeStop = async (req, res, next) => {
   }
 }
 
+const reorderStops = async (req, res, next) => {
+  try {
+    const result = await tripService.reorderStops(
+      req.params.id,
+      req.body,
+      req.userId,
+      actorRolesOf(req)
+    )
+    res.status(StatusCodes.OK).json({ message: 'Đã sắp xếp lại lộ trình!', data: result })
+  } catch (error) {
+    next(error)
+  }
+}
+
 const addAdvance = async (req, res, next) => {
   try {
     const result = await tripService.addAdvance(req.params.id, req.body, req.userId)
@@ -209,6 +223,7 @@ export const tripController = {
   deleteOne,
   addStop,
   removeStop,
+  reorderStops,
   addAdvance,
   updateAdvance,
   removeAdvance,

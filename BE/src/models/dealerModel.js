@@ -26,6 +26,8 @@ const DEALER_COLLECTION_SCHEMA = Joi.object({
   email: optionalText(150).default(''),
   address: optionalText(300).default(''),
   region: optionalText(100).default(''),
+  lat: Joi.number().min(-90).max(90).allow(null).default(null),
+  lng: Joi.number().min(-180).max(180).allow(null).default(null),
   tier: Joi.string()
     .valid(DEALER_TIER.STANDARD, DEALER_TIER.SILVER, DEALER_TIER.GOLD)
     .default(DEALER_TIER.STANDARD),

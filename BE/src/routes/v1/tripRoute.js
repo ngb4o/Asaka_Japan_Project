@@ -15,6 +15,12 @@ Router.put('/:id', requireRoles('sales', 'warehouse', 'accountant'), tripValidat
 Router.delete('/:id', requireRoles('sales', 'warehouse', 'accountant'), tripController.deleteOne)
 
 Router.post('/:id/stops', requireRoles('sales', 'warehouse', 'accountant'), tripValidation.addStop, tripController.addStop)
+Router.put(
+  '/:id/stops/reorder',
+  requireRoles('sales', 'warehouse', 'accountant'),
+  tripValidation.reorderStops,
+  tripController.reorderStops
+)
 Router.delete('/:id/stops/:stopId', requireRoles('sales', 'warehouse', 'accountant'), tripController.removeStop)
 
 Router.post('/:id/advances', requireRoles('accountant'), tripValidation.addAdvance, tripController.addAdvance)

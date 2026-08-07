@@ -37,13 +37,23 @@ export async function deleteTrip(id: string) {
 
 export async function addTripStop(
   id: string,
-  data: Partial<Omit<TripStop, "id" | "dealerName">>
+  data: Partial<Omit<TripStop, "id" | "dealerName" | "seq">> & {
+    /** 0-based: chèn tại vị trí; bỏ trống = thêm cuối */
+    insertAt?: number;
+  }
 ) {
   return apiRequest<Trip>(`/trips/${id}/stops`, { method: "POST", body: data });
 }
 
 export async function removeTripStop(id: string, stopId: string) {
   return apiRequest<Trip>(`/trips/${id}/stops/${stopId}`, { method: "DELETE" });
+}
+
+export async function reorderTripStops(id: string, stopIds: string[]) {
+  return apiRequest<Trip>(`/trips/${id}/stops/reorder`, {
+    method: "PUT",
+    body: { stopIds },
+  });
 }
 
 export async function addTripAdvance(

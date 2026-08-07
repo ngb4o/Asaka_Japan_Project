@@ -5,8 +5,10 @@ import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { staffNotifyService } from '~/services/staffNotifyService'
 import { buildSearchFilter } from '~/utils/search.js'
+import { normalizeOptionalLatLng } from '~/utils/geo'
 
 const createNew = async (reqBody, userId) => {
+  const geo = normalizeOptionalLatLng(reqBody)
   const created = await dealerModel.createNew({
     name: reqBody.name,
     contactName: reqBody.contactName || '',
@@ -14,6 +16,8 @@ const createNew = async (reqBody, userId) => {
     email: reqBody.email || '',
     address: reqBody.address || '',
     region: reqBody.region || '',
+    lat: geo?.lat ?? null,
+    lng: geo?.lng ?? null,
     tier: reqBody.tier || dealerModel.DEALER_TIER.STANDARD,
     discountPercent: reqBody.discountPercent ?? 0,
     status: reqBody.status || dealerModel.DEALER_STATUS.PENDING,
@@ -89,6 +93,12 @@ const update = async (dealerId, updateData) => {
   }
   if (updateData.status !== undefined) dataToUpdate.status = updateData.status
   if (updateData.note !== undefined) dataToUpdate.note = updateData.note
+
+  const geo = normalizeOptionalLatLng(updateData)
+  if (geo !== undefined) {
+    dataToUpdate.lat = geo.lat
+    dataToUpdate.lng = geo.lng
+  }
 
   await dealerModel.update(dealerId, dataToUpdate)
 

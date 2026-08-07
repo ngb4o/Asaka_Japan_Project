@@ -32,4 +32,10 @@ export const env = {
   GROQ_MODEL: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
   /** Comma-separated extras after GROQ_MODEL (default chain already includes 8b-instant) */
   GROQ_MODEL_FALLBACKS: process.env.GROQ_MODEL_FALLBACKS || 'llama-3.1-8b-instant',
+
+  /** Geocode địa chỉ → GPS (cùng key Maps JS cũng được nếu bật Geocoding API) */
+  GOOGLE_MAPS_API_KEY:
+    process.env.GOOGLE_MAPS_API_KEY ||
+    process.env.GOOGLE_GEOCODING_API_KEY ||
+    '',
 }

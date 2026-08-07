@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -47,6 +46,8 @@ import {
   MobileRecordCard,
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
+import { PreviewableImage } from "@/components/ui/previewable-image";
+import { LocationCapture, type GeoLocationValue } from "@/components/trips/LocationCapture";
 import {
   SearchableSelect,
   STATUS_OPTIONS,
@@ -62,7 +63,6 @@ import {
 } from "@/lib/auth/permissions";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { TabSwitcher } from "@/components/ui/tab-switcher";
-import { getImageUrl } from "@/lib/api/uploads";
 import {
   exportStock,
   getInventoryStockValuation,
@@ -139,6 +139,11 @@ function suggestUnitCost(
 
 const EMPTY_WAREHOUSE_FORM: WarehouseFormValues = {
   name: "",
+  code: "",
+  address: "",
+  lat: null,
+  lng: null,
+  note: "",
   status: "active",
 };
 
@@ -363,6 +368,8 @@ export default function InventoryPage() {
       name: item.name,
       code: item.code,
       address: item.address,
+      lat: item.lat ?? null,
+      lng: item.lng ?? null,
       note: item.note,
       status: item.status,
     });
@@ -863,12 +870,11 @@ export default function InventoryPage() {
                       key={item.id}
                       media={
                         thumb ? (
-                          <Image
-                            src={getImageUrl(thumb)}
+                          <PreviewableImage
+                            src={thumb}
                             alt={item.productName || "Sản phẩm"}
                             fill
-                            className="object-cover"
-                            unoptimized
+                            className="rounded-xl border-0"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-[var(--color-text-inverse)]">
@@ -930,17 +936,16 @@ export default function InventoryPage() {
                       return (
                         <tr key={item.id}>
                           <td>
-                            <div className="relative h-11 w-11 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]">
+                            <div className="relative h-11 w-11 overflow-hidden rounded-lg">
                               {thumb ? (
-                                <Image
-                                  src={getImageUrl(thumb)}
+                                <PreviewableImage
+                                  src={thumb}
                                   alt={item.productName || "Sản phẩm"}
                                   fill
-                                  className="object-cover"
-                                  unoptimized
+                                  className="rounded-lg"
                                 />
                               ) : (
-                                <div className="flex h-full w-full items-center justify-center text-[var(--color-text-inverse)]">
+                                <div className="flex h-full w-full items-center justify-center rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] text-[var(--color-text-inverse)]">
                                   <ImageIcon className="h-4 w-4" />
                                 </div>
                               )}
@@ -1083,12 +1088,11 @@ export default function InventoryPage() {
                       key={item.id}
                       media={
                         thumb ? (
-                          <Image
-                            src={getImageUrl(thumb)}
+                          <PreviewableImage
+                            src={thumb}
                             alt={item.productName || "Sản phẩm"}
                             fill
-                            className="object-cover"
-                            unoptimized
+                            className="rounded-xl border-0"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-[var(--color-text-inverse)]">
@@ -1280,6 +1284,28 @@ export default function InventoryPage() {
                 onChange={(e) => setWarehouseForm({ ...warehouseForm, address: e.target.value })}
               />
             </div>
+            <LocationCapture
+              label="GPS kho"
+              value={
+                typeof warehouseForm.lat === "number" &&
+                typeof warehouseForm.lng === "number" &&
+                Number.isFinite(warehouseForm.lat) &&
+                Number.isFinite(warehouseForm.lng)
+                  ? {
+                      lat: warehouseForm.lat,
+                      lng: warehouseForm.lng,
+                      locationSource: "manual",
+                    }
+                  : null
+              }
+              onChange={(geo: GeoLocationValue | null) =>
+                setWarehouseForm({
+                  ...warehouseForm,
+                  lat: geo?.lat ?? null,
+                  lng: geo?.lng ?? null,
+                })
+              }
+            />
             <div className="space-y-2">
               <Label htmlFor="wh-note">Ghi chú</Label>
               <Textarea

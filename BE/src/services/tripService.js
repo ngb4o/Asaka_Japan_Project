@@ -12,6 +12,8 @@ import { generateDocumentCode } from '~/utils/documentCode'
 import { staffNotifyService } from '~/services/staffNotifyService'
 import { buildSearchFilter } from '~/utils/search.js'
 import { hasAnyRole } from '~/utils/roles'
+import { hasValidLatLng } from '~/utils/geo'
+import { geocodeAddress } from '~/utils/geocode'
 
 const newId = () => new ObjectId().toString()
 
@@ -118,13 +120,136 @@ const assertOrdersCoveredByMembers = async (memberIds, orderIds) => {
   const orderCodes = conflicts.map((item) => item.code).join(', ')
   const names = missingIds
     .map((id) => nameMap.get(id) || id)
-    .filter(Boolean)
     .join(', ')
-
   throw new ApiError(
     StatusCodes.BAD_REQUEST,
-    `Đơn ${orderCodes}: NV giao (${names}) chưa nằm trong Người đi. Thêm đủ NV giao vào chuyến hoặc bỏ chọn đơn.`
+    `NV giao của đơn ${orderCodes} phải nằm trong Người đi. Thiếu: ${names}`
   )
+}
+
+/**
+ * Từ đơn gắn chuyến → điểm dừng giao (thứ tự = thứ tự orderIds).
+ * GPS: đại lý đã có → dùng luôn; chưa có → geocode địa chỉ giao / địa chỉ ĐL.
+ */
+const buildDeliveryStopsFromOrders = async (orderIds = [], startDate) => {
+  const stops = []
+  for (const orderId of orderIds) {
+    const order = await orderModel.findOneById(orderId)
+    if (!order) continue
+
+    let dealer = null
+    if (order.dealerId) {
+      dealer = await dealerModel.findOneById(order.dealerId.toString())
+    }
+
+    const shippingAddress = String(order.shippingAddress || '').trim()
+    const dealerAddress = String(dealer?.address || '').trim()
+    const location = shippingAddress || dealerAddress || ''
+
+    const stop = {
+      id: newId(),
+      date: startDate,
+      dealerId: order.dealerId || null,
+      orderId: order._id,
+      location,
+      purpose: tripModel.STOP_PURPOSE.DELIVERY,
+      note: `Giao ${order.code}`
+    }
+
+    if (hasValidLatLng(dealer)) {
+      stop.lat = dealer.lat
+      stop.lng = dealer.lng
+      stop.accuracy = null
+      stop.locationCapturedAt = new Date()
+      stop.locationSource = 'dealer'
+    } else {
+      const addressForGeo = shippingAddress || dealerAddress
+      const coords = addressForGeo ? await geocodeAddress(addressForGeo) : null
+      if (coords) {
+        stop.lat = coords.lat
+        stop.lng = coords.lng
+        stop.accuracy = null
+        stop.locationCapturedAt = new Date()
+        stop.locationSource = 'geocode'
+
+        // Lưu GPS vào đại lý khi geocode từ địa chỉ ĐL (lần sau khỏi geocode lại)
+        if (
+          dealer &&
+          dealerAddress &&
+          addressForGeo === dealerAddress &&
+          !hasValidLatLng(dealer)
+        ) {
+          await dealerModel.update(dealer._id.toString(), {
+            lat: coords.lat,
+            lng: coords.lng
+          })
+        }
+      }
+    }
+
+    stops.push(stop)
+  }
+  return stops
+}
+
+const resolveOriginWarehouse = async (warehouseDocs = [], orderWarehouseIds = []) => {
+  if (!warehouseDocs.length) return null
+
+  const counts = new Map()
+  for (const id of orderWarehouseIds) {
+    counts.set(id, (counts.get(id) || 0) + 1)
+  }
+
+  const rankedIds = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([id]) => id)
+
+  const byId = new Map(
+    warehouseDocs.map((item) => [item._id.toString(), item])
+  )
+
+  const candidates = [
+    ...rankedIds.map((id) => byId.get(id)).filter(Boolean),
+    ...warehouseDocs
+  ]
+  const seen = new Set()
+
+  for (const warehouse of candidates) {
+    const id = warehouse._id.toString()
+    if (seen.has(id)) continue
+    seen.add(id)
+
+    if (hasValidLatLng(warehouse)) {
+      return {
+        id,
+        name: warehouse.name || '',
+        address: warehouse.address || '',
+        lat: warehouse.lat,
+        lng: warehouse.lng
+      }
+    }
+
+    const address = String(warehouse.address || '').trim()
+    if (!address) continue
+
+    const coords = await geocodeAddress(address)
+    if (!coords) continue
+
+    await warehouseModel.update(id, {
+      lat: coords.lat,
+      lng: coords.lng
+    })
+
+    return {
+      id,
+      name: warehouse.name || '',
+      address,
+      lat: coords.lat,
+      lng: coords.lng
+    }
+  }
+
+  return null
 }
 
 const parseDate = (value, label = 'Ngày') => {
@@ -369,6 +494,10 @@ const formatTrip = async (trip) => {
   const warehouseMap = new Map(
     warehousesResult.items.map((item) => [item._id.toString(), item.name])
   )
+  const originWarehouse = await resolveOriginWarehouse(
+    warehousesResult.items,
+    orderWarehouseIds
+  )
   for (const item of deliveryEmployees.items) {
     memberMap.set(item._id.toString(), item.fullName)
   }
@@ -433,12 +562,15 @@ const formatTrip = async (trip) => {
       fullName: memberMap.get(id) || '—'
     })),
     orders: linkedOrders,
-    stops: (trip.stops || []).map((stop) => ({
+    stops: (trip.stops || []).map((stop, index) => ({
       ...stop,
       id: stop.id,
+      seq: index + 1,
       dealerId: stop.dealerId ? stop.dealerId.toString() : null,
-      dealerName: stop.dealerId ? dealerMap.get(stop.dealerId.toString()) || '' : ''
+      dealerName: stop.dealerId ? dealerMap.get(stop.dealerId.toString()) || '' : '',
+      orderId: stop.orderId ? stop.orderId.toString() : null
     })),
+    originWarehouse,
     advances: (trip.advances || []).map((advance) => ({
       ...advance,
       createdBy: advance.createdBy?.toString?.() || advance.createdBy || null,
@@ -513,6 +645,10 @@ const createNew = async (reqBody, userId) => {
   }
   await assertOrdersCoveredByMembers(memberIds, orderIds)
 
+  const stops = orderIds.length
+    ? await buildDeliveryStopsFromOrders(orderIds, startDate)
+    : []
+
   const code = await generateDocumentCode(tripModel.TRIP_COLLECTION_NAME, 'CT')
   const created = await tripModel.createNew({
     code,
@@ -523,7 +659,7 @@ const createNew = async (reqBody, userId) => {
     status: reqBody.status || tripModel.TRIP_STATUS.DRAFT,
     memberIds,
     orderIds,
-    stops: [],
+    stops,
     advances: [],
     expenses: [],
     settlement: null,
@@ -716,18 +852,74 @@ const addStop = async (tripId, body, actorUserId, actorRole) => {
   await assertCanOperateTrip(trip, actorUserId, actorRole)
   assertEditable(trip)
 
-  const geo = normalizeGeoLocation(body)
+  let geo = normalizeGeoLocation(body)
+  let dealerId = body.dealerId ? new ObjectId(body.dealerId) : null
+  let location = body.location || ''
+
+  // Chưa bắt GPS tay → thử GPS đại lý hoặc geocode địa chỉ
+  if (!geo) {
+    let dealer = null
+    if (dealerId) {
+      dealer = await dealerModel.findOneById(dealerId.toString())
+      if (!location.trim() && dealer?.address) {
+        location = String(dealer.address).trim()
+      }
+      if (hasValidLatLng(dealer)) {
+        geo = {
+          lat: dealer.lat,
+          lng: dealer.lng,
+          accuracy: null,
+          locationCapturedAt: new Date(),
+          locationSource: 'dealer'
+        }
+      }
+    }
+
+    if (!geo && location.trim()) {
+      const coords = await geocodeAddress(location)
+      if (coords) {
+        geo = {
+          lat: coords.lat,
+          lng: coords.lng,
+          accuracy: null,
+          locationCapturedAt: new Date(),
+          locationSource: 'geocode'
+        }
+        if (dealer && !hasValidLatLng(dealer) && dealer.address) {
+          const dealerAddress = String(dealer.address).trim()
+          if (dealerAddress && location.trim() === dealerAddress) {
+            await dealerModel.update(dealer._id.toString(), {
+              lat: coords.lat,
+              lng: coords.lng
+            })
+          }
+        }
+      }
+    }
+  }
+
   const stop = {
     id: newId(),
     date: parseDate(body.date, 'Ngày điểm dừng') || trip.startDate,
-    dealerId: body.dealerId ? new ObjectId(body.dealerId) : null,
-    location: body.location || '',
+    dealerId,
+    location,
     purpose: body.purpose || tripModel.STOP_PURPOSE.DELIVERY,
     note: body.note || '',
     ...(geo || {})
   }
 
-  await tripModel.update(tripId, { stops: [...(trip.stops || []), stop] })
+  const stops = [...(trip.stops || [])]
+  const insertAt =
+    body.insertAt !== undefined && body.insertAt !== null && body.insertAt !== ''
+      ? Number(body.insertAt)
+      : null
+  if (Number.isInteger(insertAt) && insertAt >= 0 && insertAt <= stops.length) {
+    stops.splice(insertAt, 0, stop)
+  } else {
+    stops.push(stop)
+  }
+
+  await tripModel.update(tripId, { stops })
   return await getDetails(tripId)
 }
 
@@ -739,6 +931,39 @@ const removeStop = async (tripId, stopId, actorUserId, actorRole) => {
   await tripModel.update(tripId, {
     stops: (trip.stops || []).filter((item) => item.id !== stopId)
   })
+  return await getDetails(tripId)
+}
+
+const reorderStops = async (tripId, body, actorUserId, actorRole) => {
+  const trip = await tripModel.findOneById(tripId)
+  if (!trip) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy chuyến!')
+  await assertCanOperateTrip(trip, actorUserId, actorRole)
+  assertEditable(trip)
+
+  const stopIds = Array.isArray(body.stopIds) ? body.stopIds.map(String) : []
+  const current = trip.stops || []
+  if (stopIds.length !== current.length) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Danh sách điểm dừng không khớp (thiếu hoặc thừa điểm)!'
+    )
+  }
+
+  const byId = new Map(current.map((item) => [String(item.id), item]))
+  const next = []
+  for (const id of stopIds) {
+    const stop = byId.get(id)
+    if (!stop) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, `Không tìm thấy điểm dừng ${id}!`)
+    }
+    next.push(stop)
+    byId.delete(id)
+  }
+  if (byId.size > 0) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Danh sách điểm dừng không đầy đủ!')
+  }
+
+  await tripModel.update(tripId, { stops: next })
   return await getDetails(tripId)
 }
 
@@ -1040,6 +1265,7 @@ export const tripService = {
   deleteOne,
   addStop,
   removeStop,
+  reorderStops,
   addAdvance,
   updateAdvance,
   removeAdvance,

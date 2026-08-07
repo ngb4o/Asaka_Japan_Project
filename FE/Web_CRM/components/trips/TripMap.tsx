@@ -10,23 +10,88 @@ import { EmptyState } from "@/components/ui/empty-state";
 import type { TripExpense, TripStop } from "@/lib/types";
 import { cn, formatCurrency, formatDateDisplay } from "@/lib/utils";
 
+export type TripMapOrigin = {
+  lat: number;
+  lng: number;
+  name?: string;
+  address?: string;
+};
+
 type TripMapProps = {
   stops: TripStop[];
   expenses: TripExpense[];
+  /** Kho xuất hàng — điểm 0 của lộ trình */
+  origin?: TripMapOrigin | null;
   className?: string;
 };
 
 type MapPoint = {
   id: string;
-  kind: "stop" | "expense";
+  kind: "warehouse" | "stop" | "expense";
   lat: number;
   lng: number;
+  /** Vị trí vẽ marker (có thể lệch khi trùng GPS) */
+  displayLat?: number;
+  displayLng?: number;
   label: string;
   sublabel?: string;
   /** Extra lines shown in marker popup (expense details, etc.) */
   detailLines?: string[];
   order?: number;
 };
+
+function markerLat(point: MapPoint) {
+  return point.displayLat ?? point.lat;
+}
+
+function markerLng(point: MapPoint) {
+  return point.displayLng ?? point.lng;
+}
+
+/**
+ * Khi nhiều điểm trùng (hoặc gần trùng) GPS, lệch nhẹ marker theo vòng tròn
+ * để số thứ tự không che nhau. Lộ trình vẫn dùng lat/lng gốc.
+ */
+function applyOverlapOffsets(points: MapPoint[]): MapPoint[] {
+  if (points.length < 2) {
+    return points.map((p) => ({ ...p, displayLat: p.lat, displayLng: p.lng }));
+  }
+
+  const groups = new Map<string, number[]>();
+  points.forEach((point, index) => {
+    const key = `${point.lat.toFixed(5)},${point.lng.toFixed(5)}`;
+    const list = groups.get(key);
+    if (list) list.push(index);
+    else groups.set(key, [index]);
+  });
+
+  const next = points.map((p) => ({ ...p, displayLat: p.lat, displayLng: p.lng }));
+
+  for (const indices of groups.values()) {
+    if (indices.length < 2) continue;
+
+    const n = indices.length;
+    // ~25m — đủ tách badge khi zoom trung bình
+    const baseRadiusDeg = 0.00022;
+
+    indices.forEach((pointIndex, i) => {
+      const point = next[pointIndex];
+      const angle = (2 * Math.PI * i) / n - Math.PI / 2;
+      // Nhiều điểm: xoắn nhẹ ra ngoài để không chồng
+      const radius = baseRadiusDeg * (1 + Math.floor(i / 8) * 0.6);
+      const latRad = (point.lat * Math.PI) / 180;
+      const cosLat = Math.max(0.2, Math.cos(latRad));
+
+      next[pointIndex] = {
+        ...point,
+        displayLat: point.lat + Math.cos(angle) * radius,
+        displayLng: point.lng + (Math.sin(angle) * radius) / cosLat,
+      };
+    });
+  }
+
+  return next;
+}
 
 const GOOGLE_MAPS_API_KEY =
   process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? "";
@@ -158,12 +223,14 @@ async function getOsrmDrivingRoute(
 
 function createGoogleMarkerIcon(
   googleMaps: typeof google.maps,
-  kind: "stop" | "expense"
+  kind: MapPoint["kind"]
 ): google.maps.Symbol {
+  const fillColor =
+    kind === "warehouse" ? "#1d4ed8" : kind === "expense" ? "#dc2626" : "#0f766e";
   return {
     path: googleMaps.SymbolPath.CIRCLE,
     scale: kind === "expense" ? 14 : 15,
-    fillColor: kind === "expense" ? "#dc2626" : "#0f766e",
+    fillColor,
     fillOpacity: 1,
     strokeColor: "#ffffff",
     strokeWeight: 2,
@@ -171,16 +238,34 @@ function createGoogleMarkerIcon(
   };
 }
 
-function useMapPoints(stops: TripStop[], expenses: TripExpense[]) {
+function useMapPoints(
+  stops: TripStop[],
+  expenses: TripExpense[],
+  origin?: TripMapOrigin | null
+) {
+  const originPoint = useMemo<MapPoint | null>(() => {
+    if (!origin || !hasCoords(origin)) return null;
+    return {
+      id: "warehouse-origin",
+      kind: "warehouse",
+      lat: origin.lat,
+      lng: origin.lng,
+      label: origin.name?.trim() || "Kho xuất hàng",
+      sublabel: origin.address?.trim() || "Điểm xuất phát",
+    };
+  }, [origin]);
+
   const stopPoints = useMemo<MapPoint[]>(
     () =>
       stops.filter(hasCoords).map((stop, index) => ({
         id: `stop-${stop.id}`,
-        kind: "stop",
+        kind: "stop" as const,
         lat: stop.lat as number,
         lng: stop.lng as number,
-        order: index + 1,
-        label: `${index + 1}. ${stop.dealerName || stop.location || "Điểm dừng"}`,
+        order: stop.seq || index + 1,
+        label: `${stop.seq || index + 1}. ${
+          stop.dealerName || stop.location || "Điểm dừng"
+        }`,
         sublabel: `${formatDateDisplay(stop.date)} · ${
           STOP_PURPOSE_LABEL[stop.purpose] || stop.purpose
         }`,
@@ -206,23 +291,28 @@ function useMapPoints(stops: TripStop[], expenses: TripExpense[]) {
     [expenses]
   );
 
-  const points = useMemo(
-    () => [...stopPoints, ...expensePoints],
-    [stopPoints, expensePoints]
+  const routePoints = useMemo(
+    () => (originPoint ? [originPoint, ...stopPoints] : stopPoints),
+    [originPoint, stopPoints]
   );
 
-  return { stopPoints, expensePoints, points };
+  const points = useMemo(
+    () => [...routePoints, ...expensePoints],
+    [routePoints, expensePoints]
+  );
+
+  return { originPoint, stopPoints, expensePoints, routePoints, points };
 }
 
 function GoogleTripMap({
-  stopPoints,
+  routePoints,
   expensePoints,
   points,
   containerRef,
   onError,
   onReady,
 }: {
-  stopPoints: MapPoint[];
+  routePoints: MapPoint[];
   expensePoints: MapPoint[];
   points: MapPoint[];
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -270,11 +360,19 @@ function GoogleTripMap({
           map.fitBounds(bounds, 48);
         };
 
-        for (const point of points) {
+        const markerPoints = applyOverlapOffsets(points);
+
+        for (const point of markerPoints) {
           const marker = new google.maps.Marker({
             map,
-            position: { lat: point.lat, lng: point.lng },
+            position: { lat: markerLat(point), lng: markerLng(point) },
             icon: createGoogleMarkerIcon(google.maps, point.kind),
+            zIndex:
+              point.kind === "stop"
+                ? 200 + (point.order || 0)
+                : point.kind === "warehouse"
+                  ? 300
+                  : 100,
             label:
               point.kind === "stop" && point.order
                 ? {
@@ -283,14 +381,21 @@ function GoogleTripMap({
                     fontSize: "12px",
                     fontWeight: "700",
                   }
-                : point.kind === "expense"
+                : point.kind === "warehouse"
                   ? {
-                      text: "$",
+                      text: "K",
                       color: "#ffffff",
                       fontSize: "11px",
                       fontWeight: "700",
                     }
-                  : undefined,
+                  : point.kind === "expense"
+                    ? {
+                        text: "$",
+                        color: "#ffffff",
+                        fontSize: "11px",
+                        fontWeight: "700",
+                      }
+                    : undefined,
             title: [point.label, point.sublabel, ...(point.detailLines ?? [])]
               .filter(Boolean)
               .join(" · "),
@@ -304,7 +409,7 @@ function GoogleTripMap({
           markers.push(marker);
         }
 
-        if (stopPoints.length >= 2) {
+        if (routePoints.length >= 2) {
           directionsRenderer = new google.maps.DirectionsRenderer({
             map,
             suppressMarkers: true,
@@ -316,13 +421,13 @@ function GoogleTripMap({
           });
 
           const directionsService = new google.maps.DirectionsService();
-          const lastStop = stopPoints[stopPoints.length - 1];
+          const lastPoint = routePoints[routePoints.length - 1];
 
           directionsService.route(
             {
-              origin: { lat: stopPoints[0].lat, lng: stopPoints[0].lng },
-              destination: { lat: lastStop.lat, lng: lastStop.lng },
-              waypoints: stopPoints.slice(1, -1).map((point) => ({
+              origin: { lat: routePoints[0].lat, lng: routePoints[0].lng },
+              destination: { lat: lastPoint.lat, lng: lastPoint.lng },
+              waypoints: routePoints.slice(1, -1).map((point) => ({
                 location: { lat: point.lat, lng: point.lng },
                 stopover: true,
               })),
@@ -374,19 +479,19 @@ function GoogleTripMap({
       directionsRenderer?.setMap(null);
       infoWindow?.close();
     };
-  }, [containerRef, expensePoints, onError, onReady, points, stopPoints]);
+  }, [containerRef, expensePoints, onError, onReady, points, routePoints]);
 
   return null;
 }
 
 function LeafletTripMap({
-  stopPoints,
+  routePoints,
   expensePoints,
   points,
   containerRef,
   onReady,
 }: {
-  stopPoints: MapPoint[];
+  routePoints: MapPoint[];
   expensePoints: MapPoint[];
   points: MapPoint[];
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -414,41 +519,48 @@ function LeafletTripMap({
     }).addTo(map);
 
     const latLngs: [number, number][] = [];
+    const markerPoints = applyOverlapOffsets(points);
 
-    for (const point of stopPoints) {
-      const stopIcon = L.divIcon({
-        className: "",
-        html: `<span style="display:inline-flex;height:30px;width:30px;align-items:center;justify-content:center;border-radius:9999px;background:#0f766e;color:#fff;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)">${point.order}</span>`,
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-      });
-
-      L.marker([point.lat, point.lng], { icon: stopIcon })
-        .addTo(map)
-        .bindPopup(buildPopupHtml(point));
-      latLngs.push([point.lat, point.lng]);
-    }
-
-    const expenseIcon = L.divIcon({
-      className: "",
-      html: `<span style="display:inline-flex;height:28px;width:28px;align-items:center;justify-content:center;border-radius:9999px;background:#dc2626;color:#fff;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)">$</span>`,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14],
-    });
-
-    for (const point of expensePoints) {
-      L.marker([point.lat, point.lng], { icon: expenseIcon })
-        .addTo(map)
-        .bindPopup(buildPopupHtml(point));
-      latLngs.push([point.lat, point.lng]);
+    for (const point of markerPoints) {
+      if (point.kind === "expense") {
+        const expenseIcon = L.divIcon({
+          className: "",
+          html: `<span style="display:inline-flex;height:28px;width:28px;align-items:center;justify-content:center;border-radius:9999px;background:#dc2626;color:#fff;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)">$</span>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+        });
+        L.marker([markerLat(point), markerLng(point)], {
+          icon: expenseIcon,
+          zIndexOffset: 100,
+        })
+          .addTo(map)
+          .bindPopup(buildPopupHtml(point));
+      } else {
+        const isWarehouse = point.kind === "warehouse";
+        const bg = isWarehouse ? "#1d4ed8" : "#0f766e";
+        const text = isWarehouse ? "K" : String(point.order || "");
+        const stopIcon = L.divIcon({
+          className: "",
+          html: `<span style="display:inline-flex;height:30px;width:30px;align-items:center;justify-content:center;border-radius:9999px;background:${bg};color:#fff;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)">${text}</span>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 15],
+        });
+        L.marker([markerLat(point), markerLng(point)], {
+          icon: stopIcon,
+          zIndexOffset: isWarehouse ? 300 : 200 + (point.order || 0),
+        })
+          .addTo(map)
+          .bindPopup(buildPopupHtml(point));
+      }
+      latLngs.push([markerLat(point), markerLng(point)]);
     }
 
     let cancelled = false;
 
     void (async () => {
       const route =
-        (await getOsrmDrivingRoute(stopPoints)) ||
-        stopPoints.map((point) => [point.lat, point.lng] as [number, number]);
+        (await getOsrmDrivingRoute(routePoints)) ||
+        routePoints.map((point) => [point.lat, point.lng] as [number, number]);
 
       if (cancelled || !mapRef.current) return;
 
@@ -478,25 +590,29 @@ function LeafletTripMap({
       map.remove();
       mapRef.current = null;
     };
-  }, [containerRef, expensePoints, onReady, points, stopPoints]);
+  }, [containerRef, expensePoints, onReady, points, routePoints]);
 
   return null;
 }
 
-export function TripMap({ stops, expenses, className }: TripMapProps) {
+export function TripMap({ stops, expenses, origin, className }: TripMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const useGoogleMaps = Boolean(GOOGLE_MAPS_API_KEY);
 
-  const { stopPoints, expensePoints, points } = useMapPoints(stops, expenses);
+  const { stopPoints, expensePoints, routePoints, points } = useMapPoints(
+    stops,
+    expenses,
+    origin
+  );
 
   const googleMapsUrl = useMemo(() => {
-    if (stopPoints.length >= 2) {
-      return buildGoogleMapsDirectionsUrl(stopPoints);
+    if (routePoints.length >= 2) {
+      return buildGoogleMapsDirectionsUrl(routePoints);
     }
-    if (stopPoints.length === 1) {
-      return buildGoogleMapsPointUrl(stopPoints[0].lat, stopPoints[0].lng);
+    if (routePoints.length === 1) {
+      return buildGoogleMapsPointUrl(routePoints[0].lat, routePoints[0].lng);
     }
     if (expensePoints.length > 0) {
       return buildGoogleMapsPointUrl(
@@ -505,13 +621,13 @@ export function TripMap({ stops, expenses, className }: TripMapProps) {
       );
     }
     return null;
-  }, [stopPoints, expensePoints]);
+  }, [routePoints, expensePoints]);
 
   if (points.length === 0) {
     return (
       <EmptyState
         title="Chưa có tọa độ để hiển thị bản đồ"
-        description='Dùng “Vị trí hiện tại” khi thêm điểm hoặc ghi chi.'
+        description="Gắn GPS kho / đại lý, hoặc lấy vị trí khi thêm điểm dừng."
         className={className}
       />
     );
@@ -522,6 +638,11 @@ export function TripMap({ stops, expenses, className }: TripMapProps) {
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium text-[var(--color-text-primary)]">
           Bản đồ chuyến đi
+          {origin && hasCoords(origin) ? (
+            <span className="ml-2 text-xs font-normal text-[var(--color-text-inverse)]">
+              Kho → {stopPoints.length} điểm
+            </span>
+          ) : null}
         </p>
         {googleMapsUrl ? (
           <Button
@@ -533,7 +654,7 @@ export function TripMap({ stops, expenses, className }: TripMapProps) {
               window.open(googleMapsUrl, "_blank", "noopener,noreferrer")
             }>
             <ExternalLink className="h-4 w-4" />
-            {stopPoints.length >= 2
+            {routePoints.length >= 2
               ? "Mở lộ trình trên Google Maps"
               : "Mở trên Google Maps"}
           </Button>
@@ -550,7 +671,7 @@ export function TripMap({ stops, expenses, className }: TripMapProps) {
 
       {useGoogleMaps ? (
         <GoogleTripMap
-          stopPoints={stopPoints}
+          routePoints={routePoints}
           expensePoints={expensePoints}
           points={points}
           containerRef={containerRef}
@@ -562,7 +683,7 @@ export function TripMap({ stops, expenses, className }: TripMapProps) {
         />
       ) : (
         <LeafletTripMap
-          stopPoints={stopPoints}
+          routePoints={routePoints}
           expensePoints={expensePoints}
           points={points}
           containerRef={containerRef}
@@ -581,6 +702,12 @@ export function TripMap({ stops, expenses, className }: TripMapProps) {
       ) : null}
 
       <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--color-text-inverse)]">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-700 text-[10px] font-bold text-white">
+            K
+          </span>
+          Kho xuất phát
+        </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-700 text-[10px] font-bold text-white">
             1

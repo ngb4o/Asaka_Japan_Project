@@ -121,6 +121,8 @@ export type Warehouse = {
   name: string;
   code: string;
   address: string;
+  lat?: number | null;
+  lng?: number | null;
   note: string;
   status: "active" | "inactive";
   createdBy: string;
@@ -132,6 +134,8 @@ export type WarehouseInput = {
   name: string;
   code?: string;
   address?: string;
+  lat?: number | null;
+  lng?: number | null;
   note?: string;
   status?: "active" | "inactive";
 };
@@ -290,6 +294,8 @@ export type Dealer = {
   email: string;
   address: string;
   region: string;
+  lat?: number | null;
+  lng?: number | null;
   tier: "standard" | "silver" | "gold";
   discountPercent: number;
   status: "pending" | "active" | "inactive";
@@ -307,6 +313,8 @@ export type DealerInput = {
   email?: string;
   address?: string;
   region?: string;
+  lat?: number | null;
+  lng?: number | null;
   tier?: Dealer["tier"];
   discountPercent?: number;
   status?: Dealer["status"];
@@ -679,9 +687,13 @@ export type EmployeeInput = {
 
 export type TripStop = {
   id: string;
+  /** Thứ tự trên chuyến (1-based) */
+  seq?: number;
   date: string;
   dealerId: string | null;
   dealerName?: string;
+  /** Đơn gắn điểm giao (nếu tạo từ đơn) */
+  orderId?: string | null;
   location: string;
   purpose: "delivery" | "collection" | "meeting" | "other";
   note: string;
@@ -689,7 +701,7 @@ export type TripStop = {
   lng?: number | null;
   accuracy?: number | null;
   locationCapturedAt?: string | null;
-  locationSource?: "gps" | "manual" | null;
+  locationSource?: "gps" | "manual" | "dealer" | "geocode" | null;
 };
 
 export type TripAdvance = {
@@ -771,6 +783,14 @@ export type Trip = {
     itemCount?: number;
   }[];
   stops: TripStop[];
+  /** Kho xuất phát (GPS) — lấy từ đơn gắn chuyến */
+  originWarehouse?: {
+    id: string;
+    name: string;
+    address: string;
+    lat: number;
+    lng: number;
+  } | null;
   advances: TripAdvance[];
   expenses: TripExpense[];
   settlementPreview: TripSettlementPreview;

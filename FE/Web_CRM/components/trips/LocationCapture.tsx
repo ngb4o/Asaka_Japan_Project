@@ -20,6 +20,7 @@ type LocationCaptureProps = {
   className?: string;
   /** Bắt buộc trên mobile / khi ghi chi phí ngoài trời */
   label?: string;
+  hint?: string;
 };
 
 export function LocationCapture({
@@ -27,6 +28,7 @@ export function LocationCapture({
   onChange,
   className,
   label = "Vị trí hiện tại",
+  hint = "Tuỳ chọn — gắn GPS để hiện trên bản đồ lộ trình",
 }: LocationCaptureProps) {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
@@ -107,9 +109,7 @@ export function LocationCapture({
             : ""}
         </p>
       ) : (
-        <p className="text-xs text-[var(--color-text-inverse)]">
-          Tuỳ chọn — gắn GPS lúc check-in / ghi chi
-        </p>
+        <p className="text-xs text-[var(--color-text-inverse)]">{hint}</p>
       )}
     </div>
   );

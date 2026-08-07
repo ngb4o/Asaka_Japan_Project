@@ -5,6 +5,7 @@ import { StatusCodes } from 'http-status-codes'
 import { slugify, formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { buildSearchFilter } from '~/utils/search.js'
+import { normalizeOptionalLatLng } from '~/utils/geo'
 
 const normalizeCode = (value) => slugify(value).replace(/-/g, '_').toUpperCase()
 
@@ -16,10 +17,13 @@ const createNew = async (reqBody, userId) => {
     throw new ApiError(StatusCodes.CONFLICT, 'Mã kho đã tồn tại!')
   }
 
+  const geo = normalizeOptionalLatLng(reqBody)
   const created = await warehouseModel.createNew({
     name: reqBody.name,
     code,
     address: reqBody.address || '',
+    lat: geo?.lat ?? null,
+    lng: geo?.lng ?? null,
     note: reqBody.note || '',
     status: reqBody.status || warehouseModel.WAREHOUSE_STATUS.ACTIVE,
     createdBy: userId
@@ -96,6 +100,12 @@ const update = async (warehouseId, updateData) => {
     }
 
     dataToUpdate.code = nextCode
+  }
+
+  const geo = normalizeOptionalLatLng(updateData)
+  if (geo !== undefined) {
+    dataToUpdate.lat = geo.lat
+    dataToUpdate.lng = geo.lng
   }
 
   await warehouseModel.update(warehouseId, dataToUpdate)

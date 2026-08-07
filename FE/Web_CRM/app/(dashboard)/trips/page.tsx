@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, ExternalLink, Plus, Trash2, X } from "@/components/ui/icons";
+import { Check, Plus, Trash2, X } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +38,7 @@ import {
   FilterTrigger,
 } from "@/components/ui/filter-drawer";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ImageLightbox } from "@/components/ui/image-lightbox";
+import { PreviewableImage } from "@/components/ui/previewable-image";
 import { ImageUpload } from "@/components/products/ImageUpload";
 import { LocationCapture, type GeoLocationValue } from "@/components/trips/LocationCapture";
 import dynamic from "next/dynamic";
@@ -57,11 +57,12 @@ import {
   getTrip,
   getTrips,
   removeTripStop,
+  reorderTripStops,
   reviewTripExpense,
   settleTrip,
   updateTrip,
 } from "@/lib/api/trips";
-import { getImageUrl, uploadTripReceipt } from "@/lib/api/uploads";
+import { uploadTripReceipt } from "@/lib/api/uploads";
 import type { Dealer, Employee, Order, Trip } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
@@ -80,6 +81,12 @@ const TripMap = dynamic(
       <div className="h-64 animate-pulse rounded-xl bg-[var(--color-surface-muted)] sm:h-80" />
     ),
   }
+);
+
+const SortableTripStops = dynamic(
+  () =>
+    import("@/components/trips/SortableTripStops").then((mod) => mod.SortableTripStops),
+  { ssr: false }
 );
 
 const TRIP_STATUS_LABEL: Record<Trip["status"], string> = {
@@ -174,12 +181,13 @@ export default function TripsPage() {
     location: "",
     purpose: "delivery",
     note: "",
+    /** "" = cuối; số = insertAt 0-based */
+    insertAt: "" as "" | number,
     geo: null as GeoLocationValue | null,
   });
   const [advanceAmount, setAdvanceAmount] = useState<number | "">("");
   const [advanceNote, setAdvanceNote] = useState("");
   const [advanceReceiptUrls, setAdvanceReceiptUrls] = useState<string[]>([]);
-  const [receiptPreviewSrc, setReceiptPreviewSrc] = useState<string | null>(null);
   const [expenseForm, setExpenseForm] = useState({
     category: "fuel",
     amount: "" as number | "",
@@ -327,6 +335,7 @@ export default function TripsPage() {
       location: "",
       purpose: "delivery",
       note: "",
+      insertAt: "",
       geo: null,
     });
   }
@@ -439,6 +448,31 @@ export default function TripsPage() {
     }
   }
 
+  async function handleReorderStops(stopIds: string[]) {
+    if (!selected) return;
+    const byId = new Map(selected.stops.map((s) => [s.id, s]));
+    const nextStops = stopIds
+      .map((id, i) => {
+        const stop = byId.get(id);
+        return stop ? { ...stop, seq: i + 1 } : null;
+      })
+      .filter(Boolean) as Trip["stops"];
+    if (nextStops.length === selected.stops.length) {
+      setSelected({ ...selected, stops: nextStops });
+    }
+
+    setActionId("reorder");
+    try {
+      await reorderTripStops(selected.id, stopIds);
+      await refreshSelected(selected.id);
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Đổi thứ tự thất bại");
+      await refreshSelected(selected.id);
+    } finally {
+      setActionId(null);
+    }
+  }
+
   async function handleReviewExpense(
     expenseId: string,
     status: "approved" | "rejected"
@@ -466,6 +500,7 @@ export default function TripsPage() {
         location: stopForm.location,
         purpose: stopForm.purpose as Trip["stops"][number]["purpose"],
         note: stopForm.note,
+        ...(typeof stopForm.insertAt === "number" ? { insertAt: stopForm.insertAt } : {}),
         ...(stopForm.geo
           ? {
               lat: stopForm.geo.lat,
@@ -483,6 +518,7 @@ export default function TripsPage() {
         location: "",
         purpose: "delivery",
         note: "",
+        insertAt: "",
         geo: null,
       });
       await refreshSelected(selected.id);
@@ -838,6 +874,11 @@ export default function TripsPage() {
             <DialogTitle>Tạo chuyến công tác</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
+            <p className="text-sm text-[var(--color-text-inverse)]">
+              Chọn đơn gắn chuyến → tự tạo điểm dừng giao (#1, #2…) theo thứ tự.
+              Có GPS đại lý thì dùng luôn; chưa có thì geocode từ địa chỉ để vẽ
+              lộ trình Kho → các điểm.
+            </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Tiêu đề</Label>
@@ -892,7 +933,8 @@ export default function TripsPage() {
                 <Label>Đơn hàng gắn chuyến</Label>
                 {form.orderIds.length > 0 ? (
                   <span className="text-xs text-[var(--color-text-inverse)]">
-                    Đã chọn {form.orderIds.length}
+                    Đã chọn {form.orderIds.length} · sẽ tạo{" "}
+                    {form.orderIds.length} điểm giao
                   </span>
                 ) : null}
               </div>
@@ -1035,7 +1077,6 @@ export default function TripsPage() {
                     ) : null}
                     {selected.status === "in_progress" ? (
                       <Button
-                        variant="outline"
                         loading={isTripAction("status:settlement")}
                         onClick={() => handleStatus("settlement")}>
                         Chờ quyết toán
@@ -1091,59 +1132,37 @@ export default function TripsPage() {
 
               <section className="mt-6 space-y-3 md:mt-0">
                 <h4 className="font-semibold">Bản đồ chuyến</h4>
-                <TripMap stops={selected.stops} expenses={selected.expenses} />
+                <TripMap
+                  stops={selected.stops}
+                  expenses={selected.expenses}
+                  origin={
+                    selected.originWarehouse &&
+                    typeof selected.originWarehouse.lat === "number" &&
+                    typeof selected.originWarehouse.lng === "number"
+                      ? {
+                          lat: selected.originWarehouse.lat,
+                          lng: selected.originWarehouse.lng,
+                          name: selected.originWarehouse.name,
+                          address: selected.originWarehouse.address,
+                        }
+                      : null
+                  }
+                />
               </section>
 
               <section className="mt-6 space-y-3 md:mt-0">
                 <h4 className="font-semibold">Lịch trình / điểm dừng</h4>
-                {selected.stops.map((stop) => (
-                  <div
-                    key={stop.id}
-                    className="flex items-start justify-between gap-3 rounded-lg border border-[var(--color-border-subtle)] p-3 text-sm">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium">
-                        {formatDateDisplay(stop.date)} - {PURPOSE_LABEL[stop.purpose]}
-                      </p>
-                      <p className="text-[var(--color-text-inverse)]">
-                        {stop.dealerName || stop.location || "—"}
-                      </p>
-                      {stop.note ? <p className="mt-1 text-xs">{stop.note}</p> : null}
-                      {typeof stop.lat === "number" && typeof stop.lng === "number" ? (
-                        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-                          GPS: {stop.lat.toFixed(5)}, {stop.lng.toFixed(5)}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="flex shrink-0 items-start gap-2">
-                      {typeof stop.lat === "number" && typeof stop.lng === "number" ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-8 gap-1 px-2 text-xs"
-                          onClick={() => {
-                            window.open(
-                              `https://www.google.com/maps?q=${stop.lat},${stop.lng}`,
-                              "_blank",
-                              "noopener,noreferrer"
-                            );
-                          }}>
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          Maps
-                        </Button>
-                      ) : null}
-                      {canOperateSelected && selected.status !== "closed" ? (
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          loading={isTripAction(`stop:${stop.id}`)}
-                          onClick={() => handleRemoveStop(stop.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
+                <SortableTripStops
+                  stops={selected.stops}
+                  canReorder={canOperateSelected && selected.status !== "closed"}
+                  purposeLabel={PURPOSE_LABEL}
+                  removingStopId={
+                    actionId?.startsWith("stop:") ? actionId.slice(5) : null
+                  }
+                  reordering={isTripAction("reorder")}
+                  onReorder={handleReorderStops}
+                  onRemove={handleRemoveStop}
+                />
                 {canOperateSelected && selected.status !== "closed" ? (
                   <form
                     onSubmit={handleAddStop}
@@ -1172,6 +1191,31 @@ export default function TripsPage() {
                       }))}
                       value={stopForm.purpose}
                       onChange={(purpose) => setStopForm({ ...stopForm, purpose })}
+                      searchable={false}
+                    />
+                    <SearchableSelect
+                      className="sm:col-span-2"
+                      options={[
+                        { value: "", label: "Thêm cuối lộ trình" },
+                        { value: "0", label: "Thêm đầu (trước #1)" },
+                        ...selected.stops.map((s, i) => ({
+                          value: String(i + 1),
+                          label: `Sau #${s.seq || i + 1}${
+                            s.dealerName || s.location
+                              ? ` — ${(s.dealerName || s.location).slice(0, 28)}`
+                              : ""
+                          }`,
+                        })),
+                      ]}
+                      value={
+                        stopForm.insertAt === "" ? "" : String(stopForm.insertAt)
+                      }
+                      onChange={(value) =>
+                        setStopForm({
+                          ...stopForm,
+                          insertAt: value === "" ? "" : Number(value),
+                        })
+                      }
                       searchable={false}
                     />
                     <Input
@@ -1211,19 +1255,12 @@ export default function TripsPage() {
                           <div className="min-w-0 shrink overflow-hidden">
                             <div className="flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
                               {receipts.map((url, index) => (
-                                <button
+                                <PreviewableImage
                                   key={`${url}-${index}`}
-                                  type="button"
-                                  onClick={() => setReceiptPreviewSrc(url)}
-                                  className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-md border border-[var(--color-border-subtle)]"
-                                  aria-label={`Xem chứng từ ${index + 1}`}>
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={getImageUrl(url)}
-                                    alt={`Chứng từ ${index + 1}`}
-                                    className="h-full w-full object-cover"
-                                  />
-                                </button>
+                                  src={url}
+                                  alt={`Chứng từ ${index + 1}`}
+                                  className="h-14 w-14 rounded-md"
+                                />
                               ))}
                             </div>
                           </div>
@@ -1343,19 +1380,12 @@ export default function TripsPage() {
                         <div className="w-full min-w-0 max-w-full overflow-hidden">
                           <div className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]">
                           {receipts.map((url, index) => (
-                            <button
+                            <PreviewableImage
                               key={`${url}-${index}`}
-                              type="button"
-                              onClick={() => setReceiptPreviewSrc(url)}
-                              className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-md border border-[var(--color-border-subtle)]"
-                              aria-label={`Xem chứng từ ${index + 1}`}>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={getImageUrl(url)}
-                                alt={`Chứng từ ${index + 1}`}
-                                className="h-full w-full object-cover"
-                              />
-                            </button>
+                              src={url}
+                              alt={`Chứng từ ${index + 1}`}
+                              className="h-14 w-14 rounded-md"
+                            />
                           ))}
                           </div>
                         </div>
@@ -1605,12 +1635,6 @@ export default function TripsPage() {
           ) : null}
         </DialogContent>
       </Dialog>
-
-      <ImageLightbox
-        src={receiptPreviewSrc}
-        alt="Chứng từ"
-        onClose={() => setReceiptPreviewSrc(null)}
-      />
     </div>
   );
 }

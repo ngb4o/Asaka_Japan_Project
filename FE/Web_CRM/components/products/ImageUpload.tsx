@@ -1,18 +1,16 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Image from "next/image";
 import { Camera, ImageIcon, ImagePlus, X } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { ImageLightbox } from "@/components/ui/image-lightbox";
+import { PreviewableImage } from "@/components/ui/previewable-image";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import {
   uploadProductImage,
   type UploadResult,
-  getImageUrl,
 } from "@/lib/api/uploads";
 
 type ImageUploadProps = {
@@ -41,7 +39,6 @@ export function ImageUpload({
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
 
   const isMulti = max > 1;
@@ -151,22 +148,15 @@ export function ImageUpload({
           {images.map((url, index) => (
             <div
               key={`${url}-${index}`}
-              className="relative block w-fit shrink-0">
-              <button
-                type="button"
-                className="relative h-28 w-28 overflow-hidden rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] transition hover:ring-2 hover:ring-[var(--color-text-secondary)]/30"
-                onClick={() => setPreviewSrc(url)}
-                aria-label={`Xem ảnh ${index + 1}`}>
-                <Image
-                  src={getImageUrl(url)}
-                  alt={`Ảnh ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
-              </button>
+              className="relative block h-28 w-28 shrink-0">
+              <PreviewableImage
+                src={url}
+                alt={`${label} ${index + 1}`}
+                fill
+                className="rounded-lg transition hover:ring-2 hover:ring-[var(--color-text-secondary)]/30"
+              />
               {isMulti && index === 0 ? (
-                <span className="absolute bottom-1 left-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                <span className="pointer-events-none absolute bottom-1 left-1 z-[1] rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-medium text-white">
                   Chính
                 </span>
               ) : null}
@@ -174,7 +164,7 @@ export function ImageUpload({
                 type="button"
                 variant="danger"
                 size="sm"
-                className="absolute right-1 top-1 h-7 w-7 rounded-full p-0"
+                className="absolute right-1 top-1 z-[1] h-7 w-7 rounded-full p-0"
                 onClick={() => removeAt(index)}>
                 <X className="h-3.5 w-3.5" />
               </Button>
@@ -241,12 +231,6 @@ export function ImageUpload({
           </button>
         </div>
       </BottomSheet>
-
-      <ImageLightbox
-        src={previewSrc}
-        alt={label}
-        onClose={() => setPreviewSrc(null)}
-      />
     </div>
   );
 }

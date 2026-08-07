@@ -41,7 +41,13 @@ const stopSchema = Joi.object({
   lng: Joi.number().min(-180).max(180).optional(),
   accuracy: Joi.number().min(0).allow(null).optional(),
   locationCapturedAt: Joi.alternatives().try(Joi.date(), Joi.string()).optional(),
-  locationSource: Joi.string().valid('gps', 'manual').optional()
+  locationSource: Joi.string().valid('gps', 'manual', 'dealer', 'geocode').optional(),
+  /** 0-based: chèn tại vị trí này; bỏ trống = thêm cuối */
+  insertAt: Joi.number().integer().min(0).optional()
+})
+
+const reorderStopsSchema = Joi.object({
+  stopIds: Joi.array().items(Joi.string().trim().min(1)).min(1).required()
 })
 
 const advanceSchema = Joi.object({
@@ -86,6 +92,7 @@ export const tripValidation = {
   createNew: validateRequest(createSchema),
   update: validateRequest(updateSchema),
   addStop: validateRequest(stopSchema),
+  reorderStops: validateRequest(reorderStopsSchema),
   addAdvance: validateRequest(advanceSchema),
   addExpense: validateRequest(expenseSchema),
   reviewExpense: validateRequest(reviewSchema),

@@ -156,6 +156,8 @@ export type WarehouseFormValues = {
   name: string;
   code?: string;
   address?: string;
+  lat?: number | null;
+  lng?: number | null;
   note?: string;
   status?: "active" | "inactive";
 };
@@ -169,6 +171,19 @@ export function buildWarehousePayload(form: WarehouseFormValues): WarehouseInput
   if (form.address?.trim()) payload.address = form.address.trim();
   if (form.note?.trim()) payload.note = form.note.trim();
   if (form.status) payload.status = form.status;
+
+  if (
+    typeof form.lat === "number" &&
+    Number.isFinite(form.lat) &&
+    typeof form.lng === "number" &&
+    Number.isFinite(form.lng)
+  ) {
+    payload.lat = form.lat;
+    payload.lng = form.lng;
+  } else {
+    payload.lat = null;
+    payload.lng = null;
+  }
 
   return payload;
 }

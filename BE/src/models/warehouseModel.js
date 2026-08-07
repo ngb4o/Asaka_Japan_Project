@@ -16,6 +16,8 @@ const WAREHOUSE_COLLECTION_SCHEMA = Joi.object({
   name: Joi.string().required().min(2).max(150).trim(),
   code: Joi.string().required().min(2).max(50).trim(),
   address: optionalText(300).default(''),
+  lat: Joi.number().min(-90).max(90).allow(null).default(null),
+  lng: Joi.number().min(-180).max(180).allow(null).default(null),
   note: optionalText(500).default(''),
   status: Joi.string()
     .valid(WAREHOUSE_STATUS.ACTIVE, WAREHOUSE_STATUS.INACTIVE)

@@ -33,6 +33,7 @@ import {
   FilterTrigger,
 } from "@/components/ui/filter-drawer";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LocationCapture, type GeoLocationValue } from "@/components/trips/LocationCapture";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canManageDealers, rolesOf } from "@/lib/auth/permissions";
@@ -64,6 +65,7 @@ type DealerFormValues = {
   discountPercent: number | "";
   status: Dealer["status"];
   note: string;
+  geo: GeoLocationValue | null;
 };
 
 const EMPTY_FORM: DealerFormValues = {
@@ -77,6 +79,7 @@ const EMPTY_FORM: DealerFormValues = {
   discountPercent: 0,
   status: "pending",
   note: "",
+  geo: null,
 };
 
 const EMPTY_LIST_FILTERS = { status: "", tier: "" };
@@ -177,6 +180,13 @@ export default function DealersPage() {
       discountPercent: item.discountPercent,
       status: item.status,
       note: item.note,
+      geo:
+        typeof item.lat === "number" &&
+        typeof item.lng === "number" &&
+        Number.isFinite(item.lat) &&
+        Number.isFinite(item.lng)
+          ? { lat: item.lat, lng: item.lng, locationSource: "manual" }
+          : null,
     });
     setDialogOpen(true);
   }
@@ -205,6 +215,8 @@ export default function DealersPage() {
         discountPercent: Number(form.discountPercent) || 0,
         status: form.status,
         note: form.note.trim(),
+        lat: form.geo?.lat ?? null,
+        lng: form.geo?.lng ?? null,
       };
 
       if (editing) {
@@ -637,6 +649,11 @@ export default function DealersPage() {
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
               />
             </div>
+            <LocationCapture
+              label="GPS đại lý"
+              value={form.geo}
+              onChange={(geo) => setForm({ ...form, geo })}
+            />
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label>Hạng</Label>
