@@ -262,28 +262,21 @@ export function SortableTripStops({
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}>
-      <div className="space-y-3">
-        {items.length > 1 ? (
-          <p className="text-xs text-[var(--color-text-inverse)]">
-            Giữ điểm dừng ~0,2s rồi kéo để đổi thứ tự
-          </p>
-        ) : null}
-        <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-          <div className="space-y-3">
-            {items.map((stop, index) => (
-              <SortableStopRow
-                key={stop.id}
-                stop={stop}
-                index={index}
-                purposeLabel={purposeLabel}
-                removing={removingStopId === stop.id}
-                disabled={reordering}
-                onRemove={onRemove}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </div>
+      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        <div className="space-y-3">
+          {items.map((stop, index) => (
+            <SortableStopRow
+              key={stop.id}
+              stop={stop}
+              index={index}
+              purposeLabel={purposeLabel}
+              removing={removingStopId === stop.id}
+              disabled={reordering}
+              onRemove={onRemove}
+            />
+          ))}
+        </div>
+      </SortableContext>
     </DndContext>
   );
 }

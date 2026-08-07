@@ -78,7 +78,7 @@ const TripMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-64 animate-pulse rounded-xl bg-[var(--color-surface-muted)] sm:h-80" />
+      <div className="h-80 animate-pulse rounded-xl bg-[var(--color-surface-muted)] sm:h-96" />
     ),
   }
 );

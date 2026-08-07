@@ -664,7 +664,7 @@ export function TripMap({ stops, expenses, origin, className }: TripMapProps) {
       <div
         ref={containerRef}
         className={cn(
-          "z-0 h-64 w-full overflow-hidden rounded-xl border border-[var(--color-border-subtle)] sm:h-80",
+          "z-0 h-80 w-full overflow-hidden rounded-xl border border-[var(--color-border-subtle)] sm:h-96",
           !mapReady && !mapError && "animate-pulse bg-[var(--color-surface-muted)]"
         )}
       />
@@ -693,12 +693,6 @@ export function TripMap({ stops, expenses, origin, className }: TripMapProps) {
 
       {mapError ? (
         <p className="mt-2 text-xs text-red-600">{mapError}</p>
-      ) : !useGoogleMaps ? (
-        <p className="mt-2 text-xs text-[var(--color-text-inverse)]">
-          Lộ trình trên bản đồ dùng OpenStreetMap (miễn phí). Có thể hơi khác
-          với Google Maps — bấm{" "}
-          <strong>Mở lộ trình trên Google Maps</strong> để xem chi tiết.
-        </p>
       ) : null}
 
       <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--color-text-inverse)]">
