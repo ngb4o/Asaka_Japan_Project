@@ -231,7 +231,7 @@ export default function LeadsPage() {
   }
 
   if (loading && items.length === 0) {
-    return <PageSkeleton {...PAGE_SKELETONS.warehouses} />;
+    return <PageSkeleton {...PAGE_SKELETONS.leads} />;
   }
 
   return (
@@ -297,19 +297,28 @@ export default function LeadsPage() {
                 loadingMore={loadingMore}
                 disabled={loading}>
                 <div className="flex flex-col gap-3">
-                  {items.map((item) => (
-                    <MobileRecordCard key={item.id} className="p-3">
-                      <div className="flex items-start justify-between gap-2">
+                  {items.map((item) => {
+                    const typeLabel =
+                      STATUS_OPTIONS.leadType.find((o) => o.value === item.type)
+                        ?.label || item.type;
+                    return (
+                    <MobileRecordCard key={item.id} className="p-4">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <button
                             type="button"
-                            className="font-semibold tracking-tight text-[var(--color-text-primary)] hover:text-[var(--color-text-secondary)]"
+                            className="text-base font-semibold tracking-tight text-[var(--color-text-primary)] hover:text-[var(--color-text-secondary)]"
                             onClick={() => openDetail(item)}>
                             {item.name}
                           </button>
                           {item.company ? (
-                            <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                            <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
                               {item.company}
+                            </p>
+                          ) : null}
+                          {item.phone ? (
+                            <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+                              {item.phone}
                             </p>
                           ) : null}
                         </div>
@@ -321,13 +330,13 @@ export default function LeadsPage() {
                         </Badge>
                       </div>
 
-                      <div className="mt-2.5 flex flex-wrap gap-1.5">
-                        {item.phone ? <MobileMetaChip>{item.phone}</MobileMetaChip> : null}
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
                         <MobileMetaChip>
                           {new Date(item.createdAt).toLocaleDateString("vi-VN")}
                         </MobileMetaChip>
                         {item.email ? <MobileMetaChip>{item.email}</MobileMetaChip> : null}
                         {item.region ? <MobileMetaChip>{item.region}</MobileMetaChip> : null}
+                        {typeLabel ? <MobileMetaChip>{typeLabel}</MobileMetaChip> : null}
                       </div>
 
                       <MobileRecordActions>
@@ -344,19 +353,27 @@ export default function LeadsPage() {
                             <Button
                               variant="outline"
                               size="sm"
+                              className="h-9 min-w-9"
                               title="Đổi trạng thái"
                               loading={isLeadAction(item.id, "status")}>
                               <RefreshCw className="h-4 w-4" />
                             </Button>
                           }
                         />
-                        <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 min-w-9"
+                          onClick={() => openDetail(item)}
+                          title="Sửa">
                           <Pencil className="h-4 w-4" />
                         </Button>
                         {!item.dealerId && item.type === "dealer" ? (
                           <Button
                             variant="outline"
                             size="sm"
+                            className="h-9 min-w-9"
+                            title="Chuyển đại lý"
                             loading={isLeadAction(item.id, "convert")}
                             onClick={() => handleConvert(item)}>
                             <UserPlus className="h-4 w-4" />
@@ -365,13 +382,16 @@ export default function LeadsPage() {
                         <Button
                           variant="danger"
                           size="sm"
+                          className="h-9 min-w-9"
+                          title="Xóa"
                           loading={isLeadAction(item.id, "delete")}
                           onClick={() => handleDelete(item)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </MobileRecordActions>
                     </MobileRecordCard>
-                  ))}
+                    );
+                  })}
                 </div>
               </MobileInfiniteList>
 
@@ -469,24 +489,46 @@ export default function LeadsPage() {
           </DialogHeader>
           {selected ? (
             <div className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs text-[var(--color-text-inverse)]">Tên</p>
-                  <p className="font-medium">{selected.name}</p>
+              <MobileRecordCard className="p-4 shadow-none">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
+                      {selected.name}
+                    </p>
+                    {selected.company ? (
+                      <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                        {selected.company}
+                      </p>
+                    ) : null}
+                    {selected.phone ? (
+                      <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+                        {selected.phone}
+                      </p>
+                    ) : null}
+                  </div>
+                  <Badge
+                    variant={leadStatusBadgeVariant(selected.status)}
+                    className="shrink-0">
+                    {STATUS_OPTIONS.lead.find((o) => o.value === selected.status)?.label ||
+                      selected.status}
+                  </Badge>
                 </div>
-                <div>
-                  <p className="text-xs text-[var(--color-text-inverse)]">SĐT</p>
-                  <p className="font-medium">{selected.phone}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <MobileMetaChip>
+                    {new Date(selected.createdAt).toLocaleDateString("vi-VN")}
+                  </MobileMetaChip>
+                  {selected.email ? (
+                    <MobileMetaChip>{selected.email}</MobileMetaChip>
+                  ) : null}
+                  {selected.region ? (
+                    <MobileMetaChip>{selected.region}</MobileMetaChip>
+                  ) : null}
+                  <MobileMetaChip>
+                    {STATUS_OPTIONS.leadType.find((o) => o.value === selected.type)
+                      ?.label || selected.type}
+                  </MobileMetaChip>
                 </div>
-                <div>
-                  <p className="text-xs text-[var(--color-text-inverse)]">Email</p>
-                  <p>{selected.email || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-[var(--color-text-inverse)]">Khu vực</p>
-                  <p>{selected.region || "—"}</p>
-                </div>
-              </div>
+              </MobileRecordCard>
               {selected.message ? (
                 <div>
                   <p className="text-xs text-[var(--color-text-inverse)]">Nội dung</p>

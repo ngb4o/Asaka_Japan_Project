@@ -175,7 +175,7 @@ export default function PayrollPage() {
   }
 
   if (loading && items.length === 0) {
-    return <PageSkeleton {...PAGE_SKELETONS.warehouses} />;
+    return <PageSkeleton {...PAGE_SKELETONS.payroll} />;
   }
 
   return (

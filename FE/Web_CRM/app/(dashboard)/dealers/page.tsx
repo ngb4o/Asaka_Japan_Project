@@ -291,7 +291,7 @@ export default function DealersPage() {
   }
 
   if (loading && items.length === 0) {
-    return <PageSkeleton {...PAGE_SKELETONS.warehouses} />;
+    return <PageSkeleton {...PAGE_SKELETONS.dealers} />;
   }
 
   return (
@@ -376,14 +376,14 @@ export default function DealersPage() {
                       STATUS_OPTIONS.dealerTier.find((o) => o.value === item.tier)?.label ||
                       item.tier;
                     return (
-                      <MobileRecordCard key={item.id} className="p-3">
-                        <div className="flex items-start justify-between gap-2">
+                      <MobileRecordCard key={item.id} className="p-4">
+                        <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                            <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                               {item.name}
                             </p>
                             {item.contactName ? (
-                              <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                              <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
                                 {item.contactName}
                               </p>
                             ) : null}
@@ -396,18 +396,38 @@ export default function DealersPage() {
                           </Badge>
                         </div>
 
-                        <div className="mt-2.5 flex flex-wrap gap-1.5">
-                          {item.phone ? <MobileMetaChip>{item.phone}</MobileMetaChip> : null}
-                          {item.region ? <MobileMetaChip>{item.region}</MobileMetaChip> : null}
-                          <MobileMetaChip>Hạng: {tierLabel}</MobileMetaChip>
-                          {item.discountPercent > 0 ? (
-                            <MobileMetaChip>
-                              CK: {item.discountPercent}%
-                            </MobileMetaChip>
-                          ) : null}
+                        <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                          <div>
+                            <p className="text-xs text-[var(--color-text-inverse)]">
+                              Hạng
+                            </p>
+                            <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
+                              {tierLabel}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-[var(--color-text-inverse)]">
+                              CK %
+                            </p>
+                            <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-primary)]">
+                              {item.discountPercent}%
+                            </p>
+                          </div>
                         </div>
 
-                        <MobileRecordActions>
+                        {(item.phone || item.region) ? (
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            {item.phone ? (
+                              <MobileMetaChip>{item.phone}</MobileMetaChip>
+                            ) : null}
+                            {item.region ? (
+                              <MobileMetaChip>{item.region}</MobileMetaChip>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        <MobileRecordActions
+                          divider={Boolean(item.phone || item.region)}>
                           {canWrite ? (
                             <SearchableSelect
                               options={STATUS_OPTIONS.dealer}
@@ -423,6 +443,7 @@ export default function DealersPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  className="h-9 min-w-9"
                                   title="Đổi trạng thái"
                                   loading={isDealerAction(item.id, "update")}>
                                   <RefreshCw className="h-4 w-4" />
@@ -433,6 +454,7 @@ export default function DealersPage() {
                           <Button
                             variant="outline"
                             size="sm"
+                            className="h-9 min-w-9"
                             onClick={() => openDetail(item)}
                             title="Xem sản phẩm / đơn hàng">
                             <Eye className="h-4 w-4" />
@@ -442,12 +464,14 @@ export default function DealersPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                className="h-9 min-w-9"
                                 onClick={() => openEdit(item)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="danger"
                                 size="sm"
+                                className="h-9 min-w-9"
                                 loading={isDealerAction(item.id, "delete")}
                                 onClick={() => handleDelete(item)}>
                                 <Trash2 className="h-4 w-4" />

@@ -286,7 +286,7 @@ export default function ProductCategoriesPage() {
                 disabled={loading}>
                 <div className="flex flex-col gap-3">
                   {items.map((item) => (
-                    <MobileRecordCard key={item.id}>
+                    <MobileRecordCard key={item.id} className="p-4">
                       <MobileRecordCardHeader
                         title={item.name}
                         subtitle={item.description || undefined}

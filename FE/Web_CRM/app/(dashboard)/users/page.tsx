@@ -19,11 +19,12 @@ import {
   FilterOptionList,
   FilterTrigger,
 } from "@/components/ui/filter-drawer";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
 import {
-  MobileRecordActions,
+  MobileMetaChip,
   MobileRecordCard,
 } from "@/components/ui/mobile-record-card";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
@@ -373,7 +374,7 @@ export default function UsersPage() {
   }
 
   if (loading) {
-    return <PageSkeleton {...PAGE_SKELETONS.warehouses} />;
+    return <PageSkeleton {...PAGE_SKELETONS.users} />;
   }
 
   return (
@@ -435,65 +436,95 @@ export default function UsersPage() {
                 hasMore={false}
                 disabled={loading}>
                 <div className="flex flex-col gap-3">
-                  {filteredItems.map((item) => (
-                    <MobileRecordCard key={item.id} className="p-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
-                          {item.employeeName || "—"}
-                          {item.employeeCode ? (
-                            <span className="ml-2 text-xs font-normal text-[var(--color-text-inverse)]">
-                              {item.employeeCode}
-                            </span>
-                          ) : null}
-                          {item.id === user?.id ? (
-                            <span className="ml-2 text-xs font-normal text-[var(--color-text-inverse)]">
-                              (bạn)
-                            </span>
-                          ) : null}
-                        </p>
-                        <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
-                          {item.email}
-                        </p>
-                      </div>
+                  {filteredItems.map((item) => {
+                    const itemRoles = rolesOf(item);
+                    const primaryRole = itemRoles[0] || item.role;
+                    const extraRoles = itemRoles.slice(1);
+                    const isSelf = item.id === user?.id;
+                    const displayName =
+                      item.employeeName || item.username || "—";
 
-                      <div className="mt-3">
-                        <p className="mb-1.5 text-xs font-medium text-[var(--color-text-inverse)]">
-                          Vai trò
-                        </p>
-                        <RoleCheckboxes
-                          compact
-                          value={rolesOf(item)}
-                          disabled={isUserAction(item.id, "role")}
-                          onChange={(roles) => handleRolesChange(item, roles)}
-                        />
-                      </div>
+                    return (
+                      <MobileRecordCard key={item.id} className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
+                              {displayName}
+                            </p>
+                            {item.username &&
+                            item.username !== displayName ? (
+                              <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                                {item.username}
+                              </p>
+                            ) : null}
+                            <p className="mt-1 truncate text-sm text-[var(--color-text-inverse)]">
+                              {item.email}
+                            </p>
+                            {item.employeeCode ? (
+                              <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+                                {item.employeeCode}
+                              </p>
+                            ) : null}
+                          </div>
+                          <div className="flex shrink-0 flex-col items-end gap-1.5">
+                            <Badge variant="muted">
+                              {ROLE_LABELS[primaryRole]}
+                            </Badge>
+                            {isSelf ? (
+                              <Badge variant="success">Bạn</Badge>
+                            ) : null}
+                          </div>
+                        </div>
 
-                      <MobileRecordActions>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-9 min-w-9"
-                          title="Đặt lại mật khẩu"
-                          onClick={() => {
-                            setPasswordTarget(item);
-                            setNewPassword(randomPassword());
-                          }}>
-                          <KeyRound className="h-4 w-4" />
-                        </Button>
-                        {item.id !== user?.id ? (
+                        {extraRoles.length > 0 ? (
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            {extraRoles.map((role) => (
+                              <MobileMetaChip key={role}>
+                                {ROLE_LABELS[role]}
+                              </MobileMetaChip>
+                            ))}
+                          </div>
+                        ) : null}
+
+                        <div className="mt-3">
+                          <p className="mb-1.5 text-xs font-medium text-[var(--color-text-inverse)]">
+                            Vai trò
+                          </p>
+                          <RoleCheckboxes
+                            compact
+                            value={itemRoles}
+                            disabled={isUserAction(item.id, "role")}
+                            onChange={(roles) => handleRolesChange(item, roles)}
+                          />
+                        </div>
+
+                        <div className="mt-3.5 flex flex-wrap justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3.5">
                           <Button
-                            variant="danger"
+                            variant="outline"
                             size="sm"
                             className="h-9 min-w-9"
-                            title="Xóa tài khoản"
-                            loading={isUserAction(item.id, "delete")}
-                            onClick={() => handleDelete(item)}>
-                            <Trash2 className="h-4 w-4" />
+                            title="Đặt lại mật khẩu"
+                            onClick={() => {
+                              setPasswordTarget(item);
+                              setNewPassword(randomPassword());
+                            }}>
+                            <KeyRound className="h-4 w-4" />
                           </Button>
-                        ) : null}
-                      </MobileRecordActions>
-                    </MobileRecordCard>
-                  ))}
+                          {!isSelf ? (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              className="h-9 min-w-9"
+                              title="Xóa tài khoản"
+                              loading={isUserAction(item.id, "delete")}
+                              onClick={() => handleDelete(item)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          ) : null}
+                        </div>
+                      </MobileRecordCard>
+                    );
+                  })}
                 </div>
               </MobileInfiniteList>
 

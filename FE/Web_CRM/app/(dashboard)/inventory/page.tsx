@@ -674,13 +674,13 @@ export default function InventoryPage() {
                   {/* Mobile */}
                   <div className="flex flex-col gap-3 md:hidden">
                     {warehouses.map((item) => (
-                      <MobileRecordCard key={item.id} className="p-3">
-                        <div className="flex items-start justify-between gap-2">
+                      <MobileRecordCard key={item.id} className="p-4">
+                        <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                            <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                               {item.name}
                             </p>
-                            <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                            <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
                               {item.code}
                             </p>
                           </div>
@@ -690,12 +690,14 @@ export default function InventoryPage() {
                             {item.status === "active" ? "Hoạt động" : "Ngưng"}
                           </Badge>
                         </div>
+
                         {item.address ? (
-                          <p className="mt-2 truncate text-xs text-[var(--color-text-inverse)]">
-                            {item.address}
-                          </p>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <MobileMetaChip>{item.address}</MobileMetaChip>
+                          </div>
                         ) : null}
-                        <div className="mt-2 flex justify-end gap-2">
+
+                        <div className="mt-3.5 flex flex-wrap justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3.5">
                           <SearchableSelect
                             options={STATUS_OPTIONS.warehouse}
                             value={item.status}
@@ -712,6 +714,7 @@ export default function InventoryPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                className="h-9 min-w-9"
                                 title="Đổi trạng thái"
                                 loading={actionId === `status:${item.id}`}>
                                 <RefreshCw className="h-4 w-4" />
@@ -721,12 +724,16 @@ export default function InventoryPage() {
                           <Button
                             variant="outline"
                             size="sm"
+                            className="h-9 min-w-9"
+                            title="Sửa"
                             onClick={() => openEditWarehouse(item)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="danger"
                             size="sm"
+                            className="h-9 min-w-9"
+                            title="Xóa"
                             loading={actionId === item.id}
                             onClick={() => handleDeleteWarehouse(item)}>
                             <Trash2 className="h-4 w-4" />
@@ -1136,6 +1143,7 @@ export default function InventoryPage() {
                         <Button
                           size="sm"
                           variant="outline"
+                          className="h-9 min-w-9"
                           title="In phiếu"
                           loading={printId === item.id}
                           onClick={() => void handlePrintTransaction(item)}>

@@ -764,7 +764,7 @@ export default function OrdersPage() {
   }
 
   if (loading && items.length === 0) {
-    return <PageSkeleton {...PAGE_SKELETONS.warehouses} />;
+    return <PageSkeleton {...PAGE_SKELETONS.orders} />;
   }
 
   const dealerOptions = [
@@ -1041,7 +1041,14 @@ export default function OrdersPage() {
                         </div>
                       ) : null}
 
-                      <div className="mt-3.5 flex flex-wrap justify-end gap-2">
+                      <div
+                        className={cn(
+                          "mt-3.5 flex flex-wrap justify-end gap-2",
+                          (deliveryPerson !== "—" ||
+                            item.tripCode ||
+                            item.trackingCode) &&
+                            "border-t border-[var(--color-border-subtle)] pt-3.5"
+                        )}>
                         <SearchableSelect
                           options={getAllowedStatusOptions(
                             item,

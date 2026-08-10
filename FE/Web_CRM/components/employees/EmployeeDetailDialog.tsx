@@ -8,6 +8,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  MobileMetaChip,
+  MobileRecordCard,
+} from "@/components/ui/mobile-record-card";
 import type { Employee } from "@/lib/types";
 import { formatCurrency, formatDateDisplay } from "@/lib/utils";
 
@@ -33,6 +37,8 @@ export function EmployeeDetailDialog({
 }: EmployeeDetailDialogProps) {
   if (!employee) return null;
 
+  const contact = [employee.phone, employee.email].filter(Boolean).join(" · ");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
@@ -41,19 +47,62 @@ export function EmployeeDetailDialog({
         </DialogHeader>
 
         <div className="space-y-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-lg font-semibold tracking-tight text-[var(--color-text-primary)]">
-                {employee.fullName}
-              </p>
-              <p className="mt-0.5 text-sm text-[var(--color-text-inverse)]">
-                {employee.code || "—"}
-              </p>
+          <MobileRecordCard className="p-4 shadow-none">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
+                  {employee.code || "—"}
+                </p>
+                <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                  {employee.fullName}
+                </p>
+                {contact ? (
+                  <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+                    {contact}
+                  </p>
+                ) : null}
+              </div>
+              <Badge
+                variant={employee.status === "active" ? "success" : "muted"}
+                className="shrink-0">
+                {employee.status === "active" ? "Đang làm" : "Ngưng"}
+              </Badge>
             </div>
-            <Badge variant={employee.status === "active" ? "success" : "muted"}>
-              {employee.status === "active" ? "Đang làm" : "Ngưng"}
-            </Badge>
-          </div>
+
+            <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+              <div>
+                <p className="text-xs text-[var(--color-text-inverse)]">
+                  Lương cứng
+                </p>
+                <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
+                  {formatCurrency(employee.baseSalary)}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-[var(--color-text-inverse)]">
+                  HH / Phụ cấp
+                </p>
+                <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-primary)]">
+                  {employee.commissionPercent}% ·{" "}
+                  {formatCurrency(employee.allowance)}
+                </p>
+              </div>
+            </div>
+
+            {(employee.title || employee.department || employee.userName) ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {employee.title ? (
+                  <MobileMetaChip>{employee.title}</MobileMetaChip>
+                ) : null}
+                {employee.department ? (
+                  <MobileMetaChip>{employee.department}</MobileMetaChip>
+                ) : null}
+                {employee.userName ? (
+                  <MobileMetaChip>TK: {employee.userName}</MobileMetaChip>
+                ) : null}
+              </div>
+            ) : null}
+          </MobileRecordCard>
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="SĐT">{employee.phone || "—"}</Field>
@@ -64,12 +113,6 @@ export function EmployeeDetailDialog({
             <Field label="Ngày tạo">
               {formatDateDisplay(employee.createdAt) || "—"}
             </Field>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/40 p-4 sm:grid-cols-3">
-            <Field label="Lương cứng">{formatCurrency(employee.baseSalary)}</Field>
-            <Field label="Phụ cấp">{formatCurrency(employee.allowance)}</Field>
-            <Field label="Hoa hồng">{employee.commissionPercent}%</Field>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

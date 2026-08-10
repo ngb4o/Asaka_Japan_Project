@@ -820,7 +820,7 @@ export default function ReceivablesPage() {
                         </div>
 
                         {canPayAr && remaining > 0 ? (
-                          <div className="mt-3.5">
+                          <div className="mt-3.5 border-t border-[var(--color-border-subtle)] pt-3.5">
                             <Button
                               size="sm"
                               className="h-9 w-full"
@@ -992,7 +992,7 @@ export default function ReceivablesPage() {
                         </div>
 
                         {canPayAp && remaining > 0 ? (
-                          <div className="mt-3.5">
+                          <div className="mt-3.5 border-t border-[var(--color-border-subtle)] pt-3.5">
                             <Button
                               size="sm"
                               className="h-9 w-full"

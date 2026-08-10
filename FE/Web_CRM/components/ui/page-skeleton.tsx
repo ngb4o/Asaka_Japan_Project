@@ -17,6 +17,8 @@ type PageSkeletonProps = {
   cards?: number;
   /** Summary stat tiles above the list (e.g. receivables) */
   stats?: number;
+  /** Show border-y metrics block on mobile record skeletons (orders/employees/…) */
+  showMetrics?: boolean;
   minWidth?: string;
 };
 
@@ -61,8 +63,14 @@ function TableRowSkeleton({ columns }: { columns: ColumnPreset[] }) {
   );
 }
 
-/** Matches current mobile list cards: header → border-y metrics → chips → actions */
-function MobileRecordCardSkeleton({ showActions }: { showActions: boolean }) {
+/** Matches current mobile list cards: header → optional border-y metrics → chips → actions */
+function MobileRecordCardSkeleton({
+  showActions,
+  showMetrics = true,
+}: {
+  showActions: boolean;
+  showMetrics?: boolean;
+}) {
   return (
     <MobileRecordCard className="p-4">
       <div className="flex items-start justify-between gap-3">
@@ -77,16 +85,18 @@ function MobileRecordCardSkeleton({ showActions }: { showActions: boolean }) {
         </div>
       </div>
 
-      <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
-        <div className="space-y-1.5">
-          <Skeleton className="h-3 w-14" />
-          <Skeleton className="h-5 w-24" />
+      {showMetrics ? (
+        <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+          <div className="space-y-1.5">
+            <Skeleton className="h-3 w-14" />
+            <Skeleton className="h-5 w-24" />
+          </div>
+          <div className="flex flex-col items-end space-y-1.5">
+            <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-5 w-20" />
+          </div>
         </div>
-        <div className="flex flex-col items-end space-y-1.5">
-          <Skeleton className="h-3 w-12" />
-          <Skeleton className="h-5 w-20" />
-        </div>
-      </div>
+      ) : null}
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Skeleton className="h-7 w-24 rounded-md" />
@@ -94,7 +104,7 @@ function MobileRecordCardSkeleton({ showActions }: { showActions: boolean }) {
       </div>
 
       {showActions ? (
-        <div className="mt-3.5 flex flex-wrap justify-end gap-2">
+        <div className="mt-3.5 flex flex-wrap justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3.5">
           <Skeleton className="h-9 w-9 rounded-lg" />
           <Skeleton className="h-9 w-9 rounded-lg" />
           <Skeleton className="h-9 w-9 rounded-lg" />
@@ -137,7 +147,7 @@ function MobileMediaCardSkeleton({ showActions }: { showActions: boolean }) {
       </div>
 
       {showActions ? (
-        <div className="mt-3.5 flex justify-end gap-2">
+        <div className="mt-3.5 flex justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3.5">
           <Skeleton className="h-9 w-9 rounded-lg" />
           <Skeleton className="h-9 w-9 rounded-lg" />
         </div>
@@ -170,11 +180,13 @@ function TableCardSkeleton({
   columns,
   rows,
   minWidth,
+  showMetrics,
 }: {
   filters: number;
   columns: ColumnPreset[];
   rows: number;
   minWidth: string;
+  showMetrics: boolean;
 }) {
   const hasImage = columns.includes("image");
   const showActions = columns.includes("actions");
@@ -208,6 +220,7 @@ function TableCardSkeleton({
               <MobileRecordCardSkeleton
                 key={index}
                 showActions={showActions}
+                showMetrics={showMetrics}
               />
             )
           )}
@@ -254,6 +267,7 @@ export function PageSkeleton({
   actionButtons = 1,
   cards = 1,
   stats = 0,
+  showMetrics = true,
   minWidth = "760px",
 }: PageSkeletonProps) {
   return (
@@ -282,6 +296,7 @@ export function PageSkeleton({
           columns={columns}
           rows={rows}
           minWidth={minWidth}
+          showMetrics={showMetrics}
         />
       ))}
     </div>
@@ -293,6 +308,7 @@ export const PAGE_SKELETONS = {
   products: {
     label: "Đang tải sản phẩm",
     filters: 2,
+    showMetrics: false,
     columns: [
       "image",
       "text",
@@ -309,12 +325,14 @@ export const PAGE_SKELETONS = {
   categories: {
     label: "Đang tải loại sản phẩm",
     filters: 1,
+    showMetrics: false,
     columns: ["text", "text", "badge", "text", "actions"] as ColumnPreset[],
     minWidth: "640px",
   },
   warehouses: {
     label: "Đang tải kho hàng",
     filters: 1,
+    showMetrics: false,
     columns: ["text", "text", "text", "badge", "actions"] as ColumnPreset[],
     minWidth: "760px",
   },
@@ -323,6 +341,7 @@ export const PAGE_SKELETONS = {
     filters: 2,
     actionButtons: 2,
     cards: 2,
+    showMetrics: false,
     columns: [
       "image",
       "text",
@@ -336,6 +355,7 @@ export const PAGE_SKELETONS = {
   news: {
     label: "Đang tải tin tức",
     filters: 1,
+    showMetrics: false,
     columns: ["image", "text", "text", "badge", "actions"] as ColumnPreset[],
     minWidth: "760px",
   },
@@ -344,6 +364,7 @@ export const PAGE_SKELETONS = {
     filters: 1,
     cards: 1,
     stats: 4,
+    showMetrics: true,
     columns: [
       "text",
       "text",
@@ -354,6 +375,106 @@ export const PAGE_SKELETONS = {
       "actions",
     ] as ColumnPreset[],
     minWidth: "860px",
+  },
+  orders: {
+    label: "Đang tải đơn hàng",
+    filters: 2,
+    showMetrics: true,
+    columns: [
+      "text",
+      "text",
+      "text",
+      "badge",
+      "badge",
+      "text",
+      "actions",
+    ] as ColumnPreset[],
+    minWidth: "980px",
+  },
+  employees: {
+    label: "Đang tải nhân viên",
+    filters: 1,
+    showMetrics: true,
+    columns: [
+      "text",
+      "text",
+      "text",
+      "text",
+      "badge",
+      "actions",
+    ] as ColumnPreset[],
+    minWidth: "900px",
+  },
+  payroll: {
+    label: "Đang tải bảng lương",
+    filters: 1,
+    showMetrics: true,
+    columns: ["text", "text", "badge", "text", "actions"] as ColumnPreset[],
+    minWidth: "760px",
+  },
+  dealers: {
+    label: "Đang tải đại lý",
+    filters: 2,
+    showMetrics: true,
+    columns: [
+      "text",
+      "text",
+      "text",
+      "badge",
+      "text",
+      "badge",
+      "actions",
+    ] as ColumnPreset[],
+    minWidth: "900px",
+  },
+  suppliers: {
+    label: "Đang tải nhà cung cấp",
+    filters: 1,
+    showMetrics: false,
+    columns: [
+      "text",
+      "text",
+      "text",
+      "text",
+      "badge",
+      "actions",
+    ] as ColumnPreset[],
+    minWidth: "860px",
+  },
+  leads: {
+    label: "Đang tải lead",
+    filters: 2,
+    showMetrics: false,
+    columns: [
+      "text",
+      "text",
+      "text",
+      "badge",
+      "text",
+      "actions",
+    ] as ColumnPreset[],
+    minWidth: "860px",
+  },
+  trips: {
+    label: "Đang tải chuyến công tác",
+    filters: 1,
+    showMetrics: true,
+    columns: [
+      "text",
+      "text",
+      "text",
+      "text",
+      "badge",
+      "actions",
+    ] as ColumnPreset[],
+    minWidth: "900px",
+  },
+  users: {
+    label: "Đang tải người dùng",
+    filters: 1,
+    showMetrics: false,
+    columns: ["text", "text", "badge", "badge", "actions"] as ColumnPreset[],
+    minWidth: "760px",
   },
 } as const;
 

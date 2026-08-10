@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Plus, Trash2, X } from "@/components/ui/icons";
+import { Check, Eye, Plus, Trash2, X } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -659,7 +659,7 @@ export default function TripsPage() {
   }
 
   if (loading && items.length === 0) {
-    return <PageSkeleton {...PAGE_SKELETONS.warehouses} />;
+    return <PageSkeleton {...PAGE_SKELETONS.trips} />;
   }
 
   const preview = selected?.settlementPreview;
@@ -731,13 +731,13 @@ export default function TripsPage() {
                   const memberNames =
                     item.members.map((member) => member.fullName).join(", ") || "";
                   return (
-                    <MobileRecordCard key={item.id} className="p-3">
-                      <div className="flex items-start justify-between gap-2">
+                    <MobileRecordCard key={item.id} className="p-4">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                          <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                             {item.code}
                           </p>
-                          <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                          <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
                             {item.title || item.region || "—"}
                           </p>
                         </div>
@@ -748,30 +748,54 @@ export default function TripsPage() {
                         </Badge>
                       </div>
 
-                      <div className="mt-2.5 flex flex-wrap gap-1.5">
-                        <MobileMetaChip>
-                          {formatDateDisplay(item.startDate)} →{" "}
-                          {formatDateDisplay(item.endDate)}
-                        </MobileMetaChip>
-                        {memberNames ? (
-                          <MobileMetaChip>{memberNames}</MobileMetaChip>
-                        ) : null}
-                        <MobileMetaChip>
-                          {item.stops.length} điểm dừng
-                        </MobileMetaChip>
-                        {item.orders.length > 0 ? (
-                          <MobileMetaChip>{item.orders.length} đơn</MobileMetaChip>
-                        ) : null}
+                      <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                        <div>
+                          <p className="text-xs text-[var(--color-text-inverse)]">
+                            Thời gian
+                          </p>
+                          <p className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--color-text-primary)]">
+                            {formatDateDisplay(item.startDate)} →{" "}
+                            {formatDateDisplay(item.endDate)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-[var(--color-text-inverse)]">
+                            Điểm / Đơn
+                          </p>
+                          <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-primary)]">
+                            {item.stops.length} điểm
+                            {item.orders.length > 0
+                              ? ` · ${item.orders.length} đơn`
+                              : ""}
+                          </p>
+                        </div>
                       </div>
 
-                      <MobileRecordActions>
-                        <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
-                          Chi tiết
+                      {memberNames ? (
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          {item.members.map((member) => (
+                            <MobileMetaChip key={member.id}>
+                              {member.fullName}
+                            </MobileMetaChip>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      <MobileRecordActions divider={Boolean(memberNames)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 min-w-9"
+                          onClick={() => openDetail(item)}
+                          title="Xem chi tiết">
+                          <Eye className="h-4 w-4" />
                         </Button>
                         {canFinance && item.status !== "closed" ? (
                           <Button
                             variant="danger"
                             size="sm"
+                            className="h-9 min-w-9"
+                            title="Xóa"
                             loading={isTripAction(`delete:${item.id}`)}
                             onClick={() => handleDelete(item)}>
                             <Trash2 className="h-4 w-4" />
@@ -1047,27 +1071,60 @@ export default function TripsPage() {
                 "space-y-0 md:space-y-6",
                 detailLoading && "pointer-events-none opacity-60"
               )}>
-              <div className="grid gap-3 rounded-xl border border-[var(--color-border-subtle)] p-4 sm:grid-cols-3">
-                <div>
-                  <p className="text-xs text-[var(--color-text-inverse)]">Thời gian</p>
-                  <p className="font-medium">
-                    {formatDateDisplay(selected.startDate)} → {formatDateDisplay(selected.endDate)}
-                  </p>
+              <MobileRecordCard className="p-4 shadow-none">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
+                      {selected.code}
+                    </p>
+                    <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                      {selected.title || selected.region || "—"}
+                    </p>
+                  </div>
+                  <Badge
+                    variant={statusBadgeVariant(selected.status || "draft")}
+                    className="shrink-0">
+                    {TRIP_STATUS_LABEL[selected.status || "draft"]}
+                  </Badge>
                 </div>
-                <div>
-                  <p className="text-xs text-[var(--color-text-inverse)]">Người đi</p>
-                  <p className="font-medium">
-                    {selected.members.map((item) => item.fullName).join(", ")}
-                  </p>
+
+                <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                  <div>
+                    <p className="text-xs text-[var(--color-text-inverse)]">
+                      Thời gian
+                    </p>
+                    <p className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--color-text-primary)]">
+                      {formatDateDisplay(selected.startDate)} →{" "}
+                      {formatDateDisplay(selected.endDate)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-[var(--color-text-inverse)]">
+                      Điểm / Đơn
+                    </p>
+                    <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-primary)]">
+                      {selected.stops.length} điểm
+                      {selected.orders.length > 0
+                        ? ` · ${selected.orders.length} đơn`
+                        : ""}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-[var(--color-text-inverse)]">Khu vực</p>
-                  <p className="font-medium">{selected.region || selected.title || "—"}</p>
-                </div>
+
+                {selected.members.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {selected.members.map((member) => (
+                      <MobileMetaChip key={member.id}>
+                        {member.fullName}
+                      </MobileMetaChip>
+                    ))}
+                  </div>
+                ) : null}
+
                 {(canOperateSelected &&
                   (selected.status === "draft" ||
                     selected.status === "in_progress")) ? (
-                  <DialogFooter className="border-0 pt-1 sm:col-span-3">
+                  <DialogFooter className="mt-3.5 border-0 pt-0">
                     {selected.status === "draft" ? (
                       <Button
                         loading={isTripAction("status:in_progress")}
@@ -1084,7 +1141,7 @@ export default function TripsPage() {
                     ) : null}
                   </DialogFooter>
                 ) : null}
-              </div>
+              </MobileRecordCard>
 
               <section className="mt-6 space-y-3 md:mt-0">
                 <h4 className="font-semibold">Đơn hàng ({selected.orders.length})</h4>

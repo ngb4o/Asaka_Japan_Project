@@ -26,9 +26,9 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
 import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
 import {
+  MobileMetaChip,
   MobileRecordActions,
   MobileRecordCard,
-  MobileRecordCardHeader,
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import {
@@ -272,7 +272,7 @@ export default function SuppliersPage() {
   }
 
   if (loading && items.length === 0) {
-    return <PageSkeleton {...PAGE_SKELETONS.warehouses} />;
+    return <PageSkeleton {...PAGE_SKELETONS.suppliers} />;
   }
 
   return (
@@ -348,71 +348,109 @@ export default function SuppliersPage() {
                 loadingMore={loadingMore}
                 disabled={loading}>
                 <div className="flex flex-col gap-3">
-                  {items.map((item) => (
-                    <MobileRecordCard key={item.id}>
-                      <MobileRecordCardHeader
-                        title={item.name}
-                        subtitle={[item.contactName, item.phone]
-                          .filter(Boolean)
-                          .join(" · ")}
-                        trailing={
-                          <Badge variant={statusBadgeVariant(item.status)}>
+                  {items.map((item) => {
+                    const contactLine = [item.contactName, item.phone]
+                      .filter(Boolean)
+                      .join(" · ");
+                    const hasChips = Boolean(
+                      item.taxCode || item.email || item.address
+                    );
+                    return (
+                      <MobileRecordCard key={item.id} className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
+                              {item.name}
+                            </p>
+                            {contactLine ? (
+                              <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                                {contactLine}
+                              </p>
+                            ) : null}
+                            {item.address ? (
+                              <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+                                {item.address}
+                              </p>
+                            ) : null}
+                          </div>
+                          <Badge
+                            variant={statusBadgeVariant(item.status)}
+                            className="shrink-0">
                             {item.status === "active" ? "Hoạt động" : "Ngưng"}
                           </Badge>
-                        }
-                      />
-                      <MobileRecordActions>
-                        {canWrite ? (
-                          <SearchableSelect
-                            options={STATUS_OPTIONS.warehouse}
-                            value={item.status}
-                            onChange={(value) =>
-                              void handleQuickStatus(
-                                item,
-                                value as Supplier["status"]
-                              )
-                            }
-                            searchable={false}
-                            placeholder="Đổi trạng thái"
-                            disabled={actionId === `status:${item.id}`}
-                            trigger={
+                        </div>
+
+                        {hasChips ? (
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            {item.taxCode ? (
+                              <MobileMetaChip>MST: {item.taxCode}</MobileMetaChip>
+                            ) : null}
+                            {item.email ? (
+                              <MobileMetaChip>{item.email}</MobileMetaChip>
+                            ) : null}
+                            {item.address ? (
+                              <MobileMetaChip>{item.address}</MobileMetaChip>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        <MobileRecordActions>
+                          {canWrite ? (
+                            <SearchableSelect
+                              options={STATUS_OPTIONS.warehouse}
+                              value={item.status}
+                              onChange={(value) =>
+                                void handleQuickStatus(
+                                  item,
+                                  value as Supplier["status"]
+                                )
+                              }
+                              searchable={false}
+                              placeholder="Đổi trạng thái"
+                              disabled={actionId === `status:${item.id}`}
+                              trigger={
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-9 min-w-9"
+                                  title="Đổi trạng thái"
+                                  loading={actionId === `status:${item.id}`}>
+                                  <RefreshCw className="h-4 w-4" />
+                                </Button>
+                              }
+                            />
+                          ) : null}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-9 min-w-9"
+                            onClick={() => openDetail(item)}
+                            title="Xem chi tiết">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {canWrite ? (
+                            <>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                title="Đổi trạng thái"
-                                loading={actionId === `status:${item.id}`}>
-                                <RefreshCw className="h-4 w-4" />
+                                className="h-9 min-w-9"
+                                onClick={() => openEdit(item)}>
+                                <Pencil className="h-4 w-4" />
                               </Button>
-                            }
-                          />
-                        ) : null}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openDetail(item)}
-                          title="Xem chi tiết">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {canWrite ? (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEdit(item)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="danger"
-                              loading={actionId === item.id}
-                              onClick={() => void handleDelete(item)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        ) : null}
-                      </MobileRecordActions>
-                    </MobileRecordCard>
-                  ))}
+                              <Button
+                                size="sm"
+                                variant="danger"
+                                className="h-9 min-w-9"
+                                loading={actionId === item.id}
+                                onClick={() => void handleDelete(item)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : null}
+                        </MobileRecordActions>
+                      </MobileRecordCard>
+                    );
+                  })}
                 </div>
               </MobileInfiniteList>
 

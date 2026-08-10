@@ -145,7 +145,7 @@ export function MobileMediaCard({
         </div>
       ) : null}
       {actions ? (
-        <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3">
+        <div className="mt-3.5 flex flex-wrap justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3.5">
           {actions}
         </div>
       ) : null}
@@ -190,9 +190,23 @@ export function MobileRecordRow({ label, children, className }: MobileRecordRowP
   );
 }
 
-export function MobileRecordActions({ children }: { children: ReactNode }) {
+export function MobileRecordActions({
+  children,
+  divider = true,
+  className,
+}: {
+  children: ReactNode;
+  /** Hide when the section above already ends with a divider (e.g. border-y metrics). */
+  divider?: boolean;
+  className?: string;
+}) {
   return (
-    <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3">
+    <div
+      className={cn(
+        "mt-3.5 flex flex-wrap justify-end gap-2",
+        divider && "border-t border-[var(--color-border-subtle)] pt-3.5",
+        className
+      )}>
       {children}
     </div>
   );

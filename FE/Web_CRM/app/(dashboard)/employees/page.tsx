@@ -50,7 +50,7 @@ import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
 import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
-import { formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
 
 type FormValues = {
@@ -298,7 +298,7 @@ export default function EmployeesPage() {
   }
 
   if (loading && items.length === 0) {
-    return <PageSkeleton {...PAGE_SKELETONS.warehouses} />;
+    return <PageSkeleton {...PAGE_SKELETONS.employees} />;
   }
 
   return (
@@ -424,7 +424,12 @@ export default function EmployeesPage() {
                       </div>
                     ) : null}
 
-                    <div className="mt-3.5 flex flex-wrap justify-end gap-2">
+                    <div
+                      className={cn(
+                        "mt-3.5 flex flex-wrap justify-end gap-2",
+                        (item.title || item.department || item.userName) &&
+                          "border-t border-[var(--color-border-subtle)] pt-3.5"
+                      )}>
                       <Button
                         variant="outline"
                         size="sm"
