@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -37,6 +38,11 @@
   --radius-card: 14px;
   --radius-button: 10px;
   --motion-instant: 200ms;
+  --motion-fast: 220ms;
+  --motion-base: 320ms;
+  --motion-slow: 480ms;
+  --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
 
   --shadow-soft: var(--crm-shadow-soft);
   --shadow-elevated: var(--crm-shadow-elevated);
@@ -249,11 +255,110 @@
   }
 
   .crm-data-table tbody tr {
-    transition: background-color 150ms ease;
+    transition:
+      background-color 150ms ease,
+      transform var(--motion-fast) var(--motion-ease-out);
   }
 
   .crm-data-table tbody tr:hover {
     background: color-mix(in srgb, var(--color-surface-muted) 50%, transparent);
+  }
+
+  .crm-page-enter {
+    animation: crm-page-enter var(--motion-base) var(--motion-ease-out) both;
+  }
+
+  .crm-animate-in {
+    animation: crm-fade-in-up var(--motion-base) var(--motion-ease-out) both;
+  }
+
+  .crm-stagger-list > * {
+    animation: crm-fade-in-up var(--motion-base) var(--motion-ease-out) both;
+  }
+
+  .crm-stagger-list > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+
+  .crm-stagger-list > *:nth-child(2) {
+    animation-delay: 35ms;
+  }
+
+  .crm-stagger-list > *:nth-child(3) {
+    animation-delay: 70ms;
+  }
+
+  .crm-stagger-list > *:nth-child(4) {
+    animation-delay: 105ms;
+  }
+
+  .crm-stagger-list > *:nth-child(5) {
+    animation-delay: 140ms;
+  }
+
+  .crm-stagger-list > *:nth-child(6) {
+    animation-delay: 175ms;
+  }
+
+  .crm-stagger-list > *:nth-child(7) {
+    animation-delay: 210ms;
+  }
+
+  .crm-stagger-list > *:nth-child(8) {
+    animation-delay: 245ms;
+  }
+
+  .crm-page-enter .crm-data-table tbody tr {
+    animation: crm-fade-in-up var(--motion-fast) var(--motion-ease-out) both;
+  }
+
+  .crm-page-enter .crm-data-table tbody tr:nth-child(1) {
+    animation-delay: 40ms;
+  }
+
+  .crm-page-enter .crm-data-table tbody tr:nth-child(2) {
+    animation-delay: 65ms;
+  }
+
+  .crm-page-enter .crm-data-table tbody tr:nth-child(3) {
+    animation-delay: 90ms;
+  }
+
+  .crm-page-enter .crm-data-table tbody tr:nth-child(4) {
+    animation-delay: 115ms;
+  }
+
+  .crm-page-enter .crm-data-table tbody tr:nth-child(5) {
+    animation-delay: 140ms;
+  }
+
+  .crm-page-enter .crm-data-table tbody tr:nth-child(6) {
+    animation-delay: 165ms;
+  }
+
+  .crm-page-enter .crm-data-table tbody tr:nth-child(7) {
+    animation-delay: 190ms;
+  }
+
+  .crm-page-enter .crm-data-table tbody tr:nth-child(8) {
+    animation-delay: 215ms;
+  }
+
+  .crm-page-enter .crm-data-table tbody tr:nth-child(n + 9) {
+    animation-delay: 240ms;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .crm-page-enter,
+    .crm-animate-in,
+    .crm-stagger-list > *,
+    .crm-page-enter .crm-data-table tbody tr,
+    .auth-fade-in,
+    .auth-fade-in-up,
+    .crm-workspace-loader,
+    .crm-chat-typing-dot {
+      animation: none !important;
+    }
   }
 
   .auth-fade-in {
@@ -295,6 +400,28 @@
   textarea,
   select {
     font-size: 16px !important;
+  }
+}
+
+@keyframes crm-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes crm-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

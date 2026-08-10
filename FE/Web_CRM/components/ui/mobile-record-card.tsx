@@ -3,7 +3,12 @@ import { cn } from "@/lib/utils";
 
 /** Stack of record cards — visible below `md`, hidden on desktop table layouts */
 export function MobileCardList({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex flex-col gap-3 md:hidden", className)} {...props} />;
+  return (
+    <div
+      className={cn("crm-stagger-list flex flex-col gap-3 md:hidden", className)}
+      {...props}
+    />
+  );
 }
 
 export function MobileRecordCard({ className, ...props }: HTMLAttributes<HTMLDivElement>) {

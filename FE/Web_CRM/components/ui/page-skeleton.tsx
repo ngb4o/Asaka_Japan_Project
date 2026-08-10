@@ -272,7 +272,7 @@ export function PageSkeleton({
 }: PageSkeletonProps) {
   return (
     <div
-      className={cn("space-y-4 md:space-y-6")}
+      className={cn("crm-animate-in space-y-4 md:space-y-6")}
       aria-busy="true"
       aria-label={label}>
       <div className="hidden flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-4">
@@ -546,7 +546,7 @@ function RankRowSkeleton() {
 export function ReportsPageSkeleton() {
   return (
     <div
-      className="space-y-5"
+      className="crm-animate-in space-y-5"
       aria-busy="true"
       aria-label="Đang tải báo cáo doanh số">
       <div className="hidden flex-col gap-3 md:flex md:flex-row md:items-start md:justify-between md:gap-4">

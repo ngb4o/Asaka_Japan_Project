@@ -31,7 +31,7 @@ export function EmptyState({
     <div
       role="status"
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/40 text-center",
+        "crm-animate-in flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]/40 text-center",
         compact ? "gap-2 px-4 py-8" : "gap-3 px-6 py-12",
         className
       )}>

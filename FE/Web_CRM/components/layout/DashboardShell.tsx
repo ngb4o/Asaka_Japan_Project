@@ -9,6 +9,7 @@ import {
   MobileChromeProvider,
 } from "@/components/layout/MobileChromeProvider";
 import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
+import { PageEnter } from "@/components/ui/page-enter";
 import { NotificationProvider } from "@/lib/notifications/NotificationProvider";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -134,7 +135,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                         ? "crm-page-padded w-full max-w-[1600px] space-y-3 p-3 sm:space-y-4 sm:p-4 md:space-y-5 md:p-5 lg:p-6"
                         : "crm-page-flush w-full max-w-[1600px] space-y-0 p-0 md:space-y-5 md:p-5 lg:p-6"
                     }>
-                    {children}
+                    <PageEnter>{children}</PageEnter>
                   </div>
                 </main>
                 <MobileBottomNav onOpenMenu={() => setMobileMenuOpen(true)} />
