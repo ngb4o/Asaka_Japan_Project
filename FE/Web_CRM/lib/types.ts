@@ -770,6 +770,7 @@ export type Trip = {
     paidAmount?: number;
     customerName: string;
     customerPhone?: string;
+    dealerId?: string | null;
     dealerName?: string;
     warehouseName?: string;
     shippingAddress?: string;

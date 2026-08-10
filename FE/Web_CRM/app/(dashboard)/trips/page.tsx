@@ -44,10 +44,10 @@ import { LocationCapture, type GeoLocationValue } from "@/components/trips/Locat
 import dynamic from "next/dynamic";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canManageTripsFinance, canOperateTrip, canViewProfit, rolesOf } from "@/lib/auth/permissions";
+import { canManagePayments, canManageTripsFinance, canOperateTrip, canViewProfit, rolesOf } from "@/lib/auth/permissions";
 import { getEmployees } from "@/lib/api/employees";
 import { getDealers } from "@/lib/api/dealers";
-import { getOrders } from "@/lib/api/orders";
+import { getOrders, recordOrderPayment } from "@/lib/api/orders";
 import {
   addTripAdvance,
   addTripExpense,
@@ -63,7 +63,7 @@ import {
   updateTrip,
 } from "@/lib/api/trips";
 import { uploadTripReceipt } from "@/lib/api/uploads";
-import type { Dealer, Employee, Order, Trip } from "@/lib/types";
+import type { Dealer, Employee, Order, Trip, TripStop } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
@@ -113,6 +113,38 @@ const ORDER_STATUS_TONE: Record<Order["status"], string> = {
   cancelled: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
 };
 
+const PAYMENT_LABEL: Record<string, string> = {
+  unpaid: "Chưa thu",
+  partial: "Thu một phần",
+  paid: "Đã thu",
+};
+
+type TripOrder = Trip["orders"][number];
+
+function tripOrderRemaining(order: TripOrder) {
+  return Math.max(0, (order.total || 0) - (order.paidAmount || 0));
+}
+
+function isTripDebtOrder(order: TripOrder) {
+  return (
+    order.status !== "cancelled" &&
+    (order.paymentStatus === "unpaid" || order.paymentStatus === "partial") &&
+    tripOrderRemaining(order) > 0
+  );
+}
+
+function debtOrdersForStop(orders: TripOrder[], stop: TripStop) {
+  if (stop.orderId) {
+    return orders.filter((order) => order.id === stop.orderId && isTripDebtOrder(order));
+  }
+  if (stop.dealerId) {
+    return orders.filter(
+      (order) => order.dealerId === stop.dealerId && isTripDebtOrder(order)
+    );
+  }
+  return [];
+}
+
 const EXPENSE_LABEL: Record<string, string> = {
   fuel: "Xăng",
   food: "Ăn uống",
@@ -147,6 +179,7 @@ export default function TripsPage() {
   const { user } = useAuth();
   const canFinance = canManageTripsFinance(rolesOf(user));
   const showProfit = canViewProfit(rolesOf(user));
+  const userRoles = rolesOf(user);
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [dealers, setDealers] = useState<Dealer[]>([]);
@@ -164,6 +197,18 @@ export default function TripsPage() {
   const isTripAction = (key: string) => actionId === key;
   const isSubmitting = (key: string) => submittingKey === key;
   const canOperateSelected = canOperateTrip(selected, user);
+  const canPayOnTrip =
+    canManagePayments(userRoles) &&
+    (selected?.status === "in_progress" || selected?.status === "settlement");
+
+  const [payOpen, setPayOpen] = useState(false);
+  const [payingOrder, setPayingOrder] = useState<TripOrder | null>(null);
+  const [payAmount, setPayAmount] = useState<number | "">("");
+  const [payNote, setPayNote] = useState("");
+  const [paySubmitting, setPaySubmitting] = useState(false);
+  const [collectPickOpen, setCollectPickOpen] = useState(false);
+  const [collectStop, setCollectStop] = useState<TripStop | null>(null);
+  const [collectCandidates, setCollectCandidates] = useState<TripOrder[]>([]);
 
   const [form, setForm] = useState({
     title: "",
@@ -371,6 +416,71 @@ export default function TripsPage() {
       setDetailLoading(false);
     }
   });
+
+  function openPayOrder(order: TripOrder, stop?: TripStop | null) {
+    const remaining = tripOrderRemaining(order);
+    setPayingOrder(order);
+    setPayAmount(remaining || "");
+    setPayNote(
+      [
+        selected?.code ? `Thu trên chuyến ${selected.code}` : "Thu trên chuyến",
+        stop
+          ? `điểm #${stop.seq || ""} ${stop.dealerName || stop.location || ""}`.trim()
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    );
+    setCollectPickOpen(false);
+    setPayOpen(true);
+  }
+
+  function handleCollectStop(stop: TripStop) {
+    if (!selected) return;
+    const candidates = debtOrdersForStop(selected.orders, stop);
+    if (candidates.length === 0) {
+      toast.warning(
+        stop.dealerName
+          ? `Không có đơn còn nợ gắn đại lý ${stop.dealerName} trên chuyến này`
+          : "Không có đơn còn nợ gắn điểm dừng này"
+      );
+      return;
+    }
+    if (candidates.length === 1) {
+      openPayOrder(candidates[0], stop);
+      return;
+    }
+    setCollectStop(stop);
+    setCollectCandidates(candidates);
+    setCollectPickOpen(true);
+  }
+
+  async function handleTripPayment(event: React.FormEvent) {
+    event.preventDefault();
+    if (!payingOrder || !selected) return;
+    const amount = Number(payAmount) || 0;
+    if (amount <= 0) {
+      toast.error("Số tiền phải lớn hơn 0");
+      return;
+    }
+    setPaySubmitting(true);
+    try {
+      await recordOrderPayment(payingOrder.id, {
+        amount,
+        note: payNote.trim() || undefined,
+      });
+      toast.success(`Đã thu ${formatCurrency(amount)} · ${payingOrder.code}`);
+      setPayOpen(false);
+      setPayingOrder(null);
+      await refreshSelected(selected.id);
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Ghi nhận thanh toán thất bại"
+      );
+    } finally {
+      setPaySubmitting(false);
+    }
+  }
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
@@ -1144,45 +1254,113 @@ export default function TripsPage() {
               </MobileRecordCard>
 
               <section className="mt-6 space-y-3 md:mt-0">
-                <h4 className="font-semibold">Đơn hàng ({selected.orders.length})</h4>
+                <div className="flex flex-wrap items-end justify-between gap-2">
+                  <h4 className="font-semibold">
+                    Đơn hàng ({selected.orders.length})
+                  </h4>
+                  {selected.orders.some(isTripDebtOrder) ? (
+                    <p className="text-sm font-semibold tabular-nums text-red-600 dark:text-red-400">
+                      Còn thu:{" "}
+                      {formatCurrency(
+                        selected.orders
+                          .filter(isTripDebtOrder)
+                          .reduce((sum, order) => sum + tripOrderRemaining(order), 0)
+                      )}
+                    </p>
+                  ) : null}
+                </div>
                 {selected.orders.length === 0 ? (
                   <EmptyState title="Chưa gắn đơn" size="sm" />
                 ) : (
-                  <div className="space-y-2">
-                    {selected.orders.map((order) => (
-                      <div
-                        key={order.id}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border-subtle)] px-3 py-3 text-sm">
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <Link
-                              href="/orders"
-                              className="min-w-0 truncate font-semibold text-[var(--color-text-secondary)] hover:underline">
-                              {order.code}
-                            </Link>
-                            <span
-                              className={cn(
-                                "shrink-0 rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2 md:py-0.5 md:text-[11px]",
-                                ORDER_STATUS_TONE[
+                  <div className="space-y-3">
+                    {selected.orders.map((order) => {
+                      const remaining = tripOrderRemaining(order);
+                      const debt = isTripDebtOrder(order);
+                      return (
+                        <MobileRecordCard
+                          key={order.id}
+                          className="p-4 shadow-none">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <Link
+                                href={`/orders?detail=${order.id}`}
+                                className="text-base font-semibold tracking-tight text-[var(--color-text-secondary)] hover:underline">
+                                {order.code}
+                              </Link>
+                              <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                                {order.customerName || order.dealerName || "—"}
+                              </p>
+                              {order.dealerName && order.customerName ? (
+                                <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+                                  {order.dealerName}
+                                </p>
+                              ) : null}
+                            </div>
+                            <div className="flex shrink-0 flex-col items-end gap-1.5">
+                              <Badge
+                                variant={statusBadgeVariant(
                                   (order.status as Order["status"]) || "pending"
-                                ] || ORDER_STATUS_TONE.pending
-                              )}>
-                              {ORDER_STATUS_LABEL[
-                                (order.status as Order["status"]) || "pending"
-                              ] || order.status}
-                            </span>
+                                )}>
+                                {ORDER_STATUS_LABEL[
+                                  (order.status as Order["status"]) || "pending"
+                                ] || order.status}
+                              </Badge>
+                              {order.paymentStatus ? (
+                                <Badge
+                                  variant={statusBadgeVariant(
+                                    order.paymentStatus
+                                  )}>
+                                  {PAYMENT_LABEL[order.paymentStatus] ||
+                                    order.paymentStatus}
+                                </Badge>
+                              ) : null}
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="min-w-0 truncate text-[var(--color-text-inverse)]">
-                              {order.customerName || "—"}
-                            </p>
-                            <p className="shrink-0 font-semibold tabular-nums">
-                              {formatCurrency(order.total)}
-                            </p>
+
+                          <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                            <div>
+                              <p className="text-xs text-[var(--color-text-inverse)]">
+                                Tổng đơn
+                              </p>
+                              <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
+                                {formatCurrency(order.total)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-[var(--color-text-inverse)]">
+                                Còn nợ
+                              </p>
+                              <p
+                                className={cn(
+                                  "mt-0.5 text-base font-bold tabular-nums",
+                                  remaining > 0
+                                    ? "text-red-600 dark:text-red-400"
+                                    : "text-[var(--color-text-inverse)]"
+                                )}>
+                                {formatCurrency(remaining)}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    ))}
+
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <MobileMetaChip>
+                              Đã thu: {formatCurrency(order.paidAmount || 0)}
+                            </MobileMetaChip>
+                          </div>
+
+                          {canPayOnTrip && debt ? (
+                            <div className="mt-3.5 border-t border-[var(--color-border-subtle)] pt-3.5">
+                              <Button
+                                size="sm"
+                                className="h-9 w-full"
+                                onClick={() => openPayOrder(order)}>
+                                Thu
+                              </Button>
+                            </div>
+                          ) : null}
+                        </MobileRecordCard>
+                      );
+                    })}
                   </div>
                 )}
               </section>
@@ -1219,6 +1397,14 @@ export default function TripsPage() {
                   reordering={isTripAction("reorder")}
                   onReorder={handleReorderStops}
                   onRemove={handleRemoveStop}
+                  canCollect={Boolean(canPayOnTrip)}
+                  collectableStopIds={selected.stops
+                    .filter(
+                      (stop) =>
+                        debtOrdersForStop(selected.orders, stop).length > 0
+                    )
+                    .map((stop) => stop.id)}
+                  onCollect={handleCollectStop}
                 />
                 {canOperateSelected && selected.status !== "closed" ? (
                   <form
@@ -1693,6 +1879,101 @@ export default function TripsPage() {
               </section>
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={collectPickOpen} onOpenChange={setCollectPickOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Thu tiền
+              {collectStop
+                ? ` · ${collectStop.dealerName || collectStop.location || `Điểm #${collectStop.seq}`}`
+                : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-[var(--color-text-inverse)]">
+              Chọn đơn còn nợ trên chuyến này để ghi nhận thu.
+            </p>
+            {collectCandidates.map((order) => {
+              const remaining = tripOrderRemaining(order);
+              return (
+                <button
+                  key={order.id}
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--color-border-subtle)] px-3 py-3 text-left transition-colors hover:bg-[var(--color-surface-muted)]"
+                  onClick={() => openPayOrder(order, collectStop)}>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[var(--color-text-primary)]">
+                      {order.code}
+                    </p>
+                    <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
+                      {order.customerName || order.dealerName || "—"}
+                    </p>
+                  </div>
+                  <p className="shrink-0 font-bold tabular-nums text-red-600 dark:text-red-400">
+                    {formatCurrency(remaining)}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCollectPickOpen(false)}>
+              Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={payOpen} onOpenChange={setPayOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ghi nhận thanh toán {payingOrder?.code}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleTripPayment} className="space-y-4">
+            <p className="text-sm text-[var(--color-text-inverse)]">
+              Tổng đơn: {formatCurrency(payingOrder?.total || 0)} — Đã thu:{" "}
+              {formatCurrency(payingOrder?.paidAmount || 0)} — Còn nợ:{" "}
+              <span className="font-semibold text-red-600 dark:text-red-400">
+                {formatCurrency(
+                  payingOrder ? tripOrderRemaining(payingOrder) : 0
+                )}
+              </span>
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Số tiền thu thêm</Label>
+                <VndInput
+                  value={payAmount}
+                  onValueChange={setPayAmount}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Ghi chú</Label>
+                <Input
+                  value={payNote}
+                  onChange={(e) => setPayNote(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPayOpen(false)}>
+                Hủy
+              </Button>
+              <Button type="submit" loading={paySubmitting}>
+                Ghi nhận
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

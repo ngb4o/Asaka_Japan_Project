@@ -32,6 +32,10 @@ type SortableTripStopsProps = {
   reordering?: boolean;
   onReorder: (stopIds: string[]) => void | Promise<void>;
   onRemove: (stopId: string) => void;
+  /** Hiện nút Thu trên điểm dừng (thường purpose=collection hoặc còn đơn nợ) */
+  canCollect?: boolean;
+  collectableStopIds?: Set<string> | string[];
+  onCollect?: (stop: TripStop) => void;
 };
 
 function StopContent({
@@ -70,19 +74,33 @@ function StopActions({
   removing,
   disabled,
   onRemove,
+  canCollect,
+  onCollect,
 }: {
   stop: TripStop;
   canRemove: boolean;
   removing: boolean;
   disabled: boolean;
   onRemove: (stopId: string) => void;
+  canCollect?: boolean;
+  onCollect?: (stop: TripStop) => void;
 }) {
   return (
     <div
       className="flex shrink-0 items-start gap-2"
-      // Chặn sensor kéo khi bấm Maps / Xóa (mobile + desktop)
+      // Chặn sensor kéo khi bấm Maps / Thu / Xóa (mobile + desktop)
       onPointerDown={(e) => e.stopPropagation()}
       onTouchStart={(e) => e.stopPropagation()}>
+      {canCollect && onCollect ? (
+        <Button
+          type="button"
+          size="sm"
+          className="h-8 px-2.5 text-xs"
+          disabled={disabled}
+          onClick={() => onCollect(stop)}>
+          Thu
+        </Button>
+      ) : null}
       {typeof stop.lat === "number" && typeof stop.lng === "number" ? (
         <Button
           type="button"
@@ -121,6 +139,8 @@ function SortableStopRow({
   removing,
   disabled,
   onRemove,
+  canCollect,
+  onCollect,
 }: {
   stop: TripStop;
   index: number;
@@ -128,35 +148,25 @@ function SortableStopRow({
   removing: boolean;
   disabled: boolean;
   onRemove: (stopId: string) => void;
+  canCollect?: boolean;
+  onCollect?: (stop: TripStop) => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: stop.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
     transition,
-    isDragging,
-  } = useSortable({
-    id: stop.id,
-    disabled,
-  });
+  };
 
   return (
     <div
       ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        // Quan trọng trên mobile: tránh browser chiếm gesture để scroll
-        touchAction: disabled ? undefined : "none",
-      }}
+      style={style}
       className={cn(
-        "flex cursor-grab items-start justify-between gap-3 rounded-lg border border-[var(--color-border-subtle)] p-3 text-sm select-none active:cursor-grabbing",
-        isDragging &&
-          "z-10 border-teal-600 bg-[var(--color-surface)] shadow-md opacity-95",
-        disabled && !isDragging && "cursor-default opacity-70"
+        "flex items-start gap-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 py-3",
+        isDragging && "z-10 opacity-90 shadow-md"
       )}
-      aria-label="Giữ và kéo để đổi thứ tự"
       {...attributes}
       {...listeners}>
       <StopContent stop={stop} index={index} purposeLabel={purposeLabel} />
@@ -166,6 +176,8 @@ function SortableStopRow({
         removing={removing}
         disabled={disabled}
         onRemove={onRemove}
+        canCollect={canCollect}
+        onCollect={onCollect}
       />
     </div>
   );
@@ -175,13 +187,17 @@ function StaticStopRow({
   stop,
   index,
   purposeLabel,
+  canCollect,
+  onCollect,
 }: {
   stop: TripStop;
   index: number;
   purposeLabel: Record<string, string>;
+  canCollect?: boolean;
+  onCollect?: (stop: TripStop) => void;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border border-[var(--color-border-subtle)] p-3 text-sm">
+    <div className="flex items-start gap-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 py-3">
       <StopContent stop={stop} index={index} purposeLabel={purposeLabel} />
       <StopActions
         stop={stop}
@@ -189,6 +205,8 @@ function StaticStopRow({
         removing={false}
         disabled={false}
         onRemove={() => {}}
+        canCollect={canCollect}
+        onCollect={onCollect}
       />
     </div>
   );
@@ -198,10 +216,13 @@ export function SortableTripStops({
   stops,
   canReorder,
   purposeLabel,
-  removingStopId = null,
-  reordering = false,
+  removingStopId,
+  reordering,
   onReorder,
   onRemove,
+  canCollect = false,
+  collectableStopIds,
+  onCollect,
 }: SortableTripStopsProps) {
   const [items, setItems] = useState(stops);
 
@@ -209,13 +230,17 @@ export function SortableTripStops({
     setItems(stops);
   }, [stops]);
 
+  const collectSet = useMemo(() => {
+    if (!collectableStopIds) return null;
+    return collectableStopIds instanceof Set
+      ? collectableStopIds
+      : new Set(collectableStopIds);
+  }, [collectableStopIds]);
+
   const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: { distance: 6 },
-    }),
-    // TouchSensor riêng — PointerSensor thường fail trên iOS/Android scroll parent
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 8 },
+      activationConstraint: { delay: 180, tolerance: 8 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -240,6 +265,12 @@ export function SortableTripStops({
     await onReorder(next.map((s) => s.id));
   }
 
+  function stopCanCollect(stop: TripStop) {
+    if (!canCollect || !onCollect) return false;
+    if (collectSet) return collectSet.has(stop.id);
+    return stop.purpose === "collection";
+  }
+
   if (!items.length) return null;
 
   if (!canReorder) {
@@ -251,6 +282,8 @@ export function SortableTripStops({
             stop={stop}
             index={index}
             purposeLabel={purposeLabel}
+            canCollect={stopCanCollect(stop)}
+            onCollect={onCollect}
           />
         ))}
       </div>
@@ -271,8 +304,10 @@ export function SortableTripStops({
               index={index}
               purposeLabel={purposeLabel}
               removing={removingStopId === stop.id}
-              disabled={reordering}
+              disabled={Boolean(reordering)}
               onRemove={onRemove}
+              canCollect={stopCanCollect(stop)}
+              onCollect={onCollect}
             />
           ))}
         </div>
