@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Filter, X } from "lucide-react";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
+import { lockAppScroll } from "@/lib/scroll-lock";
 import { cn } from "@/lib/utils";
 
 type FilterDrawerProps = {
@@ -171,11 +173,7 @@ export function FilterDrawer({
 
   useEffect(() => {
     if (!open || isMobile) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
+    return lockAppScroll();
   }, [open, isMobile]);
 
   useEffect(() => {
@@ -205,7 +203,9 @@ export function FilterDrawer({
     );
   }
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
       className={cn(
         "fixed inset-0 z-50 transition-opacity duration-200",
@@ -260,6 +260,7 @@ export function FilterDrawer({
           />
         </div>
       </aside>
-    </div>
+    </div>,
+    document.body
   );
 }

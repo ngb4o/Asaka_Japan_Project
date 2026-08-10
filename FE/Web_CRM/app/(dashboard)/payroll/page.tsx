@@ -457,7 +457,7 @@ export default function PayrollPage() {
           </DialogHeader>
           {selected ? (
             <div className="space-y-3">
-              <div className="flex flex-col gap-3 md:hidden">
+              <div className="crm-stagger-list flex flex-col gap-3 md:hidden">
                 {selected.lines.map((line) => (
                   <MobileRecordCard key={line.employeeId} className="p-4">
                     <div className="flex items-start justify-between gap-3">

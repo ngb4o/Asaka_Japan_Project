@@ -1008,11 +1008,6 @@ export default function TripsPage() {
             <DialogTitle>Tạo chuyến công tác</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
-            <p className="text-sm text-[var(--color-text-inverse)]">
-              Chọn đơn gắn chuyến → tự tạo điểm dừng giao (#1, #2…) theo thứ tự.
-              Có GPS đại lý thì dùng luôn; chưa có thì geocode từ địa chỉ để vẽ
-              lộ trình Kho → các điểm.
-            </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Tiêu đề</Label>

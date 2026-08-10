@@ -629,7 +629,7 @@ function RankList({
         ) : (
           <>
             {/* Mobile: ranked cards */}
-            <div className="flex flex-col gap-3 md:hidden">
+            <div className="crm-stagger-list flex flex-col gap-3 md:hidden">
               {items.map((item) => (
                 <MobileRecordCard key={item.id} className="p-3 shadow-none">
                   <div className="flex items-start gap-3">

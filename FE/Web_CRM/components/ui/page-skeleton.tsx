@@ -272,7 +272,7 @@ export function PageSkeleton({
 }: PageSkeletonProps) {
   return (
     <div
-      className={cn("crm-animate-in space-y-4 md:space-y-6")}
+      className={cn("crm-enter space-y-4 md:space-y-6")}
       aria-busy="true"
       aria-label={label}>
       <div className="hidden flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-4">
@@ -546,7 +546,7 @@ function RankRowSkeleton() {
 export function ReportsPageSkeleton() {
   return (
     <div
-      className="crm-animate-in space-y-5"
+      className="crm-enter space-y-5"
       aria-busy="true"
       aria-label="Đang tải báo cáo doanh số">
       <div className="hidden flex-col gap-3 md:flex md:flex-row md:items-start md:justify-between md:gap-4">
@@ -627,7 +627,7 @@ export function ReportsPageSkeleton() {
           <Skeleton className="h-5 w-28" />
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-3 md:hidden">
+          <div className="crm-stagger-list flex flex-col gap-3 md:hidden">
             {Array.from({ length: 3 }).map((_, index) => (
               <RankRowSkeleton key={index} />
             ))}

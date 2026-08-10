@@ -9,7 +9,7 @@ const Card = React.forwardRef<
     ref={ref}
     data-crm-card=""
     className={cn(
-      "w-full rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)] transition-[box-shadow,transform] duration-200 motion-safe:hover:-translate-y-px motion-safe:hover:shadow-[var(--shadow-elevated)]",
+      "w-full rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)] transition-shadow",
       className
     )}
     {...props}

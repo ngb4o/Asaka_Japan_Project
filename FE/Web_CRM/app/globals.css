@@ -38,11 +38,10 @@
   --radius-card: 14px;
   --radius-button: 10px;
   --motion-instant: 200ms;
-  --motion-fast: 220ms;
-  --motion-base: 320ms;
-  --motion-slow: 480ms;
-  --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --motion-ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --motion-fast: 180ms;
+  --motion-base: 280ms;
+  --motion-slow: 400ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   --shadow-soft: var(--crm-shadow-soft);
   --shadow-elevated: var(--crm-shadow-elevated);
@@ -255,110 +254,11 @@
   }
 
   .crm-data-table tbody tr {
-    transition:
-      background-color 150ms ease,
-      transform var(--motion-fast) var(--motion-ease-out);
+    transition: background-color 150ms ease;
   }
 
   .crm-data-table tbody tr:hover {
     background: color-mix(in srgb, var(--color-surface-muted) 50%, transparent);
-  }
-
-  .crm-page-enter {
-    animation: crm-page-enter var(--motion-base) var(--motion-ease-out) both;
-  }
-
-  .crm-animate-in {
-    animation: crm-fade-in-up var(--motion-base) var(--motion-ease-out) both;
-  }
-
-  .crm-stagger-list > * {
-    animation: crm-fade-in-up var(--motion-base) var(--motion-ease-out) both;
-  }
-
-  .crm-stagger-list > *:nth-child(1) {
-    animation-delay: 0ms;
-  }
-
-  .crm-stagger-list > *:nth-child(2) {
-    animation-delay: 35ms;
-  }
-
-  .crm-stagger-list > *:nth-child(3) {
-    animation-delay: 70ms;
-  }
-
-  .crm-stagger-list > *:nth-child(4) {
-    animation-delay: 105ms;
-  }
-
-  .crm-stagger-list > *:nth-child(5) {
-    animation-delay: 140ms;
-  }
-
-  .crm-stagger-list > *:nth-child(6) {
-    animation-delay: 175ms;
-  }
-
-  .crm-stagger-list > *:nth-child(7) {
-    animation-delay: 210ms;
-  }
-
-  .crm-stagger-list > *:nth-child(8) {
-    animation-delay: 245ms;
-  }
-
-  .crm-page-enter .crm-data-table tbody tr {
-    animation: crm-fade-in-up var(--motion-fast) var(--motion-ease-out) both;
-  }
-
-  .crm-page-enter .crm-data-table tbody tr:nth-child(1) {
-    animation-delay: 40ms;
-  }
-
-  .crm-page-enter .crm-data-table tbody tr:nth-child(2) {
-    animation-delay: 65ms;
-  }
-
-  .crm-page-enter .crm-data-table tbody tr:nth-child(3) {
-    animation-delay: 90ms;
-  }
-
-  .crm-page-enter .crm-data-table tbody tr:nth-child(4) {
-    animation-delay: 115ms;
-  }
-
-  .crm-page-enter .crm-data-table tbody tr:nth-child(5) {
-    animation-delay: 140ms;
-  }
-
-  .crm-page-enter .crm-data-table tbody tr:nth-child(6) {
-    animation-delay: 165ms;
-  }
-
-  .crm-page-enter .crm-data-table tbody tr:nth-child(7) {
-    animation-delay: 190ms;
-  }
-
-  .crm-page-enter .crm-data-table tbody tr:nth-child(8) {
-    animation-delay: 215ms;
-  }
-
-  .crm-page-enter .crm-data-table tbody tr:nth-child(n + 9) {
-    animation-delay: 240ms;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .crm-page-enter,
-    .crm-animate-in,
-    .crm-stagger-list > *,
-    .crm-page-enter .crm-data-table tbody tr,
-    .auth-fade-in,
-    .auth-fade-in-up,
-    .crm-workspace-loader,
-    .crm-chat-typing-dot {
-      animation: none !important;
-    }
   }
 
   .auth-fade-in {
@@ -371,6 +271,127 @@
 
   .auth-delay {
     animation-delay: 120ms;
+  }
+
+  /** Route / content enter — applied in DashboardShell */
+  .crm-page-enter {
+    animation: crm-page-enter var(--motion-base) var(--motion-ease) both;
+  }
+
+  /** Single block enter (header, empty state, skeleton) */
+  .crm-enter {
+    animation: crm-fade-in-up var(--motion-slow) var(--motion-ease) both;
+  }
+
+  /**
+   * Mobile card lists — stagger first 12 items only.
+   * Items beyond that (infinite scroll appends) appear without re-animating.
+   */
+  .crm-stagger-list > *:nth-child(-n + 12) {
+    animation: crm-item-enter var(--motion-slow) var(--motion-ease) both;
+  }
+
+  .crm-stagger-list > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .crm-stagger-list > *:nth-child(2) {
+    animation-delay: 35ms;
+  }
+  .crm-stagger-list > *:nth-child(3) {
+    animation-delay: 70ms;
+  }
+  .crm-stagger-list > *:nth-child(4) {
+    animation-delay: 105ms;
+  }
+  .crm-stagger-list > *:nth-child(5) {
+    animation-delay: 140ms;
+  }
+  .crm-stagger-list > *:nth-child(6) {
+    animation-delay: 175ms;
+  }
+  .crm-stagger-list > *:nth-child(7) {
+    animation-delay: 210ms;
+  }
+  .crm-stagger-list > *:nth-child(8) {
+    animation-delay: 245ms;
+  }
+  .crm-stagger-list > *:nth-child(9) {
+    animation-delay: 280ms;
+  }
+  .crm-stagger-list > *:nth-child(10) {
+    animation-delay: 315ms;
+  }
+  .crm-stagger-list > *:nth-child(11) {
+    animation-delay: 350ms;
+  }
+  .crm-stagger-list > *:nth-child(12) {
+    animation-delay: 385ms;
+  }
+
+  /** Desktop table rows — stagger first 10 rows on page enter */
+  .crm-page-enter .crm-data-table tbody tr {
+    animation: crm-row-enter var(--motion-base) var(--motion-ease) both;
+  }
+
+  .crm-page-enter .crm-data-table tbody tr:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .crm-page-enter .crm-data-table tbody tr:nth-child(2) {
+    animation-delay: 30ms;
+  }
+  .crm-page-enter .crm-data-table tbody tr:nth-child(3) {
+    animation-delay: 60ms;
+  }
+  .crm-page-enter .crm-data-table tbody tr:nth-child(4) {
+    animation-delay: 90ms;
+  }
+  .crm-page-enter .crm-data-table tbody tr:nth-child(5) {
+    animation-delay: 120ms;
+  }
+  .crm-page-enter .crm-data-table tbody tr:nth-child(6) {
+    animation-delay: 150ms;
+  }
+  .crm-page-enter .crm-data-table tbody tr:nth-child(7) {
+    animation-delay: 180ms;
+  }
+  .crm-page-enter .crm-data-table tbody tr:nth-child(8) {
+    animation-delay: 210ms;
+  }
+  .crm-page-enter .crm-data-table tbody tr:nth-child(9) {
+    animation-delay: 240ms;
+  }
+  .crm-page-enter .crm-data-table tbody tr:nth-child(10) {
+    animation-delay: 270ms;
+  }
+
+  /** Dashboard / reports — stagger cards in grid layouts */
+  .crm-page-enter .grid > [data-crm-card] {
+    animation: crm-item-enter var(--motion-slow) var(--motion-ease) both;
+  }
+
+  .crm-page-enter .grid > [data-crm-card]:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .crm-page-enter .grid > [data-crm-card]:nth-child(2) {
+    animation-delay: 40ms;
+  }
+  .crm-page-enter .grid > [data-crm-card]:nth-child(3) {
+    animation-delay: 80ms;
+  }
+  .crm-page-enter .grid > [data-crm-card]:nth-child(4) {
+    animation-delay: 120ms;
+  }
+  .crm-page-enter .grid > [data-crm-card]:nth-child(5) {
+    animation-delay: 160ms;
+  }
+  .crm-page-enter .grid > [data-crm-card]:nth-child(6) {
+    animation-delay: 200ms;
+  }
+  .crm-page-enter .grid > [data-crm-card]:nth-child(7) {
+    animation-delay: 240ms;
+  }
+  .crm-page-enter .grid > [data-crm-card]:nth-child(8) {
+    animation-delay: 280ms;
   }
 }
 
@@ -406,6 +427,26 @@
 @keyframes crm-page-enter {
   from {
     opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes crm-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes crm-item-enter {
+  from {
+    opacity: 0;
     transform: translateY(10px);
   }
   to {
@@ -414,14 +455,26 @@
   }
 }
 
-@keyframes crm-fade-in-up {
+@keyframes crm-row-enter {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateX(-6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crm-page-enter,
+  .crm-enter,
+  .crm-stagger-list > *:nth-child(-n + 12),
+  .crm-page-enter .crm-data-table tbody tr,
+  .crm-page-enter .grid > [data-crm-card],
+  .auth-fade-in,
+  .auth-fade-in-up {
+    animation: none !important;
   }
 }
 

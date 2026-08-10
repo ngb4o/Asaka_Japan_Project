@@ -18,7 +18,7 @@ export function DashboardHeader({ onOpenMenu }: DashboardHeaderProps) {
   return (
     <header
       className={cn(
-        "z-30 shrink-0 overflow-hidden border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]/90 backdrop-blur-md transition-[max-height,border-color,opacity] duration-300 ease-out lg:max-h-none lg:opacity-100",
+        "crm-dashboard-header z-30 shrink-0 overflow-hidden border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]/90 backdrop-blur-md transition-[max-height,border-color,opacity] duration-300 ease-out lg:max-h-none lg:opacity-100",
         visible
           ? "max-h-28 opacity-100"
           : "max-lg:max-h-0 max-lg:border-transparent max-lg:opacity-0"

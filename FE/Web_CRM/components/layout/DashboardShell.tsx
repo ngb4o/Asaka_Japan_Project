@@ -9,7 +9,6 @@ import {
   MobileChromeProvider,
 } from "@/components/layout/MobileChromeProvider";
 import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
-import { PageEnter } from "@/components/ui/page-enter";
 import { NotificationProvider } from "@/lib/notifications/NotificationProvider";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -128,14 +127,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <DashboardHeader onOpenMenu={() => setMobileMenuOpen(true)} />
                 <main
                   ref={mainRef}
-                  className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(3rem+env(safe-area-inset-bottom,0px))] lg:pb-0">
+                  data-crm-scroll-root=""
+                  className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(3rem+env(safe-area-inset-bottom,0px))] lg:pb-0 [scrollbar-gutter:stable]">
                   <div
+                    key={pathname}
                     className={
                       paddedMobile
-                        ? "crm-page-padded w-full max-w-[1600px] space-y-3 p-3 sm:space-y-4 sm:p-4 md:space-y-5 md:p-5 lg:p-6"
-                        : "crm-page-flush w-full max-w-[1600px] space-y-0 p-0 md:space-y-5 md:p-5 lg:p-6"
+                        ? "crm-page-enter crm-page-padded w-full max-w-[1600px] space-y-3 p-3 sm:space-y-4 sm:p-4 md:space-y-5 md:p-5 lg:p-6"
+                        : "crm-page-enter crm-page-flush w-full max-w-[1600px] space-y-0 p-0 md:space-y-5 md:p-5 lg:p-6"
                     }>
-                    <PageEnter>{children}</PageEnter>
+                    {children}
                   </div>
                 </main>
                 <MobileBottomNav onOpenMenu={() => setMobileMenuOpen(true)} />

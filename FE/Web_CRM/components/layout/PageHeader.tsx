@@ -69,7 +69,7 @@ export function PageHeader({
       {hasDesktopChrome ? (
         <div
           className={cn(
-            "hidden flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-4",
+            "crm-enter hidden flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-4",
             className
           )}>
           <div className="min-w-0 space-y-1">

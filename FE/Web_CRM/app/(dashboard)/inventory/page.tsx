@@ -672,7 +672,7 @@ export default function InventoryPage() {
               ) : (
                 <>
                   {/* Mobile */}
-                  <div className="flex flex-col gap-3 md:hidden">
+                  <div className="crm-stagger-list flex flex-col gap-3 md:hidden">
                     {warehouses.map((item) => (
                       <MobileRecordCard key={item.id} className="p-4">
                         <div className="flex items-start justify-between gap-3">

@@ -188,7 +188,13 @@ export function MobileInfiniteList({
         </div>
       </div>
 
-      {children}
+      {/*
+        Pages wrap cards in a single flex div; `[&>div]:contents` lifts cards
+        so stagger nth-child targets the cards, not the wrapper.
+      */}
+      <div className="crm-stagger-list flex flex-col gap-3 [&>div]:contents">
+        {children}
+      </div>
 
       <div ref={sentinelRef} className="h-4 w-full" aria-hidden />
 

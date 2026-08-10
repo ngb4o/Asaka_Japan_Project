@@ -11,6 +11,7 @@ import {
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { lockAppScroll } from "@/lib/scroll-lock";
 
 type BottomSheetProps = {
   open: boolean;
@@ -122,11 +123,7 @@ export function BottomSheet({
 
   useEffect(() => {
     if (!mounted) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prevOverflow;
-    };
+    return lockAppScroll();
   }, [mounted]);
 
   useEffect(() => {
