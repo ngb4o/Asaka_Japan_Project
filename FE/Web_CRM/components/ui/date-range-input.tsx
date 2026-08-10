@@ -418,7 +418,7 @@ export function DateRangeInput({
   const field = (
     <div
       className={cn(
-        "flex h-10 w-full items-center justify-between gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 shadow-sm transition-all",
+        "flex h-10 w-full items-center justify-between gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 shadow-none transition-all",
         "hover:border-[var(--color-text-secondary)]/35",
         open &&
           "border-[var(--color-text-secondary)] ring-2 ring-[var(--color-text-secondary)]/20",

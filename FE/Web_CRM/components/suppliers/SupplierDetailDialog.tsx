@@ -11,12 +11,16 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TabSwitcher } from "@/components/ui/tab-switcher";
+import {
+  MobileMetaChip,
+  MobileRecordCard,
+} from "@/components/ui/mobile-record-card";
 import { getPurchases } from "@/lib/api/purchases";
 import { ApiClientError } from "@/lib/api/client";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { statusBadgeVariant } from "@/lib/status-badge";
 import type { PurchaseInvoice, Supplier } from "@/lib/types";
-import { formatCurrency, formatDateDisplay } from "@/lib/utils";
+import { cn, formatCurrency, formatDateDisplay } from "@/lib/utils";
 import { useToast } from "@/components/providers/ToastProvider";
 
 type SupplierDetailDialogProps = {
@@ -56,24 +60,30 @@ function isDebtInvoice(invoice: PurchaseInvoice) {
 function InvoiceCard({ invoice }: { invoice: PurchaseInvoice }) {
   const remaining = remainingOf(invoice);
   return (
-    <div className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="font-semibold text-[var(--color-text-primary)]">
+    <MobileRecordCard className="p-4 shadow-none">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
             {invoice.code}
           </p>
-          <p className="mt-0.5 text-xs text-[var(--color-text-inverse)]">
-            {formatDate(invoice.invoiceDate || invoice.createdAt)}
-            {invoice.dueDate ? ` · Hạn ${formatDate(invoice.dueDate)}` : ""}
+          <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+            {[
+              formatDate(invoice.invoiceDate || invoice.createdAt),
+              invoice.dueDate ? `Hạn ${formatDate(invoice.dueDate)}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         </div>
-        <Badge variant={statusBadgeVariant(invoice.paymentStatus)}>
+        <Badge
+          variant={statusBadgeVariant(invoice.paymentStatus)}
+          className="shrink-0">
           {PAYMENT_LABELS[invoice.paymentStatus] || invoice.paymentStatus}
         </Badge>
       </div>
 
       {(invoice.items || []).length > 0 ? (
-        <div className="space-y-1.5">
+        <div className="mt-3 space-y-1.5">
           {invoice.items.map((item, index) => (
             <div
               key={`${item.productId}-${index}`}
@@ -94,27 +104,33 @@ function InvoiceCard({ invoice }: { invoice: PurchaseInvoice }) {
         </div>
       ) : null}
 
-      <div className="flex flex-wrap justify-end gap-x-4 gap-y-1 border-t border-[var(--color-border-subtle)] pt-3 text-sm">
-        <div className="text-right">
+      <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+        <div>
           <p className="text-xs text-[var(--color-text-inverse)]">Tổng nhập</p>
-          <p className="font-semibold tabular-nums text-[var(--color-text-secondary)]">
+          <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
             {formatCurrency(invoice.total || 0)}
           </p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-[var(--color-text-inverse)]">Đã trả</p>
-          <p className="font-semibold tabular-nums text-[var(--color-text-secondary)]">
-            {formatCurrency(invoice.paidAmount || 0)}
-          </p>
-        </div>
-        <div className="text-right">
           <p className="text-xs text-[var(--color-text-inverse)]">Còn nợ</p>
-          <p className="font-semibold tabular-nums text-red-600">
+          <p
+            className={cn(
+              "mt-0.5 text-base font-bold tabular-nums",
+              remaining > 0
+                ? "text-red-600 dark:text-red-400"
+                : "text-[var(--color-text-inverse)]"
+            )}>
             {formatCurrency(remaining)}
           </p>
         </div>
       </div>
-    </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <MobileMetaChip>
+          Đã trả: {formatCurrency(invoice.paidAmount || 0)}
+        </MobileMetaChip>
+      </div>
+    </MobileRecordCard>
   );
 }
 
@@ -134,14 +150,14 @@ function SupplierInfoCard({
   debtInvoiceCount: number;
 }) {
   return (
-    <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+    <MobileRecordCard className="p-4 shadow-none">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
             {supplier.name}
-          </h3>
-          <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-            {[supplier.contactName, supplier.phone].filter(Boolean).join(" - ") ||
+          </p>
+          <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+            {[supplier.contactName, supplier.phone].filter(Boolean).join(" · ") ||
               "Chưa có liên hệ"}
           </p>
           {supplier.address ? (
@@ -150,60 +166,63 @@ function SupplierInfoCard({
             </p>
           ) : null}
           {supplier.taxCode ? (
-            <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+            <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
               MST: {supplier.taxCode}
             </p>
           ) : null}
           {supplier.email ? (
-            <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+            <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
               {supplier.email}
             </p>
           ) : null}
         </div>
-        <Badge variant={supplier.status === "active" ? "success" : "muted"}>
+        <Badge
+          variant={supplier.status === "active" ? "success" : "muted"}
+          className="shrink-0">
           {supplier.status === "active" ? "Hoạt động" : "Ngưng"}
         </Badge>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2">
-          <p className="text-xs text-[var(--color-text-inverse)]">Phiếu nhập</p>
-          {showContent ? (
-            <p className="mt-1 font-semibold">{invoiceCount}</p>
-          ) : (
-            <Skeleton className="mt-2 h-5 w-12" />
-          )}
-        </div>
-        <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2">
+      <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+        <div>
           <p className="text-xs text-[var(--color-text-inverse)]">
             Tổng tiền nhập
           </p>
           {showContent ? (
-            <p className="mt-1 font-semibold tabular-nums">
+            <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
               {formatCurrency(purchaseTotal)}
             </p>
           ) : (
-            <Skeleton className="mt-2 h-5 w-32" />
+            <Skeleton className="mt-1.5 h-5 w-28" />
           )}
         </div>
-        <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2">
+        <div className="text-right">
           <p className="text-xs text-[var(--color-text-inverse)]">Còn nợ NCC</p>
           {showContent ? (
-            <p className="mt-1 font-semibold tabular-nums text-red-600">
+            <p
+              className={cn(
+                "mt-0.5 text-base font-bold tabular-nums",
+                debtAmount > 0
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-[var(--color-text-inverse)]"
+              )}>
               {formatCurrency(debtAmount)}
             </p>
           ) : (
-            <Skeleton className="mt-2 h-5 w-28" />
+            <Skeleton className="mt-1.5 ml-auto h-5 w-24" />
           )}
         </div>
-        <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2">
-          <p className="text-xs text-[var(--color-text-inverse)]">Phiếu còn nợ</p>
-          {showContent ? (
-            <p className="mt-1 font-semibold">{debtInvoiceCount}</p>
-          ) : (
-            <Skeleton className="mt-2 h-5 w-12" />
-          )}
-        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {showContent ? (
+          <>
+            <MobileMetaChip>{invoiceCount} phiếu nhập</MobileMetaChip>
+            <MobileMetaChip>{debtInvoiceCount} phiếu nợ</MobileMetaChip>
+          </>
+        ) : (
+          <Skeleton className="h-7 w-28 rounded-md" />
+        )}
       </div>
 
       {supplier.note ? (
@@ -211,7 +230,7 @@ function SupplierInfoCard({
           {supplier.note}
         </p>
       ) : null}
-    </div>
+    </MobileRecordCard>
   );
 }
 

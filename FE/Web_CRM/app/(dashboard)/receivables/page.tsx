@@ -19,7 +19,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { TabSwitcher } from "@/components/ui/tab-switcher";
 import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
 import {
-  MobileRecordActions,
+  MobileMetaChip,
   MobileRecordCard,
   MobileStatTile,
 } from "@/components/ui/mobile-record-card";
@@ -53,7 +53,7 @@ import type {
 } from "@/lib/types";
 import { OrderLineItemsList } from "@/components/orders/OrderLineItemsList";
 import { STATUS_OPTIONS } from "@/components/ui/searchable-select";
-import { formatCurrency, formatDateDisplay } from "@/lib/utils";
+import { cn, formatCurrency, formatDateDisplay } from "@/lib/utils";
 
 type DebtTab = "dealer" | "supplier";
 
@@ -451,33 +451,50 @@ export default function ReceivablesPage() {
                     disabled={arLoading}>
                     <div className="flex flex-col gap-3">
                       {arItems.map((item) => (
-                        <MobileRecordCard key={item.dealerId} className="p-3">
-                          <div className="flex items-start justify-between gap-2">
+                        <MobileRecordCard key={item.dealerId} className="p-4">
+                          <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
-                              <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                              <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                                 {item.dealerName}
                               </p>
-                              <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
-                                {[item.contactName, item.phone]
-                                  .filter(Boolean)
-                                  .join(" · ") || "—"}
-                              </p>
+                              {(item.contactName || item.phone) ? (
+                                <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                                  {[item.contactName, item.phone]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </p>
+                              ) : null}
+                              {item.region ? (
+                                <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+                                  {item.region}
+                                </p>
+                              ) : null}
                             </div>
                             <Badge variant="danger" className="shrink-0">
                               {item.debtOrderCount} đơn
                             </Badge>
                           </div>
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            <MobileStatTile
-                              label="Còn nợ"
-                              valueClassName="text-red-600">
-                              {formatCurrency(item.debtAmount)}
-                            </MobileStatTile>
-                            <MobileStatTile label="Đã thu">
-                              {formatCurrency(item.paidAmount)}
-                            </MobileStatTile>
+
+                          <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                            <div>
+                              <p className="text-xs text-[var(--color-text-inverse)]">
+                                Đã thu
+                              </p>
+                              <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-primary)]">
+                                {formatCurrency(item.paidAmount)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-[var(--color-text-inverse)]">
+                                Còn nợ
+                              </p>
+                              <p className="mt-0.5 text-base font-bold tabular-nums text-red-600 dark:text-red-400">
+                                {formatCurrency(item.debtAmount)}
+                              </p>
+                            </div>
                           </div>
-                          <MobileRecordActions>
+
+                          <div className="mt-3.5 flex flex-wrap justify-end gap-2">
                             <Button
                               variant="outline"
                               size="sm"
@@ -486,7 +503,7 @@ export default function ReceivablesPage() {
                               onClick={() => openDealer(item)}>
                               <Eye className="h-4 w-4" />
                             </Button>
-                          </MobileRecordActions>
+                          </div>
                         </MobileRecordCard>
                       ))}
                     </div>
@@ -593,33 +610,50 @@ export default function ReceivablesPage() {
                     disabled={apLoading}>
                     <div className="flex flex-col gap-3 md:hidden">
                       {apItems.map((item) => (
-                        <MobileRecordCard key={item.supplierId} className="p-3">
-                          <div className="flex items-start justify-between gap-2">
+                        <MobileRecordCard key={item.supplierId} className="p-4">
+                          <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
-                              <p className="font-semibold tracking-tight">
+                              <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                                 {item.supplierName}
                               </p>
-                              <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
-                                {[item.contactName, item.phone]
-                                  .filter(Boolean)
-                                  .join(" · ") || "—"}
-                              </p>
+                              {(item.contactName || item.phone) ? (
+                                <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                                  {[item.contactName, item.phone]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </p>
+                              ) : null}
+                              {item.taxCode ? (
+                                <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+                                  MST: {item.taxCode}
+                                </p>
+                              ) : null}
                             </div>
                             <Badge variant="danger" className="shrink-0">
                               {item.debtInvoiceCount} phiếu
                             </Badge>
                           </div>
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            <MobileStatTile
-                              label="Còn nợ"
-                              valueClassName="text-red-600">
-                              {formatCurrency(item.debtAmount)}
-                            </MobileStatTile>
-                            <MobileStatTile label="Đã trả">
-                              {formatCurrency(item.paidAmount)}
-                            </MobileStatTile>
+
+                          <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                            <div>
+                              <p className="text-xs text-[var(--color-text-inverse)]">
+                                Đã trả
+                              </p>
+                              <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-primary)]">
+                                {formatCurrency(item.paidAmount)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-[var(--color-text-inverse)]">
+                                Còn nợ
+                              </p>
+                              <p className="mt-0.5 text-base font-bold tabular-nums text-red-600 dark:text-red-400">
+                                {formatCurrency(item.debtAmount)}
+                              </p>
+                            </div>
                           </div>
-                          <MobileRecordActions>
+
+                          <div className="mt-3.5 flex flex-wrap justify-end gap-2">
                             <Button
                               size="sm"
                               variant="outline"
@@ -628,7 +662,7 @@ export default function ReceivablesPage() {
                               onClick={() => openSupplier(item)}>
                               <Eye className="h-4 w-4" />
                             </Button>
-                          </MobileRecordActions>
+                          </div>
                         </MobileRecordCard>
                       ))}
                     </div>
@@ -696,13 +730,19 @@ export default function ReceivablesPage() {
           </DialogHeader>
           {selectedDealer ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <MobileStatTile label="Còn nợ" valueClassName="text-red-600">
-                  {formatCurrency(selectedDealer.debtAmount)}
-                </MobileStatTile>
-                <MobileStatTile label="Đơn nợ">
-                  {selectedDealer.debtOrderCount}
-                </MobileStatTile>
+              <div className="flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                <div>
+                  <p className="text-xs text-[var(--color-text-inverse)]">Đơn nợ</p>
+                  <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-primary)]">
+                    {selectedDealer.debtOrderCount}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-[var(--color-text-inverse)]">Còn nợ</p>
+                  <p className="mt-0.5 text-base font-bold tabular-nums text-red-600 dark:text-red-400">
+                    {formatCurrency(selectedDealer.debtAmount)}
+                  </p>
+                </div>
               </div>
               {ordersLoading ? (
                 <div className="space-y-3" aria-busy="true">
@@ -712,17 +752,17 @@ export default function ReceivablesPage() {
               ) : debtOrders.length === 0 ? (
                 <EmptyState title="Không còn đơn nợ" size="sm" />
               ) : (
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                   {debtOrders.map((order) => {
                     const remaining = remainingOrder(order);
                     return (
-                      <div
-                        key={order.id}
-                        className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4">
-                        <div className="flex items-start justify-between gap-2">
+                      <MobileRecordCard key={order.id} className="p-4">
+                        <div className="mb-3 flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="truncate font-semibold">{order.code}</p>
-                            <p className="mt-0.5 truncate text-xs text-[var(--color-text-inverse)]">
+                            <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
+                              {order.code}
+                            </p>
+                            <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
                               {[
                                 formatDateDisplay(order.createdAt) || null,
                                 order.warehouseName
@@ -733,15 +773,11 @@ export default function ReceivablesPage() {
                                 .join(" · ") || "—"}
                             </p>
                           </div>
-                          <div className="flex max-w-[45%] flex-col items-end gap-1">
-                            <Badge
-                              variant={statusBadgeVariant(order.status)}
-                              className="max-w-full truncate">
+                          <div className="flex shrink-0 flex-col items-end gap-1.5">
+                            <Badge variant={statusBadgeVariant(order.status)}>
                               {ORDER_STATUS_LABELS[order.status] || order.status}
                             </Badge>
-                            <Badge
-                              variant={statusBadgeVariant(order.paymentStatus)}
-                              className="max-w-full truncate">
+                            <Badge variant={statusBadgeVariant(order.paymentStatus)}>
                               {ORDER_PAYMENT_LABELS[order.paymentStatus]}
                             </Badge>
                           </div>
@@ -752,47 +788,53 @@ export default function ReceivablesPage() {
                           showImages={false}
                         />
 
-                        <div className="grid grid-cols-3 gap-2 text-sm">
-                          <div className="min-w-0 text-right">
+                        <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                          <div>
                             <p className="text-xs text-[var(--color-text-inverse)]">
-                              Tổng
+                              Tổng đơn
                             </p>
-                            <p className="truncate font-semibold tabular-nums">
+                            <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
                               {formatCurrency(order.total)}
                             </p>
                           </div>
-                          <div className="min-w-0 text-right">
-                            <p className="text-xs text-[var(--color-text-inverse)]">
-                              Đã thu
-                            </p>
-                            <p className="truncate font-semibold tabular-nums">
-                              {formatCurrency(order.paidAmount || 0)}
-                            </p>
-                          </div>
-                          <div className="min-w-0 text-right">
+                          <div className="text-right">
                             <p className="text-xs text-[var(--color-text-inverse)]">
                               Còn nợ
                             </p>
-                            <p className="truncate font-semibold tabular-nums text-red-600">
+                            <p
+                              className={cn(
+                                "mt-0.5 text-base font-bold tabular-nums",
+                                remaining > 0
+                                  ? "text-red-600 dark:text-red-400"
+                                  : "text-[var(--color-text-inverse)]"
+                              )}>
                               {formatCurrency(remaining)}
                             </p>
                           </div>
                         </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <MobileMetaChip>
+                            Đã thu: {formatCurrency(order.paidAmount || 0)}
+                          </MobileMetaChip>
+                        </div>
+
                         {canPayAr && remaining > 0 ? (
-                          <DialogFooter className="border-0 p-0 pt-0">
+                          <div className="mt-3.5">
                             <Button
+                              size="sm"
+                              className="h-9 w-full"
                               onClick={() => {
                                 setPayingOrder(order);
                                 setOrderPayAmount(remaining || "");
                                 setOrderPayNote("");
                                 setOrderPayOpen(true);
-                              }}
-                            >
+                              }}>
                               Thu
                             </Button>
-                          </DialogFooter>
+                          </div>
                         ) : null}
-                      </div>
+                      </MobileRecordCard>
                     );
                   })}
                 </div>
@@ -812,20 +854,22 @@ export default function ReceivablesPage() {
               Tổng đơn: {formatCurrency(payingOrder?.total || 0)} — Đã thu:{" "}
               {formatCurrency(payingOrder?.paidAmount || 0)}
             </p>
-            <div className="space-y-2">
-              <Label>Số tiền thu thêm</Label>
-              <VndInput
-                value={orderPayAmount}
-                onValueChange={setOrderPayAmount}
-                placeholder="0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Ghi chú</Label>
-              <Input
-                value={orderPayNote}
-                onChange={(e) => setOrderPayNote(e.target.value)}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Số tiền thu thêm</Label>
+                <VndInput
+                  value={orderPayAmount}
+                  onValueChange={setOrderPayAmount}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Ghi chú</Label>
+                <Input
+                  value={orderPayNote}
+                  onChange={(e) => setOrderPayNote(e.target.value)}
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button
@@ -852,13 +896,19 @@ export default function ReceivablesPage() {
           </DialogHeader>
           {selectedSupplier ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <MobileStatTile label="Còn nợ" valueClassName="text-red-600">
-                  {formatCurrency(selectedSupplier.debtAmount)}
-                </MobileStatTile>
-                <MobileStatTile label="Phiếu nợ">
-                  {selectedSupplier.debtInvoiceCount}
-                </MobileStatTile>
+              <div className="flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                <div>
+                  <p className="text-xs text-[var(--color-text-inverse)]">Phiếu nợ</p>
+                  <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-primary)]">
+                    {selectedSupplier.debtInvoiceCount}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-[var(--color-text-inverse)]">Còn nợ</p>
+                  <p className="mt-0.5 text-base font-bold tabular-nums text-red-600 dark:text-red-400">
+                    {formatCurrency(selectedSupplier.debtAmount)}
+                  </p>
+                </div>
               </div>
               {invoicesLoading ? (
                 <div className="space-y-3" aria-busy="true">
@@ -868,7 +918,7 @@ export default function ReceivablesPage() {
               ) : debtInvoices.length === 0 ? (
                 <EmptyState title="Không còn phiếu nợ" size="sm" />
               ) : (
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                   {debtInvoices.map((invoice) => {
                     const remaining = remainingInvoice(invoice);
                     const lineItems = (invoice.items || []).map((item) => ({
@@ -881,15 +931,13 @@ export default function ReceivablesPage() {
                       lineTotal: item.totalCost || 0,
                     }));
                     return (
-                      <div
-                        key={invoice.id}
-                        className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4">
-                        <div className="flex items-start justify-between gap-2">
+                      <MobileRecordCard key={invoice.id} className="p-4">
+                        <div className="mb-3 flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="truncate font-semibold">
+                            <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                               {invoice.code}
                             </p>
-                            <p className="mt-0.5 truncate text-xs text-[var(--color-text-inverse)]">
+                            <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
                               {[
                                 formatDateDisplay(invoice.invoiceDate) || null,
                                 invoice.dueDate
@@ -902,7 +950,7 @@ export default function ReceivablesPage() {
                           </div>
                           <Badge
                             variant={statusBadgeVariant(invoice.paymentStatus)}
-                            className="max-w-[45%] shrink-0 truncate">
+                            className="shrink-0">
                             {INVOICE_PAYMENT_LABELS[invoice.paymentStatus]}
                           </Badge>
                         </div>
@@ -912,47 +960,53 @@ export default function ReceivablesPage() {
                           showImages={false}
                         />
 
-                        <div className="grid grid-cols-3 gap-2 text-sm">
-                          <div className="min-w-0 text-right">
+                        <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                          <div>
                             <p className="text-xs text-[var(--color-text-inverse)]">
-                              Tổng
+                              Tổng phiếu
                             </p>
-                            <p className="truncate font-semibold tabular-nums">
+                            <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
                               {formatCurrency(invoice.total)}
                             </p>
                           </div>
-                          <div className="min-w-0 text-right">
-                            <p className="text-xs text-[var(--color-text-inverse)]">
-                              Đã trả
-                            </p>
-                            <p className="truncate font-semibold tabular-nums">
-                              {formatCurrency(invoice.paidAmount || 0)}
-                            </p>
-                          </div>
-                          <div className="min-w-0 text-right">
+                          <div className="text-right">
                             <p className="text-xs text-[var(--color-text-inverse)]">
                               Còn nợ
                             </p>
-                            <p className="truncate font-semibold tabular-nums text-red-600">
+                            <p
+                              className={cn(
+                                "mt-0.5 text-base font-bold tabular-nums",
+                                remaining > 0
+                                  ? "text-red-600 dark:text-red-400"
+                                  : "text-[var(--color-text-inverse)]"
+                              )}>
                               {formatCurrency(remaining)}
                             </p>
                           </div>
                         </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <MobileMetaChip>
+                            Đã trả: {formatCurrency(invoice.paidAmount || 0)}
+                          </MobileMetaChip>
+                        </div>
+
                         {canPayAp && remaining > 0 ? (
-                          <DialogFooter className="border-0 p-0 pt-0">
+                          <div className="mt-3.5">
                             <Button
+                              size="sm"
+                              className="h-9 w-full"
                               onClick={() => {
                                 setPayingInvoice(invoice);
                                 setInvoicePayAmount(remaining || "");
                                 setInvoicePayNote("");
                                 setInvoicePayOpen(true);
-                              }}
-                            >
+                              }}>
                               Trả
                             </Button>
-                          </DialogFooter>
+                          </div>
                         ) : null}
-                      </div>
+                      </MobileRecordCard>
                     );
                   })}
                 </div>
@@ -976,19 +1030,21 @@ export default function ReceivablesPage() {
                 payingInvoice ? remainingInvoice(payingInvoice) : 0
               )}
             </p>
-            <div className="space-y-2">
-              <Label>Số tiền *</Label>
-              <VndInput
-                value={invoicePayAmount}
-                onValueChange={setInvoicePayAmount}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Ghi chú</Label>
-              <Input
-                value={invoicePayNote}
-                onChange={(e) => setInvoicePayNote(e.target.value)}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Số tiền *</Label>
+                <VndInput
+                  value={invoicePayAmount}
+                  onValueChange={setInvoicePayAmount}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Ghi chú</Label>
+                <Input
+                  value={invoicePayNote}
+                  onChange={(e) => setInvoicePayNote(e.target.value)}
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button

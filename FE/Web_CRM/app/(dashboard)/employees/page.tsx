@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Eye, Pencil, Plus, Trash2 } from "@/components/ui/icons";
+import { Eye, Pencil, Plus, RefreshCw, Trash2 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,9 +29,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
 import {
   MobileMetaChip,
-  MobileRecordActions,
   MobileRecordCard,
-  MobileStatTile,
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
@@ -359,7 +357,7 @@ export default function EmployeesPage() {
           {items.length === 0 ? (
             <EmptyState title="Chưa có nhân viên" />
           ) : (
-            <>
+            <div className="space-y-4">
               <MobileInfiniteList
                 onRefresh={refresh}
                 onLoadMore={loadMore}
@@ -368,19 +366,75 @@ export default function EmployeesPage() {
                 disabled={loading}>
                 <div className="flex flex-col gap-3">
                 {items.map((item) => (
-                  <MobileRecordCard key={item.id} className="p-3">
-                    <div className="flex items-start justify-between gap-2">
+                  <MobileRecordCard key={item.id} className="p-4">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold tracking-tight text-[var(--color-text-primary)]">
+                        <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
+                          {item.code}
+                        </p>
+                        <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
                           {item.fullName}
                         </p>
-                        <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
-                          {item.code}
-                          {item.email ? ` · ${item.email}` : ""}
+                        {item.phone ? (
+                          <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+                            {item.phone}
+                          </p>
+                        ) : null}
+                        {item.email ? (
+                          <p className="mt-0.5 truncate text-xs text-[var(--color-text-secondary)]">
+                            {item.email}
+                          </p>
+                        ) : null}
+                      </div>
+                      <Badge
+                        variant={statusBadgeVariant(item.status)}
+                        className="shrink-0">
+                        {item.status === "active" ? "Đang làm" : "Ngưng"}
+                      </Badge>
+                    </div>
+
+                    <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                      <div>
+                        <p className="text-xs text-[var(--color-text-inverse)]">
+                          Lương cứng
+                        </p>
+                        <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
+                          {formatCurrency(item.baseSalary)}
                         </p>
                       </div>
+                      <div className="text-right">
+                        <p className="text-xs text-[var(--color-text-inverse)]">
+                          HH / Phụ cấp
+                        </p>
+                        <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-primary)]">
+                          {item.commissionPercent}% · {formatCurrency(item.allowance)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {(item.title || item.department || item.userName) ? (
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {item.title ? <MobileMetaChip>{item.title}</MobileMetaChip> : null}
+                        {item.department ? (
+                          <MobileMetaChip>{item.department}</MobileMetaChip>
+                        ) : null}
+                        {item.userName ? (
+                          <MobileMetaChip>TK: {item.userName}</MobileMetaChip>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    <div className="mt-3.5 flex flex-wrap justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 min-w-9"
+                        onClick={() => openDetail(item)}
+                        title="Xem chi tiết">
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       {canEdit ? (
-                        <div className="w-[120px] shrink-0">
+                        <>
                           <SearchableSelect
                             options={STATUS_OPTIONS.employee}
                             value={item.status}
@@ -391,62 +445,39 @@ export default function EmployeesPage() {
                               )
                             }
                             searchable={false}
+                            placeholder="Đổi trạng thái"
                             disabled={actionId === `status:${item.id}`}
-                            triggerClassName="h-8 text-xs"
+                            trigger={
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-9 min-w-9"
+                                title="Đổi trạng thái"
+                                loading={actionId === `status:${item.id}`}>
+                                <RefreshCw className="h-4 w-4" />
+                              </Button>
+                            }
                           />
-                        </div>
-                      ) : (
-                        <Badge
-                          variant={statusBadgeVariant(item.status)}
-                          className="shrink-0">
-                          {item.status === "active" ? "Đang làm" : "Ngưng"}
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <MobileStatTile label="Lương cứng">
-                        {formatCurrency(item.baseSalary)}
-                      </MobileStatTile>
-                      <MobileStatTile label="HH / Phụ cấp">
-                        {item.commissionPercent}% · {formatCurrency(item.allowance)}
-                      </MobileStatTile>
-                    </div>
-
-                    <div className="mt-2.5 flex flex-wrap gap-1.5">
-                      {item.phone ? <MobileMetaChip>{item.phone}</MobileMetaChip> : null}
-                      {item.title ? <MobileMetaChip>{item.title}</MobileMetaChip> : null}
-                      {item.department ? (
-                        <MobileMetaChip>{item.department}</MobileMetaChip>
-                      ) : null}
-                      {item.userName ? (
-                        <MobileMetaChip>TK: {item.userName}</MobileMetaChip>
-                      ) : null}
-                    </div>
-
-                    <MobileRecordActions>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openDetail(item)}
-                        title="Xem chi tiết">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {canEdit ? (
-                        <>
-                          <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 min-w-9"
+                            onClick={() => openEdit(item)}
+                            title="Sửa">
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="danger"
                             size="sm"
+                            className="h-9 min-w-9"
                             loading={actionId === item.id}
-                            onClick={() => handleDelete(item)}>
+                            onClick={() => handleDelete(item)}
+                            title="Xóa">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </>
                       ) : null}
-                    </MobileRecordActions>
+                    </div>
                   </MobileRecordCard>
                 ))}
                 </div>
@@ -543,7 +574,7 @@ export default function EmployeesPage() {
               </table>
               </div>
             </div>
-            </>
+            </div>
           )}
           <Pagination
             page={page}
@@ -570,8 +601,8 @@ export default function EmployeesPage() {
           <DialogHeader>
             <DialogTitle>{editing ? "Sửa nhân viên" : "Thêm nhân viên"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
+          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+            <div className="space-y-2 col-span-2">
               <Label>Họ tên *</Label>
               <Input
                 value={form.fullName}
@@ -614,7 +645,7 @@ export default function EmployeesPage() {
                 onChange={(e) => setForm({ ...form, department: e.target.value })}
               />
             </div>
-            <div className="space-y-2 sm:col-span-2">
+            <div className="space-y-2 col-span-2">
               <Label>Tài khoản CRM</Label>
               <SearchableSelect
                 options={[
@@ -675,7 +706,7 @@ export default function EmployeesPage() {
                 onChange={(e) => setForm({ ...form, bankAccount: e.target.value })}
               />
             </div>
-            <div className="space-y-2 sm:col-span-2">
+            <div className="space-y-2 col-span-2">
               <ImageUpload
                 label="Ảnh QR ngân hàng"
                 value={form.bankQrImage}
@@ -683,14 +714,14 @@ export default function EmployeesPage() {
                 max={1}
               />
             </div>
-            <div className="space-y-2 sm:col-span-2">
+            <div className="space-y-2 col-span-2">
               <Label>Ghi chú</Label>
               <Textarea
                 value={form.note}
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
               />
             </div>
-            <DialogFooter className="sm:col-span-2">
+            <DialogFooter className="col-span-2">
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy
               </Button>

@@ -13,6 +13,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TabSwitcher } from "@/components/ui/tab-switcher";
+import {
+  MobileMetaChip,
+  MobileRecordCard,
+} from "@/components/ui/mobile-record-card";
 import { OrderLineItemsList } from "@/components/orders/OrderLineItemsList";
 import { ApiClientError } from "@/lib/api/client";
 import { getOrderAudits } from "@/lib/api/orders";
@@ -351,17 +355,17 @@ export function OrderDetailDialog({
 
           {showDetailPanel ? (
             <>
-              <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+              <MobileRecordCard className="p-4 shadow-none">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                       {order.code}
-                    </h3>
-                    <p className="mt-1 text-xs text-[var(--color-text-inverse)]">
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
                       Tạo: {formatDateDisplay(order.createdAt) || "—"}
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
                     <Badge variant={statusBadgeVariant(order.status)}>
                       {STATUS_LABELS[order.status]}
                     </Badge>
@@ -372,30 +376,22 @@ export function OrderDetailDialog({
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2.5">
+                <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                  <div>
                     <p className="text-xs text-[var(--color-text-inverse)]">
                       Tổng đơn
                     </p>
-                    <p className="mt-1 font-bold tabular-nums text-[var(--color-text-secondary)]">
+                    <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
                       {formatCurrency(order.total)}
                     </p>
                   </div>
-                  <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2.5">
-                    <p className="text-xs text-[var(--color-text-inverse)]">
-                      Đã thu
-                    </p>
-                    <p className="mt-1 font-bold tabular-nums">
-                      {formatCurrency(paid)}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2.5">
+                  <div className="text-right">
                     <p className="text-xs text-[var(--color-text-inverse)]">
                       Còn nợ
                     </p>
                     <p
                       className={cn(
-                        "mt-1 font-bold tabular-nums",
+                        "mt-0.5 text-base font-bold tabular-nums",
                         remaining > 0
                           ? "text-red-600 dark:text-red-400"
                           : "text-[var(--color-text-inverse)]"
@@ -404,7 +400,11 @@ export function OrderDetailDialog({
                     </p>
                   </div>
                 </div>
-              </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <MobileMetaChip>Đã thu: {formatCurrency(paid)}</MobileMetaChip>
+                </div>
+              </MobileRecordCard>
 
               <section className="space-y-3">
                 <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">

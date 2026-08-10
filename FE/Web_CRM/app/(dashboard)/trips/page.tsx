@@ -1166,23 +1166,10 @@ export default function TripsPage() {
                 {canOperateSelected && selected.status !== "closed" ? (
                   <form
                     onSubmit={handleAddStop}
-                    className="grid gap-3 rounded-xl border border-dashed border-[var(--color-border-subtle)] p-3 sm:grid-cols-2">
+                    className="grid grid-cols-2 gap-3 rounded-xl border border-dashed border-[var(--color-border-subtle)] p-3">
                     <DateInput
                       value={stopForm.date}
                       onChange={(date) => setStopForm({ ...stopForm, date })}
-                    />
-                    <SearchableSelect
-                      options={[
-                        { value: "", label: "Không chọn đại lý" },
-                        ...dealers.map((item) => ({ value: item.id, label: item.name })),
-                      ]}
-                      value={stopForm.dealerId}
-                      onChange={(dealerId) => setStopForm({ ...stopForm, dealerId })}
-                    />
-                    <Input
-                      placeholder="Địa điểm"
-                      value={stopForm.location}
-                      onChange={(e) => setStopForm({ ...stopForm, location: e.target.value })}
                     />
                     <SearchableSelect
                       options={Object.entries(PURPOSE_LABEL).map(([value, label]) => ({
@@ -1194,7 +1181,22 @@ export default function TripsPage() {
                       searchable={false}
                     />
                     <SearchableSelect
-                      className="sm:col-span-2"
+                      className="col-span-2"
+                      options={[
+                        { value: "", label: "Không chọn đại lý" },
+                        ...dealers.map((item) => ({ value: item.id, label: item.name })),
+                      ]}
+                      value={stopForm.dealerId}
+                      onChange={(dealerId) => setStopForm({ ...stopForm, dealerId })}
+                    />
+                    <Input
+                      className="col-span-2"
+                      placeholder="Địa điểm"
+                      value={stopForm.location}
+                      onChange={(e) => setStopForm({ ...stopForm, location: e.target.value })}
+                    />
+                    <SearchableSelect
+                      className="col-span-2"
                       options={[
                         { value: "", label: "Thêm cuối lộ trình" },
                         { value: "0", label: "Thêm đầu (trước #1)" },
@@ -1219,18 +1221,18 @@ export default function TripsPage() {
                       searchable={false}
                     />
                     <Input
-                      className="sm:col-span-2"
+                      className="col-span-2"
                       placeholder="Ghi chú điểm dừng"
                       value={stopForm.note}
                       onChange={(e) => setStopForm({ ...stopForm, note: e.target.value })}
                     />
-                    <div className="sm:col-span-2">
+                    <div className="col-span-2">
                       <LocationCapture
                         value={stopForm.geo}
                         onChange={(geo) => setStopForm({ ...stopForm, geo })}
                       />
                     </div>
-                    <Button type="submit" loading={isSubmitting("stop")} className="sm:col-span-2">
+                    <Button type="submit" loading={isSubmitting("stop")} className="col-span-2">
                       Thêm điểm dừng
                     </Button>
                   </form>
@@ -1292,7 +1294,7 @@ export default function TripsPage() {
                   <form
                     onSubmit={handleAddAdvance}
                     className="space-y-3 rounded-xl border border-dashed border-[var(--color-border-subtle)] p-3">
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-2 gap-3">
                       <VndInput
                         value={advanceAmount}
                         onValueChange={setAdvanceAmount}
@@ -1429,7 +1431,7 @@ export default function TripsPage() {
                 {canOperateSelected && selected.status !== "closed" ? (
                   <form
                     onSubmit={handleAddExpense}
-                    className="grid gap-3 rounded-xl border border-dashed border-[var(--color-border-subtle)] p-3 sm:grid-cols-2">
+                    className="grid grid-cols-2 gap-3 rounded-xl border border-dashed border-[var(--color-border-subtle)] p-3">
                     <SearchableSelect
                       options={Object.entries(EXPENSE_LABEL).map(([value, label]) => ({
                         value,
@@ -1461,6 +1463,7 @@ export default function TripsPage() {
                     />
                     {expenseForm.funding === "reimburse" ? (
                       <SearchableSelect
+                        className="col-span-2"
                         options={selected.members.map((member) => ({
                           value: member.id,
                           label: member.fullName,
@@ -1485,14 +1488,14 @@ export default function TripsPage() {
                       onChange={(date) => setExpenseForm({ ...expenseForm, date })}
                     />
                     <Input
-                      className="sm:col-span-2"
+                      className="col-span-2"
                       placeholder="Ghi chú"
                       value={expenseForm.note}
                       onChange={(e) =>
                         setExpenseForm({ ...expenseForm, note: e.target.value })
                       }
                     />
-                    <div className="min-w-0 sm:col-span-2">
+                    <div className="col-span-2 min-w-0">
                       <ImageUpload
                         label="Chứng từ chi phí (tối đa 5 ảnh)"
                         values={expenseForm.receiptUrls}
@@ -1503,7 +1506,7 @@ export default function TripsPage() {
                         max={5}
                       />
                     </div>
-                    <div className="sm:col-span-2">
+                    <div className="col-span-2">
                       <LocationCapture
                         value={expenseForm.geo}
                         onChange={(geo) => setExpenseForm({ ...expenseForm, geo })}
@@ -1512,7 +1515,7 @@ export default function TripsPage() {
                     <Button
                       type="submit"
                       loading={isSubmitting("expense")}
-                      className="sm:col-span-2">
+                      className="col-span-2">
                       Thêm khoản chi
                     </Button>
                   </form>

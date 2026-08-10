@@ -79,38 +79,40 @@ export function LocationCapture({
 
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          loading={loading}
-          onClick={() => void capture()}>
-          <MapPin className="h-4 w-4" />
-          {value ? "Cập nhật vị trí" : label}
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
         {value ? (
+          <p className="min-w-0 text-xs text-[var(--color-text-inverse)]">
+            {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
+            {value.accuracy != null && Number.isFinite(value.accuracy)
+              ? ` · ±${Math.round(value.accuracy)}m`
+              : ""}
+          </p>
+        ) : (
+          <p className="min-w-0 text-xs text-[var(--color-text-inverse)]">{hint}</p>
+        )}
+        <div className="flex shrink-0 items-center gap-2">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onClick={() => onChange(null)}
-            aria-label="Xóa vị trí">
-            <X className="h-4 w-4" />
-            Xóa
+            loading={loading}
+            onClick={() => void capture()}>
+            <MapPin className="h-4 w-4" />
+            {value ? "Cập nhật vị trí" : label}
           </Button>
-        ) : null}
+          {value ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onChange(null)}
+              aria-label="Xóa vị trí">
+              <X className="h-4 w-4" />
+              Xóa
+            </Button>
+          ) : null}
+        </div>
       </div>
-      {value ? (
-        <p className="text-xs text-[var(--color-text-inverse)]">
-          {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
-          {value.accuracy != null && Number.isFinite(value.accuracy)
-            ? ` · ±${Math.round(value.accuracy)}m`
-            : ""}
-        </p>
-      ) : (
-        <p className="text-xs text-[var(--color-text-inverse)]">{hint}</p>
-      )}
     </div>
   );
 }

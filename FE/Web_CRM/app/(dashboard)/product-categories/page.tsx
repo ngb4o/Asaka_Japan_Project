@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "@/components/ui/icons";
+import { Pencil, Plus, RefreshCw, Trash2 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -48,6 +49,7 @@ import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
 import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { cn } from "@/lib/utils";
+import { statusBadgeVariant } from "@/lib/status-badge";
 import {
   buildProductCategoryPayload,
   validateProductCategoryForm,
@@ -288,9 +290,14 @@ export default function ProductCategoriesPage() {
                       <MobileRecordCardHeader
                         title={item.name}
                         subtitle={item.description || undefined}
+                        trailing={
+                          <Badge variant={statusBadgeVariant(item.status)}>
+                            {item.status === "active" ? "Hoạt động" : "Ngưng"}
+                          </Badge>
+                        }
                       />
 
-                      <div className="mt-3 w-full max-w-[160px]">
+                      <MobileRecordActions>
                         <SearchableSelect
                           options={STATUS_OPTIONS.category}
                           value={item.status}
@@ -301,20 +308,34 @@ export default function ProductCategoriesPage() {
                             )
                           }
                           searchable={false}
+                          placeholder="Đổi trạng thái"
                           disabled={actionId === `status:${item.id}`}
-                          triggerClassName="h-8 text-xs"
+                          trigger={
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-9 min-w-9"
+                              title="Đổi trạng thái"
+                              loading={actionId === `status:${item.id}`}>
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          }
                         />
-                      </div>
-
-                      <MobileRecordActions>
-                        <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 min-w-9"
+                          onClick={() => openEdit(item)}
+                          title="Sửa">
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="danger"
                           size="sm"
+                          className="h-9 min-w-9"
                           loading={actionId === item.id}
-                          onClick={() => handleDelete(item)}>
+                          onClick={() => handleDelete(item)}
+                          title="Xóa">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </MobileRecordActions>
@@ -402,13 +423,30 @@ export default function ProductCategoriesPage() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Tên loại *</Label>
-              <Input
-                id="name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Tên loại *</Label>
+                <Input
+                  id="name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Trạng thái</Label>
+                <SearchableSelect
+                  id="status"
+                  options={STATUS_OPTIONS.category}
+                  value={form.status || "active"}
+                  onChange={(next) =>
+                    setForm({
+                      ...form,
+                      status: next as "active" | "inactive",
+                    })
+                  }
+                  searchable={false}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Mô tả</Label>
@@ -416,21 +454,6 @@ export default function ProductCategoriesPage() {
                 id="description"
                 value={form.description || ""}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Trạng thái</Label>
-              <SearchableSelect
-                id="status"
-                options={STATUS_OPTIONS.category}
-                value={form.status || "active"}
-                onChange={(next) =>
-                  setForm({
-                    ...form,
-                    status: next as "active" | "inactive",
-                  })
-                }
-                searchable={false}
               />
             </div>
             <DialogFooter>

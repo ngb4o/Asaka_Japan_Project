@@ -187,12 +187,6 @@ export function ImageUpload({
         </div>
       </div>
 
-      <p className="text-xs text-[var(--color-text-inverse)]">
-        {isMulti
-          ? `JPEG, PNG, WEBP, GIF - tối đa ${max} ảnh - mỗi ảnh ≤ 20MB`
-          : "JPEG, PNG, WEBP, GIF - tối đa 20MB"}
-      </p>
-
       <input
         ref={galleryInputRef}
         type="file"

@@ -128,7 +128,7 @@ export function SearchInput({
           focused.current = true;
         }}
         onBlur={handleBlur}
-        className={cn("pl-9 pr-9", inputClassName)}
+        className={cn("pl-9 pr-9 shadow-none", inputClassName)}
         aria-label={placeholder}
       />
       {draft ? (

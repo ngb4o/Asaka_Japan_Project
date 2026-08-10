@@ -17,7 +17,7 @@ import { DateRangeInput } from "@/components/ui/date-range-input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
+import { ReportsPageSkeleton } from "@/components/ui/page-skeleton";
 import {
   OrdersBarChart,
   RankingBarChart,
@@ -139,7 +139,7 @@ export default function ReportsPage() {
   }
 
   if (loading && !report) {
-    return <PageSkeleton {...PAGE_SKELETONS.warehouses} />;
+    return <ReportsPageSkeleton />;
   }
 
   const kpis = report?.kpis;

@@ -278,6 +278,12 @@
     border-top-width: 0;
     box-shadow: none;
   }
+
+  /* Match real CardContent inset (max-md:px-3) on flush list pages */
+  .crm-page-flush [data-crm-skeleton-content] {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
 }
 
 /**

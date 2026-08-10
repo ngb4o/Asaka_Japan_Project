@@ -545,13 +545,30 @@ export default function NewsPage() {
             <DialogTitle>{editing ? "Sửa tin tức" : "Thêm tin tức"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Tiêu đề *</Label>
-              <Input
-                id="title"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Tiêu đề *</Label>
+                <Input
+                  id="title"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Trạng thái</Label>
+                <SearchableSelect
+                  id="status"
+                  options={STATUS_OPTIONS.news}
+                  value={form.status || "active"}
+                  onChange={(next) =>
+                    setForm({
+                      ...form,
+                      status: next as "active" | "inactive",
+                    })
+                  }
+                  searchable={false}
+                />
+              </div>
             </div>
             <NewsContentField
               value={form.content}
@@ -563,21 +580,6 @@ export default function NewsPage() {
               onChange={(url) => setForm({ ...form, image: url })}
               upload={uploadNewsImage}
             />
-            <div className="space-y-2">
-              <Label htmlFor="status">Trạng thái</Label>
-              <SearchableSelect
-                id="status"
-                options={STATUS_OPTIONS.news}
-                value={form.status || "active"}
-                onChange={(next) =>
-                  setForm({
-                    ...form,
-                    status: next as "active" | "inactive",
-                  })
-                }
-                searchable={false}
-              />
-            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy

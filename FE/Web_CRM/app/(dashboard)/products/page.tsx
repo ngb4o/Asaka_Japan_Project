@@ -692,8 +692,8 @@ export default function ProductsPage() {
           <DialogHeader>
             <DialogTitle>{editing ? "Sửa sản phẩm" : "Thêm sản phẩm"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2 md:col-span-2">
+          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+            <div className="col-span-2 space-y-2">
               <Label htmlFor="name">Tên sản phẩm *</Label>
               <Input
                 id="name"
@@ -701,7 +701,7 @@ export default function ProductsPage() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </div>
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
               <Label htmlFor="categoryId">Loại sản phẩm *</Label>
               <SearchableSelect
                 id="categoryId"
@@ -718,44 +718,57 @@ export default function ProductsPage() {
                 searchPlaceholder="Tìm loại sản phẩm..."
               />
             </div>
-            <div className="grid gap-4 md:col-span-2 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="price">Giá bán (VND) *</Label>
-                <VndInput
-                  id="price"
-                  placeholder="0"
-                  value={form.price}
-                  onValueChange={(price) => setForm({ ...form, price })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="costPrice">Giá vốn (VND)</Label>
-                <VndInput
-                  id="costPrice"
-                  placeholder="0"
-                  value={form.costPrice ?? ""}
-                  onValueChange={(costPrice) => setForm({ ...form, costPrice })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="unitsPerCase">Số chai / 1 thùng</Label>
-                <Input
-                  id="unitsPerCase"
-                  type="number"
-                  min={1}
-                  value={form.unitsPerCase ?? ""}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      unitsPerCase:
-                        e.target.value === "" ? "" : Number(e.target.value),
-                    })
-                  }
-                  placeholder="VD: 20"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Trạng thái</Label>
+              <SearchableSelect
+                id="status"
+                options={STATUS_OPTIONS.product}
+                value={form.status || "active"}
+                onChange={(next) =>
+                  setForm({
+                    ...form,
+                    status: next as "active" | "inactive",
+                  })
+                }
+                searchable={false}
+              />
             </div>
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
+              <Label htmlFor="price">Giá bán (VND) *</Label>
+              <VndInput
+                id="price"
+                placeholder="0"
+                value={form.price}
+                onValueChange={(price) => setForm({ ...form, price })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="costPrice">Giá vốn (VND)</Label>
+              <VndInput
+                id="costPrice"
+                placeholder="0"
+                value={form.costPrice ?? ""}
+                onValueChange={(costPrice) => setForm({ ...form, costPrice })}
+              />
+            </div>
+            <div className="col-span-2 space-y-2">
+              <Label htmlFor="unitsPerCase">Số chai / 1 thùng</Label>
+              <Input
+                id="unitsPerCase"
+                type="number"
+                min={1}
+                value={form.unitsPerCase ?? ""}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    unitsPerCase:
+                      e.target.value === "" ? "" : Number(e.target.value),
+                  })
+                }
+                placeholder="VD: 20"
+              />
+            </div>
+            <div className="col-span-2 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <Label htmlFor="shortDescription">Mô tả ngắn (landing page)</Label>
                 <span className="text-xs text-[var(--color-text-inverse)]">
@@ -775,11 +788,13 @@ export default function ProductsPage() {
                 placeholder="1–2 câu ngắn hiển thị dưới tên sản phẩm trên trang chủ..."
               />
             </div>
-            <ProductDescriptionField
-              value={form.description || ""}
-              onChange={(description) => setForm({ ...form, description })}
-            />
-            <div className="space-y-2 md:col-span-2">
+            <div className="col-span-2">
+              <ProductDescriptionField
+                value={form.description || ""}
+                onChange={(description) => setForm({ ...form, description })}
+              />
+            </div>
+            <div className="col-span-2 space-y-2">
               <ImageUpload
                 label="Ảnh sản phẩm"
                 max={5}
@@ -793,22 +808,7 @@ export default function ProductsPage() {
                 }
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Trạng thái</Label>
-              <SearchableSelect
-                id="status"
-                options={STATUS_OPTIONS.product}
-                value={form.status || "active"}
-                onChange={(next) =>
-                  setForm({
-                    ...form,
-                    status: next as "active" | "inactive",
-                  })
-                }
-                searchable={false}
-              />
-            </div>
-            <DialogFooter className="md:col-span-2">
+            <DialogFooter className="col-span-2">
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy
               </Button>

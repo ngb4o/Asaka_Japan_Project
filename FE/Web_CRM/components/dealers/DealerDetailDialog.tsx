@@ -11,13 +11,17 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TabSwitcher } from "@/components/ui/tab-switcher";
+import {
+  MobileMetaChip,
+  MobileRecordCard,
+} from "@/components/ui/mobile-record-card";
 import { OrderLineItemsList } from "@/components/orders/OrderLineItemsList";
 import { getOrders } from "@/lib/api/orders";
 import { ApiClientError } from "@/lib/api/client";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { statusBadgeVariant } from "@/lib/status-badge";
 import type { Dealer, LineItem, Order } from "@/lib/types";
-import { formatCurrency, formatDateDisplay } from "@/lib/utils";
+import { cn, formatCurrency, formatDateDisplay } from "@/lib/utils";
 import { useToast } from "@/components/providers/ToastProvider";
 
 type DealerDetailDialogProps = {
@@ -94,16 +98,19 @@ function DocumentCard({
   items: LineItem[];
   showPayment?: boolean;
 }) {
+  const debt = remaining || 0;
   return (
-    <div className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="font-semibold text-[var(--color-text-primary)]">{code}</p>
-          <p className="mt-0.5 text-xs text-[var(--color-text-inverse)]">
+    <MobileRecordCard className="p-4 shadow-none">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
+            {code}
+          </p>
+          <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
             {formatDate(date)}
           </p>
         </div>
-        <div className="flex flex-wrap justify-end gap-1.5">
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
           <Badge variant={statusSuccess ? "success" : "muted"}>{statusLabel}</Badge>
           {showPayment && paymentStatus ? (
             <Badge variant={statusBadgeVariant(paymentStatus)}>
@@ -113,33 +120,43 @@ function DocumentCard({
         </div>
       </div>
 
-      <OrderLineItemsList items={items} />
+      <OrderLineItemsList items={items} showImages={false} />
 
-      <div className="flex flex-wrap justify-end gap-x-4 gap-y-1 text-xs text-[var(--color-text-inverse)]">
-        <span>Tạm tính: {formatCurrency(subtotal)}</span>
-        {discount > 0 ? <span>Chiết khấu: {formatCurrency(discount)}</span> : null}
-        <span className="font-semibold text-[var(--color-text-secondary)]">
-          Tổng: {formatCurrency(total)}
-        </span>
-      </div>
-
-      {showPayment ? (
-        <div className="flex flex-wrap justify-end gap-x-4 gap-y-1 border-t border-[var(--color-border-subtle)] pt-3 text-sm">
-          <div className="text-right">
-            <p className="text-xs text-[var(--color-text-inverse)]">Đã thu</p>
-            <p className="font-semibold tabular-nums text-[var(--color-text-secondary)]">
-              {formatCurrency(paidAmount || 0)}
-            </p>
-          </div>
+      <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+        <div>
+          <p className="text-xs text-[var(--color-text-inverse)]">Tổng đơn</p>
+          <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
+            {formatCurrency(total)}
+          </p>
+        </div>
+        {showPayment ? (
           <div className="text-right">
             <p className="text-xs text-[var(--color-text-inverse)]">Còn nợ</p>
-            <p className="font-semibold tabular-nums text-red-600">
-              {formatCurrency(remaining || 0)}
+            <p
+              className={cn(
+                "mt-0.5 text-base font-bold tabular-nums",
+                debt > 0
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-[var(--color-text-inverse)]"
+              )}>
+              {formatCurrency(debt)}
             </p>
           </div>
-        </div>
-      ) : null}
-    </div>
+        ) : null}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <MobileMetaChip>Tạm tính: {formatCurrency(subtotal)}</MobileMetaChip>
+        {discount > 0 ? (
+          <MobileMetaChip>Chiết khấu: {formatCurrency(discount)}</MobileMetaChip>
+        ) : null}
+        {showPayment ? (
+          <MobileMetaChip>
+            Đã thu: {formatCurrency(paidAmount || 0)}
+          </MobileMetaChip>
+        ) : null}
+      </div>
+    </MobileRecordCard>
   );
 }
 
@@ -159,23 +176,23 @@ function DealerInfoCard({
   debtOrderCount: number;
 }) {
   return (
-    <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+    <MobileRecordCard className="p-4 shadow-none">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
             {dealer.name}
-          </h3>
-          <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-            {[dealer.contactName, dealer.phone].filter(Boolean).join(" - ") ||
+          </p>
+          <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+            {[dealer.contactName, dealer.phone].filter(Boolean).join(" · ") ||
               "Chưa có liên hệ"}
           </p>
           {dealer.region ? (
             <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-              Khu vực: {dealer.region}
+              {dealer.region}
             </p>
           ) : null}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
           <Badge variant="muted">{TIER_LABELS[dealer.tier]}</Badge>
           <Badge variant={dealer.status === "active" ? "success" : "muted"}>
             {dealer.status === "active"
@@ -186,41 +203,50 @@ function DealerInfoCard({
           </Badge>
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2">
-          <p className="text-xs text-[var(--color-text-inverse)]">Chiết khấu</p>
-          <p className="mt-1 font-semibold">{dealer.discountPercent || 0}%</p>
-        </div>
-        <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2">
-          <p className="text-xs text-[var(--color-text-inverse)]">Đơn hàng</p>
+
+      <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+        <div>
+          <p className="text-xs text-[var(--color-text-inverse)]">Tổng đơn</p>
           {showContent ? (
-            <p className="mt-1 font-semibold">
-              {orderCount} - {formatCurrency(orderTotal)}
+            <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
+              {formatCurrency(orderTotal)}
             </p>
           ) : (
-            <Skeleton className="mt-2 h-5 w-32" />
+            <Skeleton className="mt-1.5 h-5 w-28" />
           )}
         </div>
-        <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2">
+        <div className="text-right">
           <p className="text-xs text-[var(--color-text-inverse)]">Còn nợ</p>
           {showContent ? (
-            <p className="mt-1 font-semibold tabular-nums text-red-600">
+            <p
+              className={cn(
+                "mt-0.5 text-base font-bold tabular-nums",
+                debtAmount > 0
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-[var(--color-text-inverse)]"
+              )}>
               {formatCurrency(debtAmount)}
             </p>
           ) : (
-            <Skeleton className="mt-2 h-5 w-28" />
-          )}
-        </div>
-        <div className="rounded-lg bg-[var(--color-surface-elevated)] px-3 py-2">
-          <p className="text-xs text-[var(--color-text-inverse)]">Đơn còn nợ</p>
-          {showContent ? (
-            <p className="mt-1 font-semibold">{debtOrderCount}</p>
-          ) : (
-            <Skeleton className="mt-2 h-5 w-12" />
+            <Skeleton className="mt-1.5 ml-auto h-5 w-24" />
           )}
         </div>
       </div>
-    </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <MobileMetaChip>
+          Chiết khấu: {dealer.discountPercent || 0}%
+        </MobileMetaChip>
+        {showContent ? (
+          <>
+            <MobileMetaChip>{orderCount} đơn</MobileMetaChip>
+            <MobileMetaChip>{debtOrderCount} đơn nợ</MobileMetaChip>
+          </>
+        ) : (
+          <Skeleton className="h-7 w-24 rounded-md" />
+        )}
+      </div>
+    </MobileRecordCard>
   );
 }
 

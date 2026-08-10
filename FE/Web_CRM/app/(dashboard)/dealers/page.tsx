@@ -604,7 +604,7 @@ export default function DealersPage() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="contactName">Người liên hệ</Label>
                 <Input
@@ -622,7 +622,7 @@ export default function DealersPage() {
                 />
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -654,7 +654,7 @@ export default function DealersPage() {
               value={form.geo}
               onChange={(geo) => setForm({ ...form, geo })}
             />
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Hạng</Label>
                 <SearchableSelect
@@ -680,7 +680,7 @@ export default function DealersPage() {
                   }
                 />
               </div>
-              <div className="space-y-2">
+              <div className="col-span-2 space-y-2">
                 <Label>Trạng thái</Label>
                 <SearchableSelect
                   options={STATUS_OPTIONS.dealer}

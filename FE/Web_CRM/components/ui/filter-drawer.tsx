@@ -43,6 +43,8 @@ type FilterOptionListProps = {
   searchable?: boolean;
   searchPlaceholder?: string;
   placeholder?: string;
+  /** e.g. col-span-full for long labels like đại lý */
+  className?: string;
 };
 
 export function FilterTrigger({
@@ -82,9 +84,10 @@ export function FilterOptionList({
   searchable = false,
   searchPlaceholder = "Tìm...",
   placeholder = "Chọn...",
+  className,
 }: FilterOptionListProps) {
   return (
-    <div className="space-y-1.5">
+    <div className={cn("space-y-1.5", className)}>
       <Label>{label}</Label>
       <SearchableSelect
         options={options}
@@ -139,7 +142,9 @@ function FilterPanelBody({
 }) {
   return (
     <>
-      <div className="space-y-4 px-4 py-4">{children}</div>
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr))] px-4 py-4">
+        {children}
+      </div>
       <div className="sticky bottom-0 shrink-0 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4">
         <FilterFooter onClear={onClear} onDone={onDone} canClear={canClear} />
       </div>

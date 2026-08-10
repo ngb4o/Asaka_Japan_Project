@@ -910,6 +910,7 @@ export default function OrdersPage() {
               ]}
             />
             <FilterOptionList
+              className="col-span-full"
               label="Đại lý"
               value={filters.draft.dealerId}
               onChange={(value) => filters.setDraftValue("dealerId", value)}
@@ -1324,27 +1325,25 @@ export default function OrdersPage() {
             <DialogTitle>{editing ? "Sửa đơn hàng" : "Tạo đơn hàng"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Đại lý</Label>
-                <SearchableSelect
-                  options={dealerOptions}
-                  value={form.dealerId}
-                  onChange={handleDealerChange}
-                  searchable
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Kho xuất</Label>
-                <SearchableSelect
-                  options={warehouseOptions}
-                  value={form.warehouseId}
-                  onChange={(value) => setForm({ ...form, warehouseId: value })}
-                  searchable={false}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>Đại lý</Label>
+              <SearchableSelect
+                options={dealerOptions}
+                value={form.dealerId}
+                onChange={handleDealerChange}
+                searchable
+              />
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Kho xuất</Label>
+              <SearchableSelect
+                options={warehouseOptions}
+                value={form.warehouseId}
+                onChange={(value) => setForm({ ...form, warehouseId: value })}
+                searchable={false}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="customerName">Tên khách</Label>
                 <Input
@@ -1361,7 +1360,7 @@ export default function OrdersPage() {
                   onChange={(e) => setForm({ ...form, customerPhone: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="col-span-2 space-y-2">
                 <Label htmlFor="customerEmail">Email</Label>
                 <Input
                   id="customerEmail"
@@ -1393,7 +1392,7 @@ export default function OrdersPage() {
             canEditOrderProducts(editing) &&
             !editing?.inventoryExported ? (
               <div className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4">
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="orderDiscount">Chiết khấu (VND)</Label>
                     <VndInput
@@ -1457,7 +1456,7 @@ export default function OrdersPage() {
             {canManagePayments(role) ? (
               <div className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4">
                 <p className="text-sm font-semibold">Công nợ / Thanh toán</p>
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Trạng thái TT</Label>
                     <SearchableSelect
@@ -1481,7 +1480,7 @@ export default function OrdersPage() {
                       placeholder="0"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="col-span-2 space-y-2">
                     <Label htmlFor="paymentNote">Ghi chú TT</Label>
                     <Input
                       id="paymentNote"
@@ -1496,16 +1495,16 @@ export default function OrdersPage() {
             {canManageShipping(role) ? (
               <div className="space-y-3 rounded-xl border border-[var(--color-border-subtle)] p-4">
                 <p className="text-sm font-semibold">Giao hàng</p>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2 sm:col-span-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 col-span-2">
                     <Label>Nhân viên giao hàng</Label>
                     
-                    <div className="grid max-h-40 gap-2 overflow-y-auto rounded-lg border border-[var(--color-border-subtle)] p-3 sm:grid-cols-2">
+                    <div className="grid max-h-40 gap-2 overflow-y-auto rounded-lg border border-[var(--color-border-subtle)] p-3 grid-cols-2">
                       {employeeOptions.length === 0 ? (
                         <EmptyState
                           title="Chưa có nhân viên"
                           size="sm"
-                          className="sm:col-span-2"
+                          className="col-span-2"
                         />
                       ) : (
                         employeeOptions.map((option) => (
@@ -1524,7 +1523,7 @@ export default function OrdersPage() {
                       )}
                     </div>
                   </div>
-                  <div className="space-y-2 sm:col-span-2">
+                  <div className="space-y-2 col-span-2">
                     <Label htmlFor="shippingAddress">Địa chỉ giao</Label>
                     <Input
                       id="shippingAddress"
@@ -1553,7 +1552,7 @@ export default function OrdersPage() {
                       placeholder="0"
                     />
                   </div>
-                  <div className="space-y-2 sm:col-span-2">
+                  <div className="space-y-2 col-span-2">
                     <Label>Ngày giao → Ngày nhận</Label>
                     <DateRangeInput
                       from={form.shippingDate}
@@ -1570,7 +1569,7 @@ export default function OrdersPage() {
                       }
                     />
                   </div>
-                  <div className="space-y-2 sm:col-span-2">
+                  <div className="space-y-2 col-span-2">
                     <Label htmlFor="shippingNote">Ghi chú giao hàng</Label>
                     <Textarea
                       id="shippingNote"
@@ -1808,22 +1807,24 @@ export default function OrdersPage() {
               Tổng đơn: {formatCurrency(payingOrder?.total || 0)} - Đã thu:{" "}
               {formatCurrency(payingOrder?.paidAmount || 0)}
             </p>
-            <div className="space-y-2">
-              <Label htmlFor="payAmount">Số tiền thu thêm</Label>
-              <VndInput
-                id="payAmount"
-                value={paymentAmount}
-                onValueChange={setPaymentAmount}
-                placeholder="0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="payNote">Ghi chú</Label>
-              <Input
-                id="payNote"
-                value={paymentNote}
-                onChange={(e) => setPaymentNote(e.target.value)}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="payAmount">Số tiền thu thêm</Label>
+                <VndInput
+                  id="payAmount"
+                  value={paymentAmount}
+                  onValueChange={setPaymentAmount}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="payNote">Ghi chú</Label>
+                <Input
+                  id="payNote"
+                  value={paymentNote}
+                  onChange={(e) => setPaymentNote(e.target.value)}
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setPaymentOpen(false)}>

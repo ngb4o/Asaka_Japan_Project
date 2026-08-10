@@ -1259,22 +1259,24 @@ export default function InventoryPage() {
             <DialogTitle>{editingWarehouse ? "Sửa kho" : "Thêm kho"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleWarehouseSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="wh-name">Tên kho *</Label>
-              <Input
-                id="wh-name"
-                value={warehouseForm.name}
-                onChange={(e) => setWarehouseForm({ ...warehouseForm, name: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="wh-code">Mã kho</Label>
-              <Input
-                id="wh-code"
-                placeholder="Tự sinh từ tên nếu để trống"
-                value={warehouseForm.code || ""}
-                onChange={(e) => setWarehouseForm({ ...warehouseForm, code: e.target.value })}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="wh-name">Tên kho *</Label>
+                <Input
+                  id="wh-name"
+                  value={warehouseForm.name}
+                  onChange={(e) => setWarehouseForm({ ...warehouseForm, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="wh-code">Mã kho</Label>
+                <Input
+                  id="wh-code"
+                  placeholder="Tự sinh từ tên nếu để trống"
+                  value={warehouseForm.code || ""}
+                  onChange={(e) => setWarehouseForm({ ...warehouseForm, code: e.target.value })}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="wh-address">Địa chỉ</Label>
@@ -1306,28 +1308,30 @@ export default function InventoryPage() {
                 })
               }
             />
-            <div className="space-y-2">
-              <Label htmlFor="wh-note">Ghi chú</Label>
-              <Textarea
-                id="wh-note"
-                value={warehouseForm.note || ""}
-                onChange={(e) => setWarehouseForm({ ...warehouseForm, note: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="wh-status">Trạng thái</Label>
-              <SearchableSelect
-                id="wh-status"
-                options={STATUS_OPTIONS.warehouse}
-                value={warehouseForm.status || "active"}
-                onChange={(next) =>
-                  setWarehouseForm({
-                    ...warehouseForm,
-                    status: next as "active" | "inactive",
-                  })
-                }
-                searchable={false}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="wh-status">Trạng thái</Label>
+                <SearchableSelect
+                  id="wh-status"
+                  options={STATUS_OPTIONS.warehouse}
+                  value={warehouseForm.status || "active"}
+                  onChange={(next) =>
+                    setWarehouseForm({
+                      ...warehouseForm,
+                      status: next as "active" | "inactive",
+                    })
+                  }
+                  searchable={false}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="wh-note">Ghi chú</Label>
+                <Input
+                  id="wh-note"
+                  value={warehouseForm.note || ""}
+                  onChange={(e) => setWarehouseForm({ ...warehouseForm, note: e.target.value })}
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setWarehouseDialogOpen(false)}>
@@ -1404,7 +1408,7 @@ export default function InventoryPage() {
                 searchPlaceholder="Tìm sản phẩm, SKU..."
               />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="unitType">Đơn vị *</Label>
                 <SearchableSelect
@@ -1515,7 +1519,7 @@ export default function InventoryPage() {
                   </p>
                 </div>
                 {movementForm.supplierId ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Thanh toán NCC *</Label>
                       <SearchableSelect
