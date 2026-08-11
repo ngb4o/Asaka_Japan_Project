@@ -128,6 +128,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     {children}
                   </div>
                 </main>
+                
                 <MobileBottomNav onOpenMenu={() => setMobileMenuOpen(true)} />
               </div>
             </div>
