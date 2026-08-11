@@ -59,3 +59,31 @@ export function resetIosPwaScroll() {
   document.documentElement.scrollTop = 0;
   document.body.scrollTop = 0;
 }
+
+/** `fixed; inset:0` clips to the lying viewport on iOS 18/26 PWA. Fill the 100vh body instead. */
+export function iosPwaOverlayStyle(): {
+  position: "absolute";
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: "100%";
+  height: string;
+} | undefined {
+  if (typeof document === "undefined" || !isIosPwa()) return undefined;
+  return {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    width: "100%",
+    height: "var(--crm-app-height, 100vh)",
+  };
+}
+
+/** `dvh`/`svh` under-report height in iOS standalone; `vh` matches the real screen. */
+export function iosPwaLength(value: string) {
+  if (typeof document === "undefined" || !isIosPwa()) return value;
+  return value.replaceAll("dvh", "vh").replaceAll("svh", "vh");
+}

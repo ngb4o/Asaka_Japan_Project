@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { lockAppScroll } from "@/lib/scroll-lock";
+import { iosPwaLength, iosPwaOverlayStyle } from "@/lib/device";
 
 type BottomSheetProps = {
   open: boolean;
@@ -150,13 +151,19 @@ export function BottomSheet({
 
   if (!mounted || typeof document === "undefined") return null;
 
+  const overlayStyle = iosPwaOverlayStyle();
+  const sheetMaxHeight = iosPwaLength(maxHeight);
+
   return createPortal(
     <div
       ref={rootRef}
       data-bottom-sheet=""
       data-state={entered ? "open" : "closed"}
-      className="pointer-events-auto fixed inset-0 z-[200]"
-      style={{ pointerEvents: "auto" }}
+      className={cn(
+        "pointer-events-auto z-[200]",
+        overlayStyle ? "absolute inset-0" : "fixed inset-0"
+      )}
+      style={{ pointerEvents: "auto", ...overlayStyle }}
       role="dialog"
       aria-modal="true"
       aria-label={title || "Hộp thoại"}>
@@ -175,8 +182,8 @@ export function BottomSheet({
       />
 
       <div
-        className="absolute inset-x-0 bottom-0 z-10 flex max-h-[80dvh] flex-col overflow-hidden"
-        style={{ maxHeight }}>
+        className="absolute inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden"
+        style={{ maxHeight: sheetMaxHeight }}>
         <div
           className={cn(
             "relative flex max-h-full min-h-0 w-full flex-col overflow-hidden rounded-t-2xl bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] shadow-[0_-12px_40px_rgba(0,0,0,0.22)]",

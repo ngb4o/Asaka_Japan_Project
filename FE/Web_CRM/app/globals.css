@@ -157,12 +157,14 @@
    */
   html.crm-ios-pwa {
     --crm-app-height: 100vh;
+    position: relative;
     height: var(--crm-app-height);
     min-height: 100vh;
     min-height: 100lvh;
   }
 
   html.crm-ios-pwa body {
+    position: relative;
     height: var(--crm-app-height);
     min-height: 100%;
     background-color: var(--color-surface-elevated);
