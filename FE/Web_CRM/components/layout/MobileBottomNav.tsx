@@ -101,8 +101,7 @@ type MobileBottomNavProps = {
 
 /**
  * Bottom tab bar. Safe-area padding stays on the nav so its background fills
- * the home-indicator zone. Shell height must be
- * `100dvh + env(safe-area-inset-bottom)` on iOS PWA (WebKit quirk).
+ * the home-indicator zone. iOS PWA shell uses 100vh (not 100dvh).
  */
 export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProps) {
   const pathname = usePathname();
@@ -121,8 +120,7 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
       )}
       style={{
         // Push tab icons above home indicator; background fills the inset
-        paddingBottom:
-          "max(env(safe-area-inset-bottom, 0px), var(--crm-ios-shell-extra, 0px))",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
       aria-label="Điều hướng chính"
       aria-hidden={!visible}>

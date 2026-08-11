@@ -71,10 +71,8 @@ const themeInitScript = `
     if (!ios || !standalone) return;
     var root = document.documentElement;
     root.classList.add('crm-ios-pwa');
-    var portrait = window.innerHeight >= window.innerWidth;
-    var physical = portrait ? window.screen.height : window.screen.width;
-    var missing = Math.max(0, Math.round(physical - window.innerHeight));
-    if (missing > 0) root.style.setProperty('--crm-ios-shell-extra', missing + 'px');
+    /* 100vh/100lvh = full screen in standalone; 100dvh subtracts the notch. */
+    root.style.setProperty('--crm-app-height', '100vh');
   } catch (e) {}
 })();
 `;

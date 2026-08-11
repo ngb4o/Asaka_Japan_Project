@@ -115,6 +115,7 @@
     /* Chặn pull-to-refresh native (Safari/Chrome) reload cả trang */
     overscroll-behavior-y: none;
     background-color: var(--color-surface-elevated);
+    --crm-app-height: 100dvh;
   }
 
   html.dark {
@@ -148,45 +149,35 @@
   }
 
   /**
-   * iOS Home Screen PWA only (WebKit quirk):
-   * `100dvh` / `inset:0` / `height:100%` often exclude the home-indicator strip,
-   * leaving a white gap under the bottom nav. Do NOT position:fixed the body
-   * (iOS 26 clips). Grow the shell by the measured extra (or env fallback).
-   * @see https://stackoverflow.com/questions/79902310
+   * iOS Home Screen PWA (iOS 18 + 26 WebKit):
+   * - `100dvh` / `100svh` / `innerHeight` lie on cold start (subtract notch).
+   *   `100vh` / `100lvh` equal the real screen. WebKit #254868.
+   * - `position: fixed` on the app root clips to the lying viewport on iOS 26.
+   *   Keep html/body/shell in normal flow.
    */
   html.crm-ios-pwa {
-    --crm-ios-shell-extra: env(safe-area-inset-bottom, 0px);
-    height: 100vh;
-    height: 100dvh;
+    --crm-app-height: 100vh;
+    height: var(--crm-app-height);
     min-height: 100vh;
-    min-height: -webkit-fill-available;
+    min-height: 100lvh;
   }
 
   html.crm-ios-pwa body {
-    height: 100%;
+    height: var(--crm-app-height);
     min-height: 100%;
     background-color: var(--color-surface-elevated);
   }
 
   html.crm-ios-pwa .crm-app-shell {
+    position: relative;
     inset: auto;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: auto;
-    height: calc(100dvh + var(--crm-ios-shell-extra, 0px));
-    min-height: -webkit-fill-available;
+    width: 100%;
+    height: var(--crm-app-height);
+    min-height: 100%;
   }
 
   html.crm-ios-pwa .crm-ios-fill {
-    min-height: calc(100dvh + var(--crm-ios-shell-extra, 0px));
-  }
-
-  html.crm-ios-pwa .crm-bottom-nav {
-    padding-bottom: max(
-      env(safe-area-inset-bottom, 0px),
-      var(--crm-ios-shell-extra, 0px)
-    );
+    min-height: var(--crm-app-height, 100vh);
   }
 
   :focus-visible {

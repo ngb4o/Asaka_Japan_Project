@@ -36,32 +36,26 @@ export function isIosPwa() {
 }
 
 /**
- * WebKit standalone PWA reports innerHeight/100dvh without the home-indicator
- * strip. Measure the missing CSS pixels and expose as --crm-ios-shell-extra.
- * Skip updates while the keyboard is open (visualViewport shrinks).
+ * Standalone iOS: use 100vh (full screen). 100dvh/svh lie on cold start.
+ * iOS 26: do not lock a fixed root — caller keeps shell in document flow.
  */
 export function syncIosPwaShellExtra() {
   if (typeof window === "undefined") return;
   const root = document.documentElement;
   if (!isIosPwa()) {
     root.classList.remove("crm-ios-pwa");
-    root.style.removeProperty("--crm-ios-shell-extra");
+    root.style.removeProperty("--crm-app-height");
     return;
   }
 
   root.classList.add("crm-ios-pwa");
+  root.style.setProperty("--crm-app-height", "100vh");
+}
 
-  const vv = window.visualViewport;
-  if (vv && (vv.offsetTop > 1 || window.innerHeight - vv.height > 80)) {
-    return;
-  }
-
-  const portrait = window.innerHeight >= window.innerWidth;
-  const physical = portrait ? window.screen.height : window.screen.width;
-  const missing = Math.max(0, Math.round(physical - window.innerHeight));
-  if (missing > 0) {
-    root.style.setProperty("--crm-ios-shell-extra", `${missing}px`);
-  } else {
-    root.style.removeProperty("--crm-ios-shell-extra");
-  }
+/** iOS 26 pans the visual viewport when the keyboard opens without a fixed root. */
+export function resetIosPwaScroll() {
+  if (typeof window === "undefined" || !isIosPwa()) return;
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
 }

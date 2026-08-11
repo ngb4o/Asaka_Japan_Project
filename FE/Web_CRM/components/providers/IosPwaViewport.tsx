@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { syncIosPwaShellExtra } from "@/lib/device";
+import { resetIosPwaScroll, syncIosPwaShellExtra } from "@/lib/device";
 
-/** Keep iOS Home Screen PWA shell height in sync after hydration / rotate. */
+/** Keep iOS Home Screen PWA height on 100vh (iOS 18 + 26). */
 export function IosPwaViewport() {
   useEffect(() => {
     syncIosPwaShellExtra();
@@ -11,18 +11,25 @@ export function IosPwaViewport() {
     const onChange = () => syncIosPwaShellExtra();
     window.addEventListener("resize", onChange);
     window.addEventListener("orientationchange", onChange);
-    window.visualViewport?.addEventListener("resize", onChange);
-    window.visualViewport?.addEventListener("scroll", onChange);
+    window.addEventListener("pageshow", onChange);
 
     const mq = window.matchMedia("(display-mode: standalone)");
     mq.addEventListener?.("change", onChange);
 
+    const onFocus = () => {
+      resetIosPwaScroll();
+      requestAnimationFrame(resetIosPwaScroll);
+    };
+    window.addEventListener("focusin", onFocus);
+    window.addEventListener("focusout", onFocus);
+
     return () => {
       window.removeEventListener("resize", onChange);
       window.removeEventListener("orientationchange", onChange);
-      window.visualViewport?.removeEventListener("resize", onChange);
-      window.visualViewport?.removeEventListener("scroll", onChange);
+      window.removeEventListener("pageshow", onChange);
       mq.removeEventListener?.("change", onChange);
+      window.removeEventListener("focusin", onFocus);
+      window.removeEventListener("focusout", onFocus);
     };
   }, []);
 
