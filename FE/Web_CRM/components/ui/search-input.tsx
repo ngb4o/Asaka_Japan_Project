@@ -133,7 +133,10 @@ export function SearchInput({
           focused.current = true;
         }}
         onBlur={handleBlur}
-        className={cn("pl-9 pr-9 shadow-none", inputClassName)}
+        className={cn(
+          "crm-toolbar-elevated pl-9 pr-9 shadow-none",
+          inputClassName
+        )}
         aria-label={placeholder}
       />
       {draft ? (

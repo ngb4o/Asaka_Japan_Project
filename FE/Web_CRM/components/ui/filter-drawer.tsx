@@ -69,7 +69,7 @@ export function FilterTrigger({
           aria-expanded={open}
           onClick={onClick}
           className={cn(
-            "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]",
+            "crm-toolbar-elevated relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]",
             open &&
               "border-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]",
             className

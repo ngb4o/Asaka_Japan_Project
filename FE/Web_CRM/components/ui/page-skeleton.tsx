@@ -167,8 +167,8 @@ function StatsRowSkeleton({ count }: { count: number }) {
         <div
           key={index}
           className="rounded-xl bg-[var(--color-surface-muted)] px-3 py-2">
-          <Skeleton className="h-3 w-16" />
-          <Skeleton className="mt-2 h-5 w-24" />
+          <Skeleton className="h-3 w-16 bg-[var(--color-border-subtle)]" />
+          <Skeleton className="mt-2 h-5 w-24 bg-[var(--color-border-subtle)]" />
         </div>
       ))}
     </div>
@@ -202,14 +202,14 @@ function TableCardSkeleton({
         className="space-y-3 max-lg:px-0 max-lg:pb-3 max-lg:pt-3 lg:space-y-4">
         {filters > 0 ? (
           <div className="flex gap-2">
-            <Skeleton className="h-10 min-w-0 flex-1 rounded-[var(--radius-button)]" />
+            <div className="crm-toolbar-elevated h-10 min-w-0 flex-1 animate-pulse rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]" />
             {filters > 1 ? (
-              <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+              <div className="crm-toolbar-elevated h-10 w-10 shrink-0 animate-pulse rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]" />
             ) : null}
           </div>
         ) : null}
 
-        <MobileCardList className="gap-3">
+        <MobileCardList>
           {Array.from({ length: mobileRows }).map((_, index) =>
             hasImage ? (
               <MobileMediaCardSkeleton
@@ -324,7 +324,7 @@ export const PAGE_SKELETONS = {
   },
   categories: {
     label: "Đang tải loại sản phẩm",
-    filters: 1,
+    filters: 2,
     showMetrics: false,
     columns: ["text", "text", "badge", "text", "actions"] as ColumnPreset[],
     minWidth: "640px",
@@ -354,7 +354,7 @@ export const PAGE_SKELETONS = {
   },
   news: {
     label: "Đang tải tin tức",
-    filters: 1,
+    filters: 2,
     showMetrics: false,
     columns: ["image", "text", "text", "badge", "actions"] as ColumnPreset[],
     minWidth: "760px",
@@ -393,7 +393,7 @@ export const PAGE_SKELETONS = {
   },
   employees: {
     label: "Đang tải nhân viên",
-    filters: 1,
+    filters: 2,
     showMetrics: true,
     columns: [
       "text",
@@ -407,7 +407,7 @@ export const PAGE_SKELETONS = {
   },
   payroll: {
     label: "Đang tải bảng lương",
-    filters: 1,
+    filters: 2,
     showMetrics: true,
     columns: ["text", "text", "badge", "text", "actions"] as ColumnPreset[],
     minWidth: "760px",
@@ -429,7 +429,7 @@ export const PAGE_SKELETONS = {
   },
   suppliers: {
     label: "Đang tải nhà cung cấp",
-    filters: 1,
+    filters: 2,
     showMetrics: false,
     columns: [
       "text",
@@ -457,7 +457,7 @@ export const PAGE_SKELETONS = {
   },
   trips: {
     label: "Đang tải chuyến công tác",
-    filters: 1,
+    filters: 2,
     showMetrics: true,
     columns: [
       "text",
@@ -471,7 +471,7 @@ export const PAGE_SKELETONS = {
   },
   users: {
     label: "Đang tải người dùng",
-    filters: 1,
+    filters: 2,
     showMetrics: false,
     columns: ["text", "text", "badge", "badge", "actions"] as ColumnPreset[],
     minWidth: "760px",
@@ -526,16 +526,16 @@ function RankRowSkeleton() {
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2">
         <div className="rounded-xl bg-[var(--color-surface-muted)] px-3 py-2">
-          <Skeleton className="h-3 w-10" />
-          <Skeleton className="mt-2 h-4 w-12" />
+          <Skeleton className="h-3 w-10 bg-[var(--color-border-subtle)]" />
+          <Skeleton className="mt-2 h-4 w-12 bg-[var(--color-border-subtle)]" />
         </div>
         <div className="rounded-xl bg-[var(--color-surface-muted)] px-3 py-2">
-          <Skeleton className="h-3 w-12" />
-          <Skeleton className="mt-2 h-4 w-16" />
+          <Skeleton className="h-3 w-12 bg-[var(--color-border-subtle)]" />
+          <Skeleton className="mt-2 h-4 w-16 bg-[var(--color-border-subtle)]" />
         </div>
         <div className="rounded-xl bg-[var(--color-surface-muted)] px-3 py-2">
-          <Skeleton className="h-3 w-10" />
-          <Skeleton className="mt-2 h-4 w-14" />
+          <Skeleton className="h-3 w-10 bg-[var(--color-border-subtle)]" />
+          <Skeleton className="mt-2 h-4 w-14 bg-[var(--color-border-subtle)]" />
         </div>
       </div>
     </MobileRecordCard>

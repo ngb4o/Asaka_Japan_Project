@@ -179,7 +179,7 @@ export default function PayrollPage() {
   }
 
   return (
-    <div className="min-h-full space-y-0 bg-[var(--color-surface-elevated)] lg:min-h-0 lg:space-y-6 lg:bg-transparent">
+    <div className="min-h-full space-y-0 lg:min-h-0 lg:space-y-6">
       <PageHeader
         title="Bảng lương"
         description={
@@ -232,7 +232,7 @@ export default function PayrollPage() {
               value={period}
               onChange={setPeriod}
               clearable={false}
-              className="min-w-0 flex-1"
+              className="crm-toolbar-elevated min-w-0 flex-1"
             />
           </>
         ) : (

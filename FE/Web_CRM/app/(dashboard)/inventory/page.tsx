@@ -857,6 +857,7 @@ export default function InventoryPage() {
                 onChange={setWarehouseFilter}
                 placeholder="Tất cả kho"
                 searchPlaceholder="Tìm kho..."
+                triggerClassName="crm-toolbar-elevated shadow-none"
                 clearable
                 className="w-[38%] shrink-0 md:w-full"
               />

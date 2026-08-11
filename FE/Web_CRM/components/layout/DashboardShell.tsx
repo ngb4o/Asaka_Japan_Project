@@ -113,13 +113,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <main
                   ref={mainRef}
                   data-crm-scroll-root=""
-                  className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(3rem+env(safe-area-inset-bottom,0px))] lg:pb-0 [scrollbar-gutter:stable]">
+                  className={
+                    paddedMobile
+                      ? "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(3rem+env(safe-area-inset-bottom,0px))] lg:pb-0 [scrollbar-gutter:stable]"
+                      : "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain bg-[var(--color-surface-elevated)] pb-[calc(3rem+env(safe-area-inset-bottom,0px))] lg:bg-transparent lg:pb-0 [scrollbar-gutter:stable]"
+                  }>
                   <div
                     key={pathname}
                     className={
                       paddedMobile
                         ? "crm-page-enter crm-page-padded w-full max-w-[1600px] space-y-3 p-3 sm:space-y-4 sm:p-4 md:space-y-5 md:p-5 lg:p-6"
-                        : "crm-page-enter crm-page-flush w-full max-w-[1600px] space-y-0 p-0 lg:space-y-5 lg:p-6"
+                        : "crm-page-enter crm-page-flush min-h-full w-full max-w-[1600px] space-y-0 p-0 lg:min-h-0 lg:space-y-5 lg:p-6"
                     }>
                     {children}
                   </div>

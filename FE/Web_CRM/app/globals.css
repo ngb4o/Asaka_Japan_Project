@@ -417,20 +417,34 @@
 
 /** List pages below lg: Card full-bleed (dashboard/reports keep normal margin + radius) */
 @media (max-width: 1023px) {
+  /* Fill scrollport so short lists stay one continuous white surface */
+  .crm-page-flush {
+    min-height: 100%;
+    background-color: var(--color-surface-elevated);
+  }
+
   .crm-page-flush [data-crm-card] {
     border-radius: 0;
     border-left-width: 0;
     border-right-width: 0;
     border-top-width: 0;
     box-shadow: none;
-    /* Muted panel behind white record cards so rows separate clearly */
-    background-color: var(--color-surface-muted);
+    background-color: var(--color-surface-elevated);
   }
 
   /* Match real CardContent inset (max-lg:px-3) on flush list pages */
   .crm-page-flush [data-crm-skeleton-content] {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
+  }
+
+  /* Search / filter — same lift as record cards */
+  .crm-toolbar-elevated {
+    box-shadow: var(--shadow-card), 0 0 0 1px rgb(15 23 42 / 0.03);
+  }
+
+  .dark .crm-toolbar-elevated {
+    box-shadow: var(--shadow-card), 0 0 0 1px rgb(255 255 255 / 0.06);
   }
 }
 
