@@ -12,7 +12,7 @@ type AuthShellProps = {
 
 export function AuthShell({ title, subtitle, children }: AuthShellProps) {
   return (
-    <div className="relative flex min-h-[100dvh] overflow-hidden">
+    <div className="crm-ios-fill relative flex min-h-[100dvh] overflow-hidden">
       <Image
         src="/images/backgrounds/hero.jpg"
         alt=""

@@ -4,6 +4,7 @@ import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ToastProvider } from "@/components/providers/ToastProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { IosPwaViewport } from "@/components/providers/IosPwaViewport";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -59,6 +60,22 @@ const themeInitScript = `
       document.documentElement.style.colorScheme = 'light';
     }
   } catch (e) {}
+  try {
+    var nav = window.navigator;
+    var ua = nav.userAgent || '';
+    var ios = /iPad|iPhone|iPod/.test(ua) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
+    var standalone = nav.standalone === true
+      || window.matchMedia('(display-mode: standalone)').matches
+      || window.matchMedia('(display-mode: fullscreen)').matches
+      || window.matchMedia('(display-mode: minimal-ui)').matches;
+    if (!ios || !standalone) return;
+    var root = document.documentElement;
+    root.classList.add('crm-ios-pwa');
+    var portrait = window.innerHeight >= window.innerWidth;
+    var physical = portrait ? window.screen.height : window.screen.width;
+    var missing = Math.max(0, Math.round(physical - window.innerHeight));
+    if (missing > 0) root.style.setProperty('--crm-ios-shell-extra', missing + 'px');
+  } catch (e) {}
 })();
 `;
 
@@ -74,6 +91,7 @@ export default function RootLayout({
       </head>
       <body className={`${barlow.className} antialiased`}>
         <ThemeProvider>
+          <IosPwaViewport />
           <ToastProvider>
             <TooltipProvider>
               <AuthProvider>{children}</AuthProvider>

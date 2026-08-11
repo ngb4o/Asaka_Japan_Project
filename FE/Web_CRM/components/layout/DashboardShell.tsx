@@ -13,12 +13,11 @@ import { NotificationProvider } from "@/lib/notifications/NotificationProvider";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canAccessPath, rolesOf } from "@/lib/auth/permissions";
-import { isIosPwa } from "@/lib/device";
 
 function WorkspaceLoading() {
   return (
     <div
-      className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-6"
+      className="crm-ios-fill relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-6"
       aria-busy="true"
       aria-label="Đang tải workspace">
       {/* Same hero as login AuthShell */}
@@ -69,20 +68,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const sync = () => {
-      root.classList.toggle("crm-ios-pwa", isIosPwa());
-    };
-    sync();
-    const mq = window.matchMedia("(display-mode: standalone)");
-    mq.addEventListener?.("change", sync);
-    return () => {
-      mq.removeEventListener?.("change", sync);
-      root.classList.remove("crm-ios-pwa");
-    };
   }, []);
 
   useEffect(() => {
