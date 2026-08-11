@@ -157,14 +157,12 @@
    */
   html.crm-ios-pwa {
     --crm-app-height: 100vh;
-    position: relative;
     height: var(--crm-app-height);
     min-height: 100vh;
     min-height: 100lvh;
   }
 
   html.crm-ios-pwa body {
-    position: relative;
     height: var(--crm-app-height);
     min-height: 100%;
     background-color: var(--color-surface-elevated);
@@ -180,61 +178,6 @@
 
   html.crm-ios-pwa .crm-ios-fill {
     min-height: var(--crm-app-height, 100vh);
-  }
-
-  /**
-   * Bottom sheet overlay: never `position:fixed` (iOS 26 clips it to the lying
-   * viewport — the white band only appears while the sheet is open).
-   * iOS 18 also insets `absolute; inset:0` by the safe area; unlock overflow
-   * and extend the sheet into that band.
-   */
-  html.crm-ios-pwa:has([data-bottom-sheet]),
-  html.crm-ios-pwa body:has([data-bottom-sheet]) {
-    overflow: visible;
-  }
-
-  html.crm-ios-pwa [data-bottom-sheet] {
-    position: absolute !important;
-    top: 0;
-    left: 0 !important;
-    right: auto !important;
-    bottom: auto !important;
-    width: 100% !important;
-    height: 100%;
-    min-height: 100%;
-    overflow: visible !important;
-    transform: none;
-  }
-
-  html.crm-ios-pwa [data-bottom-sheet-backdrop] {
-    position: absolute;
-    inset: 0;
-    bottom: calc(-1 * var(--crm-ios-bottom-gap, 0px));
-  }
-
-  html.crm-ios-pwa [data-bottom-sheet-panel-wrap] {
-    overflow: visible !important;
-    bottom: calc(-1 * var(--crm-ios-bottom-gap, 0px)) !important;
-  }
-
-  html.crm-ios-pwa [data-bottom-sheet-panel] {
-    padding-bottom: max(
-      env(safe-area-inset-bottom, 0px),
-      var(--crm-ios-bottom-gap, 0px)
-    ) !important;
-    box-shadow:
-      0 -12px 40px rgb(0 0 0 / 0.22),
-      0 80px 0 0 var(--color-surface-elevated);
-  }
-
-  html.crm-ios-pwa [data-bottom-sheet-bleed] {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 100%;
-    height: var(--crm-ios-bottom-gap, 0px);
-    background: var(--color-surface-elevated);
-    pointer-events: none;
   }
 
   :focus-visible {

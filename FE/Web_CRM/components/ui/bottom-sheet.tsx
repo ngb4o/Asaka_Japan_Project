@@ -3,7 +3,6 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -13,7 +12,6 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { lockAppScroll } from "@/lib/scroll-lock";
-import { fitIosPwaOverlay, iosPwaLength, iosPwaOverlayStyle } from "@/lib/device";
 
 type BottomSheetProps = {
   open: boolean;
@@ -128,13 +126,6 @@ export function BottomSheet({
     return lockAppScroll();
   }, [mounted]);
 
-  useLayoutEffect(() => {
-    if (!mounted) return;
-    const node = rootRef.current;
-    if (!node) return;
-    return fitIosPwaOverlay(node);
-  }, [mounted, entered]);
-
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -159,24 +150,17 @@ export function BottomSheet({
 
   if (!mounted || typeof document === "undefined") return null;
 
-  const overlayStyle = iosPwaOverlayStyle();
-  const sheetMaxHeight = iosPwaLength(maxHeight);
-
   return createPortal(
     <div
       ref={rootRef}
       data-bottom-sheet=""
       data-state={entered ? "open" : "closed"}
-      className={cn(
-        "pointer-events-auto z-[200]",
-        overlayStyle ? "absolute top-0 left-0 h-full w-full" : "fixed inset-0"
-      )}
-      style={{ pointerEvents: "auto", ...overlayStyle }}
+      className="pointer-events-auto fixed inset-0 z-[200]"
+      style={{ pointerEvents: "auto" }}
       role="dialog"
       aria-modal="true"
       aria-label={title || "Hộp thoại"}>
       <div
-        data-bottom-sheet-backdrop=""
         aria-label="Đóng"
         className={cn(
           "absolute inset-0 bg-black/50 transition-opacity duration-300 ease-out",
@@ -191,11 +175,9 @@ export function BottomSheet({
       />
 
       <div
-        data-bottom-sheet-panel-wrap=""
-        className="absolute inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden"
-        style={{ maxHeight: sheetMaxHeight }}>
+        className="absolute inset-x-0 bottom-0 z-10 flex max-h-[80dvh] flex-col overflow-hidden"
+        style={{ maxHeight }}>
         <div
-          data-bottom-sheet-panel=""
           className={cn(
             "relative flex max-h-full min-h-0 w-full flex-col overflow-hidden rounded-t-2xl bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] shadow-[0_-12px_40px_rgba(0,0,0,0.22)]",
             !settled &&
@@ -254,7 +236,6 @@ export function BottomSheet({
           </div>
         </div>
       </div>
-      <div data-bottom-sheet-bleed="" aria-hidden />
     </div>,
     document.body
   );
