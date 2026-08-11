@@ -15,7 +15,7 @@ export function isAndroidDevice() {
 export function isPhoneDevice() {
   if (typeof window === "undefined") return false;
   if (isIosDevice() || isAndroidDevice()) return true;
-  return window.matchMedia("(max-width: 767px)").matches;
+  return window.matchMedia("(max-width: 1023px)").matches;
 }
 
 /** Launched as installed Home Screen / PWA */

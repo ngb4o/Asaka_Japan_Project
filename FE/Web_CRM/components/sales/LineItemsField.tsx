@@ -103,8 +103,8 @@ export function LineItemsField({
                 className={cn(
                   "space-y-3 rounded-lg border border-[var(--color-border-subtle)] p-3",
                   readOnly
-                    ? "md:grid md:grid-cols-[minmax(0,1fr)_5.5rem_8.5rem] md:items-end md:gap-3 md:space-y-0"
-                    : "md:grid md:grid-cols-[minmax(0,1fr)_5.5rem_8.5rem_2.5rem] md:items-end md:gap-3 md:space-y-0"
+                    ? "lg:grid lg:grid-cols-[minmax(0,1fr)_5.5rem_8.5rem] lg:items-end lg:gap-3 lg:space-y-0"
+                    : "lg:grid lg:grid-cols-[minmax(0,1fr)_5.5rem_8.5rem_2.5rem] lg:items-end lg:gap-3 lg:space-y-0"
                 )}>
                 <div className="min-w-0 space-y-1.5">
                   <Label className="text-xs text-[var(--color-text-inverse)] md:sr-only">
@@ -173,7 +173,7 @@ export function LineItemsField({
                   ) : null}
                 </div>
 
-                <p className="text-right text-xs text-[var(--color-text-inverse)] md:hidden">
+                <p className="text-right text-xs text-[var(--color-text-inverse)] lg:hidden">
                   Thành tiền:{" "}
                   <span className="font-medium text-[var(--color-text-primary)]">
                     {formatCurrency(lineTotal)}

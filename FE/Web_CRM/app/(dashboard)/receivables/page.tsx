@@ -425,11 +425,11 @@ export default function ReceivablesPage() {
             </MobileStatTile>
           </div>
 
-          <Card className="border-0 bg-transparent shadow-none md:border md:bg-[var(--color-surface-elevated)] md:shadow-[var(--shadow-soft)]">
+          <Card className="border-0 bg-transparent shadow-none lg:border lg:bg-[var(--color-surface-elevated)] lg:shadow-[var(--shadow-soft)]">
             <CardHeader
               showOnMobile
-              className="gap-3 space-y-0 border-b-0 px-0 max-md:flex max-md:pb-0 sm:flex-row sm:items-center sm:justify-between md:border-b md:px-5">
-              <CardTitle className="max-md:hidden">
+              className="gap-3 space-y-0 border-b-0 px-0 max-lg:flex max-lg:pb-0 sm:flex-row sm:items-center sm:justify-between lg:border-b lg:px-5">
+              <CardTitle className="max-lg:hidden">
                 Đại lý còn nợ ({arItems.length})
               </CardTitle>
               <SearchInput
@@ -439,7 +439,7 @@ export default function ReceivablesPage() {
                 className="w-full sm:max-w-xs"
               />
             </CardHeader>
-            <CardContent className="max-md:px-0 max-md:pb-0 max-md:pt-3">
+            <CardContent className="max-lg:px-0 max-lg:pb-0 max-lg:pt-3">
               {arItems.length === 0 ? (
                 <EmptyState title="Không có đại lý còn công nợ" />
               ) : (
@@ -509,7 +509,7 @@ export default function ReceivablesPage() {
                     </div>
                   </MobileInfiniteList>
 
-                  <div className="crm-table-scroll hidden md:block">
+                  <div className="crm-table-scroll hidden lg:block">
                     <div className="crm-table-frame">
                       <table className="crm-data-table min-w-[720px]">
                         <thead>
@@ -584,11 +584,11 @@ export default function ReceivablesPage() {
             </MobileStatTile>
           </div>
 
-          <Card className="border-0 bg-transparent shadow-none md:border md:bg-[var(--color-surface-elevated)] md:shadow-[var(--shadow-soft)]">
+          <Card className="border-0 bg-transparent shadow-none lg:border lg:bg-[var(--color-surface-elevated)] lg:shadow-[var(--shadow-soft)]">
             <CardHeader
               showOnMobile
-              className="gap-3 space-y-0 border-b-0 px-0 max-md:flex max-md:pb-0 sm:flex-row sm:items-center sm:justify-between md:border-b md:px-5">
-              <CardTitle className="max-md:hidden">
+              className="gap-3 space-y-0 border-b-0 px-0 max-lg:flex max-lg:pb-0 sm:flex-row sm:items-center sm:justify-between lg:border-b lg:px-5">
+              <CardTitle className="max-lg:hidden">
                 NCC còn nợ ({apItems.length})
               </CardTitle>
               <SearchInput
@@ -598,7 +598,7 @@ export default function ReceivablesPage() {
                 className="w-full sm:max-w-xs"
               />
             </CardHeader>
-            <CardContent className="max-md:px-0 max-md:pb-0 max-md:pt-3">
+            <CardContent className="max-lg:px-0 max-lg:pb-0 max-lg:pt-3">
               {apItems.length === 0 ? (
                 <EmptyState title="Không có NCC còn công nợ" />
               ) : (
@@ -608,7 +608,7 @@ export default function ReceivablesPage() {
                     onLoadMore={() => {}}
                     hasMore={false}
                     disabled={apLoading}>
-                    <div className="flex flex-col gap-3 md:hidden">
+                    <div className="flex flex-col gap-3 lg:hidden">
                       {apItems.map((item) => (
                         <MobileRecordCard key={item.supplierId} className="p-4">
                           <div className="flex items-start justify-between gap-3">
@@ -668,7 +668,7 @@ export default function ReceivablesPage() {
                     </div>
                   </MobileInfiniteList>
 
-                  <div className="crm-table-scroll hidden md:block">
+                  <div className="crm-table-scroll hidden lg:block">
                     <div className="crm-table-frame">
                       <table className="crm-data-table min-w-[820px]">
                         <thead>

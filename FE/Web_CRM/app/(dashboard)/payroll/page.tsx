@@ -179,7 +179,7 @@ export default function PayrollPage() {
   }
 
   return (
-    <div className="min-h-full space-y-0 bg-[var(--color-surface-elevated)] md:min-h-0 md:space-y-6 md:bg-transparent">
+    <div className="min-h-full space-y-0 bg-[var(--color-surface-elevated)] lg:min-h-0 lg:space-y-6 lg:bg-transparent">
       <PageHeader
         title="Bảng lương"
         description={
@@ -220,7 +220,7 @@ export default function PayrollPage() {
         }
       />
 
-      <div className="flex items-center gap-2 bg-[var(--color-surface-elevated)] px-3 py-3 md:hidden">
+      <div className="flex items-center gap-2 bg-[var(--color-surface-elevated)] px-3 py-3 lg:hidden">
         {canEdit ? (
           <>
             <Label htmlFor="period-mobile" className="sr-only">
@@ -252,7 +252,7 @@ export default function PayrollPage() {
             open={filters.open}
             activeCount={filters.appliedCount}
             onClick={() => filters.setOpen(true)}
-            className="max-md:hidden"
+            className="max-lg:hidden"
           />
         </CardHeader>
         <CardContent className="space-y-4">
@@ -372,7 +372,7 @@ export default function PayrollPage() {
                 </div>
               </MobileInfiniteList>
 
-              <div className="crm-table-scroll hidden md:block">
+              <div className="crm-table-scroll hidden lg:block">
               <div className="crm-table-frame">
                 <table className="crm-data-table min-w-[720px]">
                 <thead>
@@ -416,14 +416,15 @@ export default function PayrollPage() {
                                   variant="outline"
                                   size="sm"
                                   loading={isPayrollAction(item.id, "lock")}
-                                  onClick={() => handleLock(item)}>
+                                  onClick={() => handleLock(item)}
+                                  title="Khóa bảng lương">
                                   <Lock className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="danger"
                                   size="sm"
                                   loading={isPayrollAction(item.id, "delete")}
-                                  onClick={() => handleDelete(item)}>
+                                  onClick={() => handleDelete(item)} title="Xóa">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </>
@@ -457,7 +458,7 @@ export default function PayrollPage() {
           </DialogHeader>
           {selected ? (
             <div className="space-y-3">
-              <div className="crm-stagger-list flex flex-col gap-3 md:hidden">
+              <div className="crm-stagger-list flex flex-col gap-3.5 lg:hidden">
                 {selected.lines.map((line) => (
                   <MobileRecordCard key={line.employeeId} className="p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -513,7 +514,7 @@ export default function PayrollPage() {
                 ))}
               </div>
 
-              <div className="crm-table-scroll hidden md:block">
+              <div className="crm-table-scroll hidden lg:block">
                 <div className="crm-table-frame">
                   <table className="crm-data-table min-w-[800px]">
                   <thead>

@@ -775,7 +775,7 @@ export default function TripsPage() {
   const preview = selected?.settlementPreview;
 
   return (
-    <div className="space-y-0 md:space-y-6">
+    <div className="space-y-0 lg:space-y-6">
       <PageHeader
         title="Chuyến công tác"
         description="Giao hàng nhiều ngày, tạm ứng, chi phí và quyết toán"
@@ -918,7 +918,7 @@ export default function TripsPage() {
                 </div>
               </MobileInfiniteList>
 
-              <div className="crm-table-scroll hidden md:block">
+              <div className="crm-table-scroll hidden lg:block">
               <div className="crm-table-frame">
                 <table className="crm-data-table min-w-[900px]">
                 <thead>
@@ -977,7 +977,7 @@ export default function TripsPage() {
                               variant="danger"
                               size="sm"
                               loading={isTripAction(`delete:${item.id}`)}
-                              onClick={() => handleDelete(item)}>
+                              onClick={() => handleDelete(item)} title="Xóa">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           ) : null}
@@ -1173,7 +1173,7 @@ export default function TripsPage() {
           {selected ? (
             <div
               className={cn(
-                "space-y-0 md:space-y-6",
+                "space-y-0 lg:space-y-6",
                 detailLoading && "pointer-events-none opacity-60"
               )}>
               <MobileRecordCard className="p-4 shadow-none">

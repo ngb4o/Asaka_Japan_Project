@@ -134,7 +134,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     className={
                       paddedMobile
                         ? "crm-page-enter crm-page-padded w-full max-w-[1600px] space-y-3 p-3 sm:space-y-4 sm:p-4 md:space-y-5 md:p-5 lg:p-6"
-                        : "crm-page-enter crm-page-flush w-full max-w-[1600px] space-y-0 p-0 md:space-y-5 md:p-5 lg:p-6"
+                        : "crm-page-enter crm-page-flush w-full max-w-[1600px] space-y-0 p-0 lg:space-y-5 lg:p-6"
                     }>
                     {children}
                   </div>

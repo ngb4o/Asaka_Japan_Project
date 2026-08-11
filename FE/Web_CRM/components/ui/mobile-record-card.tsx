@@ -1,11 +1,11 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-/** Stack of record cards — visible below `md`, hidden on desktop table layouts */
+/** Stack of record cards — visible below `lg`, hidden on desktop table layouts */
 export function MobileCardList({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("crm-stagger-list flex flex-col gap-3 md:hidden", className)}
+      className={cn("crm-stagger-list flex flex-col gap-3.5 lg:hidden", className)}
       {...props}
     />
   );
@@ -15,7 +15,7 @@ export function MobileRecordCard({ className, ...props }: HTMLAttributes<HTMLDiv
   return (
     <article
       className={cn(
-        "rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-soft)]",
+        "rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-card)] ring-1 ring-black/[0.03] dark:ring-white/[0.06]",
         className
       )}
       {...props}
@@ -114,7 +114,7 @@ export function MobileMediaCard({
   return (
     <article
       className={cn(
-        "rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-soft)]",
+        "rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-card)] ring-1 ring-black/[0.03] dark:ring-white/[0.06]",
         className
       )}>
       <div className="flex gap-3">

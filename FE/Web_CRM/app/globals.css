@@ -44,6 +44,7 @@
   --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   --shadow-soft: var(--crm-shadow-soft);
+  --shadow-card: var(--crm-shadow-card);
   --shadow-elevated: var(--crm-shadow-elevated);
 }
 
@@ -63,6 +64,7 @@
   --crm-badge-muted-fg: #475569;
   --crm-danger-soft-bg: #fef2f2;
   --crm-shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.04);
+  --crm-shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 4px 12px rgb(15 23 42 / 0.08);
   --crm-shadow-elevated: 0 10px 30px rgb(15 23 42 / 0.1);
   /* Sidebar: xanh đậm từ brand — tránh primary thuần trên diện rộng */
   --crm-sidebar-bg: #0c2810;
@@ -89,6 +91,7 @@
   --crm-badge-muted-fg: #cbd5e1;
   --crm-danger-soft-bg: rgb(127 29 29 / 0.35);
   --crm-shadow-soft: 0 1px 2px rgb(0 0 0 / 0.35), 0 8px 24px rgb(0 0 0 / 0.25);
+  --crm-shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.35);
   --crm-shadow-elevated: 0 16px 40px rgb(0 0 0 / 0.4);
   --crm-sidebar-bg: #020617;
   --crm-sidebar-fg: #e2e8f0;
@@ -395,17 +398,19 @@
   }
 }
 
-/** List pages on mobile: Card full-bleed (dashboard/reports keep normal margin + radius) */
-@media (max-width: 767px) {
+/** List pages below lg: Card full-bleed (dashboard/reports keep normal margin + radius) */
+@media (max-width: 1023px) {
   .crm-page-flush [data-crm-card] {
     border-radius: 0;
     border-left-width: 0;
     border-right-width: 0;
     border-top-width: 0;
     box-shadow: none;
+    /* Muted panel behind white record cards so rows separate clearly */
+    background-color: var(--color-surface-muted);
   }
 
-  /* Match real CardContent inset (max-md:px-3) on flush list pages */
+  /* Match real CardContent inset (max-lg:px-3) on flush list pages */
   .crm-page-flush [data-crm-skeleton-content] {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
@@ -416,7 +421,7 @@
  * iOS Safari zooms the page when focusing inputs with font-size < 16px.
  * Force 16px on small screens even if a utility (text-sm / text-xs) is applied.
  */
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
   textarea,
   select {

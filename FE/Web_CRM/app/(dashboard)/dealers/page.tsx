@@ -295,7 +295,7 @@ export default function DealersPage() {
   }
 
   return (
-    <div className="space-y-0 md:space-y-6">
+    <div className="space-y-0 lg:space-y-6">
       <PageHeader
         title="Đại lý"
         description={
@@ -465,7 +465,8 @@ export default function DealersPage() {
                                 variant="outline"
                                 size="sm"
                                 className="h-9 min-w-9"
-                                onClick={() => openEdit(item)}>
+                                onClick={() => openEdit(item)}
+                                title="Sửa">
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
@@ -473,7 +474,7 @@ export default function DealersPage() {
                                 size="sm"
                                 className="h-9 min-w-9"
                                 loading={isDealerAction(item.id, "delete")}
-                                onClick={() => handleDelete(item)}>
+                                onClick={() => handleDelete(item)} title="Xóa">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </>
@@ -485,7 +486,7 @@ export default function DealersPage() {
                 </div>
               </MobileInfiniteList>
 
-              <div className="crm-table-scroll hidden md:block">
+              <div className="crm-table-scroll hidden lg:block">
                 <div className="crm-table-frame">
                   <table className="crm-data-table min-w-[900px]">
                   <thead>
@@ -571,14 +572,15 @@ export default function DealersPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => openEdit(item)}>
+                                  onClick={() => openEdit(item)}
+                                  title="Sửa">
                                   <Pencil className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="danger"
                                   size="sm"
                                   loading={isDealerAction(item.id, "delete")}
-                                  onClick={() => handleDelete(item)}>
+                                  onClick={() => handleDelete(item)} title="Xóa">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </>

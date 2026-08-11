@@ -302,7 +302,7 @@ export default function EmployeesPage() {
   }
 
   return (
-    <div className="space-y-0 md:space-y-6">
+    <div className="space-y-0 lg:space-y-6">
       <PageHeader
         title="Hồ sơ nhân viên"
         description="Quản lý hồ sơ, lương, hoa hồng và liên kết tài khoản CRM"
@@ -488,7 +488,7 @@ export default function EmployeesPage() {
                 </div>
               </MobileInfiniteList>
 
-              <div className="crm-table-scroll hidden md:block">
+              <div className="crm-table-scroll hidden lg:block">
               <div className="crm-table-frame">
                 <table className="crm-data-table min-w-[900px]">
                 <thead>
@@ -559,14 +559,18 @@ export default function EmployeesPage() {
                           </Button>
                           {canEdit ? (
                             <>
-                              <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEdit(item)}
+                                title="Sửa">
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="danger"
                                 size="sm"
                                 loading={actionId === item.id}
-                                onClick={() => handleDelete(item)}>
+                                onClick={() => handleDelete(item)} title="Xóa">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </>

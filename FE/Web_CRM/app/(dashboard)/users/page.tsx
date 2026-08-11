@@ -378,7 +378,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-0 md:space-y-6">
+    <div className="space-y-0 lg:space-y-6">
       <PageHeader
         title="Người dùng & phân quyền"
         description="Chọn nhân viên để cấp tài khoản CRM - đăng nhập bằng email"
@@ -528,7 +528,7 @@ export default function UsersPage() {
                 </div>
               </MobileInfiniteList>
 
-              <div className="crm-table-scroll hidden md:block">
+              <div className="crm-table-scroll hidden lg:block">
               <div className="crm-table-frame">
                 <table className="crm-data-table min-w-[820px]">
                 <thead>
@@ -581,7 +581,7 @@ export default function UsersPage() {
                               variant="danger"
                               size="sm"
                               loading={isUserAction(item.id, "delete")}
-                              onClick={() => handleDelete(item)}>
+                              onClick={() => handleDelete(item)} title="Xóa">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           ) : null}
@@ -641,7 +641,8 @@ export default function UsersPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setForm({ ...form, password: randomPassword() })}>
+                  onClick={() => setForm({ ...form, password: randomPassword() })}
+                  title="Tạo mật khẩu ngẫu nhiên">
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
@@ -695,7 +696,8 @@ export default function UsersPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setNewPassword(randomPassword())}>
+                  onClick={() => setNewPassword(randomPassword())}
+                  title="Tạo mật khẩu ngẫu nhiên">
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>

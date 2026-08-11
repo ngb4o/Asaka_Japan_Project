@@ -150,7 +150,7 @@ export function MobileInfiniteList({
   return (
     <div
       ref={rootRef}
-      className={cn("relative md:hidden", className)}
+      className={cn("relative lg:hidden", className)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={() => void handleTouchEnd()}
@@ -192,7 +192,7 @@ export function MobileInfiniteList({
         Pages wrap cards in a single flex div; `[&>div]:contents` lifts cards
         so stagger nth-child targets the cards, not the wrapper.
       */}
-      <div className="crm-stagger-list flex flex-col gap-3 [&>div]:contents">
+      <div className="crm-stagger-list flex flex-col gap-3.5 [&>div]:contents">
         {children}
       </div>
 

@@ -165,7 +165,8 @@ export function ImageUpload({
                 variant="danger"
                 size="sm"
                 className="absolute right-1 top-1 z-[1] h-7 w-7 rounded-full p-0"
-                onClick={() => removeAt(index)}>
+                onClick={() => removeAt(index)}
+                title="Xóa ảnh">
                 <X className="h-3.5 w-3.5" />
               </Button>
             </div>

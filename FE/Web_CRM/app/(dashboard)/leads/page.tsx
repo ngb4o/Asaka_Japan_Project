@@ -235,7 +235,7 @@ export default function LeadsPage() {
   }
 
   return (
-    <div className="space-y-0 md:space-y-6">
+    <div className="space-y-0 lg:space-y-6">
       <PageHeader
         title="Lead liên hệ"
         description="Quản lý yêu cầu liên hệ và đăng ký đại lý từ website"
@@ -395,7 +395,7 @@ export default function LeadsPage() {
                 </div>
               </MobileInfiniteList>
 
-              <div className="crm-table-scroll hidden md:block">
+              <div className="crm-table-scroll hidden lg:block">
                 <div className="crm-table-frame">
                   <table className="crm-data-table min-w-[900px]">
                   <thead>
@@ -441,7 +441,11 @@ export default function LeadsPage() {
                         </td>
                         <td>
                           <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm" onClick={() => openDetail(item)}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openDetail(item)}
+                              title="Sửa">
                               <Pencil className="h-4 w-4" />
                             </Button>
                             {!item.dealerId && item.type === "dealer" ? (
@@ -449,7 +453,8 @@ export default function LeadsPage() {
                                 variant="outline"
                                 size="sm"
                                 loading={isLeadAction(item.id, "convert")}
-                                onClick={() => handleConvert(item)}>
+                                onClick={() => handleConvert(item)}
+                                title="Chuyển đại lý">
                                 <UserPlus className="h-4 w-4" />
                               </Button>
                             ) : null}
@@ -457,7 +462,7 @@ export default function LeadsPage() {
                               variant="danger"
                               size="sm"
                               loading={isLeadAction(item.id, "delete")}
-                              onClick={() => handleDelete(item)}>
+                              onClick={() => handleDelete(item)} title="Xóa">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>

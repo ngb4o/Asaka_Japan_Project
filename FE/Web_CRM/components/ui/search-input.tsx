@@ -9,6 +9,11 @@ import {
 } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_DEBOUNCE_MS = 500;
@@ -132,14 +137,19 @@ export function SearchInput({
         aria-label={placeholder}
       />
       {draft ? (
-        <button
-          type="button"
-          aria-label="Xóa tìm kiếm"
-          className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--color-text-inverse)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={handleClear}>
-          <X className="h-4 w-4" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label="Xóa tìm kiếm"
+              className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--color-text-inverse)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleClear}>
+              <X className="h-4 w-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Xóa tìm kiếm</TooltipContent>
+        </Tooltip>
       ) : null}
     </div>
   );

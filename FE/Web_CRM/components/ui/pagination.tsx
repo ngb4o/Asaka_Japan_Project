@@ -45,7 +45,7 @@ export function Pagination({
   return (
     <div
       className={cn(
-        "hidden flex-col gap-3 border-t border-[var(--color-border-subtle)] pt-4 md:flex md:flex-row md:items-center md:justify-between",
+        "hidden flex-col gap-3 border-t border-[var(--color-border-subtle)] pt-4 lg:flex lg:flex-row lg:items-center lg:justify-between",
         className
       )}>
       <p className="text-sm text-[var(--color-text-inverse)]">

@@ -212,7 +212,7 @@ export default function ReportsPage() {
             type="button"
             variant="outline"
             size="sm"
-            className="ml-auto md:hidden"
+            className="ml-auto lg:hidden"
             onClick={() => void handleExportExcel()}
             loading={exporting}
             disabled={!report || loading}>
@@ -486,8 +486,8 @@ function ChangeBadge({ value }: { value?: number }) {
           : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300"
       )}>
       <Icon className="h-3.5 w-3.5" />
-      <span className="md:hidden">{Math.abs(value)}%</span>
-      <span className="hidden md:inline">{Math.abs(value)}% so với kỳ trước</span>
+      <span className="lg:hidden">{Math.abs(value)}%</span>
+      <span className="hidden lg:inline">{Math.abs(value)}% so với kỳ trước</span>
     </span>
   );
 }
@@ -629,7 +629,7 @@ function RankList({
         ) : (
           <>
             {/* Mobile: ranked cards */}
-            <div className="crm-stagger-list flex flex-col gap-3 md:hidden">
+            <div className="crm-stagger-list flex flex-col gap-3.5 lg:hidden">
               {items.map((item) => (
                 <MobileRecordCard key={item.id} className="p-3 shadow-none">
                   <div className="flex items-start gap-3">
@@ -672,7 +672,7 @@ function RankList({
             </div>
 
             {/* Desktop: table */}
-            <div className="crm-table-scroll hidden md:block">
+            <div className="crm-table-scroll hidden lg:block">
               <div className="crm-table-frame">
                 <table className="crm-data-table min-w-[300px] table-fixed">
                 <colgroup>

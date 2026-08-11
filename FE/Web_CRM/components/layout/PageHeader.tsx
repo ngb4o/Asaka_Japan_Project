@@ -69,7 +69,7 @@ export function PageHeader({
       {hasDesktopChrome ? (
         <div
           className={cn(
-            "crm-enter hidden flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-4",
+            "crm-enter hidden flex-col gap-3 lg:flex lg:flex-row lg:flex-wrap lg:items-start lg:justify-between lg:gap-4",
             className
           )}>
           <div className="min-w-0 space-y-1">
@@ -93,7 +93,7 @@ export function PageHeader({
       {hasFab ? (
         <div
           className={cn(
-            "pointer-events-none fixed z-50 flex flex-col-reverse items-end gap-3 transition-all duration-300 ease-out md:hidden",
+            "pointer-events-none fixed z-50 flex flex-col-reverse items-end gap-3 transition-all duration-300 ease-out lg:hidden",
             chromeVisible
               ? "translate-y-0 opacity-100"
               : "pointer-events-none translate-y-6 opacity-0"

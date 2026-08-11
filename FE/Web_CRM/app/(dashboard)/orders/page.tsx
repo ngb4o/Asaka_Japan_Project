@@ -845,7 +845,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="space-y-0 md:space-y-6">
+    <div className="space-y-0 lg:space-y-6">
       <PageHeader
         title="Đơn hàng"
         description="Sales tạo đơn chờ xử lý · Kho xác nhận & xuất kho · Giao hàng · Thu công nợ"
@@ -1129,7 +1129,7 @@ export default function OrdersPage() {
                             size="sm"
                             className="h-9 min-w-9"
                             loading={isOrderAction(item.id, "delete")}
-                            onClick={() => handleDelete(item)}>
+                            onClick={() => handleDelete(item)} title="Xóa">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         ) : null}
@@ -1140,7 +1140,7 @@ export default function OrdersPage() {
                 </div>
               </MobileInfiniteList>
 
-              <div className="crm-table-scroll hidden md:block">
+              <div className="crm-table-scroll hidden lg:block">
                 <div className="crm-table-frame">
                   <table className="crm-data-table min-w-[1100px]">
                   <thead>
@@ -1281,7 +1281,7 @@ export default function OrdersPage() {
                                   variant="danger"
                                   size="sm"
                                   loading={isOrderAction(item.id, "delete")}
-                                  onClick={() => handleDelete(item)}>
+                                  onClick={() => handleDelete(item)} title="Xóa">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               ) : null}

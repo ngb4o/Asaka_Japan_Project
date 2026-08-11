@@ -1,7 +1,14 @@
+"use client";
+
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Loader2 } from "@/components/ui/icons";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
@@ -53,6 +60,13 @@ export interface ButtonProps
   asChild?: boolean;
   /** Replaces content with a loading circle and disables the button. */
   loading?: boolean;
+  /**
+   * Hover/focus label. Falls back to `title`, then `aria-label`.
+   * Prefer this (or `title`) on icon-only actions.
+   */
+  tooltip?: string;
+  /** Hide the styled tooltip even if title/aria-label exist. */
+  disableTooltip?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -65,12 +79,23 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       loading = false,
       disabled,
       children,
+      tooltip,
+      disableTooltip = false,
+      title,
+      "aria-label": ariaLabel,
       ...props
     },
     ref
   ) => {
     const Comp = asChild ? Slot : "button";
     const isDisabled = disabled || loading;
+    const tip =
+      disableTooltip
+        ? undefined
+        : tooltip?.trim() ||
+          (typeof title === "string" ? title.trim() : "") ||
+          (typeof ariaLabel === "string" ? ariaLabel.trim() : "") ||
+          undefined;
     const spinnerClass = cn(
       "animate-spin",
       size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"
@@ -81,18 +106,21 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         <Comp
           className={cn(buttonVariants({ variant, size }), className)}
           ref={ref}
+          title={title}
+          aria-label={ariaLabel}
           {...props}>
           {children}
         </Comp>
       );
     }
 
-    return (
+    const button = (
       <button
         className={cn(buttonVariants({ variant, size }), className)}
         ref={ref}
         disabled={isDisabled}
         aria-busy={loading || undefined}
+        aria-label={ariaLabel ?? tip}
         {...props}>
         <span
           className={cn(
@@ -108,6 +136,21 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           </span>
         ) : null}
       </button>
+    );
+
+    if (!tip) return button;
+
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {isDisabled ? (
+            <span className="inline-flex">{button}</span>
+          ) : (
+            button
+          )}
+        </TooltipTrigger>
+        <TooltipContent side="top">{tip}</TooltipContent>
+      </Tooltip>
     );
   }
 );

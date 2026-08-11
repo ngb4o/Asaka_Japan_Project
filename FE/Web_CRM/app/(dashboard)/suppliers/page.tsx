@@ -276,7 +276,7 @@ export default function SuppliersPage() {
   }
 
   return (
-    <div className="space-y-0 md:space-y-6">
+    <div className="space-y-0 lg:space-y-6">
       <PageHeader
         title="Nhà cung cấp"
         description="Danh mục NCC để gắn khi nhập kho và theo dõi công nợ"
@@ -434,7 +434,8 @@ export default function SuppliersPage() {
                                 size="sm"
                                 variant="outline"
                                 className="h-9 min-w-9"
-                                onClick={() => openEdit(item)}>
+                                onClick={() => openEdit(item)}
+                                title="Sửa">
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
@@ -442,7 +443,7 @@ export default function SuppliersPage() {
                                 variant="danger"
                                 className="h-9 min-w-9"
                                 loading={actionId === item.id}
-                                onClick={() => void handleDelete(item)}>
+                                onClick={() => void handleDelete(item)} title="Xóa">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </>
@@ -454,7 +455,7 @@ export default function SuppliersPage() {
                 </div>
               </MobileInfiniteList>
 
-              <div className="crm-table-scroll hidden md:block">
+              <div className="crm-table-scroll hidden lg:block">
                 <div className="crm-table-frame">
                   <table className="crm-data-table min-w-[860px]">
                     <thead>
@@ -495,14 +496,15 @@ export default function SuppliersPage() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => openEdit(item)}>
+                                    onClick={() => openEdit(item)}
+                                    title="Sửa">
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                   <Button
                                     size="sm"
                                     variant="danger"
                                     loading={actionId === item.id}
-                                    onClick={() => void handleDelete(item)}>
+                                    onClick={() => void handleDelete(item)} title="Xóa">
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </>

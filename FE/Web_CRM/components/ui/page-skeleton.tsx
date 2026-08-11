@@ -117,7 +117,7 @@ function MobileRecordCardSkeleton({
 /** Matches `MobileMediaCard` used on products / news / inventory */
 function MobileMediaCardSkeleton({ showActions }: { showActions: boolean }) {
   return (
-    <article className="rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-soft)]">
+    <article className="rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-card)] ring-1 ring-black/[0.03] dark:ring-white/[0.06]">
       <div className="flex gap-3">
         <Skeleton className="h-[4.5rem] w-[4.5rem] shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">
@@ -193,13 +193,13 @@ function TableCardSkeleton({
   const mobileRows = Math.min(rows, 5);
 
   return (
-    <Card className="border-0 bg-transparent shadow-none md:border md:bg-[var(--color-surface-elevated)] md:shadow-[var(--shadow-soft)]">
-      <CardHeader className="hidden md:block">
+    <Card className="border-0 bg-transparent shadow-none lg:border lg:bg-[var(--color-surface-elevated)] lg:shadow-[var(--shadow-soft)]">
+      <CardHeader className="hidden lg:block">
         <Skeleton className="h-6 w-28" />
       </CardHeader>
       <CardContent
         data-crm-skeleton-content=""
-        className="space-y-3 max-md:px-0 max-md:pb-3 max-md:pt-3 md:space-y-4">
+        className="space-y-3 max-lg:px-0 max-lg:pb-3 max-lg:pt-3 lg:space-y-4">
         {filters > 0 ? (
           <div className="flex gap-2">
             <Skeleton className="h-10 min-w-0 flex-1 rounded-[var(--radius-button)]" />
@@ -226,7 +226,7 @@ function TableCardSkeleton({
           )}
         </MobileCardList>
 
-        <div className="crm-table-scroll hidden md:block">
+        <div className="crm-table-scroll hidden lg:block">
           <div className="crm-table-frame">
             <table className="crm-data-table" style={{ minWidth }}>
               <thead>
@@ -272,10 +272,10 @@ export function PageSkeleton({
 }: PageSkeletonProps) {
   return (
     <div
-      className={cn("crm-enter space-y-4 md:space-y-6")}
+      className={cn("crm-enter space-y-4 lg:space-y-6")}
       aria-busy="true"
       aria-label={label}>
-      <div className="hidden flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-4">
+      <div className="hidden flex-col gap-3 lg:flex lg:flex-row lg:flex-wrap lg:items-start lg:justify-between lg:gap-4">
         <div className="space-y-2">
           <Skeleton className="h-8 w-36" />
           <Skeleton className="h-4 w-64" />
@@ -549,7 +549,7 @@ export function ReportsPageSkeleton() {
       className="crm-enter space-y-5"
       aria-busy="true"
       aria-label="Đang tải báo cáo doanh số">
-      <div className="hidden flex-col gap-3 md:flex md:flex-row md:items-start md:justify-between md:gap-4">
+      <div className="hidden flex-col gap-3 lg:flex lg:flex-row lg:items-start lg:justify-between lg:gap-4">
         <div className="space-y-2">
           <Skeleton className="h-8 w-44" />
           <Skeleton className="h-4 w-72 max-w-full" />
@@ -568,7 +568,7 @@ export function ReportsPageSkeleton() {
             ))}
             <Skeleton className="h-8 w-20 rounded-[var(--radius-button)]" />
           </div>
-          <Skeleton className="ml-auto h-8 w-28 rounded-lg md:hidden" />
+          <Skeleton className="ml-auto h-8 w-28 rounded-lg lg:hidden" />
         </CardContent>
       </Card>
 
@@ -627,7 +627,7 @@ export function ReportsPageSkeleton() {
           <Skeleton className="h-5 w-28" />
         </CardHeader>
         <CardContent>
-          <div className="crm-stagger-list flex flex-col gap-3 md:hidden">
+          <div className="crm-stagger-list flex flex-col gap-3.5 lg:hidden">
             {Array.from({ length: 3 }).map((_, index) => (
               <RankRowSkeleton key={index} />
             ))}

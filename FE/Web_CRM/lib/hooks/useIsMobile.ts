@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 
-/** Match Tailwind `md` breakpoint (768px). */
-export function useIsMobile(breakpoint = 768) {
+/**
+ * Match Tailwind `lg` breakpoint (1024px).
+ * Shell chrome (bottom nav / sidebar) and content (cards vs table) share this.
+ */
+export function useIsMobile(breakpoint = 1024) {
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia(`(max-width: ${breakpoint - 1}px)`).matches;

@@ -28,7 +28,7 @@ const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
       ref={ref}
       className={cn(
         "flex flex-col gap-1 border-b border-[var(--color-border-subtle)] px-5 py-4",
-        !showOnMobile && "max-md:hidden",
+        !showOnMobile && "max-lg:hidden",
         className
       )}
       {...props}
@@ -58,7 +58,7 @@ const CardContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("p-5 max-md:px-3 max-md:pb-3 max-md:pt-3", className)}
+    className={cn("p-5 max-lg:px-3 max-lg:pb-3 max-lg:pt-3", className)}
     {...props}
   />
 ));

@@ -588,7 +588,7 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="space-y-0 md:space-y-6">
+    <div className="space-y-0 lg:space-y-6">
       <PageHeader
         title="Kho hàng"
         description={
@@ -634,7 +634,7 @@ export default function InventoryPage() {
         </p>
       )}
 
-      <div className="sticky top-0 z-10 bg-[var(--color-surface-elevated)] px-3 py-2 md:hidden">
+      <div className="sticky top-0 z-10 bg-[var(--color-surface-elevated)] px-3 py-2 lg:hidden">
         <TabSwitcher
           tabs={[...mobileTabs]}
           selectedIndex={mobileTab}
@@ -646,7 +646,7 @@ export default function InventoryPage() {
       {isAdmin && showWarehousePanel && (
         <Card>
           <CardHeader
-            className="hidden cursor-pointer select-none md:flex"
+            className="hidden cursor-pointer select-none lg:flex"
             onClick={() => setWarehouseSectionOpen((prev) => !prev)}>
             <div className="flex items-center justify-between">
               <CardTitle>Quản lý kho</CardTitle>
@@ -672,7 +672,7 @@ export default function InventoryPage() {
               ) : (
                 <>
                   {/* Mobile */}
-                  <div className="crm-stagger-list flex flex-col gap-3 md:hidden">
+                  <div className="crm-stagger-list flex flex-col gap-3.5 lg:hidden">
                     {warehouses.map((item) => (
                       <MobileRecordCard key={item.id} className="p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -744,7 +744,7 @@ export default function InventoryPage() {
                   </div>
 
                   {/* Desktop */}
-                  <div className="crm-table-scroll hidden md:block">
+                  <div className="crm-table-scroll hidden lg:block">
                     <div className="crm-table-frame">
                       <table className="crm-data-table min-w-[600px]">
                       <thead>
@@ -783,14 +783,18 @@ export default function InventoryPage() {
                             </td>
                             <td>
                               <div className="flex justify-end gap-2">
-                                <Button variant="outline" size="sm" onClick={() => openEditWarehouse(item)}>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEditWarehouse(item)}
+                                  title="Sửa">
                                   <Pencil className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="danger"
                                   size="sm"
                                   loading={actionId === item.id}
-                                  onClick={() => handleDeleteWarehouse(item)}>
+                                  onClick={() => handleDeleteWarehouse(item)} title="Xóa">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -918,7 +922,7 @@ export default function InventoryPage() {
                 </div>
               </MobileInfiniteList>
 
-              <div className="crm-table-scroll hidden md:block">
+              <div className="crm-table-scroll hidden lg:block">
                 <div className="crm-table-frame">
                   <table className="crm-data-table min-w-[1080px]">
                   <thead>
@@ -1161,7 +1165,7 @@ export default function InventoryPage() {
                 </div>
               </MobileInfiniteList>
 
-              <div className="crm-table-scroll hidden md:block">
+              <div className="crm-table-scroll hidden lg:block">
                 <div className="crm-table-frame">
                   <table className="crm-data-table min-w-[820px]">
                   <thead>

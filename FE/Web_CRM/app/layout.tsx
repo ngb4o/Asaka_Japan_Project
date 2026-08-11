@@ -3,6 +3,7 @@ import { Barlow } from "next/font/google";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ToastProvider } from "@/components/providers/ToastProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -74,7 +75,9 @@ export default function RootLayout({
       <body className={`${barlow.className} antialiased`}>
         <ThemeProvider>
           <ToastProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <TooltipProvider>
+              <AuthProvider>{children}</AuthProvider>
+            </TooltipProvider>
           </ToastProvider>
         </ThemeProvider>
       </body>

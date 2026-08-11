@@ -7,6 +7,11 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { lockAppScroll } from "@/lib/scroll-lock";
 import { cn } from "@/lib/utils";
@@ -56,24 +61,29 @@ export function FilterTrigger({
   className,
 }: FilterTriggerProps) {
   return (
-    <button
-      type="button"
-      aria-label="Bộ lọc"
-      aria-expanded={open}
-      onClick={onClick}
-      className={cn(
-        "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]",
-        open &&
-          "border-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]",
-        className
-      )}>
-      <Filter className="h-4 w-4" />
-      {activeCount > 0 ? (
-        <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-text-secondary)] px-1 text-[10px] font-bold text-white">
-          {activeCount}
-        </span>
-      ) : null}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="Bộ lọc"
+          aria-expanded={open}
+          onClick={onClick}
+          className={cn(
+            "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]",
+            open &&
+              "border-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]",
+            className
+          )}>
+          <Filter className="h-4 w-4" />
+          {activeCount > 0 ? (
+            <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-text-secondary)] px-1 text-[10px] font-bold text-white">
+              {activeCount}
+            </span>
+          ) : null}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top">Bộ lọc</TooltipContent>
+    </Tooltip>
   );
 }
 
