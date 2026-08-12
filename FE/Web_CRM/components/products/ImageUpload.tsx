@@ -156,7 +156,7 @@ export function ImageUpload({
                 className="rounded-lg transition hover:ring-2 hover:ring-[var(--color-text-secondary)]/30"
               />
               {isMulti && index === 0 ? (
-                <span className="pointer-events-none absolute bottom-1 left-1 z-[1] rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                <span className="pointer-events-none absolute bottom-1 left-1 z-[1] rounded bg-black/65 px-1.5 py-0.5 text-[11px] font-medium text-white">
                   Chính
                 </span>
               ) : null}

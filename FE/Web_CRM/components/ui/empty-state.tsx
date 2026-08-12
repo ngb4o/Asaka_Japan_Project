@@ -53,7 +53,7 @@ export function EmptyState({
         <p
           className={cn(
             "font-medium text-[var(--color-text-primary)]",
-            compact ? "text-sm" : "text-sm sm:text-[15px]"
+            compact ? "text-sm" : "text-sm sm:text-[16px]"
           )}>
           {title}
         </p>

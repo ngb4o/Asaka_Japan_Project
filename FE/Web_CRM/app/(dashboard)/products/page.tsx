@@ -322,14 +322,9 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="space-y-0 lg:space-y-6">
+    <div className="space-y-0 lg:space-y-2">
       <PageHeader
         title="Sản phẩm"
-        description={
-          canEdit
-            ? "Quản lý danh mục thuốc bảo vệ thực vật"
-            : "Danh mục sản phẩm (chỉ xem)"
-        }
         actions={
           canEdit ? (
             <Button onClick={openCreate} disabled={categories.length === 0}>
@@ -455,7 +450,7 @@ export default function ProductsPage() {
                                 <span className="flex flex-col leading-tight">
                                   <span>Tồn {stock.primary}</span>
                                   {stock.secondary ? (
-                                    <span className="text-[11px] opacity-80">
+                                    <span className="text-[12px] opacity-80">
                                       ({stock.secondary})
                                     </span>
                                   ) : null}
@@ -597,7 +592,7 @@ export default function ProductsPage() {
                               className="rounded-lg">
                               {(item.images?.length || (item.image ? 1 : 0)) >
                               1 ? (
-                                <span className="pointer-events-none absolute bottom-0 right-0 z-[1] rounded-tl bg-black/70 px-1 text-[10px] font-medium text-white">
+                                <span className="pointer-events-none absolute bottom-0 right-0 z-[1] rounded-tl bg-black/70 px-1 text-[11px] font-medium text-white">
                                   {item.images?.length || 1}
                                 </span>
                               ) : null}

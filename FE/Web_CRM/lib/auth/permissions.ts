@@ -14,22 +14,6 @@ export const ALL_USER_ROLES: UserRole[] = [
   "accountant",
 ];
 
-/** Mô tả ngắn dưới tên app trên sidebar */
-export const ROLE_WORKSPACE_SUBTITLE: Record<UserRole, string> = {
-  admin: "Toàn hệ thống",
-  sales: "Kinh doanh · kho · đơn hàng",
-  warehouse: "Kinh doanh · kho · đơn hàng",
-  accountant: "Tài chính · nhân sự · lương",
-};
-
-/** Dòng mô tả trên trang tổng quan */
-export const DASHBOARD_HERO_SUBTITLE: Record<UserRole, string> = {
-  admin: "Doanh số, thu chi và vận hành toàn công ty.",
-  accountant: "Doanh số, công nợ, quyết toán chuyến và bảng lương.",
-  sales: "Lead, đại lý, đơn hàng, kho và chuyến giao hàng.",
-  warehouse: "Lead, đại lý, đơn hàng, kho và chuyến giao hàng.",
-};
-
 export type RoleInput = UserRole | UserRole[] | null | undefined;
 
 /** Normalize profile.role / profile.roles into a unique roles array. */
@@ -97,6 +81,7 @@ const OPS_NAV = [
   "/news",
   "/trips",
   "/payroll",
+  "/settings",
 ] as const;
 
 const NAV_BY_ROLE: Record<UserRole, string[]> = {
@@ -116,6 +101,7 @@ const NAV_BY_ROLE: Record<UserRole, string[]> = {
     "/trips",
     "/payroll",
     "/users",
+    "/settings",
   ],
   sales: [...OPS_NAV],
   warehouse: [
@@ -130,6 +116,7 @@ const NAV_BY_ROLE: Record<UserRole, string[]> = {
     "/news",
     "/trips",
     "/payroll",
+    "/settings",
   ],
   accountant: [
     "/dashboard",
@@ -141,6 +128,7 @@ const NAV_BY_ROLE: Record<UserRole, string[]> = {
     "/employees",
     "/trips",
     "/payroll",
+    "/settings",
   ],
 };
 

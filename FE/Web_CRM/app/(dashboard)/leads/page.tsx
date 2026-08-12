@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
+import { Copyable, PhoneLink } from "@/components/ui/smart-text";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   convertLeadToDealer,
@@ -235,10 +236,9 @@ export default function LeadsPage() {
   }
 
   return (
-    <div className="space-y-0 lg:space-y-6">
+    <div className="space-y-0 lg:space-y-2">
       <PageHeader
         title="Lead liên hệ"
-        description="Quản lý yêu cầu liên hệ và đăng ký đại lý từ website"
       />
 
       <Card>
@@ -312,13 +312,13 @@ export default function LeadsPage() {
                             {item.name}
                           </button>
                           {item.company ? (
-                            <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                            <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
                               {item.company}
                             </p>
                           ) : null}
                           {item.phone ? (
                             <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-                              {item.phone}
+                              <PhoneLink value={item.phone} />
                             </p>
                           ) : null}
                         </div>
@@ -334,7 +334,15 @@ export default function LeadsPage() {
                         <MobileMetaChip>
                           {new Date(item.createdAt).toLocaleDateString("vi-VN")}
                         </MobileMetaChip>
-                        {item.email ? <MobileMetaChip>{item.email}</MobileMetaChip> : null}
+                        {item.email ? (
+                          <MobileMetaChip>
+                            <Copyable
+                              value={item.email}
+                              label="email"
+                              className="text-[14px] font-medium text-[var(--color-text-primary)]"
+                            />
+                          </MobileMetaChip>
+                        ) : null}
                         {item.region ? <MobileMetaChip>{item.region}</MobileMetaChip> : null}
                         {typeLabel ? <MobileMetaChip>{typeLabel}</MobileMetaChip> : null}
                       </div>
@@ -421,7 +429,9 @@ export default function LeadsPage() {
                             <p className="text-xs text-[var(--color-text-inverse)]">{item.company}</p>
                           ) : null}
                         </td>
-                        <td>{item.phone}</td>
+                        <td>
+                          {item.phone ? <PhoneLink value={item.phone} /> : "—"}
+                        </td>
                         <td>
                           <div className="w-[160px]">
                             <SearchableSelect
@@ -501,13 +511,13 @@ export default function LeadsPage() {
                       {selected.name}
                     </p>
                     {selected.company ? (
-                      <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                      <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
                         {selected.company}
                       </p>
                     ) : null}
                     {selected.phone ? (
                       <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-                        {selected.phone}
+                        <PhoneLink value={selected.phone} />
                       </p>
                     ) : null}
                   </div>
@@ -523,7 +533,13 @@ export default function LeadsPage() {
                     {new Date(selected.createdAt).toLocaleDateString("vi-VN")}
                   </MobileMetaChip>
                   {selected.email ? (
-                    <MobileMetaChip>{selected.email}</MobileMetaChip>
+                    <MobileMetaChip>
+                      <Copyable
+                        value={selected.email}
+                        label="email"
+                        className="text-[14px] font-medium text-[var(--color-text-primary)]"
+                      />
+                    </MobileMetaChip>
                   ) : null}
                   {selected.region ? (
                     <MobileMetaChip>{selected.region}</MobileMetaChip>

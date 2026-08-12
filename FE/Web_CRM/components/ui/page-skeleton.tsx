@@ -28,15 +28,15 @@ function TableRowSkeleton({ columns }: { columns: ColumnPreset[] }) {
       {columns.map((column, index) => {
         if (column === "image") {
           return (
-            <td key={index} className="px-2 py-3">
-              <Skeleton className="h-12 w-12 rounded-lg" />
+            <td key={index}>
+              <Skeleton className="h-10 w-10 rounded-lg" />
             </td>
           );
         }
 
         if (column === "badge") {
           return (
-            <td key={index} className="px-2 py-3">
+            <td key={index}>
               <Skeleton className="h-6 w-20 rounded-full" />
             </td>
           );
@@ -44,18 +44,18 @@ function TableRowSkeleton({ columns }: { columns: ColumnPreset[] }) {
 
         if (column === "actions") {
           return (
-            <td key={index} className="px-2 py-3">
+            <td key={index}>
               <div className="flex justify-end gap-2">
-                <Skeleton className="h-9 w-9 rounded-lg" />
-                <Skeleton className="h-9 w-9 rounded-lg" />
+                <Skeleton className="h-8 w-8 rounded-[var(--radius-button)]" />
+                <Skeleton className="h-8 w-8 rounded-[var(--radius-button)]" />
               </div>
             </td>
           );
         }
 
         return (
-          <td key={index} className="px-2 py-3">
-            <Skeleton className="h-4 w-28" />
+          <td key={index}>
+            <Skeleton className="h-4 w-28 max-w-full" />
           </td>
         );
       })}
@@ -72,16 +72,16 @@ function MobileRecordCardSkeleton({
   showMetrics?: boolean;
 }) {
   return (
-    <MobileRecordCard className="p-4">
+    <MobileRecordCard>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-2">
           <Skeleton className="h-5 w-28" />
-          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-4 w-40 max-w-full" />
           <Skeleton className="h-3.5 w-24" />
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <Skeleton className="h-[22px] w-16 rounded-full" />
-          <Skeleton className="h-[22px] w-20 rounded-full" />
+          <Skeleton className="h-6 w-16 rounded-full" />
+          <Skeleton className="h-6 w-20 rounded-full" />
         </div>
       </div>
 
@@ -105,9 +105,9 @@ function MobileRecordCardSkeleton({
 
       {showActions ? (
         <div className="mt-3.5 flex flex-wrap justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3.5">
-          <Skeleton className="h-9 w-9 rounded-lg" />
-          <Skeleton className="h-9 w-9 rounded-lg" />
-          <Skeleton className="h-9 w-9 rounded-lg" />
+          <Skeleton className="h-8 w-8 rounded-[var(--radius-button)]" />
+          <Skeleton className="h-8 w-8 rounded-[var(--radius-button)]" />
+          <Skeleton className="h-8 w-8 rounded-[var(--radius-button)]" />
         </div>
       ) : null}
     </MobileRecordCard>
@@ -126,7 +126,7 @@ function MobileMediaCardSkeleton({ showActions }: { showActions: boolean }) {
               <Skeleton className="h-4 w-[85%]" />
               <Skeleton className="h-3 w-[60%]" />
             </div>
-            <Skeleton className="h-[22px] w-14 shrink-0 rounded-full" />
+            <Skeleton className="h-6 w-14 shrink-0 rounded-full" />
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <Skeleton className="h-7 w-16 rounded-md" />
@@ -148,8 +148,8 @@ function MobileMediaCardSkeleton({ showActions }: { showActions: boolean }) {
 
       {showActions ? (
         <div className="mt-3.5 flex justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3.5">
-          <Skeleton className="h-9 w-9 rounded-lg" />
-          <Skeleton className="h-9 w-9 rounded-lg" />
+          <Skeleton className="h-8 w-8 rounded-[var(--radius-button)]" />
+          <Skeleton className="h-8 w-8 rounded-[var(--radius-button)]" />
         </div>
       ) : null}
     </article>
@@ -160,7 +160,7 @@ function StatsRowSkeleton({ count }: { count: number }) {
   return (
     <div
       className={cn(
-        "grid gap-3",
+        "grid gap-2.5 sm:gap-3",
         count >= 4 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2"
       )}>
       {Array.from({ length: count }).map((_, index) => (
@@ -171,6 +171,24 @@ function StatsRowSkeleton({ count }: { count: number }) {
           <Skeleton className="mt-2 h-5 w-24 bg-[var(--color-border-subtle)]" />
         </div>
       ))}
+    </div>
+  );
+}
+
+function PageHeaderSkeleton({ actionButtons }: { actionButtons: number }) {
+  return (
+    <div className="crm-enter hidden items-center justify-between gap-3 lg:flex">
+      <Skeleton className="h-6 w-36" />
+      {actionButtons > 0 ? (
+        <div className="flex flex-wrap justify-end gap-2">
+          {Array.from({ length: actionButtons }).map((_, index) => (
+            <Skeleton
+              key={index}
+              className="h-10 w-32 rounded-[var(--radius-button)]"
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -194,17 +212,17 @@ function TableCardSkeleton({
 
   return (
     <Card className="border-0 bg-transparent shadow-none lg:border lg:bg-[var(--color-surface-elevated)] lg:shadow-[var(--shadow-soft)]">
-      <CardHeader className="hidden lg:block">
-        <Skeleton className="h-6 w-28" />
+      <CardHeader className="hidden lg:flex">
+        <Skeleton className="h-5 w-36" />
       </CardHeader>
       <CardContent
         data-crm-skeleton-content=""
-        className="space-y-3 max-lg:px-0 max-lg:pb-3 max-lg:pt-3 lg:space-y-4">
+        className="space-y-3 max-lg:px-0 max-lg:pb-2.5 max-lg:pt-2.5 lg:space-y-4">
         {filters > 0 ? (
           <div className="flex gap-2">
             <div className="crm-toolbar-elevated h-10 min-w-0 flex-1 animate-pulse rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]" />
             {filters > 1 ? (
-              <div className="crm-toolbar-elevated h-10 w-10 shrink-0 animate-pulse rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]" />
+              <div className="crm-toolbar-elevated h-10 w-10 shrink-0 animate-pulse rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]" />
             ) : null}
           </div>
         ) : null}
@@ -212,10 +230,7 @@ function TableCardSkeleton({
         <MobileCardList>
           {Array.from({ length: mobileRows }).map((_, index) =>
             hasImage ? (
-              <MobileMediaCardSkeleton
-                key={index}
-                showActions={showActions}
-              />
+              <MobileMediaCardSkeleton key={index} showActions={showActions} />
             ) : (
               <MobileRecordCardSkeleton
                 key={index}
@@ -232,8 +247,8 @@ function TableCardSkeleton({
               <thead>
                 <tr>
                   {columns.map((_, index) => (
-                    <th key={index} className="px-2 py-3">
-                      <Skeleton className="h-4 w-16" />
+                    <th key={index}>
+                      <Skeleton className="h-3.5 w-16 bg-white/25" />
                     </th>
                   ))}
                 </tr>
@@ -272,20 +287,13 @@ export function PageSkeleton({
 }: PageSkeletonProps) {
   return (
     <div
-      className={cn("crm-enter space-y-4 lg:space-y-6")}
+      className={cn(
+        "crm-enter",
+        stats > 0 ? "space-y-2.5 lg:space-y-3" : "space-y-0 lg:space-y-2"
+      )}
       aria-busy="true"
       aria-label={label}>
-      <div className="hidden flex-col gap-3 lg:flex lg:flex-row lg:flex-wrap lg:items-start lg:justify-between lg:gap-4">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-36" />
-          <Skeleton className="h-4 w-64" />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {Array.from({ length: actionButtons }).map((_, index) => (
-            <Skeleton key={index} className="h-11 w-36 rounded-lg" />
-          ))}
-        </div>
-      </div>
+      <PageHeaderSkeleton actionButtons={actionButtons} />
 
       {stats > 0 ? <StatsRowSkeleton count={stats} /> : null}
 
@@ -481,10 +489,10 @@ export const PAGE_SKELETONS = {
 function KpiCardSkeleton({ className }: { className?: string }) {
   return (
     <Card className={cn("h-full overflow-hidden", className)}>
-      <CardContent className="space-y-3 p-3.5 md:space-y-4 md:p-5">
+      <CardContent className="space-y-3 p-3.5 md:space-y-3 md:p-4">
         <div className="flex items-start justify-between gap-2">
           <Skeleton className="h-3.5 w-16" />
-          <Skeleton className="h-8 w-8 shrink-0 rounded-xl md:h-10 md:w-10" />
+          <Skeleton className="h-8 w-8 shrink-0 rounded-xl md:h-9 md:w-9" />
         </div>
         <div className="space-y-2">
           <Skeleton className="h-6 w-24 md:h-7 md:w-32" />
@@ -516,7 +524,7 @@ function ChartCardSkeleton({
 
 function RankRowSkeleton() {
   return (
-    <MobileRecordCard className="p-3 shadow-none">
+    <MobileRecordCard className="shadow-none">
       <div className="flex items-start gap-3">
         <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
         <div className="min-w-0 flex-1 space-y-2">
@@ -546,19 +554,13 @@ function RankRowSkeleton() {
 export function ReportsPageSkeleton() {
   return (
     <div
-      className="crm-enter space-y-5"
+      className="crm-enter space-y-3"
       aria-busy="true"
       aria-label="Đang tải báo cáo doanh số">
-      <div className="hidden flex-col gap-3 lg:flex lg:flex-row lg:items-start lg:justify-between lg:gap-4">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-44" />
-          <Skeleton className="h-4 w-72 max-w-full" />
-        </div>
-        <Skeleton className="h-11 w-32 rounded-lg" />
-      </div>
+      <PageHeaderSkeleton actionButtons={1} />
 
       <Card>
-        <CardContent className="flex flex-wrap items-end gap-3 p-4">
+        <CardContent className="flex flex-wrap items-end gap-3 p-3 sm:p-4">
           <div className="flex flex-wrap gap-2">
             {Array.from({ length: 5 }).map((_, index) => (
               <Skeleton
@@ -572,30 +574,30 @@ export function ReportsPageSkeleton() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
           <KpiCardSkeleton key={index} />
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3">
         <KpiCardSkeleton />
         <KpiCardSkeleton />
         <KpiCardSkeleton className="col-span-2 md:col-span-1" />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3">
         <KpiCardSkeleton />
         <KpiCardSkeleton />
         <KpiCardSkeleton className="col-span-2 md:col-span-1" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-3">
         <ChartCardSkeleton className="lg:col-span-2" chartClassName="h-52" />
         <ChartCardSkeleton chartClassName="h-52" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
         <ChartCardSkeleton chartClassName="h-44" />
         <Card>
           <CardHeader showOnMobile>
@@ -617,7 +619,7 @@ export function ReportsPageSkeleton() {
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
         <ChartCardSkeleton chartClassName="h-44" />
         <ChartCardSkeleton chartClassName="h-44" />
       </div>
@@ -627,12 +629,12 @@ export function ReportsPageSkeleton() {
           <Skeleton className="h-5 w-28" />
         </CardHeader>
         <CardContent>
-          <div className="crm-stagger-list flex flex-col gap-3.5 lg:hidden">
+          <MobileCardList className="gap-2.5">
             {Array.from({ length: 3 }).map((_, index) => (
               <RankRowSkeleton key={index} />
             ))}
-          </div>
-          <div className="hidden space-y-3 md:block">
+          </MobileCardList>
+          <div className="hidden space-y-2.5 md:block">
             <Skeleton className="h-10 w-full rounded-lg" />
             <Skeleton className="h-10 w-full rounded-lg" />
             <Skeleton className="h-10 w-full rounded-lg" />

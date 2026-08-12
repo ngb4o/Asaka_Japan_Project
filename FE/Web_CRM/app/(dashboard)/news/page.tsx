@@ -276,10 +276,9 @@ export default function NewsPage() {
   }
 
   return (
-    <div className="space-y-0 lg:space-y-6">
+    <div className="space-y-0 lg:space-y-2">
       <PageHeader
         title="Tin tức"
-        description="Quản lý bài viết tin tức"
         actions={
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4" />

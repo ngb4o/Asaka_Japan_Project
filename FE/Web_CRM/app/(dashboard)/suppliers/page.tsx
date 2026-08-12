@@ -31,6 +31,7 @@ import {
   MobileRecordCard,
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
+import { PhoneLink, Copyable } from "@/components/ui/smart-text";
 import {
   SearchableSelect,
   STATUS_OPTIONS,
@@ -264,8 +265,8 @@ export default function SuppliersPage() {
 
   if (!allowed) {
     return (
-      <div className="space-y-4">
-        <PageHeader title="Nhà cung cấp" description="Không có quyền truy cập" />
+      <div className="space-y-3">
+        <PageHeader title="Nhà cung cấp" />
         <EmptyState title="Bạn không có quyền xem nhà cung cấp" />
       </div>
     );
@@ -276,10 +277,9 @@ export default function SuppliersPage() {
   }
 
   return (
-    <div className="space-y-0 lg:space-y-6">
+    <div className="space-y-0 lg:space-y-2">
       <PageHeader
         title="Nhà cung cấp"
-        description="Danh mục NCC để gắn khi nhập kho và theo dõi công nợ"
         actions={
           canWrite ? (
             <Button onClick={openCreate}>
@@ -349,9 +349,6 @@ export default function SuppliersPage() {
                 disabled={loading}>
                 <div className="flex flex-col gap-3">
                   {items.map((item) => {
-                    const contactLine = [item.contactName, item.phone]
-                      .filter(Boolean)
-                      .join(" · ");
                     const hasChips = Boolean(
                       item.taxCode || item.email || item.address
                     );
@@ -362,9 +359,14 @@ export default function SuppliersPage() {
                             <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                               {item.name}
                             </p>
-                            {contactLine ? (
-                              <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
-                                {contactLine}
+                            {item.contactName ? (
+                              <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
+                                {item.contactName}
+                              </p>
+                            ) : null}
+                            {item.phone ? (
+                              <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+                                <PhoneLink value={item.phone} />
                               </p>
                             ) : null}
                             {item.address ? (
@@ -383,10 +385,23 @@ export default function SuppliersPage() {
                         {hasChips ? (
                           <div className="mt-3 flex flex-wrap items-center gap-2">
                             {item.taxCode ? (
-                              <MobileMetaChip>MST: {item.taxCode}</MobileMetaChip>
+                              <MobileMetaChip>
+                                MST:{" "}
+                                <Copyable
+                                  value={item.taxCode}
+                                  label="mã số thuế"
+                                  className="text-[14px] font-medium text-[var(--color-text-primary)]"
+                                />
+                              </MobileMetaChip>
                             ) : null}
                             {item.email ? (
-                              <MobileMetaChip>{item.email}</MobileMetaChip>
+                              <MobileMetaChip>
+                                <Copyable
+                                  value={item.email}
+                                  label="email"
+                                  className="text-[14px] font-medium text-[var(--color-text-primary)]"
+                                />
+                              </MobileMetaChip>
                             ) : null}
                             {item.address ? (
                               <MobileMetaChip>{item.address}</MobileMetaChip>
@@ -473,9 +488,15 @@ export default function SuppliersPage() {
                         <tr key={item.id}>
                           <td className="font-medium">{item.name}</td>
                           <td>{item.contactName || "—"}</td>
-                          <td>{item.phone}</td>
+                          <td>
+                            {item.phone ? <PhoneLink value={item.phone} /> : "—"}
+                          </td>
                           <td className="text-[var(--color-text-inverse)]">
-                            {item.taxCode || "—"}
+                            {item.taxCode ? (
+                              <Copyable value={item.taxCode} label="mã số thuế" />
+                            ) : (
+                              "—"
+                            )}
                           </td>
                           <td>
                             <Badge variant={statusBadgeVariant(item.status)}>

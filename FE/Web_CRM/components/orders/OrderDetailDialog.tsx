@@ -27,6 +27,7 @@ import { canViewProfit, rolesOf } from "@/lib/auth/permissions";
 import { cn, formatCurrency, formatDateDisplay } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
 import { useToast } from "@/components/providers/ToastProvider";
+import { CodeText, PhoneLink, TrackingText } from "@/components/ui/smart-text";
 
 type OrderDetailDialogProps = {
   order: Order | null;
@@ -73,20 +74,31 @@ function Field({
   label,
   value,
   className,
+  action,
 }: {
   label: string;
   value?: string | number | null;
   className?: string;
+  action?: "copy" | "call" | "tracking";
 }) {
   if (value == null || value === "") return null;
+  const text = String(value);
   return (
     <div className={className}>
       <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
         {label}
       </p>
-      <p className="mt-1 text-sm font-medium text-[var(--color-text-primary)] whitespace-pre-wrap">
-        {value}
-      </p>
+      <div className="mt-1 text-sm font-medium text-[var(--color-text-primary)] whitespace-pre-wrap">
+        {action === "call" ? (
+          <PhoneLink value={text} />
+        ) : action === "tracking" ? (
+          <TrackingText value={text} />
+        ) : action === "copy" ? (
+          <CodeText value={text} label={label.toLowerCase()} />
+        ) : (
+          text
+        )}
+      </div>
     </div>
   );
 }
@@ -359,7 +371,7 @@ export function OrderDetailDialog({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
-                      {order.code}
+                      <CodeText value={order.code} label="mã đơn" />
                     </p>
                     <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
                       Tạo: {formatDateDisplay(order.createdAt) || "—"}
@@ -418,8 +430,9 @@ export function OrderDetailDialog({
                   <Field
                     label="SĐT"
                     value={order.shippingPhone || order.customerPhone}
+                    action="call"
                   />
-                  <Field label="Email" value={order.customerEmail} />
+                  <Field label="Email" value={order.customerEmail} action="copy" />
                   <Field label="Đại lý" value={order.dealerName} />
                 </div>
               </section>
@@ -466,9 +479,13 @@ export function OrderDetailDialog({
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Kho xuất" value={order.warehouseName} />
                   <Field label="Người giao" value={deliveryNames} />
-                  <Field label="Chuyến" value={order.tripCode} />
+                  <Field label="Chuyến" value={order.tripCode} action="copy" />
                   <Field label="Đơn vị VC" value={order.carrier} />
-                  <Field label="Mã vận chuyển" value={order.trackingCode} />
+                  <Field
+                    label="Mã vận chuyển"
+                    value={order.trackingCode}
+                    action="tracking"
+                  />
                   <Field
                     label="Ngày giao"
                     value={formatShippingRange(

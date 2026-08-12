@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/mobile-record-card";
 import type { Employee } from "@/lib/types";
 import { formatCurrency, formatDateDisplay } from "@/lib/utils";
+import { CodeText, Copyable, PhoneLink } from "@/components/ui/smart-text";
 
 type EmployeeDetailDialogProps = {
   employee: Employee | null;
@@ -37,8 +38,6 @@ export function EmployeeDetailDialog({
 }: EmployeeDetailDialogProps) {
   if (!employee) return null;
 
-  const contact = [employee.phone, employee.email].filter(Boolean).join(" · ");
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
@@ -51,14 +50,23 @@ export function EmployeeDetailDialog({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
-                  {employee.code || "—"}
+                  {employee.code ? (
+                    <CodeText value={employee.code} label="mã nhân viên" />
+                  ) : (
+                    "—"
+                  )}
                 </p>
-                <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
                   {employee.fullName}
                 </p>
-                {contact ? (
+                {employee.phone ? (
                   <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-                    {contact}
+                    <PhoneLink value={employee.phone} />
+                  </p>
+                ) : null}
+                {employee.email ? (
+                  <p className="mt-0.5 text-sm text-[var(--color-text-inverse)]">
+                    <Copyable value={employee.email} label="email" />
                   </p>
                 ) : null}
               </div>
@@ -105,8 +113,16 @@ export function EmployeeDetailDialog({
           </MobileRecordCard>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="SĐT">{employee.phone || "—"}</Field>
-            <Field label="Email">{employee.email || "—"}</Field>
+            <Field label="SĐT">
+              {employee.phone ? <PhoneLink value={employee.phone} /> : "—"}
+            </Field>
+            <Field label="Email">
+              {employee.email ? (
+                <Copyable value={employee.email} label="email" />
+              ) : (
+                "—"
+              )}
+            </Field>
             <Field label="Chức vụ">{employee.title || "—"}</Field>
             <Field label="Phòng ban">{employee.department || "—"}</Field>
             <Field label="Tài khoản CRM">{employee.userName || "—"}</Field>
@@ -117,7 +133,13 @@ export function EmployeeDetailDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Ngân hàng">{employee.bankName || "—"}</Field>
-            <Field label="Số tài khoản">{employee.bankAccount || "—"}</Field>
+            <Field label="Số tài khoản">
+              {employee.bankAccount ? (
+                <Copyable value={employee.bankAccount} label="số tài khoản" />
+              ) : (
+                "—"
+              )}
+            </Field>
           </div>
 
           {employee.bankQrImage ? (

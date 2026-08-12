@@ -38,6 +38,7 @@ import {
   FilterTrigger,
 } from "@/components/ui/filter-drawer";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CodeText } from "@/components/ui/smart-text";
 import { PreviewableImage } from "@/components/ui/previewable-image";
 import { ImageUpload } from "@/components/products/ImageUpload";
 import { LocationCapture, type GeoLocationValue } from "@/components/trips/LocationCapture";
@@ -775,10 +776,9 @@ export default function TripsPage() {
   const preview = selected?.settlementPreview;
 
   return (
-    <div className="space-y-0 lg:space-y-6">
+    <div className="space-y-0 lg:space-y-2">
       <PageHeader
         title="Chuyến công tác"
-        description="Giao hàng nhiều ngày, tạm ứng, chi phí và quyết toán"
         actions={
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4" />
@@ -845,9 +845,9 @@ export default function TripsPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
-                            {item.code}
+                            <CodeText value={item.code} label="mã chuyến" />
                           </p>
-                          <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                          <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
                             {item.title || item.region || "—"}
                           </p>
                         </div>
@@ -935,7 +935,9 @@ export default function TripsPage() {
                   {items.map((item) => (
                     <tr key={item.id}>
                       <td>
-                        <p className="font-medium">{item.code}</p>
+                        <p className="font-medium">
+                          <CodeText value={item.code} label="mã chuyến" />
+                        </p>
                         <p className="text-xs text-[var(--color-text-inverse)]">
                           {item.title || item.region || "—"}
                         </p>
@@ -956,7 +958,7 @@ export default function TripsPage() {
                                 key={order.id}
                                 className="inline-flex items-center rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] px-2 py-0.5 text-xs font-medium"
                                 title={`${order.customerName || ""} - ${ORDER_STATUS_LABEL[(order.status as Order["status"]) || "pending"] || order.status}`}>
-                                {order.code}
+                                <CodeText value={order.code} label="mã đơn" />
                               </span>
                             ))}
                           </div>
@@ -1088,11 +1090,11 @@ export default function TripsPage() {
                         <div className="min-w-0 flex-1 space-y-1.5">
                           <div className="flex items-center justify-between gap-2">
                             <span className="min-w-0 truncate font-semibold tracking-tight">
-                              {order.code}
+                              <CodeText value={order.code} label="mã đơn" />
                             </span>
                             <span
                               className={cn(
-                                "shrink-0 rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2 md:py-0.5 md:text-[11px]",
+                                "shrink-0 rounded-full px-2.5 py-1 text-[14px] font-medium leading-none md:px-2 md:py-0.5 md:text-[12px]",
                                 ORDER_STATUS_TONE[order.status]
                               )}>
                               {ORDER_STATUS_LABEL[order.status]}
@@ -1173,16 +1175,16 @@ export default function TripsPage() {
           {selected ? (
             <div
               className={cn(
-                "space-y-0 lg:space-y-6",
+                "space-y-0 lg:space-y-3",
                 detailLoading && "pointer-events-none opacity-60"
               )}>
               <MobileRecordCard className="p-4 shadow-none">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
-                      {selected.code}
+                      <CodeText value={selected.code} label="mã chuyến" />
                     </p>
-                    <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                    <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
                       {selected.title || selected.region || "—"}
                     </p>
                   </div>
@@ -1280,9 +1282,9 @@ export default function TripsPage() {
                               <Link
                                 href={`/orders?detail=${order.id}`}
                                 className="text-base font-semibold tracking-tight text-[var(--color-text-secondary)] hover:underline">
-                                {order.code}
+                                <CodeText value={order.code} label="mã đơn" />
                               </Link>
-                              <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                              <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
                                 {order.customerName || order.dealerName || "—"}
                               </p>
                               {order.dealerName && order.customerName ? (
@@ -1904,7 +1906,7 @@ export default function TripsPage() {
                   onClick={() => openPayOrder(order, collectStop)}>
                   <div className="min-w-0">
                     <p className="font-semibold text-[var(--color-text-primary)]">
-                      {order.code}
+                      <CodeText value={order.code} label="mã đơn" />
                     </p>
                     <p className="mt-0.5 truncate text-sm text-[var(--color-text-inverse)]">
                       {order.customerName || order.dealerName || "—"}

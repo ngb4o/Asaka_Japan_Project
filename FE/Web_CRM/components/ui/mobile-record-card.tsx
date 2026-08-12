@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 export function MobileCardList({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("crm-stagger-list flex flex-col gap-3.5 lg:hidden", className)}
+      className={cn("crm-stagger-list flex flex-col gap-2.5 lg:hidden", className)}
       {...props}
     />
   );
@@ -15,7 +15,7 @@ export function MobileRecordCard({ className, ...props }: HTMLAttributes<HTMLDiv
   return (
     <article
       className={cn(
-        "rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4 shadow-[var(--shadow-card)] ring-1 ring-black/[0.03] dark:ring-white/[0.06]",
+        "rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3.5 shadow-[var(--shadow-card)] ring-1 ring-black/[0.03] dark:ring-white/[0.06]",
         className
       )}
       {...props}
@@ -168,7 +168,7 @@ export function MobileMetaChip({
   return (
     <span
       className={cn(
-        "inline-flex max-w-full truncate rounded-md bg-[var(--color-surface-muted)] px-2.5 py-1 text-[13px] font-medium leading-none text-[var(--color-text-primary)]",
+        "inline-flex max-w-full truncate rounded-md bg-[var(--color-surface-muted)] px-2.5 py-1 text-[14px] font-medium leading-none text-[var(--color-text-primary)]",
         className
       )}>
       {children}

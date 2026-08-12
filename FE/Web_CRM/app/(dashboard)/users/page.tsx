@@ -28,6 +28,7 @@ import {
   MobileRecordCard,
 } from "@/components/ui/mobile-record-card";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
+import { CodeText, Copyable } from "@/components/ui/smart-text";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -378,10 +379,9 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-0 lg:space-y-6">
+    <div className="space-y-0 lg:space-y-2">
       <PageHeader
         title="Người dùng & phân quyền"
-        description="Chọn nhân viên để cấp tài khoản CRM - đăng nhập bằng email"
         actions={
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4" />
@@ -453,16 +453,20 @@ export default function UsersPage() {
                             </p>
                             {item.username &&
                             item.username !== displayName ? (
-                              <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                              <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
                                 {item.username}
                               </p>
                             ) : null}
                             <p className="mt-1 truncate text-sm text-[var(--color-text-inverse)]">
-                              {item.email}
+                              <Copyable value={item.email} label="email" />
                             </p>
                             {item.employeeCode ? (
                               <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
-                                {item.employeeCode}
+                                <CodeText
+                                  value={item.employeeCode}
+                                  label="mã nhân viên"
+                                  className="text-xs text-[var(--color-text-secondary)]"
+                                />
                               </p>
                             ) : null}
                           </div>
@@ -546,7 +550,11 @@ export default function UsersPage() {
                         {item.employeeName || "—"}
                         {item.employeeCode ? (
                           <span className="ml-2 text-xs text-[var(--color-text-inverse)]">
-                            {item.employeeCode}
+                            <CodeText
+                              value={item.employeeCode}
+                              label="mã nhân viên"
+                              className="text-xs text-[var(--color-text-inverse)]"
+                            />
                           </span>
                         ) : null}
                         {item.id === user?.id ? (
@@ -555,7 +563,9 @@ export default function UsersPage() {
                           </span>
                         ) : null}
                       </td>
-                      <td>{item.email}</td>
+                      <td>
+                        <Copyable value={item.email} label="email" />
+                      </td>
                       <td>
                         <RoleCheckboxes
                           compact
@@ -733,13 +743,17 @@ export default function UsersPage() {
                 khẩu trong CRM.
               </p>
               <div className="space-y-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-3 text-sm">
-                <p>
+                <p className="flex flex-wrap items-center gap-1">
                   <span className="text-[var(--color-text-inverse)]">Email: </span>
-                  <span className="font-medium">{createdCreds.email}</span>
+                  <Copyable value={createdCreds.email} label="email" />
                 </p>
-                <p>
+                <p className="flex flex-wrap items-center gap-1">
                   <span className="text-[var(--color-text-inverse)]">Mật khẩu: </span>
-                  <span className="font-mono font-medium">{createdCreds.password}</span>
+                  <Copyable
+                    value={createdCreds.password}
+                    label="mật khẩu"
+                    className="font-mono"
+                  />
                 </p>
               </div>
               <DialogFooter>

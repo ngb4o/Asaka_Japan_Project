@@ -23,6 +23,7 @@ import { statusBadgeVariant } from "@/lib/status-badge";
 import type { Dealer, LineItem, Order } from "@/lib/types";
 import { cn, formatCurrency, formatDateDisplay } from "@/lib/utils";
 import { useToast } from "@/components/providers/ToastProvider";
+import { CodeText, PhoneLink } from "@/components/ui/smart-text";
 
 type DealerDetailDialogProps = {
   dealer: Dealer | null;
@@ -104,7 +105,7 @@ function DocumentCard({
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
-            {code}
+            <CodeText value={code} label="mã đơn" />
           </p>
           <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
             {formatDate(date)}
@@ -182,10 +183,14 @@ function DealerInfoCard({
           <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
             {dealer.name}
           </p>
-          <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
-            {[dealer.contactName, dealer.phone].filter(Boolean).join(" · ") ||
-              "Chưa có liên hệ"}
+          <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
+            {dealer.contactName || "Chưa có liên hệ"}
           </p>
+          {dealer.phone ? (
+            <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+              <PhoneLink value={dealer.phone} />
+            </p>
+          ) : null}
           {dealer.region ? (
             <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
               {dealer.region}

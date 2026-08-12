@@ -140,7 +140,7 @@ export function MobileBottomNav({ onOpenMenu: _onOpenMenu }: MobileBottomNavProp
                   : "text-[var(--color-text-inverse)]"
               )}>
               <Icon className="h-5 w-5 shrink-0" />
-              <span className="max-w-full truncate text-[10px] font-medium leading-tight">
+              <span className="max-w-full truncate text-[11px] font-medium leading-tight">
                 {tab.label}
               </span>
             </Link>

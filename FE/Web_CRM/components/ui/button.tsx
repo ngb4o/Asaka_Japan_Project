@@ -17,7 +17,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[var(--color-text-secondary)] text-[var(--color-text-tertiary)] shadow-sm hover:bg-[#016502] dark:hover:bg-[#029405]",
+          "bg-[var(--color-text-secondary)] text-[var(--color-text-tertiary)] shadow-sm hover:bg-[#016502] dark:hover:bg-[#32b85a]",
         outline:
           "border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] shadow-sm hover:bg-[var(--color-surface-muted)]",
         ghost: "text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]",

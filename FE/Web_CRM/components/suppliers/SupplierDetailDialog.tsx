@@ -22,6 +22,7 @@ import { statusBadgeVariant } from "@/lib/status-badge";
 import type { PurchaseInvoice, Supplier } from "@/lib/types";
 import { cn, formatCurrency, formatDateDisplay } from "@/lib/utils";
 import { useToast } from "@/components/providers/ToastProvider";
+import { CodeText, Copyable, PhoneLink } from "@/components/ui/smart-text";
 
 type SupplierDetailDialogProps = {
   supplier: Supplier | null;
@@ -64,7 +65,7 @@ function InvoiceCard({ invoice }: { invoice: PurchaseInvoice }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
-            {invoice.code}
+            <CodeText value={invoice.code} label="mã hóa đơn" />
           </p>
           <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
             {[
@@ -156,10 +157,14 @@ function SupplierInfoCard({
           <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
             {supplier.name}
           </p>
-          <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
-            {[supplier.contactName, supplier.phone].filter(Boolean).join(" · ") ||
-              "Chưa có liên hệ"}
+          <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
+            {supplier.contactName || "Chưa có liên hệ"}
           </p>
+          {supplier.phone ? (
+            <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+              <PhoneLink value={supplier.phone} />
+            </p>
+          ) : null}
           {supplier.address ? (
             <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
               {supplier.address}
@@ -167,12 +172,21 @@ function SupplierInfoCard({
           ) : null}
           {supplier.taxCode ? (
             <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
-              MST: {supplier.taxCode}
+              MST:{" "}
+              <Copyable
+                value={supplier.taxCode}
+                label="mã số thuế"
+                className="text-xs text-[var(--color-text-secondary)]"
+              />
             </p>
           ) : null}
           {supplier.email ? (
             <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
-              {supplier.email}
+              <Copyable
+                value={supplier.email}
+                label="email"
+                className="text-xs text-[var(--color-text-secondary)]"
+              />
             </p>
           ) : null}
         </div>

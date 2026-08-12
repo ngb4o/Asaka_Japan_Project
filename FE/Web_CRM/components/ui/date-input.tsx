@@ -469,7 +469,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                     {WEEKDAYS.map((day) => (
                       <div
                         key={day}
-                        className="flex h-8 items-center justify-center text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-inverse)]">
+                        className="flex h-8 items-center justify-center text-[12px] font-semibold uppercase tracking-wide text-[var(--color-text-inverse)]">
                         {day}
                       </div>
                     ))}
@@ -625,7 +625,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                     {WEEKDAYS.map((day) => (
                       <div
                         key={day}
-                        className="flex h-8 items-center justify-center text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-inverse)]">
+                        className="flex h-8 items-center justify-center text-[12px] font-semibold uppercase tracking-wide text-[var(--color-text-inverse)]">
                         {day}
                       </div>
                     ))}

@@ -233,7 +233,7 @@ export function DateRangeInput({
               ? "border-[var(--color-text-secondary)] bg-[var(--color-text-secondary)]/8 ring-1 ring-[var(--color-text-secondary)]/20"
               : "border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-muted)]"
           )}>
-          <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
             {fromLabel}
           </p>
           <p className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--color-text-primary)]">
@@ -255,7 +255,7 @@ export function DateRangeInput({
               : "border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-muted)]",
             !draftFrom && "opacity-50"
           )}>
-          <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-text-inverse)]">
             {toLabel}
           </p>
           <p
@@ -300,7 +300,7 @@ export function DateRangeInput({
         {WEEKDAYS.map((day) => (
           <div
             key={day}
-            className="flex h-8 items-center justify-center text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-inverse)]">
+            className="flex h-8 items-center justify-center text-[12px] font-semibold uppercase tracking-wide text-[var(--color-text-inverse)]">
             {day}
           </div>
         ))}

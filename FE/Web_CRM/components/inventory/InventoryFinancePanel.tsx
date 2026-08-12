@@ -322,7 +322,7 @@ function ProductValueList({
                 </div>
                 <div className="shrink-0 text-right">
                   {valueLabel ? (
-                    <p className="text-[10px] text-[var(--color-text-inverse)]">
+                    <p className="text-[11px] text-[var(--color-text-inverse)]">
                       {valueLabel}
                     </p>
                   ) : null}

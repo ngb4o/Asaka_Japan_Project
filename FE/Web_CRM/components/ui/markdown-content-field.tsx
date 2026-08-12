@@ -278,7 +278,7 @@ export function MarkdownContentField({
               id={id}
               value={value}
               onChange={(e) => onChange(e.target.value.slice(0, maxLength))}
-              className="min-h-[320px] resize-y rounded-none border-0 bg-transparent font-mono text-[13px] leading-relaxed shadow-none focus-visible:ring-0"
+              className="min-h-[320px] resize-y rounded-none border-0 bg-transparent font-mono text-[14px] leading-relaxed shadow-none focus-visible:ring-0"
               placeholder={placeholder}
             />
           </>

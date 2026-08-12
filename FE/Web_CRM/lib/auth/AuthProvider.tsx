@@ -18,6 +18,10 @@ import { clearToken, setToken } from "@/lib/auth/session";
 import type { UserProfile } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { primaryRole, resolveRoles } from "@/lib/auth/permissions";
+import { clearApiCache } from "@/lib/offline/api-cache";
+import { clearMutationQueue } from "@/lib/offline/mutation-queue";
+import { prefetchOfflineForUser } from "@/lib/offline/prefetch";
+import { clearAppBadge } from "@/lib/pwa/app-badge";
 
 type AuthContextValue = {
   user: UserProfile | null;
@@ -60,14 +64,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshProfile().finally(() => setLoading(false));
   }, [refreshProfile]);
 
+  useEffect(() => {
+    if (loading || !user) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) return;
+    const timer = window.setTimeout(() => {
+      void prefetchOfflineForUser(user);
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [loading, user]);
+
   const login = useCallback(
     async (email: string, password: string) => {
       const result = await loginRequest(email, password);
       setToken(result.token);
-      await refreshProfile();
+      const profile = normalizeProfile(await getProfileRequest());
+      setUser(profile);
+      void prefetchOfflineForUser(profile, { force: true });
       router.push("/dashboard");
     },
-    [refreshProfile, router]
+    [router]
   );
 
   const logout = useCallback(async () => {
@@ -80,6 +95,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       clearToken();
       setUser(null);
+      void clearApiCache();
+      void clearMutationQueue();
+      void clearAppBadge();
+      try {
+        window.localStorage.removeItem("crm_offline_prefetch_at");
+        window.localStorage.removeItem("crm_offline_prefetch_ok");
+      } catch {
+        // ignore
+      }
       router.push("/login");
     }
   }, [router]);

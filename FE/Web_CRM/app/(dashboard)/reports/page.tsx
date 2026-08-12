@@ -161,10 +161,9 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <PageHeader
         title="Báo cáo doanh số"
-        description="Doanh thu, thanh toán, công nợ, top đại lý / sản phẩm / nhân viên theo kỳ"
         actions={
           <Button
             type="button"

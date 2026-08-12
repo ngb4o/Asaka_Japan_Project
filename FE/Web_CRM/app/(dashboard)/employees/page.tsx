@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
+import { CodeText, Copyable, PhoneLink } from "@/components/ui/smart-text";
 import { ImageUpload } from "@/components/products/ImageUpload";
 import { EmployeeDetailDialog } from "@/components/employees/EmployeeDetailDialog";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -302,10 +303,9 @@ export default function EmployeesPage() {
   }
 
   return (
-    <div className="space-y-0 lg:space-y-6">
+    <div className="space-y-0 lg:space-y-2">
       <PageHeader
         title="Hồ sơ nhân viên"
-        description="Quản lý hồ sơ, lương, hoa hồng và liên kết tài khoản CRM"
         actions={
           canEdit ? (
             <Button onClick={openCreate}>
@@ -370,19 +370,27 @@ export default function EmployeesPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
-                          {item.code}
+                          {item.code ? (
+                            <CodeText value={item.code} label="mã nhân viên" />
+                          ) : (
+                            "—"
+                          )}
                         </p>
-                        <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                        <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
                           {item.fullName}
                         </p>
                         {item.phone ? (
                           <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-                            {item.phone}
+                            <PhoneLink value={item.phone} />
                           </p>
                         ) : null}
                         {item.email ? (
                           <p className="mt-0.5 truncate text-xs text-[var(--color-text-secondary)]">
-                            {item.email}
+                            <Copyable
+                              value={item.email}
+                              label="email"
+                              className="text-xs text-[var(--color-text-secondary)]"
+                            />
                           </p>
                         ) : null}
                       </div>
@@ -505,12 +513,26 @@ export default function EmployeesPage() {
                 <tbody>
                   {items.map((item) => (
                     <tr key={item.id}>
-                      <td className="font-medium">{item.code}</td>
+                      <td className="font-medium">
+                        {item.code ? (
+                          <CodeText value={item.code} label="mã nhân viên" />
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td>
                         <p>{item.fullName}</p>
-                        <p className="text-xs text-[var(--color-text-inverse)]">
-                          {item.phone || item.email || "—"}
-                        </p>
+                        <div className="space-y-0.5 text-xs text-[var(--color-text-inverse)]">
+                          {item.phone ? <PhoneLink value={item.phone} /> : null}
+                          {item.email ? (
+                            <Copyable
+                              value={item.email}
+                              label="email"
+                              className="text-xs text-[var(--color-text-inverse)]"
+                            />
+                          ) : null}
+                          {!item.phone && !item.email ? "—" : null}
+                        </div>
                       </td>
                       <td>
                         {item.title || "—"}

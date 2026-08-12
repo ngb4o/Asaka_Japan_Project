@@ -179,14 +179,9 @@ export default function PayrollPage() {
   }
 
   return (
-    <div className="min-h-full space-y-0 lg:min-h-0 lg:space-y-6">
+    <div className="min-h-full space-y-0 lg:min-h-0 lg:space-y-3">
       <PageHeader
         title="Bảng lương"
-        description={
-          canEdit
-            ? "Lương cứng + phụ cấp + hoa hồng đơn hoàn tất + hoàn chi phí chuyến"
-            : "Xem lương theo tháng của bạn (sau khi kế toán tạo bảng lương)"
-        }
         actions={
           canEdit ? (
           <div className="flex flex-wrap items-end gap-2">
@@ -295,7 +290,7 @@ export default function PayrollPage() {
                             </p>
                             {!canEdit ? (
                               <>
-                                <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                                <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
                                   {item.lines[0]?.employeeName || "—"}
                                 </p>
                                 {item.lines[0]?.employeeCode ? (
@@ -466,7 +461,7 @@ export default function PayrollPage() {
                         <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                           {line.employeeCode}
                         </p>
-                        <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                        <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
                           {line.employeeName}
                         </p>
                         <p className="mt-1 text-sm text-[var(--color-text-inverse)]">

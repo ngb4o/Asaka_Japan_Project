@@ -2,9 +2,13 @@ import type { Metadata, Viewport } from "next";
 import { Barlow } from "next/font/google";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { DisplayDensityProvider } from "@/components/providers/DisplayDensityProvider";
 import { ToastProvider } from "@/components/providers/ToastProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { IosPwaViewport } from "@/components/providers/IosPwaViewport";
+import { NetworkStatusProvider } from "@/components/providers/NetworkStatusProvider";
+import { PwaInstallProvider } from "@/components/providers/PwaInstallProvider";
+import { SwUpdateProvider } from "@/components/providers/SwUpdateProvider";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -42,7 +46,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a110e" },
   ],
 };
 
@@ -60,6 +64,13 @@ const themeInitScript = `
       document.documentElement.style.colorScheme = 'light';
     }
   } catch (e) {}
+  try {
+    var density = localStorage.getItem('crm_density');
+    if (density !== 'sm' && density !== 'md' && density !== 'lg') density = 'md';
+    document.documentElement.setAttribute('data-density', density);
+  } catch (e) {
+    document.documentElement.setAttribute('data-density', 'md');
+  }
   try {
     var nav = window.navigator;
     var ua = nav.userAgent || '';
@@ -89,12 +100,20 @@ export default function RootLayout({
       </head>
       <body className={`${barlow.className} antialiased`}>
         <ThemeProvider>
-          <IosPwaViewport />
-          <ToastProvider>
-            <TooltipProvider>
-              <AuthProvider>{children}</AuthProvider>
-            </TooltipProvider>
-          </ToastProvider>
+          <DisplayDensityProvider>
+            <IosPwaViewport />
+            <ToastProvider>
+              <NetworkStatusProvider>
+                <SwUpdateProvider>
+                  <PwaInstallProvider>
+                    <TooltipProvider>
+                      <AuthProvider>{children}</AuthProvider>
+                    </TooltipProvider>
+                  </PwaInstallProvider>
+                </SwUpdateProvider>
+              </NetworkStatusProvider>
+            </ToastProvider>
+          </DisplayDensityProvider>
         </ThemeProvider>
       </body>
     </html>

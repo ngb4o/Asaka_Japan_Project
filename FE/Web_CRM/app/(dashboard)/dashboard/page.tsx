@@ -30,9 +30,7 @@ import {
   canViewProfit,
   canViewInventoryValue,
   canViewReports,
-  DASHBOARD_HERO_SUBTITLE,
   hasRole,
-  primaryRole,
   ROLE_LABELS,
   rolesOf,
 } from "@/lib/auth/permissions";
@@ -41,6 +39,7 @@ import type { DashboardSummary } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CodeText } from "@/components/ui/smart-text";
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   pending: "Chờ xử lý",
@@ -94,14 +93,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const userRoles = rolesOf(user);
-  const mainRole = primaryRole(userRoles, user?.role);
   const canReports = canViewReports(userRoles);
   const canFinancials = canViewCompanyFinancials(userRoles);
   const showProfit = canViewProfit(userRoles);
   const showInventoryValue = canViewInventoryValue(userRoles);
-  const heroSubtitle =
-    (mainRole && DASHBOARD_HERO_SUBTITLE[mainRole]) ||
-    "Theo dõi công việc hàng ngày.";
   const isWarehouseView = hasRole(userRoles, "warehouse") && !canFinancials;
   const isSalesView = hasRole(userRoles, "sales") && !canFinancials && !isWarehouseView;
 
@@ -139,13 +134,13 @@ export default function DashboardPage() {
   const displayName = user?.employeeName || user?.email?.split("@")[0] || "bạn";
 
   return (
-    <div className="space-y-3 md:space-y-6">
+    <div className="space-y-2.5 md:space-y-4">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]">
+      <section className="relative overflow-hidden rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(1,125,3,0.12),_transparent_55%)]" />
         <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[var(--color-text-secondary)]/10 blur-3xl" />
-        <div className="relative flex flex-col gap-5 p-5 md:flex-row md:items-end md:justify-between md:p-6">
-          <div className="space-y-3">
+        <div className="relative flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between md:p-4">
+          <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-[var(--color-text-secondary)]/10 px-2.5 py-1 text-xs font-medium text-[var(--color-text-secondary)]">
                 {todayLabel()}
@@ -154,14 +149,9 @@ export default function DashboardPage() {
                 <Badge variant="muted">{userRoles.map((r) => ROLE_LABELS[r]).join(" · ")}</Badge>
               ) : null}
             </div>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text-primary)] md:text-3xl">
-                Xin chào, {displayName}
-              </h1>
-              <p className="mt-1.5 max-w-xl text-sm text-[var(--color-text-inverse)]">
-                {heroSubtitle}
-              </p>
-            </div>
+            <h1 className="text-xl font-semibold tracking-tight text-[var(--color-text-primary)] md:text-2xl">
+              Xin chào, {displayName}
+            </h1>
           </div>
           <div className="flex flex-wrap gap-2">
             {canReports ? (
@@ -586,10 +576,12 @@ export default function DashboardPage() {
                     className="flex items-center justify-between gap-4 px-4 py-3.5 transition-colors hover:bg-[var(--color-surface-muted)]/60">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold tracking-tight">{order.code}</p>
+                        <p className="font-semibold tracking-tight">
+                          <CodeText value={order.code} label="mã đơn" />
+                        </p>
                         <span
                           className={cn(
-                            "rounded-full px-2.5 py-1 text-[13px] font-medium leading-none md:px-2.5 md:py-1 md:text-[13px]",
+                            "rounded-full px-2.5 py-1 text-[14px] font-medium leading-none md:px-2.5 md:py-1 md:text-[14px]",
                             ORDER_STATUS_TONE[order.status] || ORDER_STATUS_TONE.pending
                           )}>
                           {ORDER_STATUS_LABELS[order.status] || order.status}
@@ -700,7 +692,7 @@ function ChangeBadge({ value }: { value?: number }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-[13px] font-semibold leading-none",
+        "inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-[14px] font-semibold leading-none",
         up
           ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
           : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
@@ -782,7 +774,7 @@ function KpiCard({
             <div className="min-w-0">
               <p className="text-xs font-medium text-[var(--color-text-inverse)] md:text-sm">{title}</p>
               {hint ? (
-                <p className="mt-0.5 text-[11px] text-[var(--color-text-inverse)]/80">{hint}</p>
+                <p className="mt-0.5 text-[12px] text-[var(--color-text-inverse)]/80">{hint}</p>
               ) : null}
             </div>
             <span
@@ -857,7 +849,7 @@ function QuickStat({
           <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
         </span>
         <div className="min-w-0">
-          <p className="truncate text-[11px] text-[var(--color-text-inverse)] md:text-xs">{title}</p>
+          <p className="truncate text-[12px] text-[var(--color-text-inverse)] md:text-xs">{title}</p>
           {value == null ? (
             <Skeleton className="mt-1 h-6 w-12" />
           ) : (

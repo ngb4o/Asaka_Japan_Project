@@ -217,10 +217,9 @@ export default function ProductCategoriesPage() {
   }
 
   return (
-    <div className="space-y-0 lg:space-y-6">
+    <div className="space-y-0 lg:space-y-2">
       <PageHeader
         title="Loại sản phẩm"
-        description="Quản lý nhóm sản phẩm BVTV"
         actions={
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4" />

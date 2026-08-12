@@ -76,7 +76,7 @@ export function FilterTrigger({
           )}>
           <Filter className="h-4 w-4" />
           {activeCount > 0 ? (
-            <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-text-secondary)] px-1 text-[10px] font-bold text-white">
+            <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-text-secondary)] px-1 text-[11px] font-bold text-white">
               {activeCount}
             </span>
           ) : null}

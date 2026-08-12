@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CodeText, Copyable, PhoneLink } from "@/components/ui/smart-text";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { VndInput } from "@/components/ui/vnd-input";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -346,10 +347,9 @@ export default function ReceivablesPage() {
 
   if (!canAr && !canAp) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         <PageHeader
           title="Công nợ"
-          description="Bạn không có quyền xem sổ công nợ."
         />
       </div>
     );
@@ -368,10 +368,9 @@ export default function ReceivablesPage() {
   const apItems = apSummary?.items || [];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <PageHeader
         title="Công nợ"
-        description="Theo dõi phải thu đại lý và phải trả nhà cung cấp"
         actions={
           <Button
             variant="outline"
@@ -457,11 +456,14 @@ export default function ReceivablesPage() {
                               <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                                 {item.dealerName}
                               </p>
-                              {(item.contactName || item.phone) ? (
-                                <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
-                                  {[item.contactName, item.phone]
-                                    .filter(Boolean)
-                                    .join(" · ")}
+                              {item.contactName ? (
+                                <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
+                                  {item.contactName}
+                                </p>
+                              ) : null}
+                              {item.phone ? (
+                                <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+                                  <PhoneLink value={item.phone} />
                                 </p>
                               ) : null}
                               {item.region ? (
@@ -528,9 +530,11 @@ export default function ReceivablesPage() {
                             <tr key={item.dealerId}>
                               <td className="font-medium">{item.dealerName}</td>
                               <td className="text-[var(--color-text-inverse)]">
-                                {[item.contactName, item.phone]
-                                  .filter(Boolean)
-                                  .join(" · ") || "—"}
+                                <div className="space-y-0.5">
+                                  {item.contactName ? <p>{item.contactName}</p> : null}
+                                  {item.phone ? <PhoneLink value={item.phone} /> : null}
+                                  {!item.contactName && !item.phone ? "—" : null}
+                                </div>
                               </td>
                               <td>{item.region || "—"}</td>
                               <td className="text-right tabular-nums">
@@ -616,16 +620,24 @@ export default function ReceivablesPage() {
                               <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                                 {item.supplierName}
                               </p>
-                              {(item.contactName || item.phone) ? (
-                                <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
-                                  {[item.contactName, item.phone]
-                                    .filter(Boolean)
-                                    .join(" · ")}
+                              {item.contactName ? (
+                                <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
+                                  {item.contactName}
+                                </p>
+                              ) : null}
+                              {item.phone ? (
+                                <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+                                  <PhoneLink value={item.phone} />
                                 </p>
                               ) : null}
                               {item.taxCode ? (
                                 <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-                                  MST: {item.taxCode}
+                                  MST:{" "}
+                                  <Copyable
+                                    value={item.taxCode}
+                                    label="mã số thuế"
+                                    className="text-sm text-[var(--color-text-inverse)]"
+                                  />
                                 </p>
                               ) : null}
                             </div>
@@ -688,9 +700,11 @@ export default function ReceivablesPage() {
                                 {item.supplierName}
                               </td>
                               <td className="text-[var(--color-text-inverse)]">
-                                {[item.contactName, item.phone]
-                                  .filter(Boolean)
-                                  .join(" · ") || "—"}
+                                <div className="space-y-0.5">
+                                  {item.contactName ? <p>{item.contactName}</p> : null}
+                                  {item.phone ? <PhoneLink value={item.phone} /> : null}
+                                  {!item.contactName && !item.phone ? "—" : null}
+                                </div>
                               </td>
                               <td>{item.debtInvoiceCount}</td>
                               <td className="font-semibold text-red-600">
@@ -760,7 +774,7 @@ export default function ReceivablesPage() {
                         <div className="mb-3 flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
                             <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
-                              {order.code}
+                              <CodeText value={order.code} label="mã đơn" />
                             </p>
                             <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
                               {[
@@ -935,7 +949,7 @@ export default function ReceivablesPage() {
                         <div className="mb-3 flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
                             <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
-                              {invoice.code}
+                              <CodeText value={invoice.code} label="mã hóa đơn" />
                             </p>
                             <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
                               {[

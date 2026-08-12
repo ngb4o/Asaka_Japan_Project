@@ -27,13 +27,15 @@
   --color-sidebar-active-bg: var(--crm-sidebar-active-bg);
   --color-sidebar-active-fg: var(--crm-sidebar-active-fg);
 
-  --text-xs: 12px;
-  --text-sm: 14px;
-  --text-md: 15px;
-  --text-lg: 16px;
-  --text-xl: 18px;
-  --text-2xl: 22px;
-  --text-3xl: 28px;
+  /* Type scale — default = Trung bình (md). Overridden by data-density. */
+  --text-xs: 13px;
+  --text-sm: 15px;
+  --text-base: 16px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 32px;
 
   --radius-card: 14px;
   --radius-button: 10px;
@@ -48,12 +50,48 @@
   --shadow-elevated: var(--crm-shadow-elevated);
 }
 
+/* Nhỏ — scale gốc trước khi tăng chữ */
+html[data-density="sm"] {
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 15px;
+  --text-md: 15px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 22px;
+  --text-3xl: 28px;
+}
+
+/* Trung bình — mặc định hiện tại */
+html[data-density="md"] {
+  --text-xs: 13px;
+  --text-sm: 15px;
+  --text-base: 16px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 32px;
+}
+
+/* Lớn */
+html[data-density="lg"] {
+  --text-xs: 14px;
+  --text-sm: 16px;
+  --text-base: 17px;
+  --text-md: 17px;
+  --text-lg: 20px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+}
+
 :root {
   --crm-text-primary: #0f172a;
   --crm-text-secondary: #017d03;
   --crm-text-tertiary: #ffffff;
   --crm-text-inverse: #64748b;
-  --crm-surface-base: #020617;
+  --crm-surface-base: #ffffff;
   --crm-surface-elevated: #ffffff;
   --crm-surface-muted: #f1f5f9;
   --crm-surface-glass: rgb(255 255 255 / 0.8);
@@ -76,29 +114,30 @@
 }
 
 .dark {
-  --crm-text-primary: #f8fafc;
-  --crm-text-secondary: #4ade80;
-  --crm-text-tertiary: #052e16;
-  --crm-text-inverse: #94a3b8;
-  --crm-surface-base: #020617;
-  --crm-surface-elevated: #0f172a;
-  --crm-surface-muted: #020617;
-  --crm-surface-glass: rgb(15 23 42 / 0.86);
-  --crm-border-subtle: rgb(148 163 184 / 0.16);
-  --crm-badge-success-bg: rgb(22 101 52 / 0.35);
+  /* Forest ink — brand green DNA, clearer surface lift */
+  --crm-text-primary: #eef5f1;
+  --crm-text-secondary: #3dcc6a;
+  --crm-text-tertiary: #062a12;
+  --crm-text-inverse: #8fa399;
+  --crm-surface-base: #0a110e;
+  --crm-surface-elevated: #141c19;
+  --crm-surface-muted: #1c2722;
+  --crm-surface-glass: rgb(20 28 25 / 0.9);
+  --crm-border-subtle: rgb(148 180 160 / 0.14);
+  --crm-badge-success-bg: rgb(34 120 64 / 0.38);
   --crm-badge-success-fg: #86efac;
-  --crm-badge-muted-bg: rgb(148 163 184 / 0.12);
-  --crm-badge-muted-fg: #cbd5e1;
-  --crm-danger-soft-bg: rgb(127 29 29 / 0.35);
-  --crm-shadow-soft: 0 1px 2px rgb(0 0 0 / 0.35), 0 8px 24px rgb(0 0 0 / 0.25);
-  --crm-shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.35);
+  --crm-badge-muted-bg: rgb(148 180 160 / 0.12);
+  --crm-badge-muted-fg: #b7c9be;
+  --crm-danger-soft-bg: rgb(127 40 40 / 0.4);
+  --crm-shadow-soft: 0 1px 2px rgb(0 0 0 / 0.28), 0 8px 24px rgb(0 0 0 / 0.22);
+  --crm-shadow-card: 0 1px 2px rgb(0 0 0 / 0.32), 0 8px 20px rgb(0 0 0 / 0.28);
   --crm-shadow-elevated: 0 16px 40px rgb(0 0 0 / 0.4);
-  --crm-sidebar-bg: #020617;
-  --crm-sidebar-fg: #e2e8f0;
-  --crm-sidebar-muted: #94a3b8;
-  --crm-sidebar-border: rgb(148 163 184 / 0.12);
-  --crm-sidebar-active-bg: rgb(74 222 128 / 0.14);
-  --crm-sidebar-active-fg: #4ade80;
+  --crm-sidebar-bg: #0a1a11;
+  --crm-sidebar-fg: #e8f5ec;
+  --crm-sidebar-muted: #7f9e88;
+  --crm-sidebar-border: rgb(255 255 255 / 0.07);
+  --crm-sidebar-active-bg: rgb(61 204 106 / 0.16);
+  --crm-sidebar-active-fg: #6ee7a0;
 }
 
 @layer base {
@@ -114,7 +153,7 @@
     overflow: hidden;
     /* Chặn pull-to-refresh native (Safari/Chrome) reload cả trang */
     overscroll-behavior-y: none;
-    background-color: var(--color-surface-elevated);
+    background-color: var(--color-surface-base);
     --crm-app-height: 100dvh;
   }
 
@@ -131,7 +170,7 @@
     font-weight: 500;
     line-height: 1.5;
     color: var(--color-text-primary);
-    background-color: var(--color-surface-elevated);
+    background-color: var(--color-surface-base);
     -webkit-font-smoothing: antialiased;
     transition: background-color 200ms ease, color 200ms ease;
     overscroll-behavior-y: none;
@@ -145,7 +184,7 @@
     inset: 0;
     display: flex;
     overflow: hidden;
-    background-color: var(--color-surface-elevated);
+    background-color: var(--color-surface-base);
   }
 
   /**
@@ -165,7 +204,7 @@
   html.crm-ios-pwa body {
     height: var(--crm-app-height);
     min-height: 100%;
-    background-color: var(--color-surface-elevated);
+    background-color: var(--color-surface-base);
   }
 
   html.crm-ios-pwa .crm-app-shell {
@@ -191,7 +230,7 @@
   }
 
   thead th {
-    font-size: 12px;
+    font-size: var(--text-xs);
     letter-spacing: 0.02em;
     text-transform: uppercase;
   }
@@ -241,8 +280,8 @@
     width: 100%;
     border-collapse: collapse;
     text-align: left;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+    font-size: var(--text-sm);
+    line-height: 1.35rem;
   }
 
   .crm-data-table thead tr {
@@ -251,7 +290,7 @@
   }
 
   .dark .crm-data-table thead tr {
-    background: #14532d;
+    background: #1a4d2e;
     color: #ecfdf5;
   }
 
@@ -270,7 +309,7 @@
 
   .dark .crm-data-table th {
     color: #ecfdf5;
-    border-color: #166534;
+    border-color: color-mix(in srgb, #1a4d2e 70%, #000);
   }
 
   .crm-data-table tbody tr {
@@ -278,7 +317,11 @@
   }
 
   .crm-data-table tbody tr:hover {
-    background: color-mix(in srgb, var(--color-surface-muted) 50%, transparent);
+    background: color-mix(in srgb, var(--color-surface-muted) 70%, transparent);
+  }
+
+  .dark .crm-data-table tbody tr:hover {
+    background: color-mix(in srgb, var(--color-text-secondary) 8%, var(--color-surface-elevated));
   }
 
   .auth-fade-in {

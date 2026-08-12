@@ -16,7 +16,6 @@ export type PageHeaderFab = {
 
 type PageHeaderProps = {
   title: string;
-  description?: string;
   actions?: ReactNode;
   /** Mobile floating action button(s) — typically create. Hidden from md up. */
   fab?: PageHeaderFab | PageHeaderFab[] | null;
@@ -52,35 +51,24 @@ function FabButton({
   );
 }
 
-export function PageHeader({
-  title,
-  description,
-  actions,
-  fab,
-  className,
-}: PageHeaderProps) {
+export function PageHeader({ title, actions, fab, className }: PageHeaderProps) {
   const { visible: chromeVisible } = useMobileChrome();
   const fabs = fab == null ? [] : Array.isArray(fab) ? fab : [fab];
   const hasFab = fabs.length > 0;
-  const hasDesktopChrome = Boolean(title || description || actions);
+  const hasDesktopChrome = Boolean(title || actions);
 
   return (
     <>
       {hasDesktopChrome ? (
         <div
           className={cn(
-            "crm-enter hidden flex-col gap-3 lg:flex lg:flex-row lg:flex-wrap lg:items-start lg:justify-between lg:gap-4",
+            "crm-enter hidden flex-col gap-2 lg:flex lg:flex-row lg:flex-wrap lg:items-center lg:justify-between lg:gap-3",
             className
           )}>
-          <div className="min-w-0 space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
               {title}
             </h1>
-            {description ? (
-              <p className="max-w-2xl text-sm text-[var(--color-text-inverse)]">
-                {description}
-              </p>
-            ) : null}
           </div>
           {actions ? (
             <div className="flex w-auto flex-wrap items-center justify-end gap-2">

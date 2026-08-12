@@ -30,6 +30,7 @@ import {
   FilterTrigger,
 } from "@/components/ui/filter-drawer";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CodeText } from "@/components/ui/smart-text";
 import {
   InventoryFinanceFilterDrawer,
   InventoryFinanceFilterTrigger,
@@ -588,14 +589,9 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="space-y-0 lg:space-y-6">
+    <div className="space-y-0 lg:space-y-2">
       <PageHeader
         title="Kho hàng"
-        description={
-          canMoveStock
-            ? "Quản lý kho, nhập xuất và theo dõi tồn kho"
-            : "Xem tồn kho và lịch sử (nhập/xuất do kho phụ trách)"
-        }
         actions={
           canMoveStock ? (
             <>
@@ -680,8 +676,8 @@ export default function InventoryPage() {
                             <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                               {item.name}
                             </p>
-                            <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
-                              {item.code}
+                            <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
+                              <CodeText value={item.code} label="mã kho" />
                             </p>
                           </div>
                           <Badge
@@ -760,7 +756,9 @@ export default function InventoryPage() {
                         {warehouses.map((item) => (
                           <tr key={item.id}>
                             <td className="font-medium">{item.name}</td>
-                            <td className="text-[var(--color-text-inverse)]">{item.code}</td>
+                            <td className="text-[var(--color-text-inverse)]">
+                              <CodeText value={item.code} label="mã kho" />
+                            </td>
                             <td className="max-w-xs truncate text-[var(--color-text-inverse)]">
                               {item.address || "—"}
                             </td>
@@ -895,7 +893,11 @@ export default function InventoryPage() {
                         )
                       }
                       title={item.productName || "—"}
-                      subtitle={item.productSku || undefined}
+                      subtitle={
+                        item.productSku ? (
+                          <CodeText value={item.productSku} label="SKU" />
+                        ) : undefined
+                      }
                       meta={
                         <>
                           <MobileMetaChip>
@@ -966,7 +968,11 @@ export default function InventoryPage() {
                           <td className="font-medium">{item.warehouseName || "—"}</td>
                           <td>{item.productName || "—"}</td>
                           <td className="text-[var(--color-text-inverse)]">
-                            {item.productSku || "—"}
+                            {item.productSku ? (
+                              <CodeText value={item.productSku} label="SKU" />
+                            ) : (
+                              "—"
+                            )}
                           </td>
                           <td className="font-medium">
                             {(() => {

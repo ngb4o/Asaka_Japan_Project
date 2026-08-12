@@ -19,7 +19,6 @@ export function ThemeToggle({ className }: { className?: string }) {
       aria-label={isDark ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}
       title={isDark ? "Chế độ sáng" : "Chế độ tối"}>
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-      <span className="hidden lg:inline">{isDark ? "Sáng" : "Tối"}</span>
     </Button>
   );
 }

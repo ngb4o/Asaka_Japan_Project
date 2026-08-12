@@ -50,7 +50,7 @@ function StopContent({
   return (
     <div className="min-w-0 flex-1">
       <p className="font-medium">
-        <span className="mr-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-teal-700 px-1.5 text-[11px] font-bold text-white">
+        <span className="mr-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-teal-700 px-1.5 text-[12px] font-bold text-white">
           {stop.seq || index + 1}
         </span>
         {formatDateDisplay(stop.date)} - {purposeLabel[stop.purpose] || stop.purpose}

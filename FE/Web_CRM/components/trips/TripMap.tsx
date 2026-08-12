@@ -697,13 +697,13 @@ export function TripMap({ stops, expenses, origin, className }: TripMapProps) {
 
       <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--color-text-inverse)]">
         <span className="inline-flex items-center gap-1.5">
-          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-700 text-[10px] font-bold text-white">
+          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-700 text-[11px] font-bold text-white">
             K
           </span>
           Kho xuất phát
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-700 text-[10px] font-bold text-white">
+          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-700 text-[11px] font-bold text-white">
             1
           </span>
           Điểm dừng theo thứ tự

@@ -20,13 +20,14 @@ import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Pagination } from "@/components/ui/pagination";
 import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
+import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
+import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
+import { PhoneLink } from "@/components/ui/smart-text";
 import {
   MobileMetaChip,
   MobileRecordActions,
   MobileRecordCard,
 } from "@/components/ui/mobile-record-card";
-import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
-import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
 import {
   FilterDrawer,
   FilterOptionList,
@@ -295,14 +296,9 @@ export default function DealersPage() {
   }
 
   return (
-    <div className="space-y-0 lg:space-y-6">
+    <div className="space-y-0 lg:space-y-2">
       <PageHeader
         title="Đại lý"
-        description={
-          canWrite
-            ? "Quản lý đại lý — xem sản phẩm, số lượng và giá theo đơn hàng"
-            : "Xem đại lý và đơn hàng (chỉ sales/kho được chỉnh sửa)"
-        }
         actions={
           canWrite ? (
             <Button onClick={openCreate}>
@@ -383,7 +379,7 @@ export default function DealersPage() {
                               {item.name}
                             </p>
                             {item.contactName ? (
-                              <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                              <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
                                 {item.contactName}
                               </p>
                             ) : null}
@@ -418,7 +414,12 @@ export default function DealersPage() {
                         {(item.phone || item.region) ? (
                           <div className="mt-3 flex flex-wrap items-center gap-2">
                             {item.phone ? (
-                              <MobileMetaChip>{item.phone}</MobileMetaChip>
+                              <MobileMetaChip>
+                                <PhoneLink
+                                  value={item.phone}
+                                  className="text-[14px] font-medium text-[var(--color-text-primary)]"
+                                />
+                              </MobileMetaChip>
                             ) : null}
                             {item.region ? (
                               <MobileMetaChip>{item.region}</MobileMetaChip>
@@ -506,7 +507,9 @@ export default function DealersPage() {
                         <td className="font-medium">{item.name}</td>
                         <td>
                           <p>{item.contactName || "—"}</p>
-                          <p className="text-xs text-[var(--color-text-inverse)]">{item.phone}</p>
+                          <p className="text-xs text-[var(--color-text-inverse)]">
+                            <PhoneLink value={item.phone} />
+                          </p>
                         </td>
                         <td>{item.region || "—"}</td>
                         <td>

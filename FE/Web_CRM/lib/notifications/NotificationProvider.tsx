@@ -25,6 +25,7 @@ import {
   registerPushServiceWorker,
   requestTestPush,
 } from "@/lib/push/webPush";
+import { syncAppBadge } from "@/lib/pwa/app-badge";
 
 type PushUiState = {
   supported: boolean;
@@ -190,6 +191,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       await syncPush();
     }
   }, [syncPush]);
+
+  useEffect(() => {
+    void syncAppBadge(unreadCount);
+  }, [unreadCount]);
 
   useEffect(() => {
     refresh();

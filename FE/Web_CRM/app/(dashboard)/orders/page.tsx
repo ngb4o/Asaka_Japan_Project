@@ -39,6 +39,11 @@ import {
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/layout/PageHeader";
+import {
+  CodeText,
+  PhoneLink,
+  TrackingText,
+} from "@/components/ui/smart-text";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import {
   canCancelExportedOrder,
@@ -848,10 +853,9 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="space-y-0 lg:space-y-6">
+    <div className="space-y-0 lg:space-y-2">
       <PageHeader
         title="Đơn hàng"
-        description="Sales tạo đơn chờ xử lý · Kho xác nhận & xuất kho · Giao hàng · Thu công nợ"
         actions={
           canManageOrders(role) && canEditOrderItems(role) ? (
             <Button onClick={openCreate}>
@@ -982,14 +986,14 @@ export default function OrdersPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
-                            {item.code}
+                            <CodeText value={item.code} label="mã đơn" />
                           </p>
-                          <p className="mt-1 text-[15px] font-medium leading-snug text-[var(--color-text-primary)]">
+                          <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
                             {recipientName}
                           </p>
                           {recipientPhone ? (
                             <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-                              {recipientPhone}
+                              <PhoneLink value={recipientPhone} />
                             </p>
                           ) : null}
                           {item.dealerName ? (
@@ -1042,7 +1046,13 @@ export default function OrdersPage() {
                             <MobileMetaChip>Chuyến: {item.tripCode}</MobileMetaChip>
                           ) : null}
                           {item.trackingCode ? (
-                            <MobileMetaChip>VC: {item.trackingCode}</MobileMetaChip>
+                            <MobileMetaChip>
+                              <TrackingText
+                                value={item.trackingCode}
+                                prefix="VC: "
+                                className="text-[14px] font-medium text-[var(--color-text-primary)]"
+                              />
+                            </MobileMetaChip>
                           ) : null}
                         </div>
                       ) : null}
@@ -1167,12 +1177,14 @@ export default function OrdersPage() {
                         Math.max(0, (item.total || 0) - (item.paidAmount || 0));
                       return (
                         <tr key={item.id}>
-                          <td className="font-medium">{item.code}</td>
+                          <td className="font-medium">
+                            <CodeText value={item.code} label="mã đơn" />
+                          </td>
                           <td>
                             <p className="font-medium">{orderRecipientName(item)}</p>
                             {orderRecipientPhone(item) ? (
                               <p className="text-sm text-[var(--color-text-inverse)]">
-                                {orderRecipientPhone(item)}
+                                <PhoneLink value={orderRecipientPhone(item)} />
                               </p>
                             ) : null}
                             {item.dealerName ? (
@@ -1211,7 +1223,7 @@ export default function OrdersPage() {
                             <p>{orderDeliveryPerson(item)}</p>
                             {item.trackingCode ? (
                               <p className="text-xs text-[var(--color-text-inverse)]">
-                                {item.trackingCode}
+                                <TrackingText value={item.trackingCode} />
                               </p>
                             ) : null}
                           </td>
@@ -1638,7 +1650,11 @@ export default function OrdersPage() {
             <div className="grid grid-cols-2 gap-3 rounded-xl border border-[var(--color-border-subtle)] p-3 text-sm sm:grid-cols-3 sm:gap-4 sm:p-4">
               <div>
                 <p className="text-xs text-[var(--color-text-inverse)]">Mã đơn</p>
-                <p className="mt-1 font-semibold">{confirmingOrder?.code}</p>
+                <p className="mt-1 font-semibold">
+                  {confirmingOrder?.code ? (
+                    <CodeText value={confirmingOrder.code} label="mã đơn" />
+                  ) : null}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-[var(--color-text-inverse)]">Kho xuất</p>
@@ -1658,8 +1674,16 @@ export default function OrdersPage() {
                 <p className="text-xs text-[var(--color-text-inverse)]">SĐT</p>
                 <p className="mt-1 font-semibold">
                   {confirmingOrder?.customerPhone ||
-                    confirmingOrder?.shippingPhone ||
-                    "—"}
+                  confirmingOrder?.shippingPhone ? (
+                    <PhoneLink
+                      value={
+                        confirmingOrder.customerPhone ||
+                        confirmingOrder.shippingPhone
+                      }
+                    />
+                  ) : (
+                    "—"
+                  )}
                 </p>
               </div>
               <div>
@@ -1744,13 +1768,13 @@ export default function OrdersPage() {
                       </div>
                       <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
                         <div className="min-w-0">
-                          <p className="text-[10px] text-[var(--color-text-inverse)] sm:text-xs">
+                          <p className="text-[11px] text-[var(--color-text-inverse)] sm:text-xs">
                             Cần xuất
                           </p>
                           <p className="truncate font-semibold">{row.required}</p>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[10px] text-[var(--color-text-inverse)] sm:text-xs">
+                          <p className="text-[11px] text-[var(--color-text-inverse)] sm:text-xs">
                             Tồn hiện tại
                           </p>
                           <p
@@ -1759,7 +1783,7 @@ export default function OrdersPage() {
                           </p>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[10px] text-[var(--color-text-inverse)] sm:text-xs">
+                          <p className="text-[11px] text-[var(--color-text-inverse)] sm:text-xs">
                             Còn lại
                           </p>
                           <p

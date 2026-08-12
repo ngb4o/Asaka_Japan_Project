@@ -28,8 +28,9 @@ import {
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { canAccessPath, ROLE_LABELS, ROLE_WORKSPACE_SUBTITLE, primaryRole, rolesOf } from "@/lib/auth/permissions";
+import { canAccessPath, ROLE_LABELS, rolesOf } from "@/lib/auth/permissions";
 import { Button } from "@/components/ui/button";
+import { Copyable } from "@/components/ui/smart-text";
 import { useToast } from "@/components/providers/ToastProvider";
 import { ChangePasswordDialog } from "@/components/layout/ChangePasswordDialog";
 
@@ -131,6 +132,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Hệ thống",
     icon: Settings,
     items: [
+      { href: "/settings", label: "Cài đặt", icon: Settings },
       { href: "/users", label: "Tài khoản CRM", icon: Users },
     ],
   },
@@ -223,8 +225,8 @@ export function Sidebar({
 
   const navPanel = (
     <>
-      <div className="flex shrink-0 items-center gap-3 px-5 py-5">
-        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1 shadow-sm">
+      <div className="flex shrink-0 items-center gap-2.5 px-4 py-3.5">
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1 shadow-sm">
           <Image
             src="/images/brand/logo.png"
             alt="ASAKA JAPAN"
@@ -237,11 +239,6 @@ export function Sidebar({
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold tracking-wide text-white">
             ASAKA CRM
-          </p>
-          <p className="truncate text-xs text-[var(--color-sidebar-muted)]">
-            {user
-              ? ROLE_WORKSPACE_SUBTITLE[primaryRole(rolesOf(user), user.role) || "sales"]
-              : "Quản lý kinh doanh"}
           </p>
         </div>
       </div>
@@ -260,7 +257,7 @@ export function Sidebar({
                 type="button"
                 onClick={() => toggleGroup(group.id)}
                 className={cn(
-                  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors",
+                  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[14px] font-semibold uppercase tracking-[0.04em] transition-colors",
                   groupActive
                     ? "bg-white/10 text-white"
                     : "text-[var(--color-sidebar-muted)] hover:bg-white/5 hover:text-white"
@@ -322,7 +319,13 @@ export function Sidebar({
             {user?.employeeName || user?.email}
           </p>
           <p className="truncate text-xs text-[var(--color-sidebar-muted)]">
-            {user?.email}
+            {user?.email ? (
+              <Copyable
+                value={user.email}
+                label="email"
+                className="text-xs text-[var(--color-sidebar-muted)] hover:text-white"
+              />
+            ) : null}
           </p>
           {rolesOf(user).length ? (
             <p className="mt-1 text-xs font-medium text-[var(--color-sidebar-active-fg)]">
