@@ -65,3 +65,9 @@ export function toDateValue(value?: string | Date | null) {
   const yyyy = date.getFullYear();
   return `${yyyy}-${mm}-${dd}`;
 }
+
+/** Select đại lý: "Tên đại lý - Người liên hệ" */
+export function dealerOptionLabel(name: string, contactName?: string | null) {
+  const contact = String(contactName || "").trim();
+  return contact ? `${name} - ${contact}` : name;
+}

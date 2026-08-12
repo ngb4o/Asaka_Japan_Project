@@ -72,7 +72,7 @@ import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
 import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
 import { useCrmDataRefresh } from "@/lib/hooks/useCrmDataRefresh";
-import { cn, formatCurrency, toDateValue } from "@/lib/utils";
+import { cn, formatCurrency, toDateValue, dealerOptionLabel } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
 
 type OrderFormValues = {
@@ -769,7 +769,10 @@ export default function OrdersPage() {
 
   const dealerOptions = [
     { value: "", label: "Không chọn đại lý" },
-    ...dealers.map((dealer) => ({ value: dealer.id, label: dealer.name })),
+    ...dealers.map((dealer) => ({
+      value: dealer.id,
+      label: dealerOptionLabel(dealer.name, dealer.contactName),
+    })),
   ];
   const warehouseOptions = warehouses.map((w) => ({ value: w.id, label: w.name }));
   const employeeOptions = employees.map((employee) => ({
@@ -918,7 +921,10 @@ export default function OrdersPage() {
               searchPlaceholder="Tìm đại lý..."
               options={[
                 { value: "", label: "Tất cả đại lý" },
-                ...dealers.map((d) => ({ value: d.id, label: d.name })),
+                ...dealers.map((d) => ({
+                  value: d.id,
+                  label: dealerOptionLabel(d.name, d.contactName),
+                })),
               ]}
             />
             <FilterOptionList

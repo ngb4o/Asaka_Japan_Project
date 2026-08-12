@@ -70,7 +70,7 @@ import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
 import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
 import { useCrmDataRefresh } from "@/lib/hooks/useCrmDataRefresh";
-import { formatCurrency, formatDateDisplay, toDateValue, cn } from "@/lib/utils";
+import { formatCurrency, formatDateDisplay, toDateValue, cn, dealerOptionLabel } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
 
 const TripMap = dynamic(
@@ -1422,7 +1422,10 @@ export default function TripsPage() {
                       className="col-span-2"
                       options={[
                         { value: "", label: "Không chọn đại lý" },
-                        ...dealers.map((item) => ({ value: item.id, label: item.name })),
+                        ...dealers.map((item) => ({
+                          value: item.id,
+                          label: dealerOptionLabel(item.name, item.contactName),
+                        })),
                       ]}
                       value={stopForm.dealerId}
                       onChange={(dealerId) => setStopForm({ ...stopForm, dealerId })}
