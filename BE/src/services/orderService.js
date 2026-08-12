@@ -17,6 +17,7 @@ import { buildSearchFilter } from '~/utils/search.js'
 import { userModel } from '~/models/userModel'
 import { hasAnyRole } from '~/utils/roles'
 import { orderAuditService } from '~/services/orderAuditService'
+import { sendInvoiceEmailForOrder } from '~/services/invoiceEmailService'
 
 const resolveDeliveryEmployeeIds = (body = {}) => {
   const ids = new Set()
@@ -970,6 +971,11 @@ const update = async (orderId, updateData, userId) => {
         warehouseId: nextWarehouseId
       }
     })
+    await sendInvoiceEmailForOrder(formatted, {
+      actorUserId: userId,
+      trigger: 'auto'
+    })
+    return getDetails(orderId)
   } else if (
     nextStatus === orderModel.ORDER_STATUS.CANCELLED &&
     order.status !== orderModel.ORDER_STATUS.CANCELLED
@@ -1106,6 +1112,16 @@ const getAudits = async (orderId) => {
   return await orderAuditService.getByOrderId(orderId)
 }
 
+const sendInvoiceEmail = async (orderId, { email } = {}, userId) => {
+  const order = await getDetails(orderId)
+  await sendInvoiceEmailForOrder(order, {
+    actorUserId: userId,
+    trigger: 'manual',
+    toEmail: email
+  })
+  return getDetails(orderId)
+}
+
 export const orderService = {
   createNew,
   getList,
@@ -1113,5 +1129,6 @@ export const orderService = {
   update,
   recordPayment,
   deleteOne,
-  getAudits
+  getAudits,
+  sendInvoiceEmail
 }

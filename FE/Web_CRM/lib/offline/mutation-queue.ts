@@ -15,7 +15,7 @@ export type QueuedMutation = {
   createdAt: number;
 };
 
-const SKIP_PATHS = ["/auth/", "/notifications/push/", "/uploads"];
+const SKIP_PATHS = ["/auth/", "/notifications/push/", "/uploads", "/invoice-email"];
 
 export function canQueueMutation(path: string, body?: unknown) {
   const clean = path.split("?")[0] || path;

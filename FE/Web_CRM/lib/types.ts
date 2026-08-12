@@ -384,6 +384,9 @@ export type Order = {
   deliveredAt: string | null;
   shippingFee: number;
   shippingNote: string;
+  invoiceEmailSentAt?: string | null;
+  invoiceEmailSentTo?: string;
+  invoiceEmailError?: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string | null;
@@ -422,6 +425,7 @@ export type OrderAuditAction =
   | "confirmed_exported"
   | "cancelled"
   | "payment_recorded"
+  | "invoice_emailed"
   | "deleted";
 
 export type OrderAudit = {

@@ -237,7 +237,7 @@ export const CRM_SCHEMA = {
     keyFields: ['orderId', 'action', 'actorUserId', 'meta', 'createdAt'],
     enums: {
       action:
-        'created|status_changed|confirmed_exported|cancelled|payment_recorded|deleted'
+        'created|status_changed|confirmed_exported|cancelled|payment_recorded|invoice_emailed|deleted'
     },
     tips: []
   }

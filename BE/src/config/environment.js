@@ -38,4 +38,14 @@ export const env = {
     process.env.GOOGLE_MAPS_API_KEY ||
     process.env.GOOGLE_GEOCODING_API_KEY ||
     '',
+
+  /** Invoice email — Resend (ưu tiên) hoặc SMTP */
+  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  SMTP_HOST: process.env.SMTP_HOST || '',
+  SMTP_PORT: process.env.SMTP_PORT || '587',
+  SMTP_SECURE: process.env.SMTP_SECURE || '',
+  SMTP_USER: process.env.SMTP_USER || '',
+  SMTP_PASS: process.env.SMTP_PASS || '',
+  MAIL_FROM: process.env.MAIL_FROM || '',
+  MAIL_FROM_NAME: process.env.MAIL_FROM_NAME || 'ASAKA',
 }

@@ -11,6 +11,7 @@ const AUDIT_ACTION = {
   CONFIRMED_EXPORTED: 'confirmed_exported',
   CANCELLED: 'cancelled',
   PAYMENT_RECORDED: 'payment_recorded',
+  INVOICE_EMAILED: 'invoice_emailed',
   DELETED: 'deleted'
 }
 

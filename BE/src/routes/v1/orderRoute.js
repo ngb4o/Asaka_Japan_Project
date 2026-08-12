@@ -37,6 +37,12 @@ Router.post(
   orderValidation.recordPayment,
   orderController.recordPayment
 )
+Router.post(
+  '/:id/invoice-email',
+  requireRoles('sales', 'warehouse', 'accountant'),
+  orderValidation.sendInvoiceEmail,
+  orderController.sendInvoiceEmail
+)
 Router.delete('/:id', requireRoles('sales', 'warehouse'), orderController.deleteOne)
 
 export const orderRoute = Router

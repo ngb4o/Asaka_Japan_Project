@@ -94,6 +94,23 @@ const recordPayment = async (req, res, next) => {
   }
 }
 
+const sendInvoiceEmail = async (req, res, next) => {
+  try {
+    const result = await orderService.sendInvoiceEmail(
+      req.params.id,
+      req.body,
+      req.userId
+    )
+
+    res.status(StatusCodes.OK).json({
+      message: `Đã gửi hóa đơn tới ${result.invoiceEmailSentTo || 'email khách'}.`,
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const orderController = {
   createNew,
   getList,
@@ -101,5 +118,6 @@ export const orderController = {
   getAudits,
   update,
   recordPayment,
+  sendInvoiceEmail,
   deleteOne
 }

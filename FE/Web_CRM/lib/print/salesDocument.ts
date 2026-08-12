@@ -16,12 +16,6 @@ type PrintDocumentInput = {
   extraRows?: InfoRow[];
   /** Dòng sau Tổng cộng (vd: Đã thu, Còn lại). */
   afterGrandRows?: InfoRow[];
-  note?: string;
-};
-
-const UNIT_LABELS: Record<string, string> = {
-  chai: "Chai",
-  thung: "Thùng",
 };
 
 const ONES = [
@@ -138,9 +132,6 @@ function buildPrintHtml(doc: PrintDocumentInput) {
       <tr>
         <td class="center">${index + 1}</td>
         <td class="product">${escapeHtml(item.productName || "—")}</td>
-        <td class="center">${escapeHtml(
-          (item.unitType && UNIT_LABELS[item.unitType]) || "—"
-        )}</td>
         <td class="num">${item.quantity}</td>
         <td class="num">${formatCurrency(item.unitPrice)}</td>
         <td class="num strong">${formatCurrency(item.lineTotal)}</td>
@@ -167,209 +158,308 @@ function buildPrintHtml(doc: PrintDocumentInput) {
 <html lang="vi">
 <head>
   <meta charset="utf-8" />
-  <title>&nbsp;</title>
+  <title>${escapeHtml(doc.code)} — ${escapeHtml(doc.title)}</title>
   <style>
-    :root {
-      --brand: #017d03;
-      --brand-dark: #015a02;
-      --ink: #0f172a;
-      --muted: #64748b;
-      --line: #e2e8f0;
-      --soft: #f6f8f6;
-    }
-
     * { box-sizing: border-box; }
 
     @page {
       size: A4;
-      margin: 14mm 18mm;
+      margin: 12mm 14mm;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
     }
 
     body {
-      margin: 0;
-      font-family: "Segoe UI", Roboto, Arial, sans-serif;
-      font-size: 14px;
-      line-height: 1.5;
-      color: var(--ink);
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      font-family: "Times New Roman", Times, Georgia, serif;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #000;
+      background: #fff;
     }
 
     .sheet {
-      max-width: 860px;
+      max-width: 100%;
       margin: 0 auto;
-      padding: 8px 12px 24px;
+      /* Chiều cao vùng in A4 (297mm − margin trên/dưới 12mm×2) */
+      min-height: 273mm;
+      min-height: calc(100vh - 1px);
+      display: flex;
+      flex-direction: column;
     }
 
-    /* Header */
+    .sheet-main {
+      flex: 1 0 auto;
+    }
+
+    /* Header — viền đen, không nền màu */
     .header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 32px;
-      padding-bottom: 20px;
-      border-bottom: 3px solid var(--brand);
+      gap: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #000;
     }
 
-    .brand { display: flex; gap: 14px; align-items: flex-start; }
-    .brand img { width: 60px; height: 60px; object-fit: contain; }
-    .brand-name { font-size: 17px; font-weight: 800; letter-spacing: .2px; color: var(--brand-dark); }
-    .brand-tagline { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .brand-contact { margin-top: 8px; font-size: 12px; color: var(--muted); line-height: 1.7; }
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      flex: 1;
+      min-width: 0;
+    }
 
-    .doc-head { text-align: right; flex-shrink: 0; }
-    .doc-title { font-size: 30px; font-weight: 800; letter-spacing: 1px; color: var(--brand); margin: 0; }
+    .brand img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .brand-name {
+      font-size: 15px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .brand-tagline {
+      font-size: 11px;
+      font-style: italic;
+      margin-top: 2px;
+    }
+
+    .brand-contact {
+      margin-top: 6px;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .doc-head {
+      text-align: center;
+      flex-shrink: 0;
+      min-width: 200px;
+      border: 1px solid #000;
+      padding: 10px 16px;
+    }
+
+    .doc-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin: 0;
+      text-transform: uppercase;
+    }
+
     .doc-code {
-      display: inline-block;
-      margin-top: 8px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      background: var(--brand);
-      color: #fff;
+      margin-top: 6px;
       font-size: 14px;
       font-weight: 700;
-      letter-spacing: .5px;
+      letter-spacing: 0.5px;
+      padding-top: 6px;
+      border-top: 1px solid #000;
     }
 
-    /* Info cards */
+    .doc-date {
+      margin-top: 4px;
+      font-size: 11px;
+    }
+
+    /* Info blocks */
     .cards {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-top: 22px;
+      gap: 0;
+      margin-top: 14px;
+      border: 1px solid #000;
     }
 
     .card {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 14px 16px;
-      background: #fff;
+      padding: 10px 12px;
       break-inside: avoid;
+    }
+
+    .card + .card {
+      border-left: 1px solid #000;
     }
 
     .card-title {
       font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 1.2px;
+      font-weight: 700;
       text-transform: uppercase;
-      color: var(--brand);
-      margin-bottom: 10px;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #000;
     }
 
-    .info-row { display: flex; gap: 10px; padding: 3px 0; font-size: 13px; }
-    .info-label { min-width: 110px; color: var(--muted); }
-    .info-value { flex: 1; font-weight: 600; word-break: break-word; }
+    .info-row {
+      display: flex;
+      gap: 8px;
+      padding: 2px 0;
+      font-size: 12px;
+    }
+
+    .info-label {
+      min-width: 95px;
+      flex-shrink: 0;
+    }
+
+    .info-value {
+      flex: 1;
+      font-weight: 600;
+      word-break: break-word;
+    }
 
     /* Table */
-    table { width: 100%; border-collapse: collapse; margin-top: 24px; font-size: 14px; }
-    thead th {
-      background: var(--brand);
-      color: #fff;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
       font-size: 12px;
+    }
+
+    thead th {
+      border: 1px solid #000;
+      background: #fff;
+      color: #000;
+      font-size: 11px;
       font-weight: 700;
-      letter-spacing: .6px;
       text-transform: uppercase;
-      padding: 12px 12px;
+      letter-spacing: 0.4px;
+      padding: 8px 6px;
       text-align: left;
     }
-    thead th:first-child { border-top-left-radius: 10px; }
-    thead th:last-child { border-top-right-radius: 10px; }
 
-    tbody td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-    tbody tr:nth-child(even) td { background: #fafcfa; }
+    thead th.center,
+    tbody td.center {
+      text-align: center;
+    }
+
+    thead th.num,
+    tbody td.num {
+      text-align: right;
+    }
+
+    tbody td {
+      padding: 7px 6px;
+      border: 1px solid #000;
+      vertical-align: top;
+    }
+
     tbody tr { break-inside: avoid; }
 
     .product { font-weight: 600; }
-    .num { text-align: right; white-space: nowrap; }
-    .center { text-align: center; color: var(--muted); }
+    .num { white-space: nowrap; font-variant-numeric: tabular-nums; }
     .strong { font-weight: 700; }
 
     /* Totals */
     .summary {
       display: flex;
       justify-content: flex-end;
-      margin-top: 20px;
+      margin-top: 14px;
       break-inside: avoid;
     }
 
     .totals {
-      width: 320px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      overflow: hidden;
+      width: 300px;
+      border: 1px solid #000;
     }
 
     .total-row {
       display: flex;
       justify-content: space-between;
-      gap: 16px;
-      padding: 10px 16px;
-      font-size: 13px;
-      color: var(--muted);
+      gap: 12px;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-bottom: 1px solid #000;
     }
-    .total-row span:last-child { color: var(--ink); font-weight: 600; }
+
+    .total-row:last-child { border-bottom: none; }
+
+    .total-row span:last-child {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
 
     .total-row.grand {
-      background: var(--brand);
-      color: #fff;
-      font-size: 16px;
-      font-weight: 800;
-      padding: 14px 16px;
+      border-top: 1px solid #000;
+      border-bottom: none;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 8px 10px;
+      background: #fff;
+      color: #000;
     }
-    .total-row.grand span:last-child { color: #fff; font-size: 18px; }
+
+    .total-row.grand span:last-child {
+      font-size: 15px;
+      font-weight: 700;
+    }
 
     .total-row.after {
-      background: var(--soft);
-      color: var(--ink);
+      background: #fff;
+      font-weight: 600;
     }
-    .total-row.after span:last-child { font-weight: 700; }
 
     .amount-words {
-      margin-top: 12px;
-      font-size: 13px;
-      color: var(--muted);
+      margin-top: 10px;
+      font-size: 12px;
       text-align: right;
+      font-style: italic;
     }
-    .amount-words strong { color: var(--ink); font-weight: 600; }
 
-    /* Note */
-    .note {
-      margin-top: 22px;
-      padding: 14px 16px;
-      border-left: 4px solid var(--brand);
-      background: var(--soft);
-      border-radius: 0 10px 10px 0;
-      font-size: 13px;
-      break-inside: avoid;
+    .amount-words strong {
+      font-weight: 700;
+      font-style: normal;
     }
-    .note-title { font-weight: 700; margin-bottom: 4px; }
 
-    /* Signatures */
+    /* Signatures — luôn sát đáy trang (hoặc đáy trang cuối nếu nhiều trang) */
     .signatures {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 40px;
-      margin-top: 48px;
+      gap: 32px;
+      margin-top: auto;
+      padding-top: 16px;
       text-align: center;
       break-inside: avoid;
+      page-break-inside: avoid;
     }
-    .sign-title { font-size: 13px; font-weight: 700; }
-    .sign-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .sign-space { height: 70px; }
-    .sign-line { border-top: 1px dashed #94a3b8; }
 
-    .footer {
-      margin-top: 32px;
-      padding-top: 12px;
-      border-top: 1px solid var(--line);
-      text-align: center;
-      font-size: 11px;
-      color: var(--muted);
+    .sign-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .sign-hint {
+      font-size: 10px;
+      font-style: italic;
+      margin-top: 2px;
+    }
+
+    .sign-space { height: 64px; }
+
+    .sign-line {
+      border-top: 1px solid #000;
+      margin: 0 8px;
+    }
+
+    @media print {
+      body { -webkit-print-color-adjust: economy; print-color-adjust: economy; }
+      .sheet {
+        min-height: 273mm;
+        padding: 0;
+      }
     }
   </style>
 </head>
 <body>
   <div class="sheet">
+    <div class="sheet-main">
     <div class="header">
       <div class="brand">
         ${logoUrl ? `<img src="${logoUrl}" alt="" />` : ""}
@@ -378,13 +468,13 @@ function buildPrintHtml(doc: PrintDocumentInput) {
           <div class="brand-tagline">${COMPANY.tagline}</div>
           <div class="brand-contact">
             ${escapeHtml(COMPANY.address)}<br />
-            ĐT: ${COMPANY.phone}  -  ${COMPANY.website}
+            ĐT: ${COMPANY.phone} — ${COMPANY.website}
           </div>
         </div>
       </div>
       <div class="doc-head">
         <h1 class="doc-title">${escapeHtml(doc.title)}</h1>
-        <div class="doc-code">${escapeHtml(doc.code)}</div>
+        <div class="doc-code">Số: ${escapeHtml(doc.code)}</div>
       </div>
     </div>
 
@@ -402,9 +492,8 @@ function buildPrintHtml(doc: PrintDocumentInput) {
     <table>
       <thead>
         <tr>
-          <th style="width:44px">#</th>
+          <th class="center" style="width:44px">STT</th>
           <th>Sản phẩm</th>
-          <th class="center" style="width:70px">ĐVT</th>
           <th class="num" style="width:70px">SL</th>
           <th class="num" style="width:120px">Đơn giá</th>
           <th class="num" style="width:130px">Thành tiền</th>
@@ -433,12 +522,7 @@ function buildPrintHtml(doc: PrintDocumentInput) {
       </div>
     </div>
     <div class="amount-words">Bằng chữ: <strong>${escapeHtml(words)}</strong></div>
-
-    ${
-      doc.note
-        ? `<div class="note"><div class="note-title">Ghi chú</div>${escapeHtml(doc.note)}</div>`
-        : ""
-    }
+    </div>
 
     <div class="signatures">
       <div>

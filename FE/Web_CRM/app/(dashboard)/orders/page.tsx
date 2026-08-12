@@ -506,7 +506,6 @@ export default function OrdersPage() {
             ]
           : [],
         afterGrandRows,
-        note: item.note,
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Không in được đơn");
@@ -727,8 +726,17 @@ export default function OrdersPage() {
 
     setUpdatingStatusId(`status:${confirmingOrder.id}`);
     try {
-      await updateOrder(confirmingOrder.id, { status: "confirmed" });
-      toast.success("Đã xác nhận đơn và xuất kho");
+      const updated = await updateOrder(confirmingOrder.id, { status: "confirmed" });
+      if (updated.invoiceEmailSentAt) {
+        toast.success(
+          `Đã xác nhận xuất kho. Đã gửi hóa đơn tới ${updated.invoiceEmailSentTo}.`
+        );
+      } else if (confirmingOrder.customerEmail && updated.invoiceEmailError) {
+        toast.success("Đã xác nhận đơn và xuất kho");
+        toast.info(`Chưa gửi được hóa đơn: ${updated.invoiceEmailError}`);
+      } else {
+        toast.success("Đã xác nhận đơn và xuất kho");
+      }
       setConfirmingOrder(null);
       setConfirmationStocks([]);
       await reload();
@@ -1335,6 +1343,10 @@ export default function OrdersPage() {
           setDetailOpen(open);
           if (!open) setViewing(null);
         }}
+        onUpdated={(order) => {
+          setViewing(order);
+          void reload();
+        }}
         onEdit={
           viewing &&
           canEditOrderItems(role) &&
@@ -1707,13 +1719,9 @@ export default function OrdersPage() {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-[var(--color-text-inverse)]">Ngày tạo</p>
+                <p className="text-xs text-[var(--color-text-inverse)]">Email hóa đơn</p>
                 <p className="mt-1 font-semibold">
-                  {confirmingOrder?.createdAt
-                    ? new Date(confirmingOrder.createdAt).toLocaleDateString(
-                        "vi-VN"
-                      )
-                    : "—"}
+                  {confirmingOrder?.customerEmail || "Chưa có — sẽ không tự gửi"}
                 </p>
               </div>
             </div>

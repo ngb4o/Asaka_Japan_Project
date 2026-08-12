@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/mobile-record-card";
 import { OrderLineItemsList } from "@/components/orders/OrderLineItemsList";
 import { ApiClientError } from "@/lib/api/client";
-import { getOrderAudits } from "@/lib/api/orders";
+import { getOrderAudits, sendOrderInvoiceEmail } from "@/lib/api/orders";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import type { Order, OrderAudit, OrderAuditAction } from "@/lib/types";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -27,6 +28,7 @@ import { canViewProfit, rolesOf } from "@/lib/auth/permissions";
 import { cn, formatCurrency, formatDateDisplay } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { CodeText, PhoneLink, TrackingText } from "@/components/ui/smart-text";
 
 type OrderDetailDialogProps = {
@@ -34,6 +36,7 @@ type OrderDetailDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onEdit?: (order: Order) => void;
+  onUpdated?: (order: Order) => void;
 };
 
 const MOBILE_TABS = ["Chi tiết", "Nhật ký"] as const;
@@ -58,6 +61,7 @@ const AUDIT_ACTION_LABELS: Record<OrderAuditAction, string> = {
   confirmed_exported: "Xác nhận & xuất kho",
   cancelled: "Hủy đơn",
   payment_recorded: "Ghi nhận thanh toán",
+  invoice_emailed: "Gửi hóa đơn",
   deleted: "Xóa đơn",
 };
 
@@ -67,6 +71,7 @@ const AUDIT_DOT_CLASS: Record<OrderAuditAction, string> = {
   status_changed: "bg-sky-500 ring-sky-500/25",
   cancelled: "bg-red-500 ring-red-500/25",
   payment_recorded: "bg-amber-500 ring-amber-500/25",
+  invoice_emailed: "bg-sky-500 ring-sky-500/25",
   deleted: "bg-[var(--color-text-inverse)] ring-[var(--color-text-inverse)]/20",
 };
 
@@ -176,6 +181,10 @@ function auditDetail(item: OrderAudit): string {
       return meta.total != null
         ? `Tổng ${formatCurrency(Number(meta.total) || 0)}`
         : "";
+    case "invoice_emailed":
+      return typeof meta.to === "string" && meta.to
+        ? meta.to
+        : "";
     default:
       return "";
   }
@@ -264,8 +273,10 @@ export function OrderDetailDialog({
   open,
   onOpenChange,
   onEdit,
+  onUpdated,
 }: OrderDetailDialogProps) {
   const toast = useToast();
+  const confirm = useConfirm();
   const { user } = useAuth();
   const showProfit = canViewProfit(rolesOf(user));
   const isMobile = useIsMobile();
@@ -273,6 +284,7 @@ export function OrderDetailDialog({
   const [audits, setAudits] = useState<OrderAudit[]>([]);
   const [auditsLoading, setAuditsLoading] = useState(false);
   const [loadedOrderId, setLoadedOrderId] = useState<string | null>(null);
+  const [sendingInvoice, setSendingInvoice] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -337,17 +349,58 @@ export function OrderDetailDialog({
     );
   }
 
-  const paid = order.paidAmount || 0;
+  const current = order;
+
+  const paid = current.paidAmount || 0;
   const remaining =
-    order.remainingAmount ?? Math.max(0, (order.total || 0) - paid);
+    current.remainingAmount ?? Math.max(0, (current.total || 0) - paid);
   const deliveryNames =
-    order.deliveryEmployeeNames?.filter(Boolean).join(", ") ||
-    order.deliveryEmployeeName ||
+    current.deliveryEmployeeNames?.filter(Boolean).join(", ") ||
+    current.deliveryEmployeeName ||
     "";
-  const showAudits = !auditsLoading && loadedOrderId === order.id;
+  const showAudits = !auditsLoading && loadedOrderId === current.id;
   const hasAuditEntries = showAudits && audits.length > 0;
   const showDetailPanel = !isMobile || mobileTab === 0;
   const showAuditPanel = isMobile ? mobileTab === 1 : hasAuditEntries || auditsLoading;
+  const canSendInvoice =
+    current.status !== "pending" &&
+    current.status !== "cancelled" &&
+    Boolean(
+      current.inventoryExported ||
+        current.status === "confirmed" ||
+        current.status === "delivering" ||
+        current.status === "completed"
+    );
+
+  async function handleSendInvoice() {
+    if (!canSendInvoice) return;
+    if (!current.customerEmail) {
+      toast.warning("Đơn chưa có email khách hàng. Thêm email rồi gửi lại.");
+      return;
+    }
+    const ok = await confirm({
+      title: "Gửi hóa đơn",
+      description: `Gửi hóa đơn ${current.code} tới ${current.customerEmail}?`,
+      confirmText: current.invoiceEmailSentAt ? "Gửi lại" : "Gửi",
+    });
+    if (!ok) return;
+    setSendingInvoice(true);
+    try {
+      const updated = await sendOrderInvoiceEmail(current.id);
+      toast.success(
+        `Đã gửi hóa đơn tới ${updated.invoiceEmailSentTo || current.customerEmail}.`
+      );
+      onUpdated?.(updated);
+      const result = await getOrderAudits(current.id);
+      setAudits(result.items || []);
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không gửi được hóa đơn"
+      );
+    } finally {
+      setSendingInvoice(false);
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -434,6 +487,23 @@ export function OrderDetailDialog({
                   />
                   <Field label="Email" value={order.customerEmail} action="copy" />
                   <Field label="Đại lý" value={order.dealerName} />
+                  {order.invoiceEmailSentAt ? (
+                    <Field
+                      label="Đã gửi hóa đơn"
+                      value={`${formatAuditTime(order.invoiceEmailSentAt)}${
+                        order.invoiceEmailSentTo
+                          ? ` · ${order.invoiceEmailSentTo}`
+                          : ""
+                      }`}
+                      className="col-span-2"
+                    />
+                  ) : order.invoiceEmailError ? (
+                    <Field
+                      label="Gửi hóa đơn"
+                      value={order.invoiceEmailError}
+                      className="col-span-2"
+                    />
+                  ) : null}
                 </div>
               </section>
 
@@ -541,6 +611,17 @@ export function OrderDetailDialog({
               onClick={() => onOpenChange(false)}>
               Đóng
             </Button>
+            {showDetailPanel && canSendInvoice ? (
+              <Button
+                type="button"
+                variant="outline"
+                loading={sendingInvoice}
+                disabled={sendingInvoice}
+                onClick={() => void handleSendInvoice()}>
+                <Mail className="h-4 w-4" />
+                {order.invoiceEmailSentAt ? "Gửi lại hóa đơn" : "Gửi hóa đơn"}
+              </Button>
+            ) : null}
             {showDetailPanel && onEdit ? (
               <Button
                 onClick={() => {

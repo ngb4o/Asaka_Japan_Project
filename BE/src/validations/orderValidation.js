@@ -78,8 +78,13 @@ const recordPaymentSchema = Joi.object({
   note: optionalText.max(1000)
 })
 
+const sendInvoiceEmailSchema = Joi.object({
+  email: optionalText.max(150)
+})
+
 export const orderValidation = {
   createNew: validateRequest(createSchema),
   update: validateRequest(updateSchema),
-  recordPayment: validateRequest(recordPaymentSchema)
+  recordPayment: validateRequest(recordPaymentSchema),
+  sendInvoiceEmail: validateRequest(sendInvoiceEmailSchema)
 }

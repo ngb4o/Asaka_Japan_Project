@@ -72,3 +72,13 @@ export async function getOrderAudits(id: string) {
     `/orders/${id}/audits`
   );
 }
+
+export async function sendOrderInvoiceEmail(
+  id: string,
+  data?: { email?: string }
+) {
+  return apiRequest<Order>(`/orders/${id}/invoice-email`, {
+    method: "POST",
+    body: data || {},
+  });
+}
