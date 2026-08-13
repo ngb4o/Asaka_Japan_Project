@@ -6,7 +6,7 @@ import { orderAuditService } from '~/services/orderAuditService'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-const COMPANY = {
+export const COMPANY = {
   name: 'CÔNG TY TNHH ASAKA - JAPAN',
   tagline: 'Giải pháp bảo vệ thực vật',
   address: '1155/35 tỉnh lộ 43, KP 11, phường Tam Bình, TP.HCM',
@@ -32,17 +32,17 @@ const PAYMENT_LABELS = {
 
 const ONES = ['', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín']
 
-const escapeHtml = (value) =>
+export const escapeHtml = (value) =>
   String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
 
-const formatVnd = (value) =>
+export const formatVnd = (value) =>
   `${Math.round(Number(value) || 0).toLocaleString('vi-VN')} ₫`
 
-const formatDate = (value) => {
+export const formatDate = (value) => {
   if (!value) return ''
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
@@ -77,7 +77,7 @@ function readTriple(n, full) {
   return parts.join(' ')
 }
 
-function amountInWords(amount) {
+export function amountInWords(amount) {
   const n = Math.round(Math.abs(amount))
   if (n === 0) return 'Không đồng'
 
@@ -108,28 +108,28 @@ export function normalizeInvoiceEmail(value) {
   return email
 }
 
-const FONT =
+export const FONT =
   "font-family:'Times New Roman',Times,Georgia,serif;color:#000;-webkit-text-size-adjust:100%"
 
-const th = (label, extra = '', compact = false) =>
+export const th = (label, extra = '', compact = false) =>
   `<th style="border:1px solid #000;background:#fff;color:#000;font-size:${compact ? '11px' : '12px'};font-weight:700;text-transform:uppercase;letter-spacing:${compact ? '0.3px' : '0.4px'};padding:${compact ? '7px 6px' : '8px'};${extra}">${label}</th>`
 
-const td = (html, extra = '', compact = false) =>
+export const td = (html, extra = '', compact = false) =>
   `<td style="border:1px solid #000;padding:${compact ? '7px 6px' : '8px'};font-size:13px;vertical-align:top;${compact ? 'word-break:break-word;' : ''}${extra}">${html}</td>`
 
-const infoRow = (label, value, compact = false) =>
+export const infoRow = (label, value, compact = false) =>
   `<tr>
     <td style="padding:2px ${compact ? '8px' : '0'} 2px 0;font-size:12px;width:${compact ? '88px' : '100px'};vertical-align:top;${FONT}">${escapeHtml(label)}</td>
     <td style="padding:2px 0;font-size:12px;font-weight:600;${compact ? 'word-break:break-word;' : ''}${FONT}">${escapeHtml(value || '—')}</td>
   </tr>`
 
-const totalRow = (label, value, { grand = false, last = false } = {}) =>
+export const totalRow = (label, value, { grand = false, last = false } = {}) =>
   `<tr>
     <td style="padding:${grand ? '8px 10px' : '6px 10px'};font-size:${grand ? '14px' : '12px'};font-weight:${grand ? '700' : '400'};border-bottom:${last ? '0' : '1px solid #000'};${FONT}">${escapeHtml(label)}</td>
     <td style="padding:${grand ? '8px 10px' : '6px 10px'};font-size:${grand ? '15px' : '12px'};font-weight:700;text-align:right;${grand || last ? '' : 'white-space:nowrap;'}border-bottom:${last ? '0' : '1px solid #000'};${FONT}">${escapeHtml(value)}</td>
   </tr>`
 
-const sectionBox = (title, rows) =>
+export const sectionBox = (title, rows) =>
   `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #000;border-collapse:collapse">
     <tr>
       <td style="padding:10px 12px">
@@ -142,7 +142,7 @@ const sectionBox = (title, rows) =>
 const greeting = (customer) =>
   `Kính gửi <strong>${escapeHtml(customer)}</strong>, đơn hàng đã được xác nhận và xuất kho. Chi tiết hóa đơn như sau:`
 
-const footerBlock = () =>
+export const footerBlock = () =>
   `Trân trọng,<br />
               <strong>${escapeHtml(COMPANY.name)}</strong><br />
               <span style="font-size:11px">

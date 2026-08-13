@@ -53,4 +53,6 @@ export const env = {
   SMTP_PASS: process.env.SMTP_PASS || '',
   MAIL_FROM: process.env.MAIL_FROM || '',
   MAIL_FROM_NAME: process.env.MAIL_FROM_NAME || 'ASAKA',
+  /** Link đăng nhập trong mail cấp tài khoản — mặc định origin CRM trong CORS */
+  CRM_APP_URL: process.env.CRM_APP_URL || '',
 }

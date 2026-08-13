@@ -135,14 +135,22 @@ export default function PayrollPage() {
   async function handleLock(item: PayrollPeriod) {
     const ok = await confirm({
       title: "Khóa bảng lương",
-      description: `Khóa bảng lương ${item.period}? Sau khi khóa sẽ không chỉnh lại được.`,
+      description: `Khóa bảng lương ${item.period}? Sau khi khóa không chỉnh lại được. Phiếu lương sẽ gửi tới email nhân viên (nếu có).`,
       confirmText: "Khóa",
     });
     if (!ok) return;
     setActionId(`lock:${item.id}`);
     try {
-      await lockPayroll(item.id);
-      toast.success("Đã khóa bảng lương");
+      const locked = await lockPayroll(item.id);
+      const mail = locked.mail;
+      const extra = [
+        mail?.sent ? `đã gửi ${mail.sent} phiếu lương` : null,
+        mail?.skipped ? `${mail.skipped} NV chưa có email` : null,
+        mail?.failed ? `${mail.failed} gửi lỗi` : null,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      toast.success(extra ? `Đã khóa bảng lương (${extra}).` : "Đã khóa bảng lương");
       await reload();
       if (selected?.id === item.id) {
         setSelected(await getPayrollPeriod(item.id));

@@ -25,6 +25,7 @@ import {
   StatusPieChart,
 } from "@/components/reports/Charts";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { userDisplayName } from "@/lib/auth/userDisplay";
 import {
   canViewCompanyFinancials,
   canViewProfit,
@@ -131,7 +132,7 @@ export default function DashboardPage() {
     [summary?.paymentBreakdown]
   );
 
-  const displayName = user?.employeeName || user?.email?.split("@")[0] || "bạn";
+  const displayName = userDisplayName(user);
 
   return (
     <div className="space-y-2.5 md:space-y-4">

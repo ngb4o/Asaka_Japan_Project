@@ -30,6 +30,7 @@ export {
   List,
   Loader2,
   LogOut,
+  Mail,
   MapPin,
   MessageSquare,
   Moon,

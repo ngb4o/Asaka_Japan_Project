@@ -21,7 +21,7 @@ export const COMPANY = {
   shortName: "ASAKA - JAPAN",
   url: "https://asaka-japan.com",
   phone: "0946866068",
-  email: "info@asaka-japan.com",
+  email: "asakajapan.company@gmail.com",
   address: "1155/35 tỉnh lộ 43, KP 11, phường Tam Bình, TP.HCM",
   mapQuery: "10.8860419,106.7259492",
   mapUrl:

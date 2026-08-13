@@ -297,7 +297,11 @@ export default function UsersPage() {
         password: created.temporaryPassword || form.password,
         employeeName: created.employeeName || "Nhân viên",
       });
-      toast.success("Đã cấp tài khoản");
+      toast.success(
+        created.emailSent
+          ? `Đã cấp tài khoản và gửi email tới ${created.email}.`
+          : "Đã cấp tài khoản. Email chưa gửi được — copy mật khẩu gửi tay."
+      );
       await loadData({ silent: true });
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Tạo tài khoản thất bại");
@@ -316,8 +320,12 @@ export default function UsersPage() {
     }
     setSubmitting(true);
     try {
-      await updateUserPassword(passwordTarget.id, password);
-      toast.success("Đã đặt lại mật khẩu");
+      const reset = await updateUserPassword(passwordTarget.id, password);
+      toast.success(
+        reset?.emailSent
+          ? `Đã đặt lại mật khẩu và gửi email tới ${passwordTarget.email}.`
+          : "Đã đặt lại mật khẩu. Email chưa gửi được — copy mật khẩu gửi tay."
+      );
       setPasswordTarget(null);
       setCreatedCreds({
         email: passwordTarget.email,
@@ -739,8 +747,8 @@ export default function UsersPage() {
           {createdCreds ? (
             <div className="space-y-4">
               <p className="text-sm text-[var(--color-text-inverse)]">
-                Gửi cho {createdCreds.employeeName}. Họ đăng nhập bằng email rồi đổi mật
-                khẩu trong CRM.
+                {createdCreds.employeeName}: đăng nhập bằng email, đổi mật khẩu
+                trong CRM. Hệ thống cũng gửi mail nếu cấu hình email máy chủ ổn.
               </p>
               <div className="space-y-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-3 text-sm">
                 <p className="flex flex-wrap items-center gap-1">

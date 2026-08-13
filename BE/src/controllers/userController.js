@@ -101,11 +101,16 @@ const createByAdmin = async (req, res, next) => {
 
 const updatePassword = async (req, res, next) => {
   try {
-    await userService.updatePassword(req.params.id, req.body.password)
+    const result = await userService.updatePassword(
+      req.params.id,
+      req.body.password
+    )
 
     res.status(StatusCodes.OK).json({
-      message: 'Đặt lại mật khẩu thành công!',
-      data: true
+      message: result.emailSent
+        ? 'Đặt lại mật khẩu và đã gửi email!'
+        : 'Đặt lại mật khẩu thành công!',
+      data: result
     })
   } catch (error) {
     next(error)

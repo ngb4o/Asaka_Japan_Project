@@ -20,10 +20,13 @@ export async function createUser(payload: {
 }
 
 export async function updateUserPassword(id: string, password: string) {
-  return apiRequest<boolean>(`/users/${id}/password`, {
-    method: "PUT",
-    body: { password },
-  });
+  return apiRequest<{ emailSent?: boolean; emailError?: string }>(
+    `/users/${id}/password`,
+    {
+      method: "PUT",
+      body: { password },
+    }
+  );
 }
 
 export async function updateUserRole(id: string, roles: UserRole[]) {

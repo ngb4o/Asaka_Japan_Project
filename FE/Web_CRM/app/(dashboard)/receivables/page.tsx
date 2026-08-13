@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Eye, RefreshCw } from "@/components/ui/icons";
+import { Eye, Mail, RefreshCw } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +30,7 @@ import { PaymentSnapshot } from "@/components/orders/PaymentSnapshot";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { VndInput } from "@/components/ui/vnd-input";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import {
   canManagePayables,
@@ -38,7 +39,10 @@ import {
   canViewReceivables,
   rolesOf,
 } from "@/lib/auth/permissions";
-import { getReceivablesSummary } from "@/lib/api/receivables";
+import {
+  getReceivablesSummary,
+  sendDealerReminderEmail,
+} from "@/lib/api/receivables";
 import { getPayablesSummary } from "@/lib/api/payables";
 import { getOrders, recordOrderPayment } from "@/lib/api/orders";
 import { getPurchases, recordPurchasePayment } from "@/lib/api/purchases";
@@ -90,8 +94,21 @@ function remainingInvoice(invoice: PurchaseInvoice) {
   );
 }
 
+function dealerReminderEmail(
+  dealer: ReceivableDealerSummary | null,
+  orders: Order[]
+) {
+  const fromDealer = dealer?.email?.trim() || "";
+  if (fromDealer) return fromDealer;
+  return (
+    orders.find((order) => order.customerEmail?.trim())?.customerEmail?.trim() ||
+    ""
+  );
+}
+
 export default function ReceivablesPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const { user } = useAuth();
   const roles = rolesOf(user);
 
@@ -150,6 +167,7 @@ export default function ReceivablesPage() {
   const [orderPayAmount, setOrderPayAmount] = useState<number | "">("");
   const [orderPayNote, setOrderPayNote] = useState("");
   const [orderSubmitting, setOrderSubmitting] = useState(false);
+  const [sendingReminder, setSendingReminder] = useState(false);
 
   // ── Supplier AP ──
   const [apSummary, setApSummary] = useState<PayablesSummary | null>(null);
@@ -285,6 +303,45 @@ export default function ReceivablesPage() {
     setSelectedSupplier(item);
     setSupplierDetailOpen(true);
     void loadDebtInvoices(item.supplierId);
+  }
+
+  async function handleSendReminder() {
+    if (!selectedDealer || selectedDealer.debtAmount <= 0) return;
+    const email = dealerReminderEmail(selectedDealer, debtOrders);
+    if (!email) {
+      toast.warning("Đại lý chưa có email. Thêm email rồi gửi lại.");
+      return;
+    }
+    const ok = await confirm({
+      title: "Gửi nhắc nợ",
+      description: `Gửi email nhắc nợ ${formatCurrency(selectedDealer.debtAmount)} (${selectedDealer.debtOrderCount} đơn) tới ${email}?`,
+      confirmText: selectedDealer.lastReminderAt ? "Gửi lại" : "Gửi",
+    });
+    if (!ok) return;
+    setSendingReminder(true);
+    try {
+      const updated = await sendDealerReminderEmail(selectedDealer.dealerId);
+      toast.success(
+        `Đã gửi nhắc nợ tới ${updated.lastReminderSentTo || email}.`
+      );
+      setSelectedDealer(updated);
+      setArSummary((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.map((item) =>
+                item.dealerId === updated.dealerId ? updated : item
+              ),
+            }
+          : prev
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không gửi được nhắc nợ"
+      );
+    } finally {
+      setSendingReminder(false);
+    }
   }
 
   async function handleOrderPayment(event: React.FormEvent) {
@@ -759,6 +816,24 @@ export default function ReceivablesPage() {
                   </p>
                 </div>
               </div>
+              {dealerReminderEmail(selectedDealer, debtOrders) ||
+              selectedDealer.lastReminderAt ? (
+                <p className="text-xs text-[var(--color-text-inverse)]">
+                  {[
+                    dealerReminderEmail(selectedDealer, debtOrders) || null,
+                    selectedDealer.lastReminderAt
+                      ? `Đã nhắc ${formatDateDisplay(selectedDealer.lastReminderAt)}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              ) : null}
+              {selectedDealer.lastReminderError ? (
+                <p className="text-xs text-red-600 dark:text-red-400">
+                  {selectedDealer.lastReminderError}
+                </p>
+              ) : null}
               {ordersLoading ? (
                 <div className="space-y-3" aria-busy="true">
                   <Skeleton className="h-4 w-28" />
@@ -855,6 +930,18 @@ export default function ReceivablesPage() {
                 </div>
               )}
             </div>
+          ) : null}
+          {selectedDealer && selectedDealer.debtAmount > 0 ? (
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                loading={sendingReminder}
+                onClick={() => void handleSendReminder()}>
+                <Mail className="h-4 w-4" />
+                {selectedDealer.lastReminderAt ? "Gửi lại nhắc nợ" : "Nhắc nợ"}
+              </Button>
+            </DialogFooter>
           ) : null}
         </DialogContent>
       </Dialog>

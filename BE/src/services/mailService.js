@@ -187,3 +187,15 @@ export async function sendMail({ to, subject, html, text }) {
   }
   throw new Error('Chưa cấu hình email máy chủ (SMTP, Gmail API hoặc Resend)')
 }
+
+/** Không throw — dùng cho mail phụ (cấp TK, phiếu lương) để không chặn thao tác chính. */
+export async function trySendMail(payload) {
+  if (!isMailConfigured()) return { sent: false, skipped: 'not_configured' }
+  try {
+    const result = await sendMail(payload)
+    return { sent: true, id: result.id || null }
+  } catch (error) {
+    console.error('[mail]', error?.message || error)
+    return { sent: false, error: error?.message || 'send_failed' }
+  }
+}

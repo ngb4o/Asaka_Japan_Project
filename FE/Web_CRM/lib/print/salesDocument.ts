@@ -14,7 +14,7 @@ type PrintDocumentInput = {
   total: number;
   /** Dòng trước Tổng cộng (vd: phí giao hàng). */
   extraRows?: InfoRow[];
-  /** Dòng sau Tổng cộng (vd: Đã thu, Còn lại). */
+  /** Dòng sau Tổng cộng (vd: Đã thanh toán, Còn phải thanh toán). */
   afterGrandRows?: InfoRow[];
 };
 
@@ -93,8 +93,9 @@ const COMPANY = {
   name: "CÔNG TY TNHH ASAKA - JAPAN",
   tagline: "Giải pháp bảo vệ thực vật",
   address: "1155/35 tỉnh lộ 43, KP 11, phường Tam Bình, TP.HCM",
+  taxCode: "0315330386",
   phone: "0946 866 068",
-  email: "info@asaka-japan.com",
+  email: "asakajapan.company@gmail.com",
   website: "asaka-japan.com",
 };
 
@@ -468,6 +469,7 @@ function buildPrintHtml(doc: PrintDocumentInput) {
           <div class="brand-tagline">${COMPANY.tagline}</div>
           <div class="brand-contact">
             ${escapeHtml(COMPANY.address)}<br />
+            MST: ${COMPANY.taxCode}<br />
             ĐT: ${COMPANY.phone} — ${COMPANY.website}
           </div>
         </div>

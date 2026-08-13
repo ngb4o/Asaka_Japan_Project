@@ -3,11 +3,15 @@ import { payrollModel } from '~/models/payrollModel'
 import { employeeModel } from '~/models/employeeModel'
 import { orderModel } from '~/models/orderModel'
 import { tripModel } from '~/models/tripModel'
+import { userModel } from '~/models/userModel'
+import { GET_DB } from '~/config/mongodb'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { formatDocument } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { hasAnyRole } from '~/utils/roles'
+import { normalizeInvoiceEmail } from '~/services/invoiceEmailService'
+import { sendPayslipEmail } from '~/services/staffEmailService'
 
 const canViewAllPayroll = (roles) => hasAnyRole(roles, 'admin', 'accountant')
 
@@ -308,7 +312,65 @@ const lock = async (id, userId) => {
     lockedAt: new Date(),
     lockedBy: userId
   })
-  return await getDetails(id)
+  const formatted = await getDetails(id)
+  const mail = await sendPayslipsForPayroll(formatted)
+  return { ...formatted, mail }
+}
+
+async function sendPayslipsForPayroll(payroll) {
+  const lines = payroll.lines || []
+  if (!lines.length) return { sent: 0, skipped: 0, failed: 0 }
+
+  const ids = lines.map((line) => new ObjectId(line.employeeId))
+  const { items: employees } = await employeeModel.findMany(
+    { _id: { $in: ids } },
+    { limit: Math.max(ids.length, 1), skip: 0 }
+  )
+  const empMap = new Map(employees.map((item) => [item._id.toString(), item]))
+
+  const userIds = [
+    ...new Set(
+      employees
+        .map((item) => item.userId?.toString?.() || item.userId)
+        .filter(Boolean)
+        .map(String)
+    )
+  ]
+  let userEmail = new Map()
+  if (userIds.length) {
+    const users = await GET_DB()
+      .collection(userModel.USER_COLLECTION_NAME)
+      .find({ _id: { $in: userIds.map((id) => new ObjectId(id)) } })
+      .project({ email: 1 })
+      .toArray()
+    userEmail = new Map(
+      users.map((item) => [item._id.toString(), item.email || ''])
+    )
+  }
+
+  const outcomes = await Promise.all(
+    lines.map(async (line) => {
+      const emp = empMap.get(line.employeeId)
+      const linkedUserId = emp?.userId?.toString?.() || emp?.userId || ''
+      const to = normalizeInvoiceEmail(
+        emp?.email || userEmail.get(String(linkedUserId)) || ''
+      )
+      if (!to) return 'skipped'
+      const result = await sendPayslipEmail({
+        to,
+        name: line.employeeName || emp?.fullName || to,
+        period: payroll.period,
+        line
+      })
+      return result.sent ? 'sent' : 'failed'
+    })
+  )
+
+  return {
+    sent: outcomes.filter((item) => item === 'sent').length,
+    skipped: outcomes.filter((item) => item === 'skipped').length,
+    failed: outcomes.filter((item) => item === 'failed').length
+  }
 }
 
 const deleteOne = async (id) => {

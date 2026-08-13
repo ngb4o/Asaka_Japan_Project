@@ -471,13 +471,21 @@ export default function OrdersPage() {
       const remaining =
         item.remainingAmount ?? Math.max(0, (item.total || 0) - paid);
       const paymentStatus = item.paymentStatus || "unpaid";
+      const deliveryPerson = [
+        ...(item.deliveryEmployeeNames || []),
+        item.deliveryEmployeeName,
+      ]
+        .map((name) => String(name || "").trim())
+        .filter(Boolean)
+        .filter((name, index, list) => list.indexOf(name) === index)
+        .join(", ");
 
       const afterGrandRows = [
         ...(paid > 0
-          ? [{ label: "Đã thu", value: formatCurrency(paid) }]
+          ? [{ label: "Đã thanh toán", value: formatCurrency(paid) }]
           : []),
         ...(paid > 0 && remaining > 0
-          ? [{ label: "Còn lại", value: formatCurrency(remaining) }]
+          ? [{ label: "Còn phải thanh toán", value: formatCurrency(remaining) }]
           : []),
       ];
 
@@ -492,9 +500,12 @@ export default function OrdersPage() {
           },
           { label: "Kho", value: item.warehouseName || "—" },
           {
-            label: "Ngày tạo",
+            label: "Ngày đặt hàng",
             value: new Date(item.createdAt).toLocaleDateString("vi-VN"),
           },
+          ...(deliveryPerson
+            ? [{ label: "Người giao hàng", value: deliveryPerson }]
+            : []),
         ],
         customer: [
           {

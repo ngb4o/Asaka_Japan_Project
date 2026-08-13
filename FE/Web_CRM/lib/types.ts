@@ -23,6 +23,8 @@ export type UserProfile = {
   employeeName?: string | null;
   employeeCode?: string | null;
   temporaryPassword?: string;
+  emailSent?: boolean;
+  emailError?: string;
   createdAt: string;
   updatedAt?: string | null;
 };
@@ -483,12 +485,16 @@ export type ReceivableDealerSummary = {
   dealerName: string;
   contactName: string;
   phone: string;
+  email?: string;
   region: string;
   status: string | null;
   orderTotal: number;
   paidAmount: number;
   debtAmount: number;
   debtOrderCount: number;
+  lastReminderAt?: string | null;
+  lastReminderSentTo?: string;
+  lastReminderError?: string;
 };
 
 export type ReceivablesSummary = {
@@ -853,6 +859,11 @@ export type PayrollPeriod = {
   createdAt: string;
   updatedAt: string | null;
   lockedAt: string | null;
+  mail?: {
+    sent: number;
+    skipped: number;
+    failed: number;
+  };
 };
 
 export type AppNotification = {

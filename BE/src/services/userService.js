@@ -14,6 +14,8 @@ import {
   primaryRole,
   resolveRoles
 } from '~/utils/roles'
+import { sendAccountCredentialsEmail } from '~/services/staffEmailService'
+import { normalizeInvoiceEmail } from '~/services/invoiceEmailService'
 
 const toPublicUser = (user, employee = null) => {
   const roles = resolveRoles(user)
@@ -148,9 +150,19 @@ const createByAdmin = async (reqBody) => {
   await employeeModel.update(reqBody.employeeId, employeePatch)
 
   const user = await getUserById(userId)
+  const mail = await sendAccountCredentialsEmail({
+    to: email,
+    name: user.employeeName || employee.fullName || email,
+    email,
+    password: temporaryPassword,
+    roles,
+    kind: 'create'
+  })
   return {
     ...user,
-    temporaryPassword
+    temporaryPassword,
+    emailSent: Boolean(mail.sent),
+    emailError: mail.error || ''
   }
 }
 
@@ -161,7 +173,26 @@ const updatePassword = async (targetUserId, password) => {
   }
 
   await userModel.updatePassword(targetUserId, await bcrypt.hash(password, 10))
-  return true
+
+  const to = normalizeInvoiceEmail(user.email)
+  let mail = { sent: false }
+  if (to) {
+    const employees = await loadEmployeeByUserIds([targetUserId])
+    const employee = employees.get(targetUserId)
+    mail = await sendAccountCredentialsEmail({
+      to,
+      name: employee?.fullName || user.email,
+      email: to,
+      password,
+      roles: resolveRoles(user),
+      kind: 'reset'
+    })
+  }
+
+  return {
+    emailSent: Boolean(mail.sent),
+    emailError: mail.error || ''
+  }
 }
 
 const changeOwnPassword = async (userId, currentPassword, newPassword) => {

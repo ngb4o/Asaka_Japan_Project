@@ -29,6 +29,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canAccessPath, ROLE_LABELS, rolesOf } from "@/lib/auth/permissions";
+import { userDisplayName } from "@/lib/auth/userDisplay";
 import { Button } from "@/components/ui/button";
 import { Copyable } from "@/components/ui/smart-text";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -316,7 +317,7 @@ export function Sidebar({
       <div className="mt-auto shrink-0 space-y-3 border-t border-[var(--color-sidebar-border)] p-4">
         <div className="rounded-xl bg-white/5 px-3 py-3">
           <p className="truncate text-sm font-semibold text-white">
-            {user?.employeeName || user?.email}
+            {userDisplayName(user)}
           </p>
           <p className="truncate text-xs text-[var(--color-sidebar-muted)]">
             {user?.email ? (
