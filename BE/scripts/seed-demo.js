@@ -5,9 +5,9 @@
  * XÓA ops rồi tạo lại: user demo, NV, NCC, lead, đại lý, tồn/NXK,
  *   phiếu nhập, đơn, audit, chuyến, lương, thông báo
  *
- * Tài khoản demo (mật khẩu 123123):
- *   admin@asaka.local
- *   sales@asaka.local / warehouse@asaka.local / accountant@asaka.local
+ * Tài khoản demo:
+ *   admin  asakajapan.company@gmail.com / Asakajapan@123
+ *   staff  *@asaka.local / 123123
  *
  * Usage (from BE/): npm run seed-demo
  */
@@ -16,7 +16,8 @@ const { MongoClient, ObjectId } = require('mongodb')
 const bcrypt = require('bcryptjs')
 
 const MONTHS = 3
-const ADMIN_EMAIL = 'admin@asaka.local'
+const ADMIN_EMAIL = 'asakajapan.company@gmail.com'
+const ADMIN_PASSWORD = 'Asakajapan@123'
 const DEMO_PASSWORD = '123123'
 
 const DEMO_STAFF_EMAILS = [
@@ -102,6 +103,7 @@ async function main() {
   await client.connect()
   const db = client.db(dbName)
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10)
+  const adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD, 10)
 
   console.log(`DB: ${dbName}`)
   console.log(`Seed window: ${MONTHS} months (${monthKey(1 - MONTHS)} → ${monthKey(0)})`)
@@ -124,7 +126,7 @@ async function main() {
     const inserted = await db.collection('users').insertOne({
       email: ADMIN_EMAIL,
       username: 'admin',
-      password: passwordHash,
+      password: adminPasswordHash,
       avatar: null,
       role: 'admin',
       roles: ['admin'],
@@ -133,14 +135,23 @@ async function main() {
       _destroy: false
     })
     admin = await db.collection('users').findOne({ _id: inserted.insertedId })
-    console.log(`Created admin ${ADMIN_EMAIL} / ${DEMO_PASSWORD}`)
+    console.log(`Created admin ${ADMIN_EMAIL}`)
   } else {
     await db.collection('users').updateOne(
       { _id: admin._id },
-      { $set: { password: passwordHash, role: 'admin', roles: ['admin'], _destroy: false } }
+      {
+        $set: {
+          email: ADMIN_EMAIL,
+          password: adminPasswordHash,
+          role: 'admin',
+          roles: ['admin'],
+          _destroy: false,
+          updatedAt: new Date()
+        }
+      }
     )
     admin = await db.collection('users').findOne({ _id: admin._id })
-    console.log(`Reset admin password → ${DEMO_PASSWORD}`)
+    console.log(`Updated admin ${ADMIN_EMAIL}`)
   }
 
   const products = await db
@@ -1327,11 +1338,11 @@ async function main() {
   console.log(`Warehouse: ${warehouse.name}`)
   console.log(`Stock SKUs: ${stockDocs.length}`)
   console.log('')
-  console.log('Login (password 123123):')
-  console.log(`  admin        ${ADMIN_EMAIL}`)
-  console.log('  sales        sales@asaka.local')
-  console.log('  warehouse    warehouse@asaka.local')
-  console.log('  accountant   accountant@asaka.local')
+  console.log('Login:')
+  console.log(`  admin        ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`)
+  console.log('  sales        sales@asaka.local / 123123')
+  console.log('  warehouse    warehouse@asaka.local / 123123')
+  console.log('  accountant   accountant@asaka.local / 123123')
   console.log('Done.')
   await client.close()
 }

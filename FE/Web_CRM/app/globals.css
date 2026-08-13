@@ -458,6 +458,16 @@ html[data-density="lg"] {
   }
 }
 
+/**
+ * Mobile: item lẻ ở hàng cuối của grid 2 cột → full row
+ * (KPI, field thông tin, nút footer…). Dưới `md` vì từ 768px nhiều chỗ đã `md:grid-cols-3`.
+ */
+@media (max-width: 767px) {
+  .grid.grid-cols-2 > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
 /** List pages below lg: Card full-bleed (dashboard/reports keep normal margin + radius) */
 @media (max-width: 1023px) {
   /* Fill scrollport so short lists stay one continuous white surface */

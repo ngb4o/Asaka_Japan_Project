@@ -3,7 +3,7 @@
  *
  * GIỮ:
  *   products, product_categories, warehouses, news
- *   users có role admin (nếu không còn admin → tạo admin@asaka.local / 123123)
+ *   users có role admin (nếu không còn admin → tạo asakajapan.company@gmail.com)
  *
  * XÓA:
  *   tồn kho hiện tại, lịch sử nhập xuất, phiếu mua,
@@ -17,9 +17,9 @@ require('dotenv').config()
 const { MongoClient } = require('mongodb')
 const bcrypt = require('bcryptjs')
 
-const ADMIN_EMAIL = 'admin@asaka.local'
+const ADMIN_EMAIL = 'asakajapan.company@gmail.com'
 const ADMIN_USERNAME = 'admin'
-const ADMIN_PASSWORD = '123123'
+const ADMIN_PASSWORD = 'Asakajapan@123'
 
 const KEEP = ['news', 'products', 'product_categories', 'warehouses']
 

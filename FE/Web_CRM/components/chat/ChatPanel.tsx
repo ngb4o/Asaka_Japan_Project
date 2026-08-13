@@ -515,12 +515,22 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
     }
   };
 
+  function pickFromCamera() {
+    setSourcePickerOpen(false);
+    window.setTimeout(() => cameraInputRef.current?.click(), 180);
+  }
+
+  function pickFromGallery() {
+    setSourcePickerOpen(false);
+    window.setTimeout(() => galleryInputRef.current?.click(), 180);
+  }
+
   const fileInputs = (
     <>
       <input
         ref={galleryInputRef}
         type="file"
-        accept="image/jpeg,image/jpg,image/png,image/webp"
+        accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
         className="hidden"
         onChange={(event) => {
           const file = event.target.files?.[0];
@@ -547,58 +557,47 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
     <BottomSheet
       open={sourcePickerOpen}
       onOpenChange={setSourcePickerOpen}
-      title="Ảnh bao bì"
-      maxHeight="40dvh">
-      <div className="space-y-2 px-4 pb-4">
-        <Button
+      title="Thêm ảnh">
+      <div className="-mx-1 divide-y divide-[var(--color-border-subtle)]">
+        <button
           type="button"
-          className="h-11 w-full"
-          onClick={() => {
-            setSourcePickerOpen(false);
-            window.setTimeout(() => cameraInputRef.current?.click(), 180);
-          }}>
-          <Camera className="h-4 w-4" />
+          className="flex h-12 w-full items-center gap-3 px-3 text-left text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]"
+          onClick={pickFromCamera}>
+          <Camera className="h-5 w-5 shrink-0 text-[var(--color-text-inverse)]" />
           Chụp ảnh
-        </Button>
-        <Button
+        </button>
+        <button
           type="button"
-          variant="outline"
-          className="h-11 w-full"
-          onClick={() => {
-            setSourcePickerOpen(false);
-            window.setTimeout(() => galleryInputRef.current?.click(), 180);
-          }}>
-          <ImageIcon className="h-4 w-4" />
-          Thư viện
-        </Button>
+          className="flex h-12 w-full items-center gap-3 px-3 text-left text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-muted)]"
+          onClick={pickFromGallery}>
+          <ImageIcon className="h-5 w-5 shrink-0 text-[var(--color-text-inverse)]" />
+          Chọn từ thư viện
+        </button>
       </div>
     </BottomSheet>
   );
 
   const body = (
-    <>
-      <ChatBody
-        messages={messages}
-        streaming={streaming}
-        input={input}
-        setInput={setInput}
-        onSend={() => void send()}
-        onConfirmPending={(token) => void onConfirmPending(token)}
-        onCancelPending={(token) => void onCancelPending(token)}
-        pendingBusy={pendingBusy}
-        pendingImageUrl={pendingImageUrl}
-        uploadingImage={uploadingImage}
-        onPickImage={() => {
-          if (isMobile) {
-            setSourcePickerOpen(true);
-            return;
-          }
-          galleryInputRef.current?.click();
-        }}
-        onClearImage={() => setPendingImageUrl(null)}
-      />
-      {fileInputs}
-    </>
+    <ChatBody
+      messages={messages}
+      streaming={streaming}
+      input={input}
+      setInput={setInput}
+      onSend={() => void send()}
+      onConfirmPending={(token) => void onConfirmPending(token)}
+      onCancelPending={(token) => void onCancelPending(token)}
+      pendingBusy={pendingBusy}
+      pendingImageUrl={pendingImageUrl}
+      uploadingImage={uploadingImage}
+      onPickImage={() => {
+        if (isMobile) {
+          setSourcePickerOpen(true);
+          return;
+        }
+        galleryInputRef.current?.click();
+      }}
+      onClearImage={() => setPendingImageUrl(null)}
+    />
   );
 
   if (isMobile) {
@@ -611,6 +610,7 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
           maxHeight="88dvh">
           <div className="flex h-[min(70dvh,560px)] flex-col">{body}</div>
         </BottomSheet>
+        {fileInputs}
         {pickerSheet}
       </>
     );
@@ -637,6 +637,7 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
         </div>
         {body}
       </div>
+      {fileInputs}
       {pickerSheet}
     </>
   );
