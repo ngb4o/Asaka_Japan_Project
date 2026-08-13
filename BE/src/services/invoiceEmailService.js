@@ -109,25 +109,57 @@ export function normalizeInvoiceEmail(value) {
 }
 
 const FONT =
-  "font-family:'Times New Roman',Times,Georgia,serif;color:#000"
+  "font-family:'Times New Roman',Times,Georgia,serif;color:#000;-webkit-text-size-adjust:100%"
 
-const th = (label, extra = '') =>
-  `<th style="border:1px solid #000;background:#fff;color:#000;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;padding:8px 8px;${extra}">${label}</th>`
+const th = (label, extra = '', compact = false) =>
+  `<th style="border:1px solid #000;background:#fff;color:#000;font-size:${compact ? '11px' : '12px'};font-weight:700;text-transform:uppercase;letter-spacing:${compact ? '0.3px' : '0.4px'};padding:${compact ? '7px 6px' : '8px'};${extra}">${label}</th>`
 
-const td = (html, extra = '') =>
-  `<td style="border:1px solid #000;padding:8px;font-size:13px;vertical-align:top;${extra}">${html}</td>`
+const td = (html, extra = '', compact = false) =>
+  `<td style="border:1px solid #000;padding:${compact ? '7px 6px' : '8px'};font-size:13px;vertical-align:top;${compact ? 'word-break:break-word;' : ''}${extra}">${html}</td>`
 
-const infoRow = (label, value) =>
+const infoRow = (label, value, compact = false) =>
   `<tr>
-    <td style="padding:2px 0;font-size:12px;width:100px;vertical-align:top;${FONT}">${escapeHtml(label)}</td>
-    <td style="padding:2px 0;font-size:12px;font-weight:600;${FONT}">${escapeHtml(value || '—')}</td>
+    <td style="padding:2px ${compact ? '8px' : '0'} 2px 0;font-size:12px;width:${compact ? '88px' : '100px'};vertical-align:top;${FONT}">${escapeHtml(label)}</td>
+    <td style="padding:2px 0;font-size:12px;font-weight:600;${compact ? 'word-break:break-word;' : ''}${FONT}">${escapeHtml(value || '—')}</td>
   </tr>`
 
 const totalRow = (label, value, { grand = false, last = false } = {}) =>
   `<tr>
     <td style="padding:${grand ? '8px 10px' : '6px 10px'};font-size:${grand ? '14px' : '12px'};font-weight:${grand ? '700' : '400'};border-bottom:${last ? '0' : '1px solid #000'};${FONT}">${escapeHtml(label)}</td>
-    <td style="padding:${grand ? '8px 10px' : '6px 10px'};font-size:${grand ? '15px' : '12px'};font-weight:700;text-align:right;white-space:nowrap;border-bottom:${last ? '0' : '1px solid #000'};${FONT}">${escapeHtml(value)}</td>
+    <td style="padding:${grand ? '8px 10px' : '6px 10px'};font-size:${grand ? '15px' : '12px'};font-weight:700;text-align:right;${grand || last ? '' : 'white-space:nowrap;'}border-bottom:${last ? '0' : '1px solid #000'};${FONT}">${escapeHtml(value)}</td>
   </tr>`
+
+const sectionBox = (title, rows) =>
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #000;border-collapse:collapse">
+    <tr>
+      <td style="padding:10px 12px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;padding-bottom:4px;margin-bottom:8px;border-bottom:1px solid #000;${FONT}">${escapeHtml(title)}</div>
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%">${rows}</table>
+      </td>
+    </tr>
+  </table>`
+
+const greeting = (customer) =>
+  `Kính gửi <strong>${escapeHtml(customer)}</strong>, đơn hàng đã được xác nhận và xuất kho. Chi tiết hóa đơn như sau:`
+
+const footerBlock = () =>
+  `Trân trọng,<br />
+              <strong>${escapeHtml(COMPANY.name)}</strong><br />
+              <span style="font-size:11px">
+                ${escapeHtml(COMPANY.address)} · ĐT: <a href="tel:${COMPANY.phone.replace(/\s/g, '')}" style="color:#000;text-decoration:none">${escapeHtml(COMPANY.phone)}</a>
+                · <a href="mailto:${COMPANY.email}" style="color:#000;text-decoration:none">${escapeHtml(COMPANY.email)}</a>
+              </span>`
+
+const totalsBlock = (order, extraTotalRows, afterGrandRows, words, { fullWidth = false } = {}) =>
+  `<table role="presentation" width="${fullWidth ? '100%' : '300'}" cellpadding="0" cellspacing="0" style="width:${fullWidth ? '100%' : '300px'};max-width:100%;border:1px solid #000;border-collapse:collapse;${FONT}">
+                ${totalRow('Tạm tính', formatVnd(order.subtotal))}
+                ${extraTotalRows}
+                ${totalRow('Tổng cộng', formatVnd(order.total), { grand: true, last: !afterGrandRows })}
+                ${afterGrandRows}
+              </table>
+              <div style="margin-top:10px;font-size:12px;font-style:italic;${fullWidth ? 'line-height:1.45;word-break:break-word;' : 'text-align:right;'}${FONT}">
+                Bằng chữ: <strong style="font-style:normal;font-weight:700">${escapeHtml(words)}</strong>
+              </div>`
 
 function buildInvoiceEmail(order) {
   const code = order.code || ''
@@ -138,18 +170,6 @@ function buildInvoiceEmail(order) {
     Number(order.remainingAmount ?? (order.total || 0) - paid)
   )
   const words = amountInWords(order.total)
-
-  const itemRows = (order.items || [])
-    .map(
-      (item, index) => `<tr>
-        ${td(String(index + 1), 'text-align:center;width:44px')}
-        ${td(escapeHtml(item.productName || '—'), 'font-weight:600')}
-        ${td(String(item.quantity || 0), 'text-align:right;white-space:nowrap;width:70px')}
-        ${td(formatVnd(item.unitPrice), 'text-align:right;white-space:nowrap;width:120px')}
-        ${td(formatVnd(item.lineTotal), 'text-align:right;white-space:nowrap;font-weight:700;width:130px')}
-      </tr>`
-    )
-    .join('')
 
   const extraTotalRows = [
     order.discount > 0
@@ -167,34 +187,47 @@ function buildInvoiceEmail(order) {
       : ''
   ].join('')
 
-  const subject = `Hóa đơn ${code} — ASAKA`
-  const text = [
-    `Kính gửi ${customer},`,
-    `${COMPANY.name}`,
-    `Trụ sở: ${COMPANY.address}`,
-    `ĐT: ${COMPANY.phone}`,
-    `Hóa đơn đơn hàng ${code}.`,
-    `Tổng cộng: ${formatVnd(order.total)}`,
-    `Bằng chữ: ${words}`,
-    paid > 0 ? `Đã thu: ${formatVnd(paid)}` : '',
-    paid > 0 && remaining > 0 ? `Còn lại: ${formatVnd(remaining)}` : '',
-    order.shippingAddress ? `Giao tới: ${order.shippingAddress}` : '',
-    `Trân trọng, ${COMPANY.name}`
-  ]
-    .filter(Boolean)
-    .join('\n')
+  const docRows = [
+    infoRow('Trạng thái', STATUS_LABELS[order.status] || order.status),
+    infoRow('Thanh toán', PAYMENT_LABELS[order.paymentStatus] || order.paymentStatus),
+    infoRow('Kho', order.warehouseName),
+    infoRow('Ngày tạo', formatDate(order.createdAt))
+  ].join('')
 
-  const html = `<!doctype html>
-<html lang="vi">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Hóa đơn ${escapeHtml(code)}</title>
-</head>
-<body style="margin:0;padding:0;background:#f2f2f2;${FONT}">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f2f2f2;${FONT}">
-    <tr>
-      <td align="center" style="padding:16px 8px">
+  const customerRows = [
+    infoRow('Đại lý/Khách', customer, true),
+    infoRow('SĐT', order.customerPhone || order.shippingPhone, true),
+    infoRow('Địa chỉ giao', order.shippingAddress, true)
+  ].join('')
+
+  const desktopItemRows = (order.items || [])
+    .map(
+      (item, index) => `<tr>
+        ${td(String(index + 1), 'text-align:center;width:44px')}
+        ${td(escapeHtml(item.productName || '—'), 'font-weight:600')}
+        ${td(String(item.quantity || 0), 'text-align:right;white-space:nowrap;width:70px')}
+        ${td(escapeHtml(formatVnd(item.unitPrice)), 'text-align:right;white-space:nowrap;width:120px')}
+        ${td(escapeHtml(formatVnd(item.lineTotal)), 'text-align:right;white-space:nowrap;font-weight:700;width:130px')}
+      </tr>`
+    )
+    .join('')
+
+  const mobileItemRows = (order.items || [])
+    .map(
+      (item, index) => `<tr>
+        ${td(
+          `<div style="font-weight:600">${index + 1}. ${escapeHtml(item.productName || '—')}</div>
+           <div style="font-size:11px;font-weight:400;margin-top:3px">${escapeHtml(formatVnd(item.unitPrice))}/sp</div>`,
+          '',
+          true
+        )}
+        ${td(String(item.quantity || 0), 'text-align:center;width:40px', true)}
+        ${td(escapeHtml(formatVnd(item.lineTotal)), 'text-align:right;font-weight:700;width:92px', true)}
+      </tr>`
+    )
+    .join('')
+
+  const desktopCard = `
         <table role="presentation" width="720" cellpadding="0" cellspacing="0" style="width:100%;max-width:720px;background:#fff;border:1px solid #000;${FONT}">
           <tr>
             <td style="padding:18px 20px 14px;border-bottom:1px solid #000">
@@ -222,39 +255,25 @@ function buildInvoiceEmail(order) {
               </table>
             </td>
           </tr>
-
           <tr>
-            <td style="padding:14px 20px 0;font-size:13px;line-height:1.5;${FONT}">
-              Kính gửi <strong>${escapeHtml(customer)}</strong>, đơn hàng đã được xác nhận và xuất kho. Chi tiết hóa đơn như sau:
-            </td>
+            <td style="padding:14px 20px 0;font-size:13px;line-height:1.5;${FONT}">${greeting(customer)}</td>
           </tr>
-
           <tr>
             <td style="padding:14px 20px 0">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #000;border-collapse:collapse">
                 <tr>
                   <td width="50%" valign="top" style="width:50%;padding:10px 12px;border-right:1px solid #000">
                     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;padding-bottom:4px;margin-bottom:8px;border-bottom:1px solid #000;${FONT}">Thông tin chứng từ</div>
-                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                      ${infoRow('Trạng thái', STATUS_LABELS[order.status] || order.status)}
-                      ${infoRow('Thanh toán', PAYMENT_LABELS[order.paymentStatus] || order.paymentStatus)}
-                      ${infoRow('Kho', order.warehouseName)}
-                      ${infoRow('Ngày tạo', formatDate(order.createdAt))}
-                    </table>
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">${docRows}</table>
                   </td>
                   <td width="50%" valign="top" style="width:50%;padding:10px 12px">
                     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;padding-bottom:4px;margin-bottom:8px;border-bottom:1px solid #000;${FONT}">Khách hàng / Đại lý</div>
-                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                      ${infoRow('Đại lý/Khách', customer)}
-                      ${infoRow('SĐT', order.customerPhone || order.shippingPhone)}
-                      ${infoRow('Địa chỉ giao', order.shippingAddress)}
-                    </table>
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">${customerRows}</table>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
-
           <tr>
             <td style="padding:14px 20px 0">
               <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;${FONT}">
@@ -267,39 +286,122 @@ function buildInvoiceEmail(order) {
                     ${th('Thành tiền', 'text-align:right;width:130px')}
                   </tr>
                 </thead>
-                <tbody>${itemRows}</tbody>
+                <tbody>${desktopItemRows}</tbody>
               </table>
             </td>
           </tr>
-
           <tr>
             <td style="padding:14px 20px 0" align="right">
-              <table role="presentation" width="300" cellpadding="0" cellspacing="0" style="width:300px;max-width:100%;border:1px solid #000;border-collapse:collapse;${FONT}">
-                ${totalRow('Tạm tính', formatVnd(order.subtotal))}
-                ${extraTotalRows}
-                ${totalRow('Tổng cộng', formatVnd(order.total), { grand: true, last: !afterGrandRows })}
-                ${afterGrandRows}
-              </table>
-              <div style="margin-top:10px;font-size:12px;font-style:italic;text-align:right;${FONT}">
-                Bằng chữ: <strong style="font-style:normal;font-weight:700">${escapeHtml(words)}</strong>
-              </div>
+              ${totalsBlock(order, extraTotalRows, afterGrandRows, words)}
             </td>
           </tr>
-
           <tr>
-            <td style="padding:20px 20px 18px;font-size:12px;line-height:1.55;${FONT}">
-              Trân trọng,<br />
-              <strong>${escapeHtml(COMPANY.name)}</strong><br />
-              <span style="font-size:11px">
-                ${escapeHtml(COMPANY.address)} · ĐT: <a href="tel:${COMPANY.phone.replace(/\s/g, '')}" style="color:#000;text-decoration:none">${escapeHtml(COMPANY.phone)}</a>
-                · <a href="mailto:${COMPANY.email}" style="color:#000;text-decoration:none">${escapeHtml(COMPANY.email)}</a>
-              </span>
+            <td style="padding:20px 20px 18px;font-size:12px;line-height:1.55;${FONT}">${footerBlock()}</td>
+          </tr>
+        </table>`
+
+  const mobileCard = `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#fff;border:1px solid #000;${FONT}">
+          <tr>
+            <td style="padding:16px 14px 12px;border-bottom:1px solid #000">
+              <div style="font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;line-height:1.3">${escapeHtml(COMPANY.name)}</div>
+              <div style="font-size:11px;font-style:italic;margin-top:2px">${escapeHtml(COMPANY.tagline)}</div>
+              <div style="font-size:11px;line-height:1.55;margin-top:6px;word-break:break-word">
+                ${escapeHtml(COMPANY.address)}<br />
+                ĐT: ${escapeHtml(COMPANY.phone)} — <a href="${COMPANY.websiteUrl}" style="color:#000;text-decoration:none">${escapeHtml(COMPANY.website)}</a>
+              </div>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;margin-top:12px;border:1px solid #000">
+                <tr>
+                  <td align="center" style="padding:10px 12px;${FONT}">
+                    <div style="font-size:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;line-height:1.2">HÓA ĐƠN</div>
+                    <div style="margin-top:6px;padding-top:6px;border-top:1px solid #000;font-size:14px;font-weight:700">Số: ${escapeHtml(code)}</div>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
+          <tr>
+            <td style="padding:12px 14px 0;font-size:13px;line-height:1.5;word-break:break-word;${FONT}">${greeting(customer)}</td>
+          </tr>
+          <tr>
+            <td style="padding:12px 14px 0">${sectionBox('Thông tin chứng từ', docRows)}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px 0">${sectionBox('Khách hàng / Đại lý', customerRows)}</td>
+          </tr>
+          <tr>
+            <td style="padding:12px 14px 0">
+              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;table-layout:fixed;${FONT}">
+                <thead>
+                  <tr>
+                    ${th('Sản phẩm', 'text-align:left', true)}
+                    ${th('SL', 'text-align:center;width:40px', true)}
+                    ${th('Thành tiền', 'text-align:right;width:92px', true)}
+                  </tr>
+                </thead>
+                <tbody>${mobileItemRows}</tbody>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:12px 14px 0">
+              ${totalsBlock(order, extraTotalRows, afterGrandRows, words, { fullWidth: true })}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 14px;font-size:12px;line-height:1.55;word-break:break-word;${FONT}">${footerBlock()}</td>
+          </tr>
+        </table>`
+
+  const subject = `Hóa đơn ${code} — ASAKA`
+  const text = [
+    `Kính gửi ${customer},`,
+    `${COMPANY.name}`,
+    `Trụ sở: ${COMPANY.address}`,
+    `ĐT: ${COMPANY.phone}`,
+    `Hóa đơn đơn hàng ${code}.`,
+    `Tổng cộng: ${formatVnd(order.total)}`,
+    `Bằng chữ: ${words}`,
+    paid > 0 ? `Đã thu: ${formatVnd(paid)}` : '',
+    paid > 0 && remaining > 0 ? `Còn lại: ${formatVnd(remaining)}` : '',
+    order.shippingAddress ? `Giao tới: ${order.shippingAddress}` : '',
+    `Trân trọng, ${COMPANY.name}`
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  const html = `<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="x-apple-disable-message-reformatting" />
+  <title>Hóa đơn ${escapeHtml(code)}</title>
+  <style type="text/css">
+    .inv-mobile { display: none !important; max-height: 0 !important; overflow: hidden !important; mso-hide: all; }
+    @media only screen and (max-width: 620px) {
+      .inv-desktop { display: none !important; max-height: 0 !important; overflow: hidden !important; mso-hide: all; }
+      .inv-mobile { display: block !important; max-height: none !important; overflow: visible !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f2f2f2;width:100%;${FONT}">
+  <div class="inv-desktop">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;background:#f2f2f2;${FONT}">
+      <tr>
+        <td align="center" style="padding:16px 8px">${desktopCard}</td>
+      </tr>
+    </table>
+  </div>
+  <!--[if !mso]><!-->
+  <div class="inv-mobile" style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;background:#f2f2f2;${FONT}">
+      <tr>
+        <td align="center" style="padding:12px 8px">${mobileCard}</td>
+      </tr>
+    </table>
+  </div>
+  <!--<![endif]-->
 </body>
 </html>`
 
