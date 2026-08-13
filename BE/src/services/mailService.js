@@ -42,6 +42,11 @@ async function sendViaSmtp({ to, subject, html, text }) {
     host: env.SMTP_HOST,
     port: Number(env.SMTP_PORT) || 587,
     secure: String(env.SMTP_SECURE || '').toLowerCase() === 'true',
+    // Render/many PaaS have no outbound IPv6 — Gmail AAAA → ENETUNREACH :587
+    family: 4,
+    connectionTimeout: 15_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
     auth: {
       user: env.SMTP_USER,
       pass: env.SMTP_PASS
