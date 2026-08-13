@@ -605,7 +605,12 @@ export function OrderDetailDialog({
             </section>
           ) : null}
 
-          <DialogFooter>
+          <DialogFooter
+            className={
+              isMobile
+                ? "grid grid-cols-2 [&>*:last-child:nth-child(odd)]:col-span-2"
+                : undefined
+            }>
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}>
