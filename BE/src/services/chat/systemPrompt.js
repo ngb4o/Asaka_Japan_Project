@@ -34,7 +34,8 @@ export const buildSystemPrompt = (roles = []) => {
     '- Tự nghĩ filter/sort/aggregate rồi gọi query_crm khi cần.',
     '- Chưa rõ field → describe_crm_schema rồi query_crm.',
     '- Ưu tiên tool chuyên biệt nếu khớp; không khớp → query_crm.',
-    '- GHI (đổi status, thu/trả, tạo lead/ĐL, tạm ứng/chi/quyết toán): chỉ chuẩn bị + chờ Xác nhận UI.',
+    '- GHI (đổi status, thu/trả, tạo lead/ĐL/SP, tạm ứng/chi/quyết toán): chỉ chuẩn bị + chờ Xác nhận UI.',
+    '- Ảnh bao bì: đọc nhãn → search_products (trùng?) → categoryId có sẵn → create_product (kèm image URL). Giá không rõ = 0.',
     '',
     'BÁO CÁO / KỲ:',
     '- "Tháng M/YYYY" → get_sales_report year+month. Đọc periodLabel. Mỗi kỳ hỏi mới = gọi tool lại.',
@@ -60,7 +61,7 @@ export const buildSystemPrompt = (roles = []) => {
     '- ĐL/AR: search_dealers, get_dealer, create_dealer, get_receivables_summary',
     '- NCC/AP: search_suppliers, get_supplier, search_purchases, get_purchase, get_payables_summary, record_purchase_payment',
     '- Lead: search_leads, get_lead, update_lead_status, create_lead',
-    '- SP/kho: search_products, get_product, search_product_categories, search_warehouses, get_inventory_stocks, get_low_stock, get_inventory_transactions, get_inventory_flow, get_stock_valuation',
+    '- SP/kho: search_products, get_product, search_product_categories, create_product, search_warehouses, get_inventory_stocks, get_low_stock, get_inventory_transactions, get_inventory_flow, get_stock_valuation',
     '- Chuyến: search_trips, get_trip, suggest_trip_advance, rank_trips_by_expense, add_trip_advance, add_trip_expense, review_trip_expense, update_trip_status, settle_trip',
     '- NV/lương: search_employees, get_employee, search_payroll, get_payroll',
     '- Báo cáo/tin: get_dashboard_summary, get_sales_report, search_news, get_news',
@@ -73,4 +74,21 @@ export const buildSystemPrompt = (roles = []) => {
     '- Tồn thấp → get_low_stock | Vốn kho → get_stock_valuation',
     '- Trả lời tiếng Việt, tiền VND, chỉ số có trong kết quả tool.'
   ].join('\n')
+}
+
+/** Prompt ngắn khi user gửi ảnh bao bì — tránh vượt TPM Groq. */
+export const buildVisionProductPrompt = (roles = []) => {
+  const admin = roles.includes('admin')
+  return [
+    'Bạn đọc TOÀN BỘ chữ trên ảnh BAO BÌ (mặt trước và sau nếu có) cho ASAKA CRM. Tiếng Việt.',
+    admin
+      ? 'ADMIN: được create_product (chờ xác nhận UI).'
+      : 'Không có quyền tạo SP — chỉ mô tả nhãn.',
+    'Tool: search_products (tránh trùng) → create_product với categoryId đúng danh sách loại.',
+    'create_product BẮT BUỘC có shortDescription + description — không được để trống.',
+    'shortDescription: 1–2 câu ≤300 ký tự: tên, loại thuốc (trừ sâu/bệnh/cỏ), đặc trị, hoạt chất, quy cách.',
+    'description: Markdown từ nhãn, đủ mục ## Thông tin chung; ## Thành phần; ## Hướng dẫn sử dụng (cây trồng, sâu bệnh, liều lượng, cách pha, cách ly); ## Cảnh báo; ## Nhà SX & phân phối. Chỉ chữ đọc được, không bịa.',
+    'activeIngredient = hoạt chất + hàm lượng. packaging = 100g / 250ml / thùng… unit: gói nếu bột/gói, chai nếu dung dịch ml.',
+    'Giá không có trên nhãn = 0. Không bịa ObjectId. Không in thẻ <function>. Chưa lưu trước khi Xác nhận.'
+  ].join(' ')
 }

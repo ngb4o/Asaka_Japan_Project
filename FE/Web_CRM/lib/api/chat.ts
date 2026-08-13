@@ -8,6 +8,12 @@ export type ChatHistoryMessage = {
   content: string;
 };
 
+export type ChatSendPayload = {
+  messages: ChatHistoryMessage[];
+  message: string;
+  imageUrl?: string;
+};
+
 export type PendingConfirmation = {
   token: string;
   toolName: string;
@@ -60,7 +66,7 @@ function parseSseChunk(buffer: string) {
 }
 
 export async function streamChatMessage(
-  payload: { messages: ChatHistoryMessage[]; message: string },
+  payload: ChatSendPayload,
   handlers: ChatStreamHandlers,
   signal?: AbortSignal
 ) {

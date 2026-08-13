@@ -2,9 +2,14 @@ import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
 import {
   createChatCompletionWithFallback,
+  createVisionCompletionWithFallback,
   mapGroqError
 } from '~/services/chat/groqClient'
-import { buildSystemPrompt } from '~/services/chat/systemPrompt'
+import { resolveVisionImage } from '~/services/chat/visionImage'
+import {
+  buildSystemPrompt,
+  buildVisionProductPrompt
+} from '~/services/chat/systemPrompt'
 import {
   getToolsForRoles,
   toOpenAITools,
@@ -244,28 +249,68 @@ const looksLikeLeakedToolCall = (content) =>
 /**
  * Stream a chat turn over SSE (Groq / OpenAI-compatible).
  */
-const streamMessage = async ({ res, userId, roles, messages, clientMessage }) => {
+const streamMessage = async ({
+  res,
+  userId,
+  roles,
+  messages,
+  clientMessage,
+  imageUrl
+}) => {
   assertRateLimit(userId)
 
   const history = normalizeHistory(messages)
   const userText = String(clientMessage || '').trim()
-  if (!userText) {
+  const hasImage = Boolean(String(imageUrl || '').trim())
+  if (!userText && !hasImage) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Tin nhắn trống.')
   }
-  history.push({ role: 'user', content: userText.slice(0, MAX_MSG_CHARS) })
+
+  let vision = null
+  if (hasImage) {
+    vision = await resolveVisionImage(imageUrl)
+    const caption = userText.slice(0, MAX_MSG_CHARS) ||
+      'Thêm sản phẩm từ ảnh bao bì này. Đọc nhãn rồi đề xuất tạo sản phẩm (chờ xác nhận).'
+    history.push({
+      role: 'user',
+      content: [
+        { type: 'text', text: caption },
+        { type: 'image_url', image_url: { url: vision.visionUrl } }
+      ]
+    })
+  } else {
+    history.push({ role: 'user', content: userText.slice(0, MAX_MSG_CHARS) })
+  }
 
   const allowedTools = getToolsForRoles(roles)
-  const tools = toOpenAITools(allowedTools)
-  const userCtx = { userId, roles }
+  const visionToolNames = [
+    'search_products',
+    'get_product',
+    'search_product_categories',
+    'create_product'
+  ]
+  const tools = toOpenAITools(
+    vision
+      ? allowedTools.filter((tool) => visionToolNames.includes(tool.name))
+      : allowedTools
+  )
+  const userCtx = {
+    userId,
+    roles,
+    imageUrl: vision?.storeUrl || null
+  }
   const openaiMessages = [
-    { role: 'system', content: buildSystemPrompt(roles) },
-    ...history
+    {
+      role: 'system',
+      content: vision ? buildVisionProductPrompt(roles) : buildSystemPrompt(roles)
+    },
+    ...(vision ? history.slice(-4) : history)
   ]
 
   let pendingEmitted = null
   let assistantText = ''
   const digestParts = []
-  const forceToolsFirstRound = needsCrmTool(userText)
+  const forceToolsFirstRound = needsCrmTool(userText) || Boolean(vision)
   let syntheticToolSeq = 0
 
   const pushSyntheticToolResult = (name, result) => {
@@ -366,11 +411,42 @@ const streamMessage = async ({ res, userId, roles, messages, clientMessage }) =>
       })
     }
 
+    if (vision) {
+      sseWrite(res, 'status', {
+        phase: 'prefetch',
+        message: 'Đang lấy danh mục sản phẩm…'
+      })
+      const categoriesResult = await runChatTool(
+        'search_product_categories',
+        { limit: 50 },
+        userCtx
+      )
+      const categoryLines = (categoriesResult.data?.items || [])
+        .slice(0, 30)
+        .map((item) => `${item.name}=${item.id || item._id}`)
+        .filter((line) => !line.endsWith('='))
+        .join('; ')
+      openaiMessages.push({
+        role: 'system',
+        content: [
+          `Ảnh đã upload, create_product phải có image="${vision.storeUrl}".`,
+          categoryLines
+            ? `Loại SP (dùng đúng id): ${categoryLines}.`
+            : 'Chưa có loại SP — mô tả nhãn, đừng tạo.',
+          'search_products rồi create_product. Bắt buộc shortDescription + description (markdown từ nhãn). Giá không rõ = 0.'
+        ].join(' ')
+      })
+    }
+
+    const runCompletion = vision
+      ? createVisionCompletionWithFallback
+      : createChatCompletionWithFallback
+
     const createCompletion = (
       messages,
       { withTools = true, forceTool = false } = {}
     ) =>
-      createChatCompletionWithFallback(
+      runCompletion(
         {
           messages,
           tools: withTools && tools.length ? tools : undefined,
@@ -490,11 +566,12 @@ const streamMessage = async ({ res, userId, roles, messages, clientMessage }) =>
         withTools: true,
         // Already prefetched codes → don't force tool_choice=required (model may refuse)
         forceTool:
-          forceToolsFirstRound &&
-          round === 0 &&
-          digestParts.length === 0 &&
-          !orderCodes.length &&
-          !tripCodes.length
+          (Boolean(vision) && round === 0) ||
+          (forceToolsFirstRound &&
+            round === 0 &&
+            digestParts.length === 0 &&
+            !orderCodes.length &&
+            !tripCodes.length)
       })
 
       const message = completion.choices?.[0]?.message

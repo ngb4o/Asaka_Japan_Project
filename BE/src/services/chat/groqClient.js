@@ -23,6 +23,8 @@ const DEFAULT_MODEL_CHAIN = [
   'qwen/qwen3-32b'
 ]
 
+const DEFAULT_VISION_CHAIN = ['qwen/qwen3.6-27b']
+
 const MS_MINUTE = 60 * 1000
 const MS_DAY = 24 * 60 * MS_MINUTE
 
@@ -46,18 +48,26 @@ export const getGroqModel = () =>
   env.GROQ_MODEL || 'llama-3.3-70b-versatile'
 
 /** Preferred model first, then fallbacks (unique). */
+const uniqueModels = (chain) => {
+  const unique = []
+  for (const model of chain) {
+    if (model && !unique.includes(model)) unique.push(model)
+  }
+  return unique
+}
+
 export const getGroqModelChain = () => {
   const primary = getGroqModel()
   const fromEnv = String(env.GROQ_MODEL_FALLBACKS || '')
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
-  const chain = [primary, ...fromEnv, ...DEFAULT_MODEL_CHAIN]
-  const unique = []
-  for (const model of chain) {
-    if (model && !unique.includes(model)) unique.push(model)
-  }
-  return unique
+  return uniqueModels([primary, ...fromEnv, ...DEFAULT_MODEL_CHAIN])
+}
+
+export const getGroqVisionModelChain = () => {
+  const primary = env.GROQ_VISION_MODEL || DEFAULT_VISION_CHAIN[0]
+  return uniqueModels([primary, ...DEFAULT_VISION_CHAIN])
 }
 
 export const isRateLimitError = (err) => {
@@ -195,17 +205,21 @@ export const isToolCallGenerationError = (err) => {
   )
 }
 
-/**
- * Call Groq chat.completions; on daily/minute rate limit, try next model.
- * After daily reset (TTL), primary model is used again automatically.
- */
-export const createChatCompletionWithFallback = async (
-  params,
-  { onModelSwitch } = {}
-) => {
+const isModelMissingError = (err) => {
+  const status = err?.status || err?.statusCode
+  const message = err?.message || String(err)
+  return (
+    status === 404 ||
+    /model_not_found|does not exist|decommissioned|no longer (available|supported)|deprecated/i.test(
+      message
+    )
+  )
+}
+
+const createOnChain = async (params, chain, { onModelSwitch } = {}) => {
   const client = getGroqClient()
-  const chain = getGroqModelChain().filter((model) => !isExhausted(model))
-  if (!chain.length) {
+  const usable = chain.filter((model) => !isExhausted(model))
+  if (!usable.length) {
     const soonest = [...exhaustedUntil.entries()].sort((a, b) => a[1] - b[1])[0]
     const waitHint = soonest
       ? ` Thử lại sau ${new Date(soonest[1]).toISOString()}.`
@@ -217,8 +231,8 @@ export const createChatCompletionWithFallback = async (
   }
 
   let lastError = null
-  for (let i = 0; i < chain.length; i += 1) {
-    const model = chain[i]
+  for (let i = 0; i < usable.length; i += 1) {
+    const model = usable[i]
     try {
       const result = await client.chat.completions.create({
         ...params,
@@ -228,15 +242,21 @@ export const createChatCompletionWithFallback = async (
     } catch (err) {
       lastError = err
       const canFallback =
-        isRateLimitError(err) || isToolCallGenerationError(err)
+        isRateLimitError(err) ||
+        isToolCallGenerationError(err) ||
+        isModelMissingError(err)
       if (!canFallback) throw err
 
-      // Tool-call / payload failures: retry next model, don't day-blacklist
-      if (!isToolCallGenerationError(err) && !isPayloadTooLargeError(err)) {
+      if (
+        !isToolCallGenerationError(err) &&
+        !isPayloadTooLargeError(err) &&
+        !isModelMissingError(err)
+      ) {
         markExhausted(model, err)
       }
 
-      const next = chain.slice(i + 1).find((m) => !isExhausted(m)) || chain[i + 1]
+      const next =
+        usable.slice(i + 1).find((item) => !isExhausted(item)) || usable[i + 1]
       // eslint-disable-next-line no-console
       console.info('[chat-model-fallback]', {
         from: model,
@@ -247,7 +267,6 @@ export const createChatCompletionWithFallback = async (
         onModelSwitch({ from: model, to: next })
       }
 
-      // Last resort for failed tool JSON: retry once without tools on same model
       if (!next && isToolCallGenerationError(err) && params.tools) {
         try {
           return await client.chat.completions.create({
@@ -274,6 +293,21 @@ export const createChatCompletionWithFallback = async (
   throw lastError
 }
 
+/**
+ * Call Groq chat.completions; on daily/minute rate limit, try next model.
+ * After daily reset (TTL), primary model is used again automatically.
+ */
+export const createChatCompletionWithFallback = async (
+  params,
+  options = {}
+) => createOnChain(params, getGroqModelChain(), options)
+
+/** Vision-capable models only (image + optional tools). */
+export const createVisionCompletionWithFallback = async (
+  params,
+  options = {}
+) => createOnChain(params, getGroqVisionModelChain(), options)
+
 export const mapGroqError = (err) => {
   const message = err?.message || String(err)
   const detail = message.replace(/\s+/g, ' ').slice(0, 220)
@@ -283,6 +317,12 @@ export const mapGroqError = (err) => {
     return new ApiError(
       StatusCodes.SERVICE_UNAVAILABLE,
       `GROQ_API_KEY không hợp lệ. Lấy lại tại https://console.groq.com/keys — ${detail}`
+    )
+  }
+  if (isPayloadTooLargeError(err) || (status === 413 && /tokens per minute|TPM|request too large/i.test(message))) {
+    return new ApiError(
+      StatusCodes.REQUEST_TOO_LONG,
+      'Ảnh/nội dung quá lớn so với hạn mức Groq. Chụp gần phần nhãn, ảnh rõ và nhỏ hơn rồi gửi lại.'
     )
   }
   if (isRateLimitError(err)) {

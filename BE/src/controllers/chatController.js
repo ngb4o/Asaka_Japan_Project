@@ -17,7 +17,8 @@ const streamMessage = async (req, res, next) => {
       userId: req.userId,
       roles: req.userRoles || [],
       messages: req.body?.messages || [],
-      clientMessage: req.body?.message || req.body?.clientMessage || ''
+      clientMessage: req.body?.message || req.body?.clientMessage || '',
+      imageUrl: req.body?.imageUrl || ''
     })
     res.end()
   } catch (error) {

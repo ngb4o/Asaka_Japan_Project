@@ -25,6 +25,7 @@ import { describeCrmCollection } from '~/services/chat/crmSchema'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
+import { OBJECT_ID_RULE } from '~/utils/validators'
 
 const ALL_STAFF = ['sales', 'warehouse', 'accountant']
 const SALES_WH = ['sales', 'warehouse']
@@ -125,6 +126,43 @@ const resolveTrip = async (tripIdOrCode, userCtx) => {
     byCode._id.toString(),
     userCtx.userId,
     userCtx.roles
+  )
+}
+
+const resolveProductCategory = async (categoryId, categoryName) => {
+  const id = String(categoryId || '').trim()
+  if (id && OBJECT_ID_RULE.test(id)) {
+    try {
+      return await productCategoryService.getDetails(id)
+    } catch (err) {
+      if (err?.statusCode !== StatusCodes.NOT_FOUND) throw err
+    }
+  }
+
+  const listed = await productCategoryService.getList({
+    status: 'active',
+    limit: 100
+  })
+  const items = listed.items || []
+  const needle = String(categoryName || '').trim().toLowerCase()
+  if (needle) {
+    const exact = items.find(
+      (item) => String(item.name || '').trim().toLowerCase() === needle
+    )
+    if (exact) return exact
+    const partial = items.find((item) => {
+      const name = String(item.name || '').trim().toLowerCase()
+      return name.includes(needle) || needle.includes(name)
+    })
+    if (partial) return partial
+  }
+
+  const names = items.map((item) => item.name).filter(Boolean)
+  throw new ApiError(
+    StatusCodes.BAD_REQUEST,
+    names.length
+      ? `Cần chọn loại sản phẩm. Các loại hiện có: ${names.join(', ')}.`
+      : 'Chưa có loại sản phẩm. Tạo loại trong mục Sản phẩm trước.'
   )
 }
 
@@ -1680,6 +1718,143 @@ export const CHAT_TOOLS = [
       preview: `Tạo đại lý: ${args.name} — ${args.phone}${args.region ? ` · ${args.region}` : ''}`,
       execute: async () => dealerService.createNew(args, userCtx.userId)
     })
+  },
+  {
+    name: 'create_product',
+    kind: 'write',
+    requiredRoles: ['admin'],
+    description:
+      'Tạo SP từ nhãn. Bắt buộc name, shortDescription, description (markdown từ nhãn), categoryId/Name, image. Giá không rõ=0. Cần xác nhận.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Tên thương mại trên bao bì' },
+        categoryId: { type: 'string', description: 'Mongo id loại SP' },
+        categoryName: {
+          type: 'string',
+          description: 'Tên loại để khớp nếu chưa có id (thuốc trừ sâu/bệnh/cỏ…)'
+        },
+        price: { type: 'number', description: 'Giá bán. Không rõ thì 0' },
+        costPrice: { type: 'number' },
+        sku: { type: 'string' },
+        unit: {
+          type: 'string',
+          description: 'chai nếu dung dịch ml; gói nếu bột/WP gram'
+        },
+        unitsPerCase: { type: 'integer', description: 'Số chai/gói mỗi thùng' },
+        packaging: {
+          type: 'string',
+          description: 'Quy cách trên nhãn, vd 100g, 250ml'
+        },
+        activeIngredient: {
+          type: 'string',
+          description: 'Hoạt chất + hàm lượng, vd Acetamiprid 25% + Imidacloprid 8%'
+        },
+        shortDescription: {
+          type: 'string',
+          description:
+            'BẮT BUỘC. 1–2 câu ≤300 ký tự: tên, công dụng/đặc trị, hoạt chất, quy cách. Viết từ nhãn.'
+        },
+        description: {
+          type: 'string',
+          description:
+            'BẮT BUỘC. Markdown tiếng Việt từ nhãn: ## Thông tin chung, ## Thành phần, ## Hướng dẫn sử dụng, ## Cảnh báo, ## Nhà SX & phân phối. Không bỏ trống, không bịa.'
+        },
+        image: { type: 'string', description: 'URL ảnh đã upload' }
+      },
+      required: ['name', 'shortDescription', 'description']
+    },
+    prepareWrite: async (args, userCtx) => {
+      const name = String(args.name || '').trim()
+      if (name.length < 2) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Thiếu tên sản phẩm đọc từ nhãn.')
+      }
+
+      const category = await resolveProductCategory(
+        args.categoryId,
+        args.categoryName
+      )
+
+      const existing = await productService.getList({
+        search: name,
+        limit: 8
+      })
+      const needle = name.toLowerCase()
+      const skuNeedle = String(args.sku || '').trim().toLowerCase()
+      const dup = (existing.items || []).find((item) => {
+        if (String(item.name || '').trim().toLowerCase() === needle) return true
+        if (
+          skuNeedle &&
+          String(item.sku || '').trim().toLowerCase() === skuNeedle
+        ) {
+          return true
+        }
+        return false
+      })
+      if (dup) {
+        throw new ApiError(
+          StatusCodes.CONFLICT,
+          `Đã có sản phẩm "${dup.name}"${dup.sku ? ` (SKU ${dup.sku})` : ''}. Không tạo trùng.`
+        )
+      }
+
+      const price = Number(args.price)
+      const costPrice = Number(args.costPrice)
+      const unitsPerCase = Number(args.unitsPerCase)
+      const image =
+        String(args.image || userCtx.imageUrl || '').trim() || ''
+      const shortDescription = String(args.shortDescription || '')
+        .trim()
+        .slice(0, 300)
+      const description = String(args.description || '').trim()
+      if (shortDescription.length < 20) {
+        throw new ApiError(
+          StatusCodes.BAD_REQUEST,
+          'Thiếu mô tả ngắn. Đọc nhãn rồi điền shortDescription (tên, đặc trị, hoạt chất, quy cách).'
+        )
+      }
+      if (description.length < 80) {
+        throw new ApiError(
+          StatusCodes.BAD_REQUEST,
+          'Thiếu mô tả chi tiết. Điền description Markdown từ nhãn: thông tin chung, thành phần, hướng dẫn dùng, cảnh báo, nhà SX/phân phối.'
+        )
+      }
+
+      const payload = {
+        name,
+        categoryId: String(category.id || category._id),
+        price: Number.isFinite(price) && price >= 0 ? price : 0,
+        costPrice: Number.isFinite(costPrice) && costPrice >= 0 ? costPrice : 0,
+        sku: String(args.sku || '').trim(),
+        unit: String(args.unit || 'chai').trim() || 'chai',
+        unitsPerCase:
+          Number.isInteger(unitsPerCase) && unitsPerCase >= 1
+            ? unitsPerCase
+            : 1,
+        packaging: String(args.packaging || '').trim(),
+        activeIngredient: String(args.activeIngredient || '').trim(),
+        shortDescription,
+        description,
+        image,
+        images: image ? [image] : []
+      }
+
+      const money = payload.price.toLocaleString('vi-VN')
+      const priceNote = payload.price === 0 ? ' (chưa rõ giá)' : ''
+      return {
+        preview: [
+          `Tạo sản phẩm: ${payload.name} · ${category.name} · ${money} ₫${priceNote}${payload.packaging ? ` · ${payload.packaging}` : ''}`,
+          payload.activeIngredient
+            ? `Hoạt chất: ${payload.activeIngredient}`
+            : null,
+          `Mô tả ngắn: ${payload.shortDescription}`,
+          `Mô tả chi tiết: đã soạn ${payload.description.length} ký tự từ nhãn.`
+        ]
+          .filter(Boolean)
+          .join('\n'),
+        execute: async () => productService.createNew(payload, userCtx.userId)
+      }
+    }
   },
   {
     name: 'add_trip_expense',

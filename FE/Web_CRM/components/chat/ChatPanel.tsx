@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Send, Sparkles, X } from "@/components/ui/icons";
+import {
+  Camera,
+  ImageIcon,
+  Loader2,
+  Send,
+  Sparkles,
+  X,
+} from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { PendingActionCard } from "@/components/chat/PendingActionCard";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -15,6 +22,7 @@ import {
   type PendingConfirmation,
 } from "@/lib/api/chat";
 import { ApiClientError } from "@/lib/api/client";
+import { getImageUrl, uploadProductImage } from "@/lib/api/uploads";
 import {
   emitCrmDataChanged,
   entitiesForChatTool,
@@ -26,6 +34,7 @@ type UiMessage = {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
+  imageUrl?: string | null;
   pending?: PendingConfirmation | null;
   toolHint?: string | null;
   /** IDs/mã từ tool — chỉ gửi lại API, không hiện UI */
@@ -62,7 +71,7 @@ function ChatEmptyState({ onSuggest }: { onSuggest: (text: string) => void }) {
   const suggestions = [
     "Đơn còn nợ hôm nay?",
     "Tồn kho sản phẩm nào thấp?",
-    "Chuyến đang đi có những gì?",
+    "Chụp bao bì để thêm sản phẩm",
   ];
 
   return (
@@ -89,8 +98,8 @@ function ChatEmptyState({ onSuggest }: { onSuggest: (text: string) => void }) {
         Trợ lý AI ASAKA
       </p>
       <p className="mt-1.5 max-w-[260px] text-sm leading-relaxed text-[var(--color-text-inverse)]">
-        Hỏi đơn hàng, đại lý, tồn kho, công nợ… hoặc nhờ thao tác — thao tác ghi
-        sẽ cần bạn xác nhận.
+        Hỏi đơn hàng, tồn kho… hoặc chụp bao bì để AI đề xuất thêm sản phẩm —
+        thao tác ghi cần bạn xác nhận.
       </p>
 
       <div className="mt-5 flex w-full max-w-[300px] flex-col gap-2">
@@ -117,6 +126,10 @@ function ChatBody({
   onConfirmPending,
   onCancelPending,
   pendingBusy,
+  pendingImageUrl,
+  uploadingImage,
+  onPickImage,
+  onClearImage,
 }: {
   messages: UiMessage[];
   streaming: boolean;
@@ -126,6 +139,10 @@ function ChatBody({
   onConfirmPending: (token: string) => void;
   onCancelPending: (token: string) => void;
   pendingBusy: string | null;
+  pendingImageUrl: string | null;
+  uploadingImage: boolean;
+  onPickImage: () => void;
+  onClearImage: () => void;
 }) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
@@ -174,6 +191,14 @@ function ChatBody({
                       ? "border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] text-[var(--color-text-inverse)]"
                       : "border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)]"
                 )}>
+                {msg.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={getImageUrl(msg.imageUrl)}
+                    alt="Ảnh gửi kèm"
+                    className="mb-2 max-h-40 w-full rounded-xl object-cover"
+                  />
+                ) : null}
                 {msg.content ? (
                   <div className="crm-chat-markdown space-y-2">
                     {renderChatMarkdown(msg.content)}
@@ -202,11 +227,49 @@ function ChatBody({
           event.preventDefault();
           onSend();
         }}>
+        {pendingImageUrl ? (
+          <div className="mb-2 flex items-center gap-2">
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--color-border-subtle)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={getImageUrl(pendingImageUrl)}
+                alt="Ảnh đính kèm"
+                className="h-full w-full object-cover"
+              />
+              <button
+                type="button"
+                aria-label="Gỡ ảnh"
+                onClick={onClearImage}
+                className="absolute right-0.5 top-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+            <p className="text-xs text-[var(--color-text-inverse)]">
+              AI sẽ đọc nhãn bao bì và đề xuất thêm sản phẩm.
+            </p>
+          </div>
+        ) : null}
         <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-10 w-10 shrink-0 px-0"
+            disabled={streaming || uploadingImage}
+            aria-label="Đính ảnh bao bì"
+            onClick={onPickImage}>
+            {uploadingImage ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Camera className="h-4 w-4" />
+            )}
+          </Button>
           <input
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder="Nhập câu hỏi…"
+            placeholder={
+              pendingImageUrl ? "Ghi chú thêm (không bắt buộc)…" : "Nhập câu hỏi…"
+            }
             disabled={streaming}
             className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-text-secondary)]"
           />
@@ -214,7 +277,11 @@ function ChatBody({
             type="submit"
             size="sm"
             className="h-10 w-10 shrink-0 px-0"
-            disabled={streaming || !input.trim()}
+            disabled={
+              streaming ||
+              uploadingImage ||
+              (!input.trim() && !pendingImageUrl)
+            }
             aria-label="Gửi">
             {streaming ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -235,8 +302,13 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [pendingBusy, setPendingBusy] = useState<string | null>(null);
+  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const messagesRef = useRef<UiMessage[]>([]);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   messagesRef.current = messages;
 
   const historyForApi = (): ChatHistoryMessage[] =>
@@ -264,14 +336,42 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
         };
       });
 
+  async function handleImageFile(file: File | undefined) {
+    if (!file || streaming) return;
+    if (file.size > 20 * 1024 * 1024) {
+      toast.warning("Ảnh tối đa 20MB");
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const result = await uploadProductImage(file);
+      setPendingImageUrl(result.url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Tải ảnh thất bại");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
   const send = async () => {
     const text = input.trim();
-    if (!text || streaming) return;
+    const imageUrl = pendingImageUrl;
+    if (streaming || uploadingImage) return;
+    if (!text && !imageUrl) return;
 
+    const message =
+      text ||
+      "Thêm sản phẩm từ ảnh bao bì này. Đọc nhãn rồi đề xuất tạo sản phẩm.";
     const priorHistory = historyForApi();
 
     setInput("");
-    const userMsg: UiMessage = { id: uid(), role: "user", content: text };
+    setPendingImageUrl(null);
+    const userMsg: UiMessage = {
+      id: uid(),
+      role: "user",
+      content: message,
+      imageUrl,
+    };
     const assistantId = uid();
     setMessages((prev) => [
       ...prev,
@@ -289,7 +389,11 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
 
     try {
       await streamChatMessage(
-        { messages: priorHistory, message: text },
+        {
+          messages: priorHistory,
+          message,
+          ...(imageUrl ? { imageUrl } : {}),
+        },
         {
           onToken: (chunk) => {
             assembled += chunk;
@@ -411,50 +515,129 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
     }
   };
 
+  const fileInputs = (
+    <>
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/webp"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          void handleImageFile(file);
+        }}
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          void handleImageFile(file);
+        }}
+      />
+    </>
+  );
+
+  const pickerSheet = (
+    <BottomSheet
+      open={sourcePickerOpen}
+      onOpenChange={setSourcePickerOpen}
+      title="Ảnh bao bì"
+      maxHeight="40dvh">
+      <div className="space-y-2 px-4 pb-4">
+        <Button
+          type="button"
+          className="h-11 w-full"
+          onClick={() => {
+            setSourcePickerOpen(false);
+            window.setTimeout(() => cameraInputRef.current?.click(), 180);
+          }}>
+          <Camera className="h-4 w-4" />
+          Chụp ảnh
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full"
+          onClick={() => {
+            setSourcePickerOpen(false);
+            window.setTimeout(() => galleryInputRef.current?.click(), 180);
+          }}>
+          <ImageIcon className="h-4 w-4" />
+          Thư viện
+        </Button>
+      </div>
+    </BottomSheet>
+  );
+
   const body = (
-    <ChatBody
-      messages={messages}
-      streaming={streaming}
-      input={input}
-      setInput={setInput}
-      onSend={() => void send()}
-      onConfirmPending={(token) => void onConfirmPending(token)}
-      onCancelPending={(token) => void onCancelPending(token)}
-      pendingBusy={pendingBusy}
-    />
+    <>
+      <ChatBody
+        messages={messages}
+        streaming={streaming}
+        input={input}
+        setInput={setInput}
+        onSend={() => void send()}
+        onConfirmPending={(token) => void onConfirmPending(token)}
+        onCancelPending={(token) => void onCancelPending(token)}
+        pendingBusy={pendingBusy}
+        pendingImageUrl={pendingImageUrl}
+        uploadingImage={uploadingImage}
+        onPickImage={() => {
+          if (isMobile) {
+            setSourcePickerOpen(true);
+            return;
+          }
+          galleryInputRef.current?.click();
+        }}
+        onClearImage={() => setPendingImageUrl(null)}
+      />
+      {fileInputs}
+    </>
   );
 
   if (isMobile) {
     return (
-      <BottomSheet
-        open={open}
-        onOpenChange={onOpenChange}
-        title="Trợ lý AI"
-        maxHeight="88dvh">
-        <div className="flex h-[min(70dvh,560px)] flex-col">{body}</div>
-      </BottomSheet>
+      <>
+        <BottomSheet
+          open={open}
+          onOpenChange={onOpenChange}
+          title="Trợ lý AI"
+          maxHeight="88dvh">
+          <div className="flex h-[min(70dvh,560px)] flex-col">{body}</div>
+        </BottomSheet>
+        {pickerSheet}
+      </>
     );
   }
 
   if (!open) return null;
 
   return (
-    <div className="fixed bottom-24 right-6 z-40 flex h-[min(70vh,640px)] w-[min(100vw-2rem,400px)] flex-col overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-2xl">
-      <div className="flex shrink-0 items-center justify-between border-b border-[var(--color-border-subtle)] px-4 py-3">
-        <div>
-          <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-            Trợ lý AI
-          </p>
+    <>
+      <div className="fixed bottom-24 right-6 z-40 flex h-[min(70vh,640px)] w-[min(100vw-2rem,400px)] flex-col overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-2xl">
+        <div className="flex shrink-0 items-center justify-between border-b border-[var(--color-border-subtle)] px-4 py-3">
+          <div>
+            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+              Trợ lý AI
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label="Đóng"
+            onClick={() => onOpenChange(false)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]">
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <button
-          type="button"
-          aria-label="Đóng"
-          onClick={() => onOpenChange(false)}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-inverse)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]">
-          <X className="h-4 w-4" />
-        </button>
+        {body}
       </div>
-      {body}
-    </div>
+      {pickerSheet}
+    </>
   );
 }

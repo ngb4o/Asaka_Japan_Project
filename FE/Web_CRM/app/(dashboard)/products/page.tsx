@@ -53,6 +53,7 @@ import type { Product, ProductCategory } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
+import { useCrmDataRefresh } from "@/lib/hooks/useCrmDataRefresh";
 import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { formatCurrency } from "@/lib/utils";
 import { getStockDisplayParts } from "@/lib/inventoryUnits";
@@ -129,6 +130,8 @@ export default function ProductsPage() {
     loadMore,
     goToPage,
   } = useMobilePagedList<Product>({ fetchPage, onError });
+
+  useCrmDataRefresh(["products"], () => refresh());
 
   const loadCategories = useCallback(async () => {
     try {

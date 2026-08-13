@@ -9,6 +9,7 @@ export type CrmEntity =
   | "trips"
   | "receivables"
   | "inventory"
+  | "products"
   | "all";
 
 const EVENT_NAME = "crm:data-changed";
@@ -43,6 +44,8 @@ export function entitiesForChatTool(toolName?: string): CrmEntity[] {
       return ["leads"];
     case "create_dealer":
       return ["dealers"];
+    case "create_product":
+      return ["products", "inventory"];
     case "add_trip_expense":
       return ["trips"];
     default:

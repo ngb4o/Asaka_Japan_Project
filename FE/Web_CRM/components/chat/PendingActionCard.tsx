@@ -28,7 +28,9 @@ export function PendingActionCard({
       <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
         Cần xác nhận
       </p>
-      <p className="mt-1.5 leading-relaxed">{pending.preview}</p>
+      <p className="mt-1.5 whitespace-pre-wrap leading-relaxed">
+        {pending.preview}
+      </p>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Button
           type="button"
