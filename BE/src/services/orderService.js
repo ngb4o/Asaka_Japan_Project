@@ -991,6 +991,17 @@ const update = async (orderId, updateData, userId) => {
       }
     })
   } else if (updateData.status !== undefined && nextStatus !== order.status) {
+    const canAttachPhotos =
+      nextStatus === orderModel.ORDER_STATUS.DELIVERING ||
+      nextStatus === orderModel.ORDER_STATUS.COMPLETED
+    const photos = canAttachPhotos
+      ? [...new Set(
+          (Array.isArray(updateData.statusPhotos) ? updateData.statusPhotos : [])
+            .map((url) => String(url || '').trim())
+            .filter(Boolean)
+        )].slice(0, 5)
+      : []
+
     await orderAuditService.log({
       orderId,
       orderCode: formatted.code,
@@ -998,7 +1009,8 @@ const update = async (orderId, updateData, userId) => {
       actorUserId: userId,
       meta: {
         fromStatus: order.status,
-        toStatus: nextStatus
+        toStatus: nextStatus,
+        ...(photos.length ? { photos } : {})
       }
     })
   }

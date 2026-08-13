@@ -13,6 +13,7 @@ import { NotificationProvider } from "@/lib/notifications/NotificationProvider";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canAccessPath, rolesOf } from "@/lib/auth/permissions";
+import { rememberReturnTo } from "@/lib/pwa/return-to";
 
 function WorkspaceLoading() {
   return (
@@ -72,8 +73,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!mounted || loading) return;
-    if (!user) router.replace("/login");
-  }, [mounted, loading, user, router]);
+    if (!user) {
+      rememberReturnTo(`${pathname}${window.location.search}`);
+      router.replace("/login");
+    }
+  }, [mounted, loading, user, router, pathname]);
 
   useEffect(() => {
     if (!mounted || !user || loading) return;

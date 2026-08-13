@@ -23,6 +23,7 @@ type ImageUploadProps = {
   label?: string;
   max?: number;
   upload?: (file: File) => Promise<UploadResult>;
+  onUploadingChange?: (uploading: boolean) => void;
 };
 
 export function ImageUpload({
@@ -33,6 +34,7 @@ export function ImageUpload({
   label = "Ảnh sản phẩm",
   max = 1,
   upload = uploadProductImage,
+  onUploadingChange,
 }: ImageUploadProps) {
   const toast = useToast();
   const isMobile = useIsMobile();
@@ -74,6 +76,7 @@ export function ImageUpload({
     }
 
     setUploading(true);
+    onUploadingChange?.(true);
 
     try {
       const uploaded: string[] = [];
@@ -100,6 +103,7 @@ export function ImageUpload({
       toast.error(err instanceof Error ? err.message : "Tải ảnh thất bại");
     } finally {
       setUploading(false);
+      onUploadingChange?.(false);
       event.target.value = "";
     }
   }

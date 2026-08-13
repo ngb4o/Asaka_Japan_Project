@@ -13,6 +13,36 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     scope: "/",
     orientation: "portrait-primary",
+    shortcuts: [
+      {
+        name: "Tạo đơn",
+        short_name: "Tạo đơn",
+        description: "Tạo đơn hàng mới",
+        url: "/orders?new=1",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+      {
+        name: "Đơn hàng",
+        short_name: "Đơn hàng",
+        description: "Danh sách đơn hàng",
+        url: "/orders",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+      {
+        name: "Kho",
+        short_name: "Kho",
+        description: "Tồn kho và nhập xuất",
+        url: "/inventory",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+      {
+        name: "Chuyến",
+        short_name: "Chuyến",
+        description: "Chuyến công tác / giao hàng",
+        url: "/trips",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+    ],
     icons: [
       {
         src: "/icons/icon-192.png",

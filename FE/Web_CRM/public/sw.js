@@ -1,6 +1,6 @@
 /* ASAKA CRM — Service worker: push + app shell + offline pages + sync */
 
-const SHELL_CACHE = "asaka-shell-v4";
+const SHELL_CACHE = "asaka-shell-v5";
 const PAGE_CACHE = "asaka-pages-v1";
 const STATIC_CACHE = "asaka-static-v1";
 

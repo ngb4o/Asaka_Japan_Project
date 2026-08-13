@@ -116,3 +116,35 @@ export function useDeepLinkOpen(
     };
   }, [enabled, param, fallbackKey]);
 }
+
+/**
+ * One-shot query flag, e.g. `/orders?new=1` → open create dialog.
+ * Clears the flag after firing.
+ */
+export function useDeepLinkFlag(
+  flag: string,
+  onTrigger: () => void,
+  options?: { enabled?: boolean }
+) {
+  const enabled = options?.enabled !== false;
+  const onTriggerRef = useRef(onTrigger);
+
+  onTriggerRef.current = onTrigger;
+
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get(flag) !== "1") return;
+
+    onTriggerRef.current();
+
+    params.delete(flag);
+    const qs = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash
+    );
+  }, [enabled, flag]);
+}

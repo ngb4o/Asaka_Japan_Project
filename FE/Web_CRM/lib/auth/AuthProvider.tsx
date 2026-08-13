@@ -22,6 +22,7 @@ import { clearApiCache } from "@/lib/offline/api-cache";
 import { clearMutationQueue } from "@/lib/offline/mutation-queue";
 import { prefetchOfflineForUser } from "@/lib/offline/prefetch";
 import { clearAppBadge } from "@/lib/pwa/app-badge";
+import { consumeReturnTo } from "@/lib/pwa/return-to";
 
 type AuthContextValue = {
   user: UserProfile | null;
@@ -80,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const profile = normalizeProfile(await getProfileRequest());
       setUser(profile);
       void prefetchOfflineForUser(profile, { force: true });
-      router.push("/dashboard");
+      router.push(consumeReturnTo("/dashboard"));
     },
     [router]
   );

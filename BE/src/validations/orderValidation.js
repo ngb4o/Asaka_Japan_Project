@@ -69,6 +69,7 @@ const updateSchema = Joi.object({
     .valid('pending', 'confirmed', 'delivering', 'completed', 'cancelled')
     .optional(),
   note: optionalText.max(1000),
+  statusPhotos: Joi.array().items(Joi.string().trim().max(500)).max(5).optional(),
   ...paymentFields,
   ...shippingFields
 }).min(1)

@@ -103,8 +103,22 @@ const uploadTripReceipt = async (req, res, next) => {
   }
 }
 
+const uploadOrderPhoto = async (req, res, next) => {
+  try {
+    const data = await persistImage(req.file, 'order-photos')
+
+    res.status(StatusCodes.CREATED).json({
+      message: 'Tải ảnh đơn hàng lên thành công!',
+      data
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const uploadController = {
   uploadProductImage,
   uploadNewsImage,
-  uploadTripReceipt
+  uploadTripReceipt,
+  uploadOrderPhoto
 }

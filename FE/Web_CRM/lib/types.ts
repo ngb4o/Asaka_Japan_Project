@@ -417,6 +417,8 @@ export type OrderInput = {
   deliveredAt?: string | null;
   shippingFee?: number;
   shippingNote?: string;
+  /** Ảnh đính nhật ký khi đổi sang đang giao / hoàn tất — không lưu trên đơn */
+  statusPhotos?: string[];
 };
 
 export type OrderAuditAction =

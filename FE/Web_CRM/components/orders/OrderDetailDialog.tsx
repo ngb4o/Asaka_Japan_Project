@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mail } from "lucide-react";
+import { Mail, Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,7 @@ import {
   MobileRecordCard,
 } from "@/components/ui/mobile-record-card";
 import { OrderLineItemsList } from "@/components/orders/OrderLineItemsList";
+import { PreviewableImage } from "@/components/ui/previewable-image";
 import { ApiClientError } from "@/lib/api/client";
 import { getOrderAudits, sendOrderInvoiceEmail } from "@/lib/api/orders";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
@@ -30,6 +31,7 @@ import { statusBadgeVariant } from "@/lib/status-badge";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { CodeText, PhoneLink, TrackingText } from "@/components/ui/smart-text";
+import { shareOrCopy } from "@/lib/pwa/share";
 
 type OrderDetailDialogProps = {
   order: Order | null;
@@ -108,6 +110,28 @@ function Field({
   );
 }
 
+function buildOrderShareText(order: Order) {
+  const name =
+    order.shippingContactName || order.customerName || order.dealerName || "";
+  const phone = order.shippingPhone || order.customerPhone || "";
+  const paid = order.paidAmount || 0;
+  const remaining =
+    order.remainingAmount ?? Math.max(0, (order.total || 0) - paid);
+
+  return [
+    `Đơn hàng ${order.code} — ASAKA`,
+    name ? `Khách: ${name}` : "",
+    phone ? `SĐT: ${phone}` : "",
+    order.shippingAddress ? `Địa chỉ: ${order.shippingAddress}` : "",
+    order.trackingCode ? `Mã vận đơn: ${order.trackingCode}` : "",
+    order.carrier ? `Đơn vị VC: ${order.carrier}` : "",
+    `Tổng: ${formatCurrency(order.total)}`,
+    remaining > 0 ? `Còn nợ: ${formatCurrency(remaining)}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function formatShippingRange(
   shippingDate?: string | null,
   deliveredAt?: string | null
@@ -141,6 +165,14 @@ function statusLabel(value?: unknown) {
 function paymentLabel(value?: unknown) {
   if (typeof value !== "string") return "";
   return PAYMENT_LABELS[value as Order["paymentStatus"]] || value;
+}
+
+function auditPhotos(meta: Record<string, unknown> | undefined): string[] {
+  const photos = meta?.photos;
+  if (!Array.isArray(photos)) return [];
+  return photos.filter(
+    (url): url is string => typeof url === "string" && url.trim().length > 0
+  );
 }
 
 function auditDetail(item: OrderAudit): string {
@@ -216,6 +248,7 @@ function OrderAuditTimeline({
     <ol className="relative m-0 list-none space-y-0 p-0">
       {audits.map((item, index) => {
         const detail = auditDetail(item);
+        const photos = auditPhotos(item.meta);
         const isLast = index === audits.length - 1;
         const isFirst = index === 0;
         const dotClass =
@@ -259,6 +292,22 @@ function OrderAuditTimeline({
                 <p className="mt-0.5 text-sm leading-snug text-[var(--color-text-secondary)]">
                   {detail}
                 </p>
+              ) : null}
+              {photos.length ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {photos.map((url) => (
+                    <div
+                      key={url}
+                      className="relative h-16 w-16 overflow-hidden rounded-md">
+                      <PreviewableImage
+                        src={url}
+                        alt="Ảnh giao hàng"
+                        fill
+                        className="rounded-md border-0"
+                      />
+                    </div>
+                  ))}
+                </div>
               ) : null}
             </div>
           </li>
@@ -333,9 +382,9 @@ export function OrderDetailDialog({
     return () => {
       cancelled = true;
     };
-    // order object is refreshed after openDetail(); only re-fetch when id changes
+    // Refetch when the order is updated (status + photos in nhật ký)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- toast is stable
-  }, [open, order?.id]);
+  }, [open, order?.id, order?.updatedAt]);
 
   if (!order) {
     return (
@@ -399,6 +448,18 @@ export function OrderDetailDialog({
       );
     } finally {
       setSendingInvoice(false);
+    }
+  }
+
+  async function handleShare() {
+    const result = await shareOrCopy({
+      title: `Đơn ${current.code}`,
+      text: buildOrderShareText(current),
+    });
+    if (result === "copied") {
+      toast.success("Đã sao chép nội dung đơn.");
+    } else if (result === "failed") {
+      toast.error("Không chia sẻ được đơn hàng.");
     }
   }
 
@@ -616,6 +677,15 @@ export function OrderDetailDialog({
               onClick={() => onOpenChange(false)}>
               Đóng
             </Button>
+            {showDetailPanel ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handleShare()}>
+                <Share2 className="h-4 w-4" />
+                Chia sẻ
+              </Button>
+            ) : null}
             {showDetailPanel && canSendInvoice ? (
               <Button
                 type="button"

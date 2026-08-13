@@ -27,6 +27,7 @@ import {
   type LineItemFormRow,
 } from "@/components/sales/LineItemsField";
 import { OrderDetailDialog } from "@/components/orders/OrderDetailDialog";
+import { DeliveryPhotoDialog } from "@/components/orders/DeliveryPhotoDialog";
 import { PreviewableImage } from "@/components/ui/previewable-image";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -75,7 +76,7 @@ import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
 import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
-import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
+import { useDeepLinkFlag, useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
 import { useCrmDataRefresh } from "@/lib/hooks/useCrmDataRefresh";
 import { cn, formatCurrency, toDateValue, dealerOptionLabel } from "@/lib/utils";
 import { statusBadgeVariant } from "@/lib/status-badge";
@@ -290,6 +291,10 @@ export default function OrdersPage() {
   const [confirmingOrder, setConfirmingOrder] = useState<Order | null>(null);
   const [confirmationStocks, setConfirmationStocks] = useState<ConfirmationStockRow[]>([]);
   const [loadingConfirmation, setLoadingConfirmation] = useState(false);
+  const [photoPrompt, setPhotoPrompt] = useState<{
+    order: Order;
+    nextStatus: "delivering" | "completed";
+  } | null>(null);
 
   const fetchPage = useCallback(
     (pageNum: number) =>
@@ -387,7 +392,7 @@ export default function OrdersPage() {
     void loadAuxData();
   }, [loadAuxData]);
 
-  function openCreate() {
+  const openCreate = useCallback(() => {
     setEditing(null);
     setForm({
       ...EMPTY_FORM,
@@ -397,7 +402,15 @@ export default function OrdersPage() {
         : [],
     });
     setDialogOpen(true);
-  }
+  }, [warehouses, products]);
+
+  useDeepLinkFlag("new", () => {
+    if (!canEditOrderItems(role)) {
+      toast.warning("Bạn không có quyền tạo đơn hàng.");
+      return;
+    }
+    openCreate();
+  });
 
   function openEdit(item: Order) {
     if (!canEditOrderItems(role)) {
@@ -693,14 +706,33 @@ export default function OrdersPage() {
       return;
     }
 
+    if (nextStatus === "delivering" || nextStatus === "completed") {
+      setPhotoPrompt({ order: item, nextStatus });
+      return;
+    }
+
+    await applyStatusChange(item, nextStatus);
+  }
+
+  async function applyStatusChange(
+    item: Order,
+    nextStatus: Order["status"],
+    photos?: string[]
+  ) {
     setUpdatingStatusId(`status:${item.id}`);
     try {
-      await updateOrder(item.id, { status: nextStatus });
+      const updated = await updateOrder(item.id, {
+        status: nextStatus,
+        ...(photos?.length ? { statusPhotos: photos } : {}),
+      });
       toast.success(
         nextStatus === "confirmed" && !item.inventoryExported
           ? "Đã xác nhận đơn và xuất kho"
-          : "Đã cập nhật trạng thái"
+          : photos?.length
+            ? "Đã cập nhật trạng thái và lưu ảnh"
+            : "Đã cập nhật trạng thái"
       );
+      if (viewing?.id === item.id) setViewing(updated);
       await reload();
     } catch (err) {
       toast.error(
@@ -708,6 +740,7 @@ export default function OrdersPage() {
       );
     } finally {
       setUpdatingStatusId(null);
+      setPhotoPrompt(null);
     }
   }
 
@@ -1333,6 +1366,32 @@ export default function OrdersPage() {
           )}
         </CardContent>
       </Card>
+
+      <DeliveryPhotoDialog
+        open={Boolean(photoPrompt)}
+        order={photoPrompt?.order || null}
+        nextStatus={photoPrompt?.nextStatus || null}
+        submitting={
+          Boolean(
+            photoPrompt && isOrderAction(photoPrompt.order.id, "status")
+          )
+        }
+        onOpenChange={(open) => {
+          if (!open) setPhotoPrompt(null);
+        }}
+        onSkip={() => {
+          if (!photoPrompt) return;
+          void applyStatusChange(photoPrompt.order, photoPrompt.nextStatus);
+        }}
+        onConfirm={(photos) => {
+          if (!photoPrompt) return;
+          void applyStatusChange(
+            photoPrompt.order,
+            photoPrompt.nextStatus,
+            photos
+          );
+        }}
+      />
 
       <OrderDetailDeepLink onOpen={openDetail} />
 
