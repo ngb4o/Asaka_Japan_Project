@@ -32,13 +32,13 @@ function WorkspaceLoading() {
 
       <div className="relative z-10 flex flex-col items-center gap-3">
         <div className="relative">
-          <div className="absolute -inset-3 animate-pulse rounded-2xl bg-white/10" />
-          <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white/95 shadow-[var(--shadow-elevated)]">
+          <div className="absolute -inset-[8%] animate-pulse rounded-[22%] bg-white/10" />
+          <div className="relative flex size-[28vmin] min-h-24 min-w-24 items-center justify-center overflow-hidden rounded-[22%] border border-white/25 bg-white/95 shadow-[var(--shadow-elevated)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/images/brand/logo.png"
               alt=""
-              className="h-10 w-10 object-contain"
+              className="size-[78%] object-contain"
             />
           </div>
         </div>

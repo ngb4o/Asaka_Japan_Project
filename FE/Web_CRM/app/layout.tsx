@@ -9,6 +9,7 @@ import { IosPwaViewport } from "@/components/providers/IosPwaViewport";
 import { NetworkStatusProvider } from "@/components/providers/NetworkStatusProvider";
 import { PwaInstallProvider } from "@/components/providers/PwaInstallProvider";
 import { SwUpdateProvider } from "@/components/providers/SwUpdateProvider";
+import { APPLE_STARTUP_IMAGES } from "@/lib/pwa/apple-splash";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -36,6 +37,7 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "ASAKA",
+    startupImage: [...APPLE_STARTUP_IMAGES],
   },
   manifest: "/manifest.webmanifest",
 };
