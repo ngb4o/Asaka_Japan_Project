@@ -1040,12 +1040,15 @@ export default function ReceivablesPage() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleInvoicePayment} className="space-y-4">
-            <p className="text-sm text-[var(--color-text-inverse)]">
-              Còn nợ:{" "}
-              {formatCurrency(
+            <PaymentSnapshot
+              total={payingInvoice?.total}
+              paid={payingInvoice?.paidAmount}
+              remaining={
                 payingInvoice ? remainingInvoice(payingInvoice) : 0
-              )}
-            </p>
+              }
+              totalLabel="Tổng phiếu"
+              paidLabel="Đã trả"
+            />
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Số tiền *</Label>
