@@ -42,6 +42,7 @@ import { CodeText } from "@/components/ui/smart-text";
 import { PreviewableImage } from "@/components/ui/previewable-image";
 import { ImageUpload } from "@/components/products/ImageUpload";
 import { LocationCapture, type GeoLocationValue } from "@/components/trips/LocationCapture";
+import { PaymentSnapshot } from "@/components/orders/PaymentSnapshot";
 import dynamic from "next/dynamic";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -1936,15 +1937,13 @@ export default function TripsPage() {
             <DialogTitle>Ghi nhận thanh toán {payingOrder?.code}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleTripPayment} className="space-y-4">
-            <p className="text-sm text-[var(--color-text-inverse)]">
-              Tổng đơn: {formatCurrency(payingOrder?.total || 0)} — Đã thu:{" "}
-              {formatCurrency(payingOrder?.paidAmount || 0)} — Còn nợ:{" "}
-              <span className="font-semibold text-red-600 dark:text-red-400">
-                {formatCurrency(
-                  payingOrder ? tripOrderRemaining(payingOrder) : 0
-                )}
-              </span>
-            </p>
+            <PaymentSnapshot
+              total={payingOrder?.total}
+              paid={payingOrder?.paidAmount}
+              remaining={
+                payingOrder ? tripOrderRemaining(payingOrder) : 0
+              }
+            />
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Số tiền thu thêm</Label>

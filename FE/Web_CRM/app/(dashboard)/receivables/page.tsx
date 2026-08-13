@@ -26,6 +26,7 @@ import {
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CodeText, Copyable, PhoneLink } from "@/components/ui/smart-text";
+import { PaymentSnapshot } from "@/components/orders/PaymentSnapshot";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { VndInput } from "@/components/ui/vnd-input";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -864,10 +865,11 @@ export default function ReceivablesPage() {
             <DialogTitle>Ghi nhận thanh toán {payingOrder?.code}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleOrderPayment} className="space-y-4">
-            <p className="text-sm text-[var(--color-text-inverse)]">
-              Tổng đơn: {formatCurrency(payingOrder?.total || 0)} — Đã thu:{" "}
-              {formatCurrency(payingOrder?.paidAmount || 0)}
-            </p>
+            <PaymentSnapshot
+              total={payingOrder?.total}
+              paid={payingOrder?.paidAmount}
+              remaining={payingOrder ? remainingOrder(payingOrder) : 0}
+            />
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Số tiền thu thêm</Label>

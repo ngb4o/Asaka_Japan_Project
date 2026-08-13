@@ -28,6 +28,7 @@ import {
 } from "@/components/sales/LineItemsField";
 import { OrderDetailDialog } from "@/components/orders/OrderDetailDialog";
 import { DeliveryPhotoDialog } from "@/components/orders/DeliveryPhotoDialog";
+import { PaymentSnapshot } from "@/components/orders/PaymentSnapshot";
 import { PreviewableImage } from "@/components/ui/previewable-image";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -1907,10 +1908,10 @@ export default function OrdersPage() {
             <DialogTitle>Ghi nhận thanh toán {payingOrder?.code}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleRecordPayment} className="space-y-4">
-            <p className="text-sm text-[var(--color-text-inverse)]">
-              Tổng đơn: {formatCurrency(payingOrder?.total || 0)} - Đã thu:{" "}
-              {formatCurrency(payingOrder?.paidAmount || 0)}
-            </p>
+            <PaymentSnapshot
+              total={payingOrder?.total}
+              paid={payingOrder?.paidAmount}
+            />
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="payAmount">Số tiền thu thêm</Label>
