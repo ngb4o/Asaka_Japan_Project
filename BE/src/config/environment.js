@@ -41,8 +41,11 @@ export const env = {
     process.env.GOOGLE_GEOCODING_API_KEY ||
     '',
 
-  /** Invoice email — Resend (ưu tiên) hoặc SMTP */
+  /** Invoice email — Resend (ưu tiên) → Gmail API (HTTPS, Render free) → SMTP */
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  GMAIL_CLIENT_ID: process.env.GMAIL_CLIENT_ID || '',
+  GMAIL_CLIENT_SECRET: process.env.GMAIL_CLIENT_SECRET || '',
+  GMAIL_REFRESH_TOKEN: process.env.GMAIL_REFRESH_TOKEN || '',
   SMTP_HOST: process.env.SMTP_HOST || '',
   SMTP_PORT: process.env.SMTP_PORT || '587',
   SMTP_SECURE: process.env.SMTP_SECURE || '',

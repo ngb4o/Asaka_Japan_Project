@@ -16,7 +16,8 @@
     "production": "npm run build && npm start",
     "dev": "cross-env BUILD_MODE=dev nodemon --exec babel-node ./src/server.js",
     "wipe-catalog": "node scripts/wipe-keep-catalog.js",
-    "seed-demo": "node scripts/seed-demo.js"
+    "seed-demo": "node scripts/seed-demo.js",
+    "gmail-oauth": "node scripts/gmail-oauth-setup.js"
   },
   "dependencies": {
     "@babel/runtime": "^7.22.10",
