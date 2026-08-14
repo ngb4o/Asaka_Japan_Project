@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, RefreshCw, Trash2, UserPlus } from "@/components/ui/icons";
+import { Pencil, Plus, RefreshCw, Trash2, UserPlus } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -34,14 +34,17 @@ import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
 import { Copyable, PhoneLink } from "@/components/ui/smart-text";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { canManageLeads, rolesOf } from "@/lib/auth/permissions";
 import {
   convertLeadToDealer,
+  createLead,
   deleteLead,
   getLead,
   getLeads,
   updateLead,
 } from "@/lib/api/leads";
-import type { Lead } from "@/lib/types";
+import type { Lead, LeadInput } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
@@ -53,11 +56,26 @@ import { Badge } from "@/components/ui/badge";
 
 const EMPTY_LIST_FILTERS = { status: "", type: "" };
 
+const EMPTY_FORM: LeadInput = {
+  name: "",
+  phone: "",
+  email: "",
+  company: "",
+  region: "",
+  message: "",
+  type: "contact",
+};
+
 export default function LeadsPage() {
   const confirm = useConfirm();
   const toast = useToast();
+  const { user } = useAuth();
+  const canWrite = canManageLeads(rolesOf(user));
   const [search, setSearch] = useState("");
   const filters = useDeferredFilters(EMPTY_LIST_FILTERS);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [form, setForm] = useState<LeadInput>(EMPTY_FORM);
+  const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState<Lead | null>(null);
   const [note, setNote] = useState("");
   const [status, setStatus] = useState<Lead["status"]>("new");
@@ -121,6 +139,46 @@ export default function LeadsPage() {
     // Reload when filter query changes (fetchPage identity).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchPage]);
+
+  function openCreate() {
+    setForm(EMPTY_FORM);
+    setCreateOpen(true);
+  }
+
+  async function handleCreate() {
+    if (form.name.trim().length < 2) {
+      toast.warning("Nhập tên khách tiềm năng");
+      return;
+    }
+    if (form.phone.trim().length < 8) {
+      toast.warning("Nhập số điện thoại hợp lệ");
+      return;
+    }
+    setCreating(true);
+    try {
+      await createLead({
+        ...form,
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        email: form.email?.trim() || "",
+        company: form.company?.trim() || "",
+        region: form.region?.trim() || "",
+        message: form.message?.trim() || "",
+        type: form.type || "contact",
+        source: "crm",
+      });
+      toast.success("Đã thêm khách tiềm năng");
+      setCreateOpen(false);
+      setForm(EMPTY_FORM);
+      await reload();
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Thêm lead thất bại"
+      );
+    } finally {
+      setCreating(false);
+    }
+  }
 
   function openDetail(lead: Lead) {
     setSelected(lead);
@@ -239,6 +297,15 @@ export default function LeadsPage() {
     <div className="space-y-0 lg:space-y-2">
       <PageHeader
         title="Lead liên hệ"
+        actions={
+          canWrite ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Thêm lead
+            </Button>
+          ) : null
+        }
+        fab={canWrite ? { onClick: openCreate, label: "Thêm lead" } : null}
       />
 
       <Card>
@@ -287,7 +354,17 @@ export default function LeadsPage() {
           </FilterDrawer>
 
           {items.length === 0 ? (
-            <EmptyState title="Chưa có lead" />
+            <EmptyState
+              title="Chưa có lead"
+              action={
+                canWrite ? (
+                  <Button onClick={openCreate}>
+                    <Plus className="h-4 w-4" />
+                    Thêm lead
+                  </Button>
+                ) : null
+              }
+            />
           ) : (
             <div className="space-y-4">
               <MobileInfiniteList
@@ -496,6 +573,95 @@ export default function LeadsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open);
+          if (!open) setForm(EMPTY_FORM);
+        }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Thêm khách tiềm năng</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="lead-name">Họ tên</Label>
+              <Input
+                id="lead-name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lead-phone">Số điện thoại</Label>
+              <Input
+                id="lead-phone"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                required
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="lead-email">Email</Label>
+                <Input
+                  id="lead-email"
+                  type="email"
+                  value={form.email || ""}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lead-company">Công ty</Label>
+                <Input
+                  id="lead-company"
+                  value={form.company || ""}
+                  onChange={(e) => setForm({ ...form, company: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="lead-region">Khu vực</Label>
+                <Input
+                  id="lead-region"
+                  value={form.region || ""}
+                  onChange={(e) => setForm({ ...form, region: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Loại</Label>
+                <SearchableSelect
+                  options={STATUS_OPTIONS.leadType}
+                  value={form.type || "contact"}
+                  onChange={(value) =>
+                    setForm({ ...form, type: value as Lead["type"] })
+                  }
+                  searchable={false}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lead-message">Nội dung</Label>
+              <Textarea
+                id="lead-message"
+                value={form.message || ""}
+                onChange={(e) => setForm({ ...form, message: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              Hủy
+            </Button>
+            <Button onClick={() => void handleCreate()} loading={creating}>
+              Thêm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent>

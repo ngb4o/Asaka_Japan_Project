@@ -14,6 +14,22 @@ const createPublic = async (req, res, next) => {
   }
 }
 
+const createStaff = async (req, res, next) => {
+  try {
+    const result = await leadService.createPublic({
+      ...req.body,
+      source: req.body.source || 'crm'
+    })
+
+    res.status(StatusCodes.CREATED).json({
+      message: 'Đã thêm khách tiềm năng!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 const getList = async (req, res, next) => {
   try {
     const result = await leadService.getList(req.query)
@@ -81,6 +97,7 @@ const convertToDealer = async (req, res, next) => {
 
 export const leadController = {
   createPublic,
+  createStaff,
   getList,
   getDetails,
   update,

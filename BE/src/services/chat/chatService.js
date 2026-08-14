@@ -8,7 +8,9 @@ import {
 import { resolveVisionImage } from '~/services/chat/visionImage'
 import {
   buildSystemPrompt,
-  buildVisionProductPrompt
+  buildVisionPrompt,
+  inferVisionIntent,
+  visionToolNamesForIntent
 } from '~/services/chat/systemPrompt'
 import {
   getToolsForRoles,
@@ -270,7 +272,7 @@ const streamMessage = async ({
   if (hasImage) {
     vision = await resolveVisionImage(imageUrl)
     const caption = userText.slice(0, MAX_MSG_CHARS) ||
-      'Thêm sản phẩm từ ảnh bao bì này. Đọc nhãn rồi đề xuất tạo sản phẩm (chờ xác nhận).'
+      'Đọc chữ trên ảnh này. Chưa rõ loại thì hỏi tôi muốn tạo sản phẩm, đại lý, lead hay NCC.'
     history.push({
       role: 'user',
       content: [
@@ -283,12 +285,10 @@ const streamMessage = async ({
   }
 
   const allowedTools = getToolsForRoles(roles)
-  const visionToolNames = [
-    'search_products',
-    'get_product',
-    'search_product_categories',
-    'create_product'
-  ]
+  const visionIntent = vision ? inferVisionIntent(userText) : null
+  const visionToolNames = visionIntent
+    ? visionToolNamesForIntent(visionIntent)
+    : []
   const tools = toOpenAITools(
     vision
       ? allowedTools.filter((tool) => visionToolNames.includes(tool.name))
@@ -302,7 +302,9 @@ const streamMessage = async ({
   const openaiMessages = [
     {
       role: 'system',
-      content: vision ? buildVisionProductPrompt(roles) : buildSystemPrompt(roles)
+      content: vision
+        ? buildVisionPrompt(roles, visionIntent)
+        : buildSystemPrompt(roles)
     },
     ...(vision ? history.slice(-4) : history)
   ]
@@ -411,7 +413,7 @@ const streamMessage = async ({
       })
     }
 
-    if (vision) {
+    if (vision && visionIntent === 'product') {
       sseWrite(res, 'status', {
         phase: 'prefetch',
         message: 'Đang lấy danh mục sản phẩm…'
@@ -435,6 +437,11 @@ const streamMessage = async ({
             : 'Chưa có loại SP — mô tả nhãn, đừng tạo.',
           'search_products rồi create_product. Bắt buộc shortDescription + description (markdown từ nhãn). Giá không rõ = 0.'
         ].join(' ')
+      })
+    } else if (vision) {
+      openaiMessages.push({
+        role: 'system',
+        content: `Ảnh đã upload (${vision.storeUrl}). Intent: ${visionIntent}. Chỉ tạo đúng loại user chọn. Thiếu SĐT thì hỏi.`
       })
     }
 

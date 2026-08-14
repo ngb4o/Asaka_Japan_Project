@@ -10,6 +10,12 @@ Router.post('/', leadValidation.createPublic, leadController.createPublic)
 
 Router.use(verifyToken, attachUserRole)
 
+Router.post(
+  '/staff',
+  requireRoles('sales', 'warehouse'),
+  leadValidation.createPublic,
+  leadController.createStaff
+)
 Router.get('/', requireRoles('sales', 'warehouse'), leadController.getList)
 Router.get('/:id', requireRoles('sales', 'warehouse'), leadController.getDetails)
 Router.put('/:id', requireRoles('sales', 'warehouse'), leadValidation.update, leadController.update)

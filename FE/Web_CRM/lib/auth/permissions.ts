@@ -225,6 +225,10 @@ export function canManageStockMovements(roleOrRoles?: RoleInput) {
   return hasAnyRole(roleOrRoles, "warehouse");
 }
 
+/** CRUD lead trong CRM — sales / kho (admin) */
+export function canManageLeads(roleOrRoles?: RoleInput) {
+  return hasAnyRole(roleOrRoles, "sales", "warehouse");
+}
 /** CRUD đại lý — sales / kho (kế toán chỉ xem) */
 export function canManageDealers(roleOrRoles?: RoleInput) {
   return hasAnyRole(roleOrRoles, "sales", "warehouse");

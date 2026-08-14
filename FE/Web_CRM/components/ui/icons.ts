@@ -17,6 +17,7 @@ export {
   CircleAlert,
   ExternalLink,
   Eye,
+  EyeOff,
   FileText,
   GripVertical,
   Handshake,

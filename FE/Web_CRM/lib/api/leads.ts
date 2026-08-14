@@ -10,6 +10,13 @@ export async function createLeadPublic(data: LeadInput) {
   });
 }
 
+export async function createLead(data: LeadInput) {
+  return apiRequest<Lead>("/leads/staff", {
+    method: "POST",
+    body: { ...data, source: data.source || "crm" },
+  });
+}
+
 export async function getLeads(params?: {
   search?: string;
   status?: string;

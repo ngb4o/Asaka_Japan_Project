@@ -84,11 +84,72 @@ export const buildVisionProductPrompt = (roles = []) => {
     admin
       ? 'ADMIN: được create_product (chờ xác nhận UI).'
       : 'Không có quyền tạo SP — chỉ mô tả nhãn.',
-    'Tool: search_products (tránh trùng) → create_product với categoryId đúng danh sách loại.',
+    'Tool: search_products (tránh trùng) → create_product. Bắt buộc categoryName (vd Thuốc trừ sâu / Thuốc bảo vệ thực vật) hoặc categoryId từ danh sách prefetch.',
     'create_product BẮT BUỘC có shortDescription + description — không được để trống.',
     'shortDescription: 1–2 câu ≤300 ký tự: tên, loại thuốc (trừ sâu/bệnh/cỏ), đặc trị, hoạt chất, quy cách.',
     'description: Markdown từ nhãn, đủ mục ## Thông tin chung; ## Thành phần; ## Hướng dẫn sử dụng (cây trồng, sâu bệnh, liều lượng, cách pha, cách ly); ## Cảnh báo; ## Nhà SX & phân phối. Chỉ chữ đọc được, không bịa.',
     'activeIngredient = hoạt chất + hàm lượng. packaging = 100g / 250ml / thùng… unit: gói nếu bột/gói, chai nếu dung dịch ml.',
     'Giá không có trên nhãn = 0. Không bịa ObjectId. Không in thẻ <function>. Chưa lưu trước khi Xác nhận.'
+  ].join(' ')
+}
+
+const VISION_PLACE_RULES =
+  'Chỉ dùng chữ đọc được trên ảnh. Không bịa SĐT/địa chỉ. Thiếu SĐT thì hỏi user, đừng gọi create. Search trùng trước khi create. Chưa lưu trước Xác nhận UI. Không in thẻ <function>.'
+
+export const inferVisionIntent = (text = '') => {
+  const t = String(text).toLowerCase()
+  if (/chỉ đọc|chi doc|chỉ tóm tắt|chi tom tat|không tạo/.test(t)) return 'generic'
+  if (/sản phẩm|san pham|bao bì|bao bi|nhãn|nhan thuốc|thuốc/.test(t)) return 'product'
+  if (/nhà cung cấp|nha cung cap|\bncc\b/.test(t)) return 'supplier'
+  if (/khách tiềm năng|khach tiem nang|\blead\b|tiềm năng/.test(t)) return 'lead'
+  if (/đại lý|dai ly|bảng hiệu|bang hieu/.test(t)) return 'dealer'
+  return 'generic'
+}
+
+export const visionToolNamesForIntent = (intent) => {
+  const product = [
+    'search_products',
+    'get_product',
+    'search_product_categories',
+    'create_product'
+  ]
+  const dealer = ['search_dealers', 'get_dealer', 'create_dealer']
+  const lead = ['search_leads', 'get_lead', 'create_lead']
+  const supplier = ['search_suppliers', 'get_supplier', 'create_supplier']
+  if (intent === 'product') return product
+  if (intent === 'dealer') return dealer
+  if (intent === 'lead') return lead
+  if (intent === 'supplier') return supplier
+  return [...product, ...dealer, ...lead, ...supplier]
+}
+
+export const buildVisionPrompt = (roles = [], intent = 'generic') => {
+  if (intent === 'product') return buildVisionProductPrompt(roles)
+  if (intent === 'dealer') {
+    return [
+      'Ảnh BẢNG HIỆU / cửa hàng. Đọc tên cửa hàng, SĐT, địa chỉ nếu có.',
+      'search_dealers (trùng?) rồi create_dealer nếu đủ tên + SĐT.',
+      VISION_PLACE_RULES
+    ].join(' ')
+  }
+  if (intent === 'lead') {
+    return [
+      'Ảnh danh thiếp / bảng hiệu khách. Đọc tên, SĐT, công ty, khu vực.',
+      'search_leads rồi create_lead (type=dealer nếu muốn làm đại lý, không thì contact).',
+      VISION_PLACE_RULES
+    ].join(' ')
+  }
+  if (intent === 'supplier') {
+    return [
+      'Ảnh bảng hiệu / giấy tờ NCC. Đọc tên, SĐT, địa chỉ, MST nếu có.',
+      'search_suppliers rồi create_supplier nếu đủ tên + SĐT.',
+      VISION_PLACE_RULES
+    ].join(' ')
+  }
+  return [
+    'Đọc chữ trên ảnh ASAKA CRM. Tiếng Việt.',
+    'User đã chọn hoặc sẽ nói muốn tạo SP / đại lý / lead / NCC. Làm đúng ý đó.',
+    'Không rõ loại: tóm tắt chữ đọc được rồi hỏi 1 câu, đừng tạo.',
+    VISION_PLACE_RULES
   ].join(' ')
 }

@@ -263,6 +263,7 @@ export default function ReceivablesPage() {
 
   const loadDebtInvoices = useCallback(
     async (supplierId: string) => {
+      if (!canAp) return;
       setInvoicesLoading(true);
       try {
         const result = await getPurchases({
@@ -283,7 +284,7 @@ export default function ReceivablesPage() {
         setInvoicesLoading(false);
       }
     },
-    [toast]
+    [canAp, toast]
   );
 
   useCrmDataRefresh(["receivables", "orders"], async () => {

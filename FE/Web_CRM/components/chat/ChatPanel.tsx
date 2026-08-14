@@ -29,6 +29,47 @@ import {
 } from "@/lib/hooks/useCrmDataRefresh";
 import { renderChatMarkdown } from "@/lib/chatMarkdown";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import {
+  canManageLeads,
+  canManageProducts,
+  canManageSuppliers,
+  canManageDealers,
+  rolesOf,
+} from "@/lib/auth/permissions";
+
+const IMAGE_ACTIONS = [
+  {
+    id: "product",
+    label: "Sản phẩm",
+    prompt:
+      "Đây là ảnh bao bì sản phẩm. Đọc nhãn rồi đề xuất thêm sản phẩm (chờ xác nhận).",
+  },
+  {
+    id: "dealer",
+    label: "Đại lý",
+    prompt:
+      "Đây là ảnh bảng hiệu đại lý. Đọc tên, SĐT, địa chỉ rồi đề xuất tạo đại lý (chờ xác nhận).",
+  },
+  {
+    id: "lead",
+    label: "Khách tiềm năng",
+    prompt:
+      "Đây là ảnh khách tiềm năng / bảng hiệu. Đọc tên, SĐT rồi đề xuất tạo lead (chờ xác nhận).",
+  },
+  {
+    id: "supplier",
+    label: "Nhà cung cấp",
+    prompt:
+      "Đây là ảnh nhà cung cấp / bảng hiệu NCC. Đọc tên, SĐT, MST rồi đề xuất tạo NCC (chờ xác nhận).",
+  },
+  {
+    id: "read",
+    label: "Chỉ đọc chữ",
+    prompt:
+      "Đọc chữ trên ảnh này. Chỉ tóm tắt nội dung, không tạo sản phẩm, đại lý, lead hay NCC.",
+  },
+] as const;
 
 type UiMessage = {
   id: string;
@@ -130,6 +171,7 @@ function ChatBody({
   uploadingImage,
   onPickImage,
   onClearImage,
+  imageActions,
 }: {
   messages: UiMessage[];
   streaming: boolean;
@@ -143,6 +185,7 @@ function ChatBody({
   uploadingImage: boolean;
   onPickImage: () => void;
   onClearImage: () => void;
+  imageActions: Array<(typeof IMAGE_ACTIONS)[number]>;
 }) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
@@ -251,9 +294,30 @@ function ChatBody({
                 <X className="h-3 w-3" />
               </button>
             </div>
-            <p className="text-xs text-[var(--color-text-inverse)]">
-              AI sẽ đọc nhãn bao bì và đề xuất thêm sản phẩm.
+            <p className="min-w-0 flex-1 text-xs leading-relaxed text-[var(--color-text-inverse)]">
+              Chọn loại ảnh bên dưới rồi gửi — AI sẽ làm đúng việc đó.
             </p>
+          </div>
+        ) : null}
+        {pendingImageUrl && imageActions.length ? (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {imageActions.map((action) => {
+              const selected = input.trim() === action.prompt;
+              return (
+                <button
+                  key={action.id}
+                  type="button"
+                  onClick={() => setInput(selected ? "" : action.prompt)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                    selected
+                      ? "border-[var(--color-text-secondary)] bg-[var(--color-text-secondary)] text-white"
+                      : "border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] hover:border-[var(--color-text-secondary)]/50"
+                  )}>
+                  {action.label}
+                </button>
+              );
+            })}
           </div>
         ) : null}
         <div className="flex gap-2">
@@ -263,7 +327,7 @@ function ChatBody({
             size="sm"
             className="h-10 w-10 shrink-0 px-0"
             disabled={streaming || uploadingImage}
-            aria-label="Đính ảnh bao bì"
+            aria-label="Đính ảnh"
             onClick={onPickImage}>
             {uploadingImage ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -275,7 +339,9 @@ function ChatBody({
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder={
-              pendingImageUrl ? "Ghi chú thêm (không bắt buộc)…" : "Nhập câu hỏi…"
+              pendingImageUrl
+                ? "Chọn loại ảnh hoặc ghi chú thêm…"
+                : "Nhập câu hỏi…"
             }
             disabled={streaming}
             className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-text-secondary)]"
@@ -305,6 +371,15 @@ function ChatBody({
 export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
   const toast = useToast();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const roles = rolesOf(user);
+  const imageActions = IMAGE_ACTIONS.filter((action) => {
+    if (action.id === "product") return canManageProducts(roles);
+    if (action.id === "dealer") return canManageDealers(roles);
+    if (action.id === "lead") return canManageLeads(roles);
+    if (action.id === "supplier") return canManageSuppliers(roles);
+    return true;
+  });
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -368,7 +443,7 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
 
     const message =
       text ||
-      "Thêm sản phẩm từ ảnh bao bì này. Đọc nhãn rồi đề xuất tạo sản phẩm.";
+      "Đọc chữ trên ảnh này. Chưa rõ loại thì hỏi tôi muốn tạo sản phẩm, đại lý, lead hay NCC.";
     const priorHistory = historyForApi();
 
     setInput("");
@@ -603,7 +678,15 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
         }
         galleryInputRef.current?.click();
       }}
-      onClearImage={() => setPendingImageUrl(null)}
+      onClearImage={() => {
+        setPendingImageUrl(null);
+        setInput((current) =>
+          IMAGE_ACTIONS.some((action) => action.prompt === current.trim())
+            ? ""
+            : current
+        );
+      }}
+      imageActions={imageActions}
     />
   );
 

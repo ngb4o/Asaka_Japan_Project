@@ -23,6 +23,8 @@ import type { PurchaseInvoice, Supplier } from "@/lib/types";
 import { cn, formatCurrency, formatDateDisplay } from "@/lib/utils";
 import { useToast } from "@/components/providers/ToastProvider";
 import { CodeText, Copyable, PhoneLink } from "@/components/ui/smart-text";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { canViewPayables, rolesOf } from "@/lib/auth/permissions";
 
 type SupplierDetailDialogProps = {
   supplier: Supplier | null;
@@ -138,6 +140,7 @@ function InvoiceCard({ invoice }: { invoice: PurchaseInvoice }) {
 function SupplierInfoCard({
   supplier,
   showContent,
+  showPurchases,
   invoiceCount,
   purchaseTotal,
   debtAmount,
@@ -145,6 +148,7 @@ function SupplierInfoCard({
 }: {
   supplier: Supplier;
   showContent: boolean;
+  showPurchases: boolean;
   invoiceCount: number;
   purchaseTotal: number;
   debtAmount: number;
@@ -197,47 +201,53 @@ function SupplierInfoCard({
         </Badge>
       </div>
 
-      <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
-        <div>
-          <p className="text-xs text-[var(--color-text-inverse)]">
-            Tổng tiền nhập
-          </p>
-          {showContent ? (
-            <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
-              {formatCurrency(purchaseTotal)}
-            </p>
-          ) : (
-            <Skeleton className="mt-1.5 h-5 w-28" />
-          )}
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-[var(--color-text-inverse)]">Còn nợ NCC</p>
-          {showContent ? (
-            <p
-              className={cn(
-                "mt-0.5 text-base font-bold tabular-nums",
-                debtAmount > 0
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-[var(--color-text-inverse)]"
-              )}>
-              {formatCurrency(debtAmount)}
-            </p>
-          ) : (
-            <Skeleton className="mt-1.5 ml-auto h-5 w-24" />
-          )}
-        </div>
-      </div>
+      {showPurchases ? (
+        <>
+          <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+            <div>
+              <p className="text-xs text-[var(--color-text-inverse)]">
+                Tổng tiền nhập
+              </p>
+              {showContent ? (
+                <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
+                  {formatCurrency(purchaseTotal)}
+                </p>
+              ) : (
+                <Skeleton className="mt-1.5 h-5 w-28" />
+              )}
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-[var(--color-text-inverse)]">
+                Còn nợ NCC
+              </p>
+              {showContent ? (
+                <p
+                  className={cn(
+                    "mt-0.5 text-base font-bold tabular-nums",
+                    debtAmount > 0
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-[var(--color-text-inverse)]"
+                  )}>
+                  {formatCurrency(debtAmount)}
+                </p>
+              ) : (
+                <Skeleton className="mt-1.5 ml-auto h-5 w-24" />
+              )}
+            </div>
+          </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {showContent ? (
-          <>
-            <MobileMetaChip>{invoiceCount} phiếu nhập</MobileMetaChip>
-            <MobileMetaChip>{debtInvoiceCount} phiếu nợ</MobileMetaChip>
-          </>
-        ) : (
-          <Skeleton className="h-7 w-28 rounded-md" />
-        )}
-      </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {showContent ? (
+              <>
+                <MobileMetaChip>{invoiceCount} phiếu nhập</MobileMetaChip>
+                <MobileMetaChip>{debtInvoiceCount} phiếu nợ</MobileMetaChip>
+              </>
+            ) : (
+              <Skeleton className="h-7 w-28 rounded-md" />
+            )}
+          </div>
+        </>
+      ) : null}
 
       {supplier.note ? (
         <p className="mt-3 text-sm text-[var(--color-text-inverse)]">
@@ -294,6 +304,8 @@ export function SupplierDetailDialog({
 }: SupplierDetailDialogProps) {
   const toast = useToast();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const canViewPurchases = canViewPayables(rolesOf(user));
   const [mobileTab, setMobileTab] = useState(0);
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
@@ -321,6 +333,13 @@ export function SupplierDetailDialog({
     setInvoices([]);
     setLoadedSupplierId(null);
     setLoading(true);
+
+    if (!canViewPurchases) {
+      setInvoices([]);
+      setLoadedSupplierId(supplierId);
+      setLoading(false);
+      return;
+    }
 
     async function loadHistory() {
       try {
@@ -350,10 +369,11 @@ export function SupplierDetailDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, supplier, toast]);
+  }, [open, supplier, toast, canViewPurchases]);
 
-  const showContent =
-    Boolean(supplier) && !loading && loadedSupplierId === supplier?.id;
+  const showContent = canViewPurchases
+    ? Boolean(supplier) && !loading && loadedSupplierId === supplier?.id
+    : Boolean(supplier);
   const purchaseTotal = invoices.reduce(
     (sum, item) => sum + (item.total || 0),
     0
@@ -368,8 +388,9 @@ export function SupplierDetailDialog({
   );
 
   const showInfoPanel = !isMobile || mobileTab === 0;
-  const showInvoicesPanel = !isMobile || mobileTab === 1;
-  const showDebtPanel = isMobile && mobileTab === 2;
+  const showInvoicesPanel =
+    canViewPurchases && (!isMobile || mobileTab === 1);
+  const showDebtPanel = canViewPurchases && isMobile && mobileTab === 2;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -380,7 +401,7 @@ export function SupplierDetailDialog({
 
         {supplier ? (
           <div className="space-y-4">
-            {isMobile ? (
+            {isMobile && canViewPurchases ? (
               <TabSwitcher
                 tabs={[...MOBILE_TABS]}
                 selectedIndex={mobileTab}
@@ -392,6 +413,7 @@ export function SupplierDetailDialog({
               <SupplierInfoCard
                 supplier={supplier}
                 showContent={showContent}
+                showPurchases={canViewPurchases}
                 invoiceCount={invoices.length}
                 purchaseTotal={purchaseTotal}
                 debtAmount={debtAmount}

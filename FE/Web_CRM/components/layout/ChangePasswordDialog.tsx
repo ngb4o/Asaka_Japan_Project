@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useToast } from "@/components/providers/ToastProvider";
 import { changeOwnPasswordRequest } from "@/lib/api/auth";
 import { ApiClientError } from "@/lib/api/client";
@@ -75,8 +75,7 @@ export function ChangePasswordDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Mật khẩu hiện tại</Label>
-            <Input
-              type="password"
+            <PasswordInput
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               autoComplete="current-password"
@@ -85,8 +84,7 @@ export function ChangePasswordDialog({
           </div>
           <div className="space-y-2">
             <Label>Mật khẩu mới</Label>
-            <Input
-              type="password"
+            <PasswordInput
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               autoComplete="new-password"
@@ -95,8 +93,7 @@ export function ChangePasswordDialog({
           </div>
           <div className="space-y-2">
             <Label>Xác nhận mật khẩu mới</Label>
-            <Input
-              type="password"
+            <PasswordInput
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               autoComplete="new-password"

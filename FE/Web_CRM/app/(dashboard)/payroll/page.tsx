@@ -29,6 +29,7 @@ import {
   MobileRecordCard,
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canManagePayroll, rolesOf } from "@/lib/auth/permissions";
@@ -66,6 +67,7 @@ export default function PayrollPage() {
     actionId === `${kind}:${id}`;
   const [period, setPeriod] = useState(currentPeriod());
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
   const filters = useDeferredFilters(EMPTY_LIST_FILTERS);
 
   const fetchPage = useCallback(
@@ -123,12 +125,18 @@ export default function PayrollPage() {
   }
 
   async function openDetail(item: PayrollPeriod) {
+    setSelected(item);
+    setDialogOpen(true);
+    setDetailLoading(true);
     try {
       const detail = await getPayrollPeriod(item.id);
       setSelected(detail);
-      setDialogOpen(true);
     } catch (err) {
-      toast.error(err instanceof ApiClientError ? err.message : "Không mở được bảng lương");
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không mở được bảng lương"
+      );
+    } finally {
+      setDetailLoading(false);
     }
   }
 
@@ -454,12 +462,26 @@ export default function PayrollPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setDetailLoading(false);
+        }}>
         <DialogContent className="max-h-[90vh] max-w-4xl">
           <DialogHeader>
             <DialogTitle>Bảng lương {selected?.period}</DialogTitle>
           </DialogHeader>
-          {selected ? (
+          {detailLoading ? (
+            <div className="space-y-3" aria-busy="true" aria-label="Đang tải bảng lương">
+              <Skeleton className="h-28 w-full rounded-xl lg:hidden" />
+              <Skeleton className="h-28 w-full rounded-xl lg:hidden" />
+              <Skeleton className="hidden h-10 w-full lg:block" />
+              <Skeleton className="hidden h-12 w-full lg:block" />
+              <Skeleton className="hidden h-12 w-full lg:block" />
+              <Skeleton className="hidden h-12 w-full lg:block" />
+            </div>
+          ) : selected ? (
             <div className="space-y-3">
               <div className="crm-stagger-list flex flex-col gap-3.5 lg:hidden">
                 {selected.lines.map((line) => (

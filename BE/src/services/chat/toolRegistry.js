@@ -129,7 +129,31 @@ const resolveTrip = async (tripIdOrCode, userCtx) => {
   )
 }
 
-const resolveProductCategory = async (categoryId, categoryName) => {
+const isTestCategoryName = (name) =>
+  /^(probe|test)[-_\s]/i.test(String(name || '').trim()) ||
+  /^probe-cat$/i.test(String(name || '').trim())
+
+const scoreProductCategory = (item, haystack) => {
+  const name = String(item.name || '').trim().toLowerCase()
+  if (!name) return -1
+  let score = 0
+  if (haystack.includes(name)) score += 8
+  if (name.includes('trừ sâu') && /trừ sâu|tru sau|sâu hại|insect/.test(haystack)) {
+    score += 6
+  }
+  if (
+    name.includes('bảo vệ thực vật') &&
+    /bảo vệ thực vật|bvtv|trừ bệnh|trừ cỏ|fungicid|herbicid/.test(haystack)
+  ) {
+    score += 5
+  }
+  if (name.includes('bệnh') && /bệnh|nấm|fungicid/.test(haystack)) score += 4
+  if (name.includes('cỏ') && /cỏ|herbicid/.test(haystack)) score += 4
+  if (isTestCategoryName(name)) score -= 10
+  return score
+}
+
+const resolveProductCategory = async (categoryId, categoryName, hints = '') => {
   const id = String(categoryId || '').trim()
   if (id && OBJECT_ID_RULE.test(id)) {
     try {
@@ -144,7 +168,11 @@ const resolveProductCategory = async (categoryId, categoryName) => {
     limit: 100
   })
   const items = listed.items || []
-  const needle = String(categoryName || '').trim().toLowerCase()
+  const needle = String(
+    categoryName || (id && !OBJECT_ID_RULE.test(id) ? id : '') || ''
+  )
+    .trim()
+    .toLowerCase()
   if (needle) {
     const exact = items.find(
       (item) => String(item.name || '').trim().toLowerCase() === needle
@@ -157,12 +185,25 @@ const resolveProductCategory = async (categoryId, categoryName) => {
     if (partial) return partial
   }
 
-  const names = items.map((item) => item.name).filter(Boolean)
+  const haystack = [needle, hints].filter(Boolean).join(' ').toLowerCase()
+  let best = null
+  let bestScore = 0
+  for (const item of items) {
+    const score = scoreProductCategory(item, haystack)
+    if (score > bestScore) {
+      best = item
+      bestScore = score
+    }
+  }
+  if (best) return best
+
+  const real = items.find((item) => !isTestCategoryName(item.name))
+  if (real) return real
+  if (items[0]) return items[0]
+
   throw new ApiError(
     StatusCodes.BAD_REQUEST,
-    names.length
-      ? `Cần chọn loại sản phẩm. Các loại hiện có: ${names.join(', ')}.`
-      : 'Chưa có loại sản phẩm. Tạo loại trong mục Sản phẩm trước.'
+    'Chưa có loại sản phẩm. Tạo loại trong mục Sản phẩm trước.'
   )
 }
 
@@ -1720,6 +1761,29 @@ export const CHAT_TOOLS = [
     })
   },
   {
+    name: 'create_supplier',
+    kind: 'write',
+    requiredRoles: WH_ACC,
+    description: 'Đề xuất tạo nhà cung cấp. Cần xác nhận UI.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        phone: { type: 'string' },
+        contactName: { type: 'string' },
+        email: { type: 'string' },
+        address: { type: 'string' },
+        taxCode: { type: 'string' },
+        note: { type: 'string' }
+      },
+      required: ['name', 'phone']
+    },
+    prepareWrite: async (args, userCtx) => ({
+      preview: `Tạo NCC: ${args.name} — ${args.phone}${args.taxCode ? ` · MST ${args.taxCode}` : ''}`,
+      execute: async () => supplierService.createNew(args, userCtx.userId)
+    })
+  },
+  {
     name: 'create_product',
     kind: 'write',
     requiredRoles: ['admin'],
@@ -1772,7 +1836,11 @@ export const CHAT_TOOLS = [
 
       const category = await resolveProductCategory(
         args.categoryId,
-        args.categoryName
+        args.categoryName,
+        [args.name, args.shortDescription, args.activeIngredient, args.description]
+          .filter(Boolean)
+          .join(' ')
+          .slice(0, 1200)
       )
 
       const existing = await productService.getList({
