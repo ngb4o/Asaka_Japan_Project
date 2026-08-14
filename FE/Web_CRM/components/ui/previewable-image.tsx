@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { Eye } from "@/components/ui/icons";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
@@ -34,6 +34,15 @@ export function PreviewableImage({
   overlayClassName,
 }: PreviewableImageProps) {
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [broken, setBroken] = useState(false);
+  const COMPANY_LOGO = "/images/brand/logo.png";
+
+  useEffect(() => {
+    setBroken(false);
+  }, [src]);
+
+  const resolved = broken || !src ? COMPANY_LOGO : src;
+  const displaySrc = getImageUrl(resolved) || COMPANY_LOGO;
 
   return (
     <>
@@ -42,20 +51,24 @@ export function PreviewableImage({
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          setPreviewSrc(src);
+          setPreviewSrc(resolved);
         }}
         aria-label={alt}
         className={cn(
           "group relative block overflow-hidden border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]",
-          fill ? "absolute inset-0 h-full w-full" : "shrink-0",
+          fill ? "absolute inset-0 h-full w-full" : "relative shrink-0",
           className
         )}>
         <Image
-          src={getImageUrl(src)}
+          src={displaySrc}
           alt={alt}
           fill
-          className={cn("object-cover", imgClassName)}
+          className={cn(
+            broken || !src ? "object-contain p-2" : "object-cover",
+            imgClassName
+          )}
           unoptimized
+          onError={() => setBroken(true)}
         />
         <span
           className={cn(

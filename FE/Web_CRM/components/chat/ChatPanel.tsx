@@ -6,11 +6,11 @@ import {
   ImageIcon,
   Loader2,
   Send,
-  Sparkles,
   X,
 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { PendingActionCard } from "@/components/chat/PendingActionCard";
+import { PreviewableImage } from "@/components/ui/previewable-image";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
@@ -22,7 +22,7 @@ import {
   type PendingConfirmation,
 } from "@/lib/api/chat";
 import { ApiClientError } from "@/lib/api/client";
-import { getImageUrl, uploadProductImage } from "@/lib/api/uploads";
+import { uploadProductImage } from "@/lib/api/uploads";
 import {
   emitCrmDataChanged,
   entitiesForChatTool,
@@ -46,13 +46,31 @@ type ChatPanelProps = {
   onOpenChange: (open: boolean) => void;
 };
 
+const COMPANY_LOGO = "/images/brand/logo.png";
+
+function ChatLogo({ className }: { className?: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={COMPANY_LOGO} alt="" className={cn("object-contain", className)} />
+  );
+}
+
+function AssistantAvatar() {
+  return (
+    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--color-border-subtle)] bg-white">
+      <ChatLogo className="h-6 w-6" />
+    </span>
+  );
+}
+
 function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function TypingBubble() {
   return (
-    <div className="flex justify-start">
+    <div className="flex justify-start gap-2">
+      <AssistantAvatar />
       <div
         className="max-w-[92%] rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3.5 py-3 text-[var(--color-text-primary)] shadow-sm"
         aria-live="polite"
@@ -76,30 +94,12 @@ function ChatEmptyState({ onSuggest }: { onSuggest: (text: string) => void }) {
 
   return (
     <div className="flex h-full min-h-[280px] w-full flex-1 flex-col items-center justify-center px-4 py-6 text-center">
-      <div className="relative mb-5">
-        <div
-          className="absolute -inset-3 rounded-full bg-[var(--color-text-secondary)]/10 blur-md"
-          aria-hidden
-        />
-        <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-[var(--color-text-secondary)]/25 bg-gradient-to-br from-[var(--color-text-secondary)] to-[#014a02] shadow-lg shadow-[var(--color-text-secondary)]/25">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/images/brand/logo.png"
-            alt=""
-            className="h-11 w-11 object-contain brightness-0 invert"
-          />
-          <span className="absolute -bottom-0.5 -right-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-[var(--color-surface-elevated)] bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] shadow-sm">
-            <Sparkles className="h-3.5 w-3.5" aria-hidden />
-          </span>
-        </div>
+      <div className="relative mb-5 flex h-24 w-24 items-center justify-center overflow-hidden rounded-[22%] border border-[var(--color-border-subtle)] bg-white shadow-[var(--shadow-soft)]">
+        <ChatLogo className="h-[78%] w-[78%]" />
       </div>
 
       <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
         Trợ lý AI ASAKA
-      </p>
-      <p className="mt-1.5 max-w-[260px] text-sm leading-relaxed text-[var(--color-text-inverse)]">
-        Hỏi đơn hàng, tồn kho… hoặc chụp bao bì để AI đề xuất thêm sản phẩm —
-        thao tác ghi cần bạn xác nhận.
       </p>
 
       <div className="mt-5 flex w-full max-w-[300px] flex-col gap-2">
@@ -179,9 +179,10 @@ function ChatBody({
             <div
               key={msg.id}
               className={cn(
-                "flex",
+                "flex gap-2",
                 msg.role === "user" ? "justify-end" : "justify-start"
               )}>
+              {msg.role !== "user" ? <AssistantAvatar /> : null}
               <div
                 className={cn(
                   "max-w-[92%] space-y-2 rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
@@ -192,12 +193,14 @@ function ChatBody({
                       : "border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)]"
                 )}>
                 {msg.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={getImageUrl(msg.imageUrl)}
-                    alt="Ảnh gửi kèm"
-                    className="mb-2 max-h-40 w-full rounded-xl object-cover"
-                  />
+                  <div className="relative mb-1 h-40 w-full overflow-hidden rounded-xl">
+                    <PreviewableImage
+                      src={msg.imageUrl}
+                      alt="Ảnh gửi kèm"
+                      fill
+                      className="rounded-xl border-0"
+                    />
+                  </div>
                 ) : null}
                 {msg.content ? (
                   <div className="crm-chat-markdown space-y-2">
@@ -230,17 +233,21 @@ function ChatBody({
         {pendingImageUrl ? (
           <div className="mb-2 flex items-center gap-2">
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--color-border-subtle)]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={getImageUrl(pendingImageUrl)}
+              <PreviewableImage
+                src={pendingImageUrl}
                 alt="Ảnh đính kèm"
-                className="h-full w-full object-cover"
+                fill
+                className="rounded-lg border-0"
               />
               <button
                 type="button"
                 aria-label="Gỡ ảnh"
-                onClick={onClearImage}
-                className="absolute right-0.5 top-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white">
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onClearImage();
+                }}
+                className="absolute right-0.5 top-0.5 z-[1] inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white">
                 <X className="h-3 w-3" />
               </button>
             </div>

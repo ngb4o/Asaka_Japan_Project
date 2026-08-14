@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mail, Share2 } from "lucide-react";
+import { Mail, MapPin, Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +31,13 @@ import { statusBadgeVariant } from "@/lib/status-badge";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { CodeText, PhoneLink, TrackingText } from "@/components/ui/smart-text";
+import { InfoTable } from "@/components/ui/info-table";
 import { shareOrCopy } from "@/lib/pwa/share";
+import {
+  googleMapsDirectionsUrl,
+  openGoogleMapsDirections,
+  orderMapsDestination,
+} from "@/lib/maps/directions";
 
 type OrderDetailDialogProps = {
   order: Order | null;
@@ -112,24 +118,65 @@ function Field({
 
 function buildOrderShareText(order: Order) {
   const name =
-    order.shippingContactName || order.customerName || order.dealerName || "";
+    order.shippingContactName || order.dealerName || order.customerName || "";
   const phone = order.shippingPhone || order.customerPhone || "";
   const paid = order.paidAmount || 0;
   const remaining =
     order.remainingAmount ?? Math.max(0, (order.total || 0) - paid);
-
-  return [
-    `Đơn hàng ${order.code} — ASAKA`,
-    name ? `Khách: ${name}` : "",
-    phone ? `SĐT: ${phone}` : "",
-    order.shippingAddress ? `Địa chỉ: ${order.shippingAddress}` : "",
-    order.trackingCode ? `Mã vận đơn: ${order.trackingCode}` : "",
-    order.carrier ? `Đơn vị VC: ${order.carrier}` : "",
-    `Tổng: ${formatCurrency(order.total)}`,
-    remaining > 0 ? `Còn nợ: ${formatCurrency(remaining)}` : "",
+  const deliveryPerson = [
+    ...(order.deliveryEmployeeNames || []),
+    order.deliveryEmployeeName,
   ]
+    .map((item) => String(item || "").trim())
     .filter(Boolean)
+    .filter((item, index, list) => list.indexOf(item) === index)
+    .join(", ");
+  const mapsUrl = (() => {
+    const dest = orderMapsDestination(order);
+    return dest ? googleMapsDirectionsUrl(dest) : "";
+  })();
+  const lineItems = (order.items || [])
+    .map((item) => {
+      const qty = item.quantity || 0;
+      const product = item.productName || "Sản phẩm";
+      return `• ${product}  × ${qty}  —  ${formatCurrency(item.lineTotal)}`;
+    })
     .join("\n");
+
+  const blocks = [
+    [
+      "ASAKA JAPAN",
+      `Đơn hàng  ${order.code}`,
+      `${STATUS_LABELS[order.status]}  ·  ${PAYMENT_LABELS[order.paymentStatus || "unpaid"]}`,
+    ].join("\n"),
+    [
+      name ? `Khách hàng:  ${name}` : "",
+      phone ? `Điện thoại:  ${phone}` : "",
+      order.shippingAddress ? `Địa chỉ:  ${order.shippingAddress}` : "",
+      mapsUrl ? `Chỉ đường:  ${mapsUrl}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    lineItems ? `Sản phẩm\n${lineItems}` : "",
+    [
+      `Tổng cộng:  ${formatCurrency(order.total)}`,
+      paid > 0 ? `Đã thanh toán:  ${formatCurrency(paid)}` : "",
+      remaining > 0
+        ? `Còn phải thanh toán:  ${formatCurrency(remaining)}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    [
+      deliveryPerson ? `Người giao hàng:  ${deliveryPerson}` : "",
+      order.carrier ? `Đơn vị vận chuyển:  ${order.carrier}` : "",
+      order.trackingCode ? `Mã vận đơn:  ${order.trackingCode}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  ].filter(Boolean);
+
+  return blocks.join("\n\n");
 }
 
 function formatShippingRange(
@@ -407,6 +454,7 @@ export function OrderDetailDialog({
     current.deliveryEmployeeNames?.filter(Boolean).join(", ") ||
     current.deliveryEmployeeName ||
     "";
+  const mapsDest = orderMapsDestination(current);
   const showAudits = !auditsLoading && loadedOrderId === current.id;
   const hasAuditEntries = showAudits && audits.length > 0;
   const showDetailPanel = !isMobile || mobileTab === 0;
@@ -457,7 +505,7 @@ export function OrderDetailDialog({
       text: buildOrderShareText(current),
     });
     if (result === "copied") {
-      toast.success("Đã sao chép nội dung đơn.");
+      toast.success("Đã sao chép tin nhắn đơn hàng.");
     } else if (result === "failed") {
       toast.error("Không chia sẻ được đơn hàng.");
     }
@@ -536,36 +584,40 @@ export function OrderDetailDialog({
                 <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
                   Khách hàng / Đại lý
                 </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field
-                    label="Người nhận"
-                    value={order.shippingContactName || order.customerName}
-                  />
-                  <Field
-                    label="SĐT"
-                    value={order.shippingPhone || order.customerPhone}
-                    action="call"
-                  />
-                  <Field label="Email" value={order.customerEmail} action="copy" />
-                  <Field label="Đại lý" value={order.dealerName} />
-                  {order.invoiceEmailSentAt ? (
-                    <Field
-                      label="Đã gửi hóa đơn"
-                      value={`${formatAuditTime(order.invoiceEmailSentAt)}${
-                        order.invoiceEmailSentTo
-                          ? ` · ${order.invoiceEmailSentTo}`
-                          : ""
-                      }`}
-                      className="col-span-2"
-                    />
-                  ) : order.invoiceEmailError ? (
-                    <Field
-                      label="Gửi hóa đơn"
-                      value={order.invoiceEmailError}
-                      className="col-span-2"
-                    />
-                  ) : null}
-                </div>
+                <InfoTable
+                  rows={[
+                    {
+                      label: "Người nhận",
+                      value: order.shippingContactName || order.customerName,
+                    },
+                    {
+                      label: "SĐT",
+                      value: order.shippingPhone || order.customerPhone,
+                      action: "call",
+                    },
+                    {
+                      label: "Email",
+                      value: order.customerEmail,
+                      action: "copy",
+                    },
+                    { label: "Đại lý", value: order.dealerName },
+                    order.invoiceEmailSentAt
+                      ? {
+                          label: "Đã gửi hóa đơn",
+                          value: `${formatAuditTime(order.invoiceEmailSentAt)}${
+                            order.invoiceEmailSentTo
+                              ? ` · ${order.invoiceEmailSentTo}`
+                              : ""
+                          }`,
+                        }
+                      : order.invoiceEmailError
+                        ? {
+                            label: "Gửi hóa đơn",
+                            value: order.invoiceEmailError,
+                          }
+                        : { label: "Gửi hóa đơn", value: "" },
+                  ]}
+                />
               </section>
 
               <section className="space-y-3">
@@ -607,35 +659,42 @@ export function OrderDetailDialog({
                 <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
                   Giao hàng
                 </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Kho xuất" value={order.warehouseName} />
-                  <Field label="Người giao" value={deliveryNames} />
-                  <Field label="Chuyến" value={order.tripCode} action="copy" />
-                  <Field label="Đơn vị VC" value={order.carrier} />
-                  <Field
-                    label="Mã vận chuyển"
-                    value={order.trackingCode}
-                    action="tracking"
-                  />
-                  <Field
-                    label="Ngày giao"
-                    value={formatShippingRange(
-                      order.shippingDate,
-                      order.deliveredAt
-                    )}
-                    className="col-span-2"
-                  />
-                  <Field
-                    label="Địa chỉ"
-                    value={order.shippingAddress}
-                    className="col-span-2"
-                  />
-                  <Field
-                    label="Ghi chú giao hàng"
-                    value={order.shippingNote}
-                    className="col-span-2"
-                  />
-                </div>
+                <InfoTable
+                  rows={[
+                    { label: "Kho xuất", value: order.warehouseName },
+                    { label: "Người giao", value: deliveryNames },
+                    { label: "Chuyến", value: order.tripCode, action: "copy" },
+                    { label: "Đơn vị VC", value: order.carrier },
+                    {
+                      label: "Mã vận chuyển",
+                      value: order.trackingCode,
+                      action: "tracking",
+                    },
+                    {
+                      label: "Ngày giao",
+                      value: formatShippingRange(
+                        order.shippingDate,
+                        order.deliveredAt
+                      ),
+                    },
+                    {
+                      label: "Địa chỉ",
+                      value: order.shippingAddress,
+                      extra: mapsDest ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-9 w-full shrink-0 sm:h-8 sm:w-auto"
+                          onClick={() => openGoogleMapsDirections(mapsDest)}>
+                          <MapPin className="h-3.5 w-3.5" />
+                          Chỉ đường
+                        </Button>
+                      ) : null,
+                    },
+                    { label: "Ghi chú giao", value: order.shippingNote },
+                  ]}
+                />
               </section>
 
               {(order.note || order.paymentNote) && (

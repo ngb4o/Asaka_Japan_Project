@@ -313,7 +313,17 @@ const enrichOrders = async (orders) => {
       { _id: { $in: dealerIds.map((id) => new ObjectId(id)) } },
       { limit: dealerIds.length, skip: 0 }
     )
-    dealerMap = new Map(dealers.items.map((item) => [item._id.toString(), item.name]))
+    dealerMap = new Map(
+      dealers.items.map((item) => [
+        item._id.toString(),
+        {
+          name: item.name || '',
+          lat: item.lat ?? null,
+          lng: item.lng ?? null,
+          address: item.address || ''
+        }
+      ])
+    )
   }
 
   if (warehouseIds.length) {
@@ -375,13 +385,19 @@ const enrichOrders = async (orders) => {
         productImage: line.productImage || product?.image || ''
       }
     })
+    const dealer = formatted.dealerId
+      ? dealerMap.get(formatted.dealerId)
+      : null
     return {
       ...formatted,
       items,
       deliveryEmployeeIds: ids,
       deliveryEmployeeId: ids[0] || null,
       tripId: order.tripId ? order.tripId.toString() : null,
-      dealerName: formatted.dealerId ? dealerMap.get(formatted.dealerId) || '' : '',
+      dealerName: dealer?.name || '',
+      dealerLat: dealer?.lat ?? null,
+      dealerLng: dealer?.lng ?? null,
+      dealerAddress: dealer?.address || '',
       warehouseName: formatted.warehouseId
         ? warehouseMap.get(formatted.warehouseId) || ''
         : '',

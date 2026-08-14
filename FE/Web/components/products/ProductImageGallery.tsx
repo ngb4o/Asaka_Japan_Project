@@ -14,12 +14,15 @@ type ProductImageGalleryProps = {
   images: string[];
   alt: string;
   fit?: "cover" | "contain";
+  /** Stretch the main image to fill the parent box. */
+  fill?: boolean;
 };
 
 export function ProductImageGallery({
   images,
   alt,
   fit = "cover",
+  fill = false,
 }: ProductImageGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -31,18 +34,25 @@ export function ProductImageGallery({
   }
 
   const isContain = fit === "contain";
-  const frameClassName = isContain
-    ? "aspect-square w-full sm:aspect-[4/3]"
-    : "aspect-[4/5] w-full sm:aspect-square lg:aspect-[4/5]";
+  const frameClassName = fill
+    ? "h-full min-h-[20rem] w-full"
+    : isContain
+      ? "aspect-square w-full sm:aspect-[4/3]"
+      : "aspect-[4/5] w-full sm:aspect-square lg:aspect-[4/5]";
   const imageClassName = isContain
-    ? "object-contain p-4 sm:p-6"
+    ? fill
+      ? "object-contain"
+      : "object-contain p-4 sm:p-6"
     : "object-cover transition-transform duration-[400ms] group-hover:scale-[1.02]";
 
   if (!activeImage) {
     return (
       <div
         className={cn(
-          "flex items-center justify-center rounded-2xl border border-[var(--color-border-subtle)] bg-white text-sm text-[var(--color-text-inverse)]",
+          "flex items-center justify-center bg-white text-sm text-[var(--color-text-inverse)]",
+          fill
+            ? "h-full min-h-[20rem] rounded-none"
+            : "rounded-2xl border border-[var(--color-border-subtle)]",
           frameClassName
         )}
       >
@@ -53,12 +63,15 @@ export function ProductImageGallery({
 
   return (
     <>
-      <div className="space-y-3">
+      <div className={cn(fill ? "flex h-full min-h-[20rem] flex-col" : "space-y-3")}>
         <button
           type="button"
           onClick={() => openLightbox(activeIndex)}
           className={cn(
-            "group relative block overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-white shadow-[var(--shadow-soft)]",
+            "group relative block overflow-hidden bg-white",
+            fill
+              ? "min-h-0 flex-1 rounded-none border-0 shadow-none"
+              : "rounded-2xl border border-[var(--color-border-subtle)] shadow-[var(--shadow-soft)]",
             frameClassName
           )}
           aria-label={`Phóng to ảnh ${alt}`}
@@ -82,7 +95,14 @@ export function ProductImageGallery({
         </button>
 
         {images.length > 1 ? (
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div
+            className={cn(
+              "flex w-max max-w-full gap-2 overflow-x-auto pb-1",
+              fill
+                ? "absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-xl bg-black/25 p-2 backdrop-blur-sm"
+                : "mx-auto"
+            )}
+          >
             {images.map((image, index) => (
               <button
                 key={`${image}-${index}`}

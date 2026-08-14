@@ -350,6 +350,9 @@ export type Order = {
   code: string;
   dealerId: string | null;
   dealerName?: string;
+  dealerLat?: number | null;
+  dealerLng?: number | null;
+  dealerAddress?: string;
   quoteId: string | null;
   warehouseId: string | null;
   warehouseName?: string;

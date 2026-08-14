@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Bot, Sparkles } from "@/components/ui/icons";
+import { Sparkles } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -32,10 +32,17 @@ export function useChatUi() {
   return useContext(ChatUiContext);
 }
 
+const COMPANY_LOGO = "/images/brand/logo.png";
+
 function AiAssistantIcon({ className }: { className?: string }) {
   return (
-    <span className={cn("relative inline-flex", className)}>
-      <Bot className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+    <span className={cn("relative inline-flex items-center justify-center", className)}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={COMPANY_LOGO}
+        alt=""
+        className="h-6 w-6 object-contain"
+      />
       <Sparkles
         className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 text-[var(--color-text-secondary)]"
         strokeWidth={2.25}

@@ -11,7 +11,7 @@ export const COMPANY = {
   tagline: 'Giải pháp bảo vệ thực vật',
   address: '1155/35 tỉnh lộ 43, KP 11, phường Tam Bình, TP.HCM',
   phone: '0946 866 068',
-  email: 'info@asaka-japan.com',
+  email: 'asakajapan.company@gmail.com',
   website: 'asaka-japan.com',
   websiteUrl: 'https://asaka-japan.com'
 }

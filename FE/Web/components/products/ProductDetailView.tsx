@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { FlaskConical, Package, Phone, Tag } from "lucide-react";
+import { FlaskConical, Phone, Tag } from "lucide-react";
 import { BackLink } from "@/components/detail/BackLink";
 import { MarkdownContent } from "@/components/content/MarkdownContent";
+import { formatProductDetailMarkdown } from "@/lib/markdown";
 import { ProductImageGallery } from "@/components/products/ProductImageGallery";
 import { DealerRegisterButton } from "@/components/dealer/DealerRegisterButton";
 import { Button } from "@/components/ui/button";
@@ -16,16 +17,13 @@ type ProductDetailViewProps = {
 type SpecItem = {
   label: string;
   value: string;
-  icon: typeof Package;
+  icon: typeof FlaskConical;
 };
 
 export function ProductDetailView({ product }: ProductDetailViewProps) {
   const images = getProductImages(product);
 
   const specs: SpecItem[] = [
-    product.packaging
-      ? { label: "Quy cách", value: product.packaging, icon: Package }
-      : null,
     product.activeIngredient
       ? { label: "Hoạt chất", value: product.activeIngredient, icon: FlaskConical }
       : null,
@@ -41,11 +39,12 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
 
         <article className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)]">
           <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-            <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] p-5 sm:p-8 lg:border-b-0 lg:border-r">
+            <div className="relative min-h-[20rem] border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] lg:min-h-full lg:border-b-0 lg:border-r">
               <ProductImageGallery
                 images={images}
                 alt={product.name}
                 fit="contain"
+                fill
               />
             </div>
 
@@ -147,8 +146,11 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
                 Mô tả chi tiết
               </h2>
             </div>
-            <div className="px-6 py-6 sm:px-8 sm:py-8">
-              <MarkdownContent content={product.description} />
+            <div className="px-6 py-6 text-sm text-[var(--color-text-primary)] sm:px-8 sm:py-8">
+              <MarkdownContent
+                content={formatProductDetailMarkdown(product.description)}
+                className="space-y-2 text-sm text-[var(--color-text-primary)]"
+              />
             </div>
           </section>
         ) : null}

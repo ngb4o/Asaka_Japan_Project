@@ -27,6 +27,7 @@ type MarkdownContentFieldProps = {
   template?: string;
   templateConfirmMessage?: string;
   className?: string;
+  normalizePreview?: (value: string) => string;
 };
 
 type ToolbarAction = {
@@ -122,6 +123,7 @@ export function MarkdownContentField({
   template,
   templateConfirmMessage = "Thay nội dung hiện tại bằng mẫu?",
   className,
+  normalizePreview,
 }: MarkdownContentFieldProps) {
   const [tab, setTab] = useState<"edit" | "preview">("edit");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -285,7 +287,11 @@ export function MarkdownContentField({
         ) : (
           <div className="min-h-[320px] bg-[var(--color-surface-muted)]/40 px-4 py-3 text-sm text-[var(--color-text-primary)]">
             {value.trim() ? (
-              <div className="space-y-2">{renderMarkdownContent(value)}</div>
+              <div className="space-y-2">
+                {renderMarkdownContent(
+                  normalizePreview ? normalizePreview(value) : value
+                )}
+              </div>
             ) : (
               <p className="text-[var(--color-text-inverse)]">
                 Chưa có nội dung để xem trước

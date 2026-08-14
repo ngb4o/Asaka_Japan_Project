@@ -1,29 +1,36 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { TabSwitcher } from "@/components/ui/tab-switcher";
+import { InfoTable } from "@/components/ui/info-table";
 import {
   MobileMetaChip,
   MobileRecordCard,
 } from "@/components/ui/mobile-record-card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CodeText } from "@/components/ui/smart-text";
+import { TabSwitcher } from "@/components/ui/tab-switcher";
 import { OrderLineItemsList } from "@/components/orders/OrderLineItemsList";
 import { getOrders } from "@/lib/api/orders";
 import { ApiClientError } from "@/lib/api/client";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
+import {
+  openGoogleMapsDirections,
+  placeMapsDestination,
+} from "@/lib/maps/directions";
 import { statusBadgeVariant } from "@/lib/status-badge";
 import type { Dealer, LineItem, Order } from "@/lib/types";
 import { cn, formatCurrency, formatDateDisplay } from "@/lib/utils";
 import { useToast } from "@/components/providers/ToastProvider";
-import { CodeText, PhoneLink } from "@/components/ui/smart-text";
 
 type DealerDetailDialogProps = {
   dealer: Dealer | null;
@@ -176,26 +183,19 @@ function DealerInfoCard({
   debtAmount: number;
   debtOrderCount: number;
 }) {
+  const mapsDest = placeMapsDestination({
+    lat: dealer.lat,
+    lng: dealer.lng,
+    address: dealer.address,
+  });
+
   return (
-    <MobileRecordCard className="p-4 shadow-none">
+    <MobileRecordCard className="overflow-hidden p-4 pb-0 shadow-none">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
             {dealer.name}
           </p>
-          <p className="mt-1 text-[16px] font-medium leading-snug text-[var(--color-text-primary)]">
-            {dealer.contactName || "Chưa có liên hệ"}
-          </p>
-          {dealer.phone ? (
-            <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-              <PhoneLink value={dealer.phone} />
-            </p>
-          ) : null}
-          {dealer.region ? (
-            <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
-              {dealer.region}
-            </p>
-          ) : null}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <Badge variant="muted">{TIER_LABELS[dealer.tier]}</Badge>
@@ -251,6 +251,32 @@ function DealerInfoCard({
           <Skeleton className="h-7 w-24 rounded-md" />
         )}
       </div>
+
+      <InfoTable
+        className="-mx-4 mt-3 rounded-none border-x-0 border-b-0"
+        rows={[
+          { label: "Người liên hệ", value: dealer.contactName },
+          { label: "SĐT", value: dealer.phone, action: "call" },
+          { label: "Email", value: dealer.email, action: "copy" },
+          { label: "Khu vực", value: dealer.region },
+          {
+            label: "Địa chỉ",
+            value: dealer.address,
+            extra: mapsDest ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 w-full shrink-0 sm:h-8 sm:w-auto"
+                onClick={() => openGoogleMapsDirections(mapsDest)}>
+                <MapPin className="h-3.5 w-3.5" />
+                Chỉ đường
+              </Button>
+            ) : null,
+          },
+          { label: "Ghi chú", value: dealer.note },
+        ]}
+      />
     </MobileRecordCard>
   );
 }
