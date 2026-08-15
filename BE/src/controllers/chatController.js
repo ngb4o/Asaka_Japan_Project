@@ -1,5 +1,7 @@
 import { StatusCodes } from 'http-status-codes'
 import { chatService } from '~/services/chat/chatService'
+import { transcribeAudio } from '~/services/chat/groqClient'
+import ApiError from '~/utils/ApiError'
 
 const initSse = (res) => {
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
@@ -69,8 +71,35 @@ const cancel = async (req, res, next) => {
   }
 }
 
+const transcribe = async (req, res, next) => {
+  try {
+    if (!req.file?.buffer) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Thiếu file ghi âm.')
+    }
+    const original = String(req.file.originalname || 'voice.webm')
+    const text = await transcribeAudio(
+      req.file.buffer,
+      original,
+      req.file.mimetype
+    )
+    if (!text) {
+      throw new ApiError(
+        StatusCodes.UNPROCESSABLE_ENTITY,
+        'Không nghe rõ. Nói lại gần mic hơn.'
+      )
+    }
+    res.status(StatusCodes.OK).json({
+      message: 'OK',
+      data: { text }
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const chatController = {
   streamMessage,
   confirm,
-  cancel
+  cancel,
+  transcribe
 }

@@ -34,6 +34,7 @@ export const env = {
   GROQ_MODEL_FALLBACKS: process.env.GROQ_MODEL_FALLBACKS || 'llama-3.1-8b-instant',
   /** Vision (đọc ảnh bao bì). Groq: qwen/qwen3.6-27b */
   GROQ_VISION_MODEL: process.env.GROQ_VISION_MODEL || 'qwen/qwen3.6-27b',
+  GROQ_WHISPER_MODEL: process.env.GROQ_WHISPER_MODEL || 'whisper-large-v3-turbo',
 
   /** Geocode địa chỉ → GPS (cùng key Maps JS cũng được nếu bật Geocoding API) */
   GOOGLE_MAPS_API_KEY:

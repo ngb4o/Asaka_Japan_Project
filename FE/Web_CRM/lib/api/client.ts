@@ -69,6 +69,7 @@ export async function apiRequest<T>(
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(15_000),
     });
   } catch {
     if (isGet && !skipCache && shouldCacheGet(path)) {

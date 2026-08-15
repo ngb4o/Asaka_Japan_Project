@@ -5,6 +5,7 @@ import {
   Camera,
   ImageIcon,
   Loader2,
+  Mic,
   Send,
   X,
 } from "@/components/ui/icons";
@@ -71,6 +72,18 @@ const IMAGE_ACTIONS = [
   },
 ] as const;
 
+const VOICE_HINTS = [
+  "Đơn đang giao hôm nay",
+  "Chi tiết đơn O-…",
+  "Công nợ đại lý …",
+  "Tồn kho thấp",
+  "Doanh thu tháng … năm …",
+  "Giao xong đơn O-…",
+  "Thu … đồng đơn O-…",
+  "Tạo lead … số điện thoại …",
+  "Tạm ứng chuyến CT-…",
+];
+
 type UiMessage = {
   id: string;
   role: "user" | "assistant" | "system";
@@ -88,6 +101,38 @@ type ChatPanelProps = {
 };
 
 const COMPANY_LOGO = "/images/brand/logo.png";
+const MAX_VOICE_MS = 45_000;
+
+type BrowserSpeechRecognition = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onresult: ((event: {
+    resultIndex: number;
+    results: ArrayLike<{
+      isFinal: boolean;
+      0: { transcript: string };
+    }>;
+  }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+};
+
+function getSpeechRecognitionCtor() {
+  if (typeof window === "undefined") return null;
+  const speechWindow = window as Window & {
+    SpeechRecognition?: new () => BrowserSpeechRecognition;
+    webkitSpeechRecognition?: new () => BrowserSpeechRecognition;
+  };
+  return (
+    speechWindow.SpeechRecognition ||
+    speechWindow.webkitSpeechRecognition ||
+    null
+  );
+}
 
 function ChatLogo({ className }: { className?: string }) {
   return (
@@ -126,13 +171,42 @@ function TypingBubble() {
   );
 }
 
-function ChatEmptyState({ onSuggest }: { onSuggest: (text: string) => void }) {
-  const suggestions = [
-    "Đơn còn nợ hôm nay?",
-    "Tồn kho sản phẩm nào thấp?",
-    "Chụp bao bì để thêm sản phẩm",
-  ];
+const DEFAULT_SUGGESTIONS = [
+  "Đơn còn nợ hôm nay?",
+  "Tồn kho sản phẩm nào thấp?",
+  "Chụp bao bì để thêm sản phẩm",
+];
 
+function HintButtons({
+  items,
+}: {
+  items: Array<{ key: string; label: string; selected?: boolean; onClick: () => void }>;
+}) {
+  return (
+    <div className="mt-5 grid w-full max-w-[340px] grid-cols-2 gap-1.5">
+      {items.map((item) => (
+        <button
+          key={item.key}
+          type="button"
+          onClick={item.onClick}
+          className={cn(
+            "rounded-xl border px-2.5 py-2 text-left text-[12px] leading-snug transition-colors",
+            item.selected
+              ? "border-[var(--color-text-secondary)] bg-[var(--color-text-secondary)] text-white"
+              : "border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] hover:border-[var(--color-text-secondary)]/40 hover:bg-[var(--color-surface-muted)]"
+          )}>
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ChatEmptyState({
+  hintItems,
+}: {
+  hintItems: Array<{ key: string; label: string; selected?: boolean; onClick: () => void }>;
+}) {
   return (
     <div className="flex h-full min-h-[280px] w-full flex-1 flex-col items-center justify-center px-4 py-6 text-center">
       <div className="relative mb-5 flex h-24 w-24 items-center justify-center overflow-hidden rounded-[22%] border border-[var(--color-border-subtle)] bg-white shadow-[var(--shadow-soft)]">
@@ -143,17 +217,7 @@ function ChatEmptyState({ onSuggest }: { onSuggest: (text: string) => void }) {
         Trợ lý AI ASAKA
       </p>
 
-      <div className="mt-5 flex w-full max-w-[300px] flex-col gap-2">
-        {suggestions.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => onSuggest(item)}
-            className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3.5 py-2.5 text-left text-sm text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-text-secondary)]/40 hover:bg-[var(--color-surface-muted)]">
-            {item}
-          </button>
-        ))}
-      </div>
+      <HintButtons items={hintItems} />
     </div>
   );
 }
@@ -172,6 +236,9 @@ function ChatBody({
   onPickImage,
   onClearImage,
   imageActions,
+  voiceState,
+  onToggleVoice,
+  onPickVoiceHint,
 }: {
   messages: UiMessage[];
   streaming: boolean;
@@ -186,11 +253,36 @@ function ChatBody({
   onPickImage: () => void;
   onClearImage: () => void;
   imageActions: Array<(typeof IMAGE_ACTIONS)[number]>;
+  voiceState: "idle" | "recording";
+  onToggleVoice: () => void;
+  onPickVoiceHint: (text: string) => void;
 }) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
   const showTyping =
     streaming && (!lastAssistant || !lastAssistant.content.trim());
+
+  const hintItems =
+    pendingImageUrl && imageActions.length
+      ? imageActions.map((action) => ({
+          key: action.id,
+          label: action.label,
+          selected: input.trim() === action.prompt,
+          onClick: () =>
+            setInput(input.trim() === action.prompt ? "" : action.prompt),
+        }))
+      : voiceState === "recording"
+        ? VOICE_HINTS.map((hint) => ({
+            key: hint,
+            label: hint,
+            selected: input.trim() === hint,
+            onClick: () => onPickVoiceHint(hint),
+          }))
+        : DEFAULT_SUGGESTIONS.map((item) => ({
+            key: item,
+            label: item,
+            onClick: () => setInput(item),
+          }));
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -204,11 +296,7 @@ function ChatBody({
           messages.length === 0 ? "flex" : "space-y-3"
         )}>
         {messages.length === 0 ? (
-          <ChatEmptyState
-            onSuggest={(text) => {
-              setInput(text);
-            }}
-          />
+          <ChatEmptyState hintItems={hintItems} />
         ) : null}
 
         {messages.map((msg) => {
@@ -222,21 +310,27 @@ function ChatBody({
             <div
               key={msg.id}
               className={cn(
-                "flex gap-2",
+                "flex w-full gap-2",
                 msg.role === "user" ? "justify-end" : "justify-start"
               )}>
               {msg.role !== "user" ? <AssistantAvatar /> : null}
               <div
                 className={cn(
-                  "max-w-[92%] space-y-2 rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                  "min-w-0 space-y-2 rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
                   msg.role === "user"
-                    ? "bg-[var(--color-text-secondary)] text-[var(--color-text-tertiary)]"
+                    ? "ml-auto w-fit max-w-[85%] bg-[var(--color-text-secondary)] text-left text-[var(--color-text-tertiary)]"
                     : msg.role === "system"
-                      ? "border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] text-[var(--color-text-inverse)]"
-                      : "border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)]"
+                      ? "max-w-[92%] border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] text-[var(--color-text-inverse)]"
+                      : "max-w-[92%] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)]"
                 )}>
                 {msg.imageUrl ? (
-                  <div className="relative mb-1 h-40 w-full overflow-hidden rounded-xl">
+                  <div
+                    className={cn(
+                      "relative mb-1 overflow-hidden rounded-xl",
+                      msg.role === "user"
+                        ? "h-36 w-36"
+                        : "h-40 w-full"
+                    )}>
                     <PreviewableImage
                       src={msg.imageUrl}
                       alt="Ảnh gửi kèm"
@@ -262,6 +356,13 @@ function ChatBody({
             </div>
           );
         })}
+
+        {messages.length > 0 &&
+        (voiceState === "recording" || pendingImageUrl) ? (
+          <div className="flex justify-center px-1 py-2">
+            <HintButtons items={hintItems} />
+          </div>
+        ) : null}
 
         {showTyping ? <TypingBubble /> : null}
         <div ref={bottomRef} />
@@ -295,29 +396,8 @@ function ChatBody({
               </button>
             </div>
             <p className="min-w-0 flex-1 text-xs leading-relaxed text-[var(--color-text-inverse)]">
-              Chọn loại ảnh bên dưới rồi gửi — AI sẽ làm đúng việc đó.
+              Chọn loại ảnh ở gợi ý phía trên rồi gửi.
             </p>
-          </div>
-        ) : null}
-        {pendingImageUrl && imageActions.length ? (
-          <div className="mb-2 flex flex-wrap gap-1.5">
-            {imageActions.map((action) => {
-              const selected = input.trim() === action.prompt;
-              return (
-                <button
-                  key={action.id}
-                  type="button"
-                  onClick={() => setInput(selected ? "" : action.prompt)}
-                  className={cn(
-                    "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
-                    selected
-                      ? "border-[var(--color-text-secondary)] bg-[var(--color-text-secondary)] text-white"
-                      : "border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] hover:border-[var(--color-text-secondary)]/50"
-                  )}>
-                  {action.label}
-                </button>
-              );
-            })}
           </div>
         ) : null}
         <div className="flex gap-2">
@@ -326,7 +406,7 @@ function ChatBody({
             variant="outline"
             size="sm"
             className="h-10 w-10 shrink-0 px-0"
-            disabled={streaming || uploadingImage}
+            disabled={streaming || uploadingImage || voiceState !== "idle"}
             aria-label="Đính ảnh"
             onClick={onPickImage}>
             {uploadingImage ? (
@@ -335,14 +415,36 @@ function ChatBody({
               <Camera className="h-4 w-4" />
             )}
           </Button>
+          <Button
+            type="button"
+            variant={voiceState === "recording" ? "default" : "outline"}
+            size="sm"
+            className={cn(
+              "h-10 w-10 shrink-0 px-0",
+              voiceState === "recording" && "animate-pulse"
+            )}
+            disabled={streaming || uploadingImage}
+            aria-label={
+              voiceState === "recording" ? "Dừng nói" : "Nói thành chữ"
+            }
+            onClick={onToggleVoice}>
+            {voiceState === "recording" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
+          </Button>
           <input
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder={
-              pendingImageUrl
-                ? "Chọn loại ảnh hoặc ghi chú thêm…"
-                : "Nhập câu hỏi…"
+              voiceState === "recording"
+                ? "Đang nghe… nói đi, chữ sẽ hiện ở đây"
+                : pendingImageUrl
+                  ? "Chọn loại ảnh hoặc ghi chú thêm…"
+                  : "Nhập hoặc bấm mic để nói…"
             }
+            readOnly={voiceState !== "idle"}
             disabled={streaming}
             className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-text-secondary)]"
           />
@@ -387,10 +489,17 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
   const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
+  const [voiceState, setVoiceState] = useState<"idle" | "recording">("idle");
   const abortRef = useRef<AbortController | null>(null);
   const messagesRef = useRef<UiMessage[]>([]);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const voiceTimerRef = useRef<number | null>(null);
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
+  const recordingRef = useRef(false);
+  const liveFinalRef = useRef("");
+  const liveInterimRef = useRef("");
+  const inputBaseRef = useRef("");
   messagesRef.current = messages;
 
   const historyForApi = (): ChatHistoryMessage[] =>
@@ -435,8 +544,10 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
     }
   }
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (overrideText?: string) => {
+    const fromMic = recordingRef.current || voiceState === "recording";
+    const voiced = fromMic ? pauseVoice() : "";
+    const text = (overrideText ?? (voiced || input)).trim();
     const imageUrl = pendingImageUrl;
     if (streaming || uploadingImage) return;
     if (!text && !imageUrl) return;
@@ -538,6 +649,121 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
       setStreaming(false);
     }
   };
+
+  const composeVoiceText = () => {
+    const parts = [
+      inputBaseRef.current,
+      liveFinalRef.current,
+      liveInterimRef.current,
+    ].filter(Boolean);
+    return parts.join(" ").replace(/\s+/g, " ").trim();
+  };
+
+  const pauseVoice = () => {
+    recordingRef.current = false;
+    try {
+      recognitionRef.current?.stop();
+    } catch {
+      /* ignore */
+    }
+    recognitionRef.current = null;
+    if (voiceTimerRef.current) {
+      window.clearTimeout(voiceTimerRef.current);
+      voiceTimerRef.current = null;
+    }
+    const text = composeVoiceText();
+    liveInterimRef.current = "";
+    setInput(text);
+    setVoiceState("idle");
+    return text;
+  };
+
+  const applyLiveTranscript = (finalText: string, interimText: string) => {
+    liveInterimRef.current = interimText;
+    const parts = [inputBaseRef.current, finalText, interimText].filter(Boolean);
+    setInput(parts.join(" ").replace(/\s+/g, " ").trimStart());
+  };
+
+  const startLiveSpeech = () => {
+    const Ctor = getSpeechRecognitionCtor();
+    if (!Ctor) return false;
+    const recognition = new Ctor();
+    recognition.lang = "vi-VN";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    liveFinalRef.current = "";
+    liveInterimRef.current = "";
+    recognition.onresult = (event) => {
+      let interim = "";
+      let finalText = liveFinalRef.current;
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const piece = event.results[i][0]?.transcript || "";
+        if (event.results[i].isFinal) {
+          finalText = `${finalText} ${piece}`.trim();
+        } else {
+          interim += piece;
+        }
+      }
+      liveFinalRef.current = finalText;
+      applyLiveTranscript(finalText, interim);
+    };
+    recognition.onend = () => {
+      if (!recordingRef.current) return;
+      try {
+        recognition.start();
+      } catch {
+        /* already started */
+      }
+    };
+    recognition.onerror = () => {
+      /* no-speech */
+    };
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+      return true;
+    } catch {
+      recognitionRef.current = null;
+      return false;
+    }
+  };
+
+  const startVoice = () => {
+    if (streaming || uploadingImage || voiceState !== "idle") return;
+    inputBaseRef.current = input.trim();
+    liveFinalRef.current = "";
+    recordingRef.current = true;
+    if (!startLiveSpeech()) {
+      recordingRef.current = false;
+      toast.error("Trình duyệt không hỗ trợ nói thành chữ. Dùng Chrome hoặc gõ tay.");
+      return;
+    }
+    setVoiceState("recording");
+    voiceTimerRef.current = window.setTimeout(() => {
+      pauseVoice();
+    }, MAX_VOICE_MS);
+  };
+
+  const toggleVoice = () => {
+    if (streaming) return;
+    if (voiceState === "recording") {
+      pauseVoice();
+      return;
+    }
+    startVoice();
+  };
+
+  useEffect(() => {
+    return () => {
+      recordingRef.current = false;
+      try {
+        recognitionRef.current?.abort();
+      } catch {
+        /* ignore */
+      }
+      if (voiceTimerRef.current) window.clearTimeout(voiceTimerRef.current);
+    };
+  }, []);
 
   const clearPendingOnMessage = (token: string) => {
     setMessages((prev) =>
@@ -687,6 +913,14 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
         );
       }}
       imageActions={imageActions}
+      voiceState={voiceState}
+      onToggleVoice={toggleVoice}
+      onPickVoiceHint={(text) => {
+        inputBaseRef.current = text;
+        liveFinalRef.current = "";
+        liveInterimRef.current = "";
+        setInput(text);
+      }}
     />
   );
 

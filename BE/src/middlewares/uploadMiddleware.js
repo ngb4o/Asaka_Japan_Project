@@ -23,3 +23,24 @@ export const uploadProductImage = upload
 export const uploadNewsImage = upload
 export const uploadTripReceipt = upload
 export const uploadOrderPhoto = upload
+
+const audioFilter = (_req, file, cb) => {
+  const type = String(file.mimetype || '').toLowerCase()
+  const ok =
+    type.startsWith('audio/') ||
+    type === 'video/webm' ||
+    type === 'application/octet-stream'
+  if (ok) {
+    cb(null, true)
+    return
+  }
+  cb(new Error('Chỉ nhận file ghi âm (webm, mp4, m4a, ogg).'), false)
+}
+
+export const uploadChatAudio = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: audioFilter,
+  limits: {
+    fileSize: 8 * 1024 * 1024
+  }
+}).single('audio')

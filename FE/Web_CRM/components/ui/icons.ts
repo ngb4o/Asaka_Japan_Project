@@ -34,6 +34,7 @@ export {
   Mail,
   MapPin,
   MessageSquare,
+  Mic,
   Moon,
   Newspaper,
   Package,

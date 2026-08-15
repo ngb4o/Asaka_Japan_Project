@@ -1,4 +1,4 @@
-import OpenAI from 'openai'
+import OpenAI, { toFile } from 'openai'
 import { StatusCodes } from 'http-status-codes'
 import { env } from '~/config/environment'
 import ApiError from '~/utils/ApiError'
@@ -307,6 +307,37 @@ export const createVisionCompletionWithFallback = async (
   params,
   options = {}
 ) => createOnChain(params, getGroqVisionModelChain(), options)
+
+export const transcribeAudio = async (buffer, filename, mimeType) => {
+  const client = getGroqClient()
+  const models = uniqueModels([
+    env.GROQ_WHISPER_MODEL || 'whisper-large-v3-turbo',
+    'whisper-large-v3-turbo',
+    'whisper-large-v3'
+  ])
+  let lastError = null
+  for (const model of models) {
+    try {
+      const file = await toFile(Buffer.from(buffer), filename || 'voice.webm', {
+        type: mimeType || 'audio/webm'
+      })
+      const result = await client.audio.transcriptions.create({
+        file,
+        model,
+        language: 'vi'
+      })
+      const text = String(result?.text || '').trim()
+      if (/lệnh crm tiếng việt/i.test(text) || /^lệnh crm/i.test(text)) {
+        return ''
+      }
+      return text
+    } catch (err) {
+      lastError = err
+      if (!isRateLimitError(err) && err?.status !== 404) break
+    }
+  }
+  throw mapGroqError(lastError || new Error('Không nhận được chữ từ giọng nói.'))
+}
 
 export const mapGroqError = (err) => {
   const message = err?.message || String(err)
