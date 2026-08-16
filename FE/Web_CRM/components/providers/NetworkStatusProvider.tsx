@@ -180,7 +180,7 @@ function NetworkBanners({
     return (
       <Banner tone="warning">
         <WifiOff className="h-4 w-4 shrink-0" aria-hidden />
-        <span>
+        <span className="min-w-0 text-left leading-snug">
           Mất kết nối —{" "}
           {viewingCachedData
             ? `đang xem dữ liệu đã lưu${formatCacheAge(lastCacheSavedAt)}`
@@ -229,8 +229,9 @@ function Banner({
       role="status"
       aria-live="polite"
       className={cn(
-        "pointer-events-none fixed inset-x-0 top-0 z-[100] flex justify-center px-3",
-        "pt-[max(0.5rem,env(safe-area-inset-top))]"
+        "pointer-events-none fixed inset-x-0 z-[28] flex justify-center px-3",
+        // Below dashboard header (safe-area + py-1.5 + h-11) — keeps menu tappable
+        "top-[calc(env(safe-area-inset-top,0px)+3.5rem)]"
       )}>
       <div
         className={cn(
