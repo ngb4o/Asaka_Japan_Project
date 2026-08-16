@@ -1,5 +1,5 @@
 /**
- * Optional lat/lng for master data (dealer, warehouse).
+ * Optional lat/lng for master data (dealer, warehouse, supplier).
  * - undefined → field not provided (skip update)
  * - { lat: null, lng: null } → clear GPS
  * - { lat, lng } → set coordinates

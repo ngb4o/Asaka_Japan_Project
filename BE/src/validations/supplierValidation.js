@@ -9,6 +9,8 @@ const createSchema = Joi.object({
   phone: Joi.string().trim().min(8).max(20).required(),
   email: optionalText.max(150),
   address: optionalText.max(300),
+  lat: Joi.number().min(-90).max(90).allow(null).optional(),
+  lng: Joi.number().min(-180).max(180).allow(null).optional(),
   taxCode: optionalText.max(50),
   status: Joi.string().valid('active', 'inactive').optional(),
   note: optionalText.max(1000)
@@ -20,6 +22,8 @@ const updateSchema = Joi.object({
   phone: Joi.string().trim().min(8).max(20).optional(),
   email: optionalText.max(150),
   address: optionalText.max(300),
+  lat: Joi.number().min(-90).max(90).allow(null).optional(),
+  lng: Joi.number().min(-180).max(180).allow(null).optional(),
   taxCode: optionalText.max(50),
   status: Joi.string().valid('active', 'inactive').optional(),
   note: optionalText.max(1000)

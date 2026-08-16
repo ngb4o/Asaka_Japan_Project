@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { MapPin } from "@/components/ui/icons";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +27,10 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { CodeText, Copyable, PhoneLink } from "@/components/ui/smart-text";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { canViewPayables, rolesOf } from "@/lib/auth/permissions";
+import {
+  openGoogleMapsDirections,
+  placeMapsDestination,
+} from "@/lib/maps/directions";
 
 type SupplierDetailDialogProps = {
   supplier: Supplier | null;
@@ -154,6 +160,12 @@ function SupplierInfoCard({
   debtAmount: number;
   debtInvoiceCount: number;
 }) {
+  const mapsDest = placeMapsDestination({
+    lat: supplier.lat,
+    lng: supplier.lng,
+    address: supplier.address,
+  });
+
   return (
     <MobileRecordCard className="p-4 shadow-none">
       <div className="flex items-start justify-between gap-3">
@@ -173,6 +185,17 @@ function SupplierInfoCard({
             <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
               {supplier.address}
             </p>
+          ) : null}
+          {mapsDest ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2 h-8"
+              onClick={() => openGoogleMapsDirections(mapsDest)}>
+              <MapPin className="h-3.5 w-3.5" />
+              Chỉ đường
+            </Button>
           ) : null}
           {supplier.taxCode ? (
             <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">

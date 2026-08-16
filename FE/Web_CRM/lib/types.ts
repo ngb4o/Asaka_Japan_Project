@@ -518,6 +518,8 @@ export type Supplier = {
   phone: string;
   email: string;
   address: string;
+  lat?: number | null;
+  lng?: number | null;
   taxCode: string;
   status: "active" | "inactive";
   note: string;
@@ -531,6 +533,8 @@ export type SupplierInput = {
   phone: string;
   email?: string;
   address?: string;
+  lat?: number | null;
+  lng?: number | null;
   taxCode?: string;
   status?: "active" | "inactive";
   note?: string;

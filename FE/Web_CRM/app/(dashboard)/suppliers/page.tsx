@@ -59,6 +59,10 @@ import { useDeferredFilters } from "@/lib/hooks/useDeferredFilters";
 import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
 import { Badge } from "@/components/ui/badge";
 import { statusBadgeVariant } from "@/lib/status-badge";
+import {
+  LocationCapture,
+  type GeoLocationValue,
+} from "@/components/trips/LocationCapture";
 
 const EMPTY_FORM: SupplierInput = {
   name: "",
@@ -88,6 +92,7 @@ export default function SuppliersPage() {
   const [viewing, setViewing] = useState<Supplier | null>(null);
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [form, setForm] = useState<SupplierInput>(EMPTY_FORM);
+  const [geo, setGeo] = useState<GeoLocationValue | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
 
@@ -133,6 +138,7 @@ export default function SuppliersPage() {
   function openCreate() {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setGeo(null);
     setDialogOpen(true);
   }
 
@@ -167,6 +173,14 @@ export default function SuppliersPage() {
       status: item.status,
       note: item.note || "",
     });
+    setGeo(
+      typeof item.lat === "number" &&
+        typeof item.lng === "number" &&
+        Number.isFinite(item.lat) &&
+        Number.isFinite(item.lng)
+        ? { lat: item.lat, lng: item.lng, locationSource: "manual" }
+        : null
+    );
     setDialogOpen(true);
   }
 
@@ -187,14 +201,19 @@ export default function SuppliersPage() {
 
     setSubmitting(true);
     try {
+      const payload: SupplierInput = {
+        ...form,
+        lat: geo?.lat ?? null,
+        lng: geo?.lng ?? null,
+      };
       if (editing) {
-        const updated = await updateSupplier(editing.id, form);
+        const updated = await updateSupplier(editing.id, payload);
         setItems((prev) =>
           prev.map((item) => (item.id === updated.id ? updated : item))
         );
         toast.success("Đã cập nhật nhà cung cấp");
       } else {
-        await createSupplier(form);
+        await createSupplier(payload);
         toast.success("Đã thêm nhà cung cấp");
         await refresh();
       }
@@ -617,6 +636,12 @@ export default function SuppliersPage() {
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
               />
             </div>
+            <LocationCapture
+              label="Địa chỉ"
+              hint="Ghim tọa độ — hoặc để trống, hệ thống sẽ lấy từ địa chỉ"
+              value={geo}
+              onChange={setGeo}
+            />
             <div className="space-y-2">
               <Label>Trạng thái</Label>
               <SearchableSelect

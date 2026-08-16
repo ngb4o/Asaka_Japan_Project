@@ -354,17 +354,7 @@ export default function LeadsPage() {
           </FilterDrawer>
 
           {items.length === 0 ? (
-            <EmptyState
-              title="Chưa có lead"
-              action={
-                canWrite ? (
-                  <Button onClick={openCreate}>
-                    <Plus className="h-4 w-4" />
-                    Thêm lead
-                  </Button>
-                ) : null
-              }
-            />
+            <EmptyState title="Chưa có lead" />
           ) : (
             <div className="space-y-4">
               <MobileInfiniteList

@@ -209,7 +209,7 @@ function ChatEmptyState({
 }) {
   return (
     <div className="flex h-full min-h-[280px] w-full flex-1 flex-col items-center justify-center px-4 py-6 text-center">
-      <div className="relative mb-5 flex h-24 w-24 items-center justify-center overflow-hidden rounded-[22%] border border-[var(--color-border-subtle)] bg-white shadow-[var(--shadow-soft)]">
+      <div className="relative mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-[22%] border border-black/10 bg-white shadow-[var(--shadow-soft)] md:mb-3 md:h-16 md:w-16">
         <ChatLogo className="h-[78%] w-[78%]" />
       </div>
 
@@ -328,8 +328,8 @@ function ChatBody({
                     className={cn(
                       "relative mb-1 overflow-hidden rounded-xl",
                       msg.role === "user"
-                        ? "h-36 w-36"
-                        : "h-40 w-full"
+                        ? "h-28 w-28 md:h-24 md:w-24"
+                        : "h-32 w-full md:h-28"
                     )}>
                     <PreviewableImage
                       src={msg.imageUrl}

@@ -4,14 +4,40 @@ import { StatusCodes } from 'http-status-codes'
 import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { buildSearchFilter } from '~/utils/search.js'
+import { normalizeOptionalLatLng, hasValidLatLng } from '~/utils/geo'
+import { geocodeAddress } from '~/utils/geocode'
+
+const resolveSupplierGeo = async (body, existing) => {
+  const geo = normalizeOptionalLatLng(body)
+  if (geo && hasValidLatLng(geo)) return geo
+
+  const addressChanged = body.address !== undefined
+  const address = String(
+    addressChanged ? body.address : existing?.address || ''
+  ).trim()
+  const shouldGeocode =
+    Boolean(address) &&
+    !hasValidLatLng(geo) &&
+    (addressChanged || !hasValidLatLng(existing))
+  if (shouldGeocode) {
+    const coords = await geocodeAddress(address)
+    if (coords) return coords
+  }
+
+  if (geo !== undefined) return geo
+  return undefined
+}
 
 const createNew = async (reqBody, userId) => {
+  const geo = (await resolveSupplierGeo(reqBody, null)) || { lat: null, lng: null }
   const created = await supplierModel.createNew({
     name: reqBody.name,
     contactName: reqBody.contactName || '',
     phone: reqBody.phone,
     email: reqBody.email || '',
     address: reqBody.address || '',
+    lat: geo.lat ?? null,
+    lng: geo.lng ?? null,
     taxCode: reqBody.taxCode || '',
     status: reqBody.status || supplierModel.SUPPLIER_STATUS.ACTIVE,
     note: reqBody.note || '',
@@ -27,7 +53,7 @@ const getList = async (query) => {
   if (query.status) findQuery.status = query.status
 
   const searchFilter = buildSearchFilter(
-    ['name', 'contactName', 'phone', 'email', 'taxCode'],
+    ['name', 'contactName', 'phone', 'email', 'taxCode', 'address'],
     query.search
   )
   if (searchFilter) Object.assign(findQuery, searchFilter)
@@ -72,6 +98,12 @@ const update = async (supplierId, updateData) => {
   if (updateData.taxCode !== undefined) dataToUpdate.taxCode = updateData.taxCode
   if (updateData.status !== undefined) dataToUpdate.status = updateData.status
   if (updateData.note !== undefined) dataToUpdate.note = updateData.note
+
+  const geo = await resolveSupplierGeo(updateData, supplier)
+  if (geo !== undefined) {
+    dataToUpdate.lat = geo.lat
+    dataToUpdate.lng = geo.lng
+  }
 
   await supplierModel.update(supplierId, dataToUpdate)
   return getDetails(supplierId)

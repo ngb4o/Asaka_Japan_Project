@@ -105,6 +105,8 @@ export const CRM_SCHEMA = {
       'email',
       'taxCode',
       'address',
+      'lat',
+      'lng',
       'status',
       'note'
     ],

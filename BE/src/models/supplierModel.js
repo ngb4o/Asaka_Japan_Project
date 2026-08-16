@@ -18,6 +18,8 @@ const SUPPLIER_COLLECTION_SCHEMA = Joi.object({
   phone: Joi.string().required().min(8).max(20).trim(),
   email: optionalText(150).default(''),
   address: optionalText(300).default(''),
+  lat: Joi.number().min(-90).max(90).allow(null).default(null),
+  lng: Joi.number().min(-180).max(180).allow(null).default(null),
   taxCode: optionalText(50).default(''),
   status: Joi.string()
     .valid(SUPPLIER_STATUS.ACTIVE, SUPPLIER_STATUS.INACTIVE)
