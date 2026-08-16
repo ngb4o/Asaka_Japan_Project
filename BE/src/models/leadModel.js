@@ -26,6 +26,8 @@ const LEAD_COLLECTION_SCHEMA = Joi.object({
   email: optionalText(150).default(''),
   company: optionalText(150).default(''),
   region: optionalText(100).default(''),
+  lat: Joi.number().min(-90).max(90).allow(null).default(null),
+  lng: Joi.number().min(-180).max(180).allow(null).default(null),
   message: optionalText(2000).default(''),
   type: Joi.string()
     .valid(LEAD_TYPE.CONTACT, LEAD_TYPE.DEALER)

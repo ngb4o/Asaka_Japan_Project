@@ -7,6 +7,7 @@ import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { staffNotifyService } from '~/services/staffNotifyService'
 import { buildSearchFilter } from '~/utils/search.js'
+import { normalizeOptionalLatLng } from '~/utils/geo'
 
 const formatLead = (lead, dealerMap = new Map()) => {
   const formatted = formatDocument(lead)
@@ -19,12 +20,15 @@ const formatLead = (lead, dealerMap = new Map()) => {
 }
 
 const createPublic = async (reqBody) => {
+  const geo = normalizeOptionalLatLng(reqBody)
   const created = await leadModel.createNew({
     name: reqBody.name,
     phone: reqBody.phone,
     email: reqBody.email || '',
     company: reqBody.company || '',
     region: reqBody.region || '',
+    lat: geo?.lat ?? null,
+    lng: geo?.lng ?? null,
     message: reqBody.message || '',
     type: reqBody.type || leadModel.LEAD_TYPE.CONTACT,
     source: reqBody.source || 'website',
@@ -117,6 +121,11 @@ const update = async (leadId, updateData) => {
   if (updateData.status !== undefined) dataToUpdate.status = updateData.status
   if (updateData.note !== undefined) dataToUpdate.note = updateData.note
   if (updateData.dealerId !== undefined) dataToUpdate.dealerId = updateData.dealerId || null
+  const geo = normalizeOptionalLatLng(updateData)
+  if (geo !== undefined) {
+    dataToUpdate.lat = geo.lat
+    dataToUpdate.lng = geo.lng
+  }
 
   await leadModel.update(leadId, dataToUpdate)
 
@@ -153,6 +162,8 @@ const convertToDealer = async (leadId, userId) => {
     email: lead.email || '',
     address: '',
     region: lead.region || '',
+    lat: lead.lat ?? null,
+    lng: lead.lng ?? null,
     tier: dealerModel.DEALER_TIER.STANDARD,
     discountPercent: 0,
     status: dealerModel.DEALER_STATUS.PENDING,

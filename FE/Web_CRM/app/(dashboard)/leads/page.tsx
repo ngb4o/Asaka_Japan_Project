@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, RefreshCw, Trash2, UserPlus } from "@/components/ui/icons";
+import { MapPin, Pencil, Plus, RefreshCw, Trash2, UserPlus } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -53,6 +53,14 @@ import { useDeepLinkOpen } from "@/lib/hooks/useDeepLinkOpen";
 import { useCrmDataRefresh } from "@/lib/hooks/useCrmDataRefresh";
 import { leadStatusBadgeVariant } from "@/lib/status-badge";
 import { Badge } from "@/components/ui/badge";
+import {
+  LocationCapture,
+  type GeoLocationValue,
+} from "@/components/trips/LocationCapture";
+import {
+  openGoogleMapsDirections,
+  placeMapsDestination,
+} from "@/lib/maps/directions";
 
 const EMPTY_LIST_FILTERS = { status: "", type: "" };
 
@@ -66,6 +74,18 @@ const EMPTY_FORM: LeadInput = {
   type: "contact",
 };
 
+function geoFromLead(item: Lead): GeoLocationValue | null {
+  if (
+    typeof item.lat === "number" &&
+    typeof item.lng === "number" &&
+    Number.isFinite(item.lat) &&
+    Number.isFinite(item.lng)
+  ) {
+    return { lat: item.lat, lng: item.lng, locationSource: "manual" };
+  }
+  return null;
+}
+
 export default function LeadsPage() {
   const confirm = useConfirm();
   const toast = useToast();
@@ -75,10 +95,12 @@ export default function LeadsPage() {
   const filters = useDeferredFilters(EMPTY_LIST_FILTERS);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState<LeadInput>(EMPTY_FORM);
+  const [createGeo, setCreateGeo] = useState<GeoLocationValue | null>(null);
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState<Lead | null>(null);
   const [note, setNote] = useState("");
   const [status, setStatus] = useState<Lead["status"]>("new");
+  const [detailGeo, setDetailGeo] = useState<GeoLocationValue | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const isLeadAction = (id: string, kind: "status" | "convert" | "delete") =>
@@ -128,6 +150,7 @@ export default function LeadsPage() {
         setSelected(updated);
         setStatus(updated.status);
         setNote(updated.note || "");
+        setDetailGeo(geoFromLead(updated));
       } catch {
         /* ignore */
       }
@@ -142,6 +165,7 @@ export default function LeadsPage() {
 
   function openCreate() {
     setForm(EMPTY_FORM);
+    setCreateGeo(null);
     setCreateOpen(true);
   }
 
@@ -166,10 +190,13 @@ export default function LeadsPage() {
         message: form.message?.trim() || "",
         type: form.type || "contact",
         source: "crm",
+        lat: createGeo?.lat ?? null,
+        lng: createGeo?.lng ?? null,
       });
       toast.success("Đã thêm khách tiềm năng");
       setCreateOpen(false);
       setForm(EMPTY_FORM);
+      setCreateGeo(null);
       await reload();
     } catch (err) {
       toast.error(
@@ -184,6 +211,7 @@ export default function LeadsPage() {
     setSelected(lead);
     setNote(lead.note || "");
     setStatus(lead.status);
+    setDetailGeo(geoFromLead(lead));
   }
 
   useDeepLinkOpen(async (id) => {
@@ -202,7 +230,12 @@ export default function LeadsPage() {
     if (!selected) return;
     setSubmitting(true);
     try {
-      await updateLead(selected.id, { status, note });
+      await updateLead(selected.id, {
+        status,
+        note,
+        lat: detailGeo?.lat ?? null,
+        lng: detailGeo?.lng ?? null,
+      });
       toast.success("Đã cập nhật lead");
       setSelected(null);
       await reload();
@@ -292,6 +325,13 @@ export default function LeadsPage() {
   if (loading && items.length === 0) {
     return <PageSkeleton {...PAGE_SKELETONS.leads} />;
   }
+
+  const selectedMapsDest = selected
+    ? placeMapsDestination({
+        lat: detailGeo?.lat ?? selected.lat,
+        lng: detailGeo?.lng ?? selected.lng,
+      })
+    : null;
 
   return (
     <div className="space-y-0 lg:space-y-2">
@@ -411,6 +451,12 @@ export default function LeadsPage() {
                           </MobileMetaChip>
                         ) : null}
                         {item.region ? <MobileMetaChip>{item.region}</MobileMetaChip> : null}
+                        {geoFromLead(item) ? (
+                          <MobileMetaChip>
+                            <MapPin className="mr-1 inline h-3.5 w-3.5" />
+                            Đã ghim
+                          </MobileMetaChip>
+                        ) : null}
                         {typeLabel ? <MobileMetaChip>{typeLabel}</MobileMetaChip> : null}
                       </div>
 
@@ -568,7 +614,10 @@ export default function LeadsPage() {
         open={createOpen}
         onOpenChange={(open) => {
           setCreateOpen(open);
-          if (!open) setForm(EMPTY_FORM);
+          if (!open) {
+            setForm(EMPTY_FORM);
+            setCreateGeo(null);
+          }
         }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -641,6 +690,12 @@ export default function LeadsPage() {
                 onChange={(e) => setForm({ ...form, message: e.target.value })}
               />
             </div>
+            <LocationCapture
+              label="Địa chỉ"
+              hint="Ghim khi đến gặp — lần sau chỉ đường quay lại"
+              value={createGeo}
+              onChange={setCreateGeo}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>
@@ -700,6 +755,12 @@ export default function LeadsPage() {
                   {selected.region ? (
                     <MobileMetaChip>{selected.region}</MobileMetaChip>
                   ) : null}
+                  {geoFromLead(selected) || detailGeo ? (
+                    <MobileMetaChip>
+                      <MapPin className="mr-1 inline h-3.5 w-3.5" />
+                      Đã ghim
+                    </MobileMetaChip>
+                  ) : null}
                   <MobileMetaChip>
                     {STATUS_OPTIONS.leadType.find((o) => o.value === selected.type)
                       ?.label || selected.type}
@@ -729,6 +790,22 @@ export default function LeadsPage() {
                   onChange={(e) => setNote(e.target.value)}
                 />
               </div>
+              <LocationCapture
+                label="Địa chỉ"
+                hint="Ghim khi đến gặp — lần sau chỉ đường quay lại"
+                value={detailGeo}
+                onChange={setDetailGeo}
+              />
+              {selectedMapsDest ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => openGoogleMapsDirections(selectedMapsDest)}>
+                  <MapPin className="h-4 w-4" />
+                  Chỉ đường quay lại
+                </Button>
+              ) : null}
               <DialogFooter>
                 <Button variant="outline" onClick={() => setSelected(null)}>
                   Đóng

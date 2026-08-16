@@ -60,6 +60,8 @@ export const CRM_SCHEMA = {
       'status',
       'source',
       'region',
+      'lat',
+      'lng',
       'message',
       'note',
       'dealerId'

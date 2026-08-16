@@ -9,6 +9,8 @@ const createPublicSchema = Joi.object({
   email: optionalText.max(150),
   company: optionalText.max(150),
   region: optionalText.max(100),
+  lat: Joi.number().min(-90).max(90).allow(null).optional(),
+  lng: Joi.number().min(-180).max(180).allow(null).optional(),
   message: optionalText.max(2000),
   type: Joi.string().valid('contact', 'dealer').optional(),
   source: optionalText.max(50)
@@ -19,7 +21,9 @@ const updateSchema = Joi.object({
     .valid('new', 'contacted', 'qualified', 'converted', 'closed')
     .optional(),
   note: optionalText.max(1000),
-  dealerId: optionalText.max(24).allow(null)
+  dealerId: optionalText.max(24).allow(null),
+  lat: Joi.number().min(-90).max(90).allow(null).optional(),
+  lng: Joi.number().min(-180).max(180).allow(null).optional()
 }).min(1)
 
 export const leadValidation = {

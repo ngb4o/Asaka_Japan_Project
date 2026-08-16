@@ -260,6 +260,8 @@ export type Lead = {
   email: string;
   company: string;
   region: string;
+  lat?: number | null;
+  lng?: number | null;
   message: string;
   type: "contact" | "dealer";
   source: string;
@@ -277,6 +279,8 @@ export type LeadInput = {
   email?: string;
   company?: string;
   region?: string;
+  lat?: number | null;
+  lng?: number | null;
   message?: string;
   type?: "contact" | "dealer";
   source?: string;
@@ -286,6 +290,8 @@ export type LeadUpdateInput = {
   status?: Lead["status"];
   note?: string;
   dealerId?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 };
 
 export type Dealer = {
