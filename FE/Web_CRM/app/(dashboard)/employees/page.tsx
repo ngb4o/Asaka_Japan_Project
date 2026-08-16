@@ -522,17 +522,23 @@ export default function EmployeesPage() {
                       </td>
                       <td>
                         <p>{item.fullName}</p>
-                        <div className="space-y-0.5 text-xs text-[var(--color-text-inverse)]">
-                          {item.phone ? <PhoneLink value={item.phone} /> : null}
-                          {item.email ? (
+                        {item.phone ? (
+                          <p className="text-xs text-[var(--color-text-inverse)]">
+                            <PhoneLink value={item.phone} />
+                          </p>
+                        ) : null}
+                        {item.email ? (
+                          <p className="text-xs text-[var(--color-text-inverse)]">
                             <Copyable
                               value={item.email}
                               label="email"
                               className="text-xs text-[var(--color-text-inverse)]"
                             />
-                          ) : null}
-                          {!item.phone && !item.email ? "—" : null}
-                        </div>
+                          </p>
+                        ) : null}
+                        {!item.phone && !item.email ? (
+                          <p className="text-xs text-[var(--color-text-inverse)]">—</p>
+                        ) : null}
                       </td>
                       <td>
                         {item.title || "—"}
