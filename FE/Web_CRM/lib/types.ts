@@ -29,12 +29,19 @@ export type UserProfile = {
   updatedAt?: string | null;
 };
 
+export type PestTypeOption = {
+  value: string;
+  label: string;
+};
+
 export type ProductCategory = {
   id: string;
   name: string;
   slug: string;
   description: string;
   status: "active" | "inactive";
+  /** Danh sách loại sâu/bệnh/cỏ mà loại sp này hỗ trợ */
+  pestTypes?: PestTypeOption[];
   createdBy: string;
   createdAt: string;
   updatedAt: string | null;
@@ -46,6 +53,8 @@ export type Product = {
   sku: string;
   categoryId: string;
   categoryName?: string;
+  /** Loại sâu/bệnh/cỏ đặc trị (slug), ví dụ: sau-duc-than, nam-muop, co-lang-ngu */
+  pestType?: string;
   description: string;
   shortDescription: string;
   unit: string;
@@ -77,12 +86,14 @@ export type ProductCategoryInput = {
   name: string;
   description?: string;
   status?: "active" | "inactive";
+  pestTypes?: PestTypeOption[];
 };
 
 export type ProductInput = {
   name: string;
   sku?: string;
   categoryId: string;
+  pestType?: string;
   description?: string;
   shortDescription?: string;
   unit?: string;
@@ -154,7 +165,7 @@ export type WarehouseStock = {
   productUnit?: string;
   productImage?: string;
   unitsPerCase?: number;
-  /** Giá vốn / chai hiện tại */
+  /** Giá vốn / sản phẩm hiện tại */
   costPrice?: number;
   /** quantity × costPrice */
   stockValue?: number;
@@ -218,7 +229,7 @@ export type InventoryFlowReport = {
   slowMoving: InventoryFlowCapitalRow[];
 };
 
-export type InventoryUnitType = "chai" | "thung";
+export type InventoryUnitType = "sanpham" | "thung";
 
 export type InventoryTransaction = {
   id: string;
@@ -557,7 +568,7 @@ export type PurchaseInvoice = {
     productId: string;
     productName?: string;
     quantity: number;
-    unitType?: "chai" | "thung";
+    unitType?: "sanpham" | "thung";
     quantityBase?: number;
     unitCost?: number;
     totalCost?: number;

@@ -17,7 +17,7 @@ export function NewsDetailView({ article }: NewsDetailViewProps) {
   const { display, iso } = formatDate(article.createdAt);
 
   return (
-    <main className="min-h-screen bg-[var(--color-surface-muted)] pt-24 pb-16 md:pt-28">
+    <main className="min-h-screen bg-[var(--color-surface-muted)] pt-16 pb-16 md:pt-24 lg:pt-28">
       <div className="container-wide px-[var(--space-6)]">
         <BackLink href="/#news" label="tin tức" />
 

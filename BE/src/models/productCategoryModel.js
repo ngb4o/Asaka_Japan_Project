@@ -12,10 +12,16 @@ const PRODUCT_CATEGORY_STATUS = {
 
 const optionalText = Joi.string().trim().allow('').max(500)
 
+const PEST_TYPE_ITEM_SCHEMA = Joi.object({
+  value: Joi.string().required().max(100).trim(),
+  label: Joi.string().required().max(200).trim()
+})
+
 const PRODUCT_CATEGORY_COLLECTION_SCHEMA = Joi.object({
   name: Joi.string().required().min(2).max(100).trim(),
   slug: Joi.string().required().min(2).max(120).trim(),
   description: optionalText.default(''),
+  pestTypes: Joi.array().items(PEST_TYPE_ITEM_SCHEMA).default([]),
   status: Joi.string()
     .valid(PRODUCT_CATEGORY_STATUS.ACTIVE, PRODUCT_CATEGORY_STATUS.INACTIVE)
     .default(PRODUCT_CATEGORY_STATUS.ACTIVE),

@@ -16,6 +16,7 @@ const PRODUCT_COLLECTION_SCHEMA = Joi.object({
   name: Joi.string().required().min(2).max(200).trim(),
   sku: optionalText(50).default(''),
   categoryId: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
+  pestType: optionalText(100).default(''),
   description: optionalText(20000).default(''),
   shortDescription: optionalText(300).default(''),
   unit: optionalText(30).default('chai'),

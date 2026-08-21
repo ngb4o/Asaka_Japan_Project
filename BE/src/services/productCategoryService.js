@@ -17,6 +17,7 @@ const createNew = async (reqBody, userId) => {
     name: reqBody.name,
     slug,
     description: reqBody.description || '',
+    pestTypes: reqBody.pestTypes || [],
     status: reqBody.status || productCategoryModel.PRODUCT_CATEGORY_STATUS.ACTIVE,
     createdBy: userId
   })
@@ -92,6 +93,10 @@ const update = async (categoryId, updateData) => {
 
     dataToUpdate.name = updateData.name
     dataToUpdate.slug = nextSlug
+  }
+
+  if (updateData.pestTypes !== undefined) {
+    dataToUpdate.pestTypes = updateData.pestTypes
   }
 
   await productCategoryModel.update(categoryId, dataToUpdate)

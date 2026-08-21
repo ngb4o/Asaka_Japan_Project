@@ -137,9 +137,9 @@ export function NewsSection() {
             {Array.from({ length: 3 }).map((_, index) => (
               <div
                 key={`skeleton-${index}`}
-                className="w-[calc((100%_-_12px)/2)] shrink-0 overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)] sm:w-[calc((100%_-_32px)/2)] lg:w-[calc((100%_-_48px)/3)]"
+                className="w-full shrink-0 overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)] sm:w-[calc((100%_-_32px)/2)] lg:w-[calc((100%_-_48px)/3)]"
               >
-                <div className="aspect-[4/5] animate-pulse bg-[var(--color-surface-muted)] sm:aspect-[16/10]" />
+                <div className="aspect-[4/3] animate-pulse bg-[var(--color-surface-muted)] sm:aspect-[16/10]" />
                 <div className="space-y-3 p-3 sm:p-5">
                   <div className="h-2.5 w-16 animate-pulse rounded bg-[var(--color-surface-muted)] sm:h-3 sm:w-24" />
                   <div className="h-4 w-full animate-pulse rounded bg-[var(--color-surface-muted)]" />
@@ -166,17 +166,17 @@ export function NewsSection() {
             >
               {articles.map((article) => {
                 const cardClassName =
-                  "group flex w-[calc((100%_-_12px)/2)] shrink-0 snap-start flex-col overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)] transition-all duration-[400ms] hover:-translate-y-1 sm:w-[calc((100%_-_32px)/2)] lg:w-[calc((100%_-_48px)/3)]";
+                  "group flex w-full shrink-0 snap-start flex-col overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)] transition-all duration-[400ms] hover:-translate-y-1 sm:w-[calc((100%_-_32px)/2)] lg:w-[calc((100%_-_48px)/3)]";
                 const cardContent = (
                   <>
-                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-[var(--color-surface-muted)] sm:aspect-[16/10]">
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--color-surface-muted)] sm:aspect-[16/10]">
                       {article.image ? (
                         <Image
                           src={article.image}
                           alt={article.alt}
                           fill
                           className="object-cover transition-transform duration-[600ms] group-hover:scale-[1.08]"
-                          sizes="(max-width: 1024px) 50vw, 30vw"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 30vw"
                           unoptimized={
                             article.image.startsWith("http") ||
                             article.image.includes("localhost")
@@ -186,20 +186,20 @@ export function NewsSection() {
                         <div className="h-full w-full bg-[var(--color-surface-muted)]" />
                       )}
                     </div>
-                    <div className="flex flex-1 flex-col p-3 sm:p-5">
+                    <div className="flex flex-1 flex-col p-4 sm:p-5">
                       {article.date ? (
-                        <p className="flex items-center gap-1 text-[10px] font-normal leading-none text-[var(--color-text-inverse)] sm:gap-2 sm:text-[length:var(--text-xs)]">
-                          <Calendar className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" aria-hidden="true" />
+                        <p className="flex items-center gap-2 text-[length:var(--text-xs)] font-normal leading-none text-[var(--color-text-inverse)] sm:gap-2 sm:text-[length:var(--text-sm)]">
+                          <Calendar className="h-4 w-4 shrink-0 sm:h-4 sm:w-4" aria-hidden="true" />
                           <time dateTime={article.dateIso}>{article.date}</time>
                         </p>
                       ) : null}
-                      <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-[var(--color-text-primary)] sm:mt-3 sm:text-[length:var(--text-lg)]">
+                      <h3 className="mt-2 line-clamp-2 text-[length:var(--text-lg)] font-semibold text-[var(--color-text-primary)] sm:mt-3 sm:text-[length:var(--text-xl)]">
                         {article.title}
                       </h3>
-                      <p className="mt-2 line-clamp-2 text-xs font-normal leading-relaxed text-[var(--color-text-inverse)] sm:line-clamp-3 sm:text-[length:var(--text-sm)]">
+                      <p className="mt-2 line-clamp-3 text-[length:var(--text-sm)] font-normal leading-relaxed text-[var(--color-text-inverse)] sm:line-clamp-3 sm:text-[length:var(--text-md)]">
                         {article.excerpt}
                       </p>
-                      <span className="mt-auto inline-flex items-center gap-2 pt-3 text-xs font-semibold text-[var(--color-text-secondary)] transition-colors group-hover:text-[#016502] sm:pt-4 sm:text-[length:var(--text-sm)]">
+                      <span className="mt-auto inline-flex items-center gap-2 pt-3 text-[length:var(--text-sm)] font-semibold text-[var(--color-text-secondary)] transition-colors group-hover:text-[#016502] sm:pt-4 sm:text-[length:var(--text-md)]">
                         Đọc thêm
                         <ArrowRight
                           className="h-4 w-4 transition-transform group-hover:translate-x-1"

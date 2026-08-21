@@ -68,13 +68,14 @@ const EMPTY_FORM: ProductFormValues = {
   name: "",
   categoryId: "",
   price: "",
-  unit: "chai",
+  unit: "sanpham",
   unitsPerCase: 1,
   images: [],
   status: "active",
+  pestType: "",
 };
 
-const EMPTY_LIST_FILTERS = { categoryId: "", status: "" };
+const EMPTY_LIST_FILTERS = { categoryId: "", status: "", pestType: "" };
 
 export default function ProductsPage() {
   const confirm = useConfirm();
@@ -98,13 +99,14 @@ export default function ProductsPage() {
         search: search || undefined,
         categoryId: filters.applied.categoryId || undefined,
         status: filters.applied.status || undefined,
+        pestType: filters.applied.pestType || undefined,
         page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
       });
       if (pageNum === 1) setOrderDrafts({});
       return result;
     },
-    [search, filters.applied.categoryId, filters.applied.status]
+    [search, filters.applied.categoryId, filters.applied.status, filters.applied.pestType]
   );
 
   const onError = useCallback(
@@ -169,9 +171,10 @@ export default function ProductsPage() {
       name: item.name,
       sku: item.sku,
       categoryId: item.categoryId,
+      pestType: item.pestType || "",
       description: item.description,
       shortDescription: item.shortDescription || "",
-      unit: item.unit || "chai",
+      unit: item.unit || "sanpham",
       unitsPerCase: item.unitsPerCase || 1,
       price: item.price,
       costPrice: item.costPrice,
@@ -381,7 +384,10 @@ export default function ProductsPage() {
             <FilterOptionList
               label="Loại sản phẩm"
               value={filters.draft.categoryId}
-              onChange={(value) => filters.setDraftValue("categoryId", value)}
+              onChange={(value) => {
+                filters.setDraftValue("categoryId", value);
+                filters.setDraftValue("pestType", "");
+              }}
               searchable
               searchPlaceholder="Tìm loại..."
               options={[
@@ -392,6 +398,24 @@ export default function ProductsPage() {
                 })),
               ]}
             />
+            {filters.draft.categoryId && (() => {
+              const selectedCat = categories.find(c => c.id === filters.draft.categoryId);
+              const pestTypes = selectedCat?.pestTypes || [];
+              if (pestTypes.length === 0) return null;
+              return (
+                <FilterOptionList
+                  label={`Loại ${selectedCat?.name || 'sản phẩm'}`}
+                  value={filters.draft.pestType}
+                  onChange={(value) => filters.setDraftValue("pestType", value)}
+                  searchable
+                  searchPlaceholder="Tìm loại con..."
+                  options={[
+                    { value: "", label: "Tất cả" },
+                    ...pestTypes.map(pt => ({ value: pt.value, label: pt.label })),
+                  ]}
+                />
+              );
+            })()}
             <FilterOptionList
               label="Trạng thái"
               value={filters.draft.status}
@@ -424,6 +448,7 @@ export default function ProductsPage() {
                           <PreviewableImage
                             src={thumb}
                             alt={item.name}
+                            images={item.images}
                             fill
                             className="rounded-xl border-0"
                           />
@@ -591,6 +616,7 @@ export default function ProductsPage() {
                             <PreviewableImage
                               src={item.image || item.images[0]}
                               alt={item.name}
+                              images={item.images}
                               fill
                               className="rounded-lg">
                               {(item.images?.length || (item.image ? 1 : 0)) >
@@ -715,11 +741,32 @@ export default function ProductsPage() {
                   })),
                 ]}
                 value={form.categoryId}
-                onChange={(next) => setForm({ ...form, categoryId: next })}
+                onChange={(next) => setForm({ ...form, categoryId: next, pestType: "" })}
                 placeholder="Chọn loại"
                 searchPlaceholder="Tìm loại sản phẩm..."
               />
             </div>
+            {form.categoryId && (() => {
+              const selectedCat = categories.find(c => c.id === form.categoryId);
+              const pestTypes = selectedCat?.pestTypes || [];
+              if (pestTypes.length === 0) return null;
+              return (
+                <div className="space-y-2">
+                  <Label htmlFor="pestType">Loại {selectedCat?.name || 'sản phẩm'}</Label>
+                  <SearchableSelect
+                    id="pestType"
+                    options={[
+                      { value: "", label: "Chọn loại con" },
+                      ...pestTypes.map(pt => ({ value: pt.value, label: pt.label })),
+                    ]}
+                    value={form.pestType || ""}
+                    onChange={(next) => setForm({ ...form, pestType: next })}
+                    placeholder="Chọn loại con"
+                    searchPlaceholder="Tìm..."
+                  />
+                </div>
+              );
+            })()}
             <div className="space-y-2">
               <Label htmlFor="status">Trạng thái</Label>
               <SearchableSelect
@@ -754,7 +801,7 @@ export default function ProductsPage() {
               />
             </div>
             <div className="col-span-2 space-y-2">
-              <Label htmlFor="unitsPerCase">Số chai / 1 thùng</Label>
+              <Label htmlFor="unitsPerCase">Số sản phẩm / 1 thùng</Label>
               <Input
                 id="unitsPerCase"
                 type="number"
@@ -801,6 +848,7 @@ export default function ProductsPage() {
                 label="Ảnh sản phẩm"
                 max={5}
                 values={form.images || []}
+                sortable
                 onValuesChange={(urls) =>
                   setForm({
                     ...form,

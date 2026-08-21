@@ -15,6 +15,7 @@ import { ImageUpload } from "@/components/products/ImageUpload";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import { uploadOrderPhoto } from "@/lib/api/uploads";
+import { compressImage } from "@/lib/imageCompression";
 import type { Order } from "@/lib/types";
 
 type DeliveryPhotoDialogProps = {
@@ -55,14 +56,9 @@ export function DeliveryPhotoDialog({
     event.target.value = "";
     if (!file) return;
 
-    if (file.size > 20 * 1024 * 1024) {
-      toast.warning("Mỗi ảnh tối đa 20MB");
-      return;
-    }
-
     setUploading(true);
     try {
-      const result = await uploadOrderPhoto(file);
+      const result = await uploadOrderPhoto(await compressImage(file));
       onConfirm([result.url]);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Tải ảnh thất bại");

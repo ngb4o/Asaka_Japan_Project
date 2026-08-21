@@ -6,11 +6,13 @@ export async function getProducts(params?: {
   search?: string;
   status?: string;
   categoryId?: string;
+  pestType?: string;
 } & PaginationParams) {
   const query = new URLSearchParams();
   if (params?.search) query.set("search", params.search);
   if (params?.status) query.set("status", params.status);
   if (params?.categoryId) query.set("categoryId", params.categoryId);
+  if (params?.pestType) query.set("pestType", params.pestType);
   appendPaginationParams(query, params);
 
   const suffix = query.toString() ? `?${query.toString()}` : "";

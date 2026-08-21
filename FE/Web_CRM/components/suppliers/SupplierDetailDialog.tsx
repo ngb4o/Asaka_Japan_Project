@@ -102,7 +102,7 @@ function InvoiceCard({ invoice }: { invoice: PurchaseInvoice }) {
                 <span className="text-[var(--color-text-inverse)]">
                   {" "}
                   · {item.quantity}
-                  {item.unitType === "thung" ? " thùng" : " chai"}
+                  {item.unitType === "thung" ? " thùng" : " sản phẩm"}
                 </span>
               </p>
               <p className="shrink-0 font-medium tabular-nums">

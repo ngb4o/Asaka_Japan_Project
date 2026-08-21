@@ -1,11 +1,17 @@
 import { apiRequest } from "@/lib/api/client";
 
+export type PestTypeOption = {
+  value: string;
+  label: string;
+};
+
 export type ProductCategory = {
   id: string;
   name: string;
   slug: string;
   description?: string;
   status: "active" | "inactive";
+  pestTypes?: PestTypeOption[];
 };
 
 export type PaginatedCategories = {

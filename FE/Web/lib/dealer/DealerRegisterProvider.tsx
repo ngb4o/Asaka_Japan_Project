@@ -8,8 +8,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ContactForm } from "@/components/forms/ContactForm";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useIsMobile } from "@/lib/hooks/useIsMobile";
 
 type OpenOptions = {
   onSuccess?: () => void;
@@ -29,6 +31,7 @@ export function DealerRegisterProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const onSuccessRef = useRef<(() => void) | undefined>(undefined);
 
@@ -53,26 +56,40 @@ export function DealerRegisterProvider({
     [openDealerRegister, closeDealerRegister]
   );
 
+  function handleOpenChange(next: boolean) {
+    if (!next) closeDealerRegister();
+    else setOpen(true);
+  }
+
+  const registerForm = (
+    <ContactForm
+      type="dealer"
+      submitLabel="Gửi đăng ký"
+      theme="light"
+      onSuccess={handleSuccess}
+    />
+  );
+
   return (
     <DealerRegisterContext.Provider value={value}>
       {children}
-      <Dialog
-        open={open}
-        onOpenChange={(next) => {
-          if (!next) closeDealerRegister();
-          else setOpen(true);
-        }}
-      >
-        <DialogContent className="max-h-[90vh] w-[calc(100vw-1.5rem)] max-w-2xl overflow-y-auto p-6 sm:p-8">
-          <DialogTitle>Đăng ký trở thành đại lý</DialogTitle>
-          <ContactForm
-            type="dealer"
-            submitLabel="Gửi đăng ký"
-            theme="light"
-            onSuccess={handleSuccess}
-          />
-        </DialogContent>
-      </Dialog>
+      {isMobile ? (
+        <BottomSheet
+          open={open}
+          onOpenChange={handleOpenChange}
+          title="Đăng ký trở thành đại lý"
+          maxHeight="92dvh"
+        >
+          <div className="px-4 pb-6 pt-2">{registerForm}</div>
+        </BottomSheet>
+      ) : (
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+          <DialogContent className="max-h-[90vh] w-[calc(100vw-1.5rem)] max-w-2xl overflow-y-auto p-6 sm:p-8">
+            <DialogTitle>Đăng ký trở thành đại lý</DialogTitle>
+            {registerForm}
+          </DialogContent>
+        </Dialog>
+      )}
     </DealerRegisterContext.Provider>
   );
 }

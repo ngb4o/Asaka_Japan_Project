@@ -117,7 +117,7 @@ const EMPTY_MOVEMENT_FORM: InventoryMovementFormValues = {
   warehouseId: "",
   productId: "",
   quantity: "",
-  unitType: "chai",
+  unitType: "sanpham",
   unitCost: "",
   supplierId: "",
   dueDate: "",
@@ -127,7 +127,7 @@ const EMPTY_MOVEMENT_FORM: InventoryMovementFormValues = {
 
 function suggestUnitCost(
   product: Product | undefined,
-  unitType: "chai" | "thung"
+  unitType: "sanpham" | "thung"
 ): number | "" {
   if (!product) return "";
   const cost = Number(product.costPrice) || 0;
@@ -494,8 +494,8 @@ export default function InventoryPage() {
       warehouseId: activeWarehouses.length === 1 ? activeWarehouses[0].id : "",
       productId: firstProduct?.id || "",
       quantity: "",
-      unitType: "chai",
-      unitCost: type === "import" ? suggestUnitCost(firstProduct, "chai") : "",
+      unitType: "sanpham",
+      unitCost: type === "import" ? suggestUnitCost(firstProduct, "sanpham") : "",
       supplierId: "",
       dueDate: "",
       paymentStatus: "unpaid",
@@ -937,7 +937,7 @@ export default function InventoryPage() {
                       <th className="font-medium">Tồn kho</th>
                       {canViewValue ? (
                         <>
-                          <th className="font-medium">Giá vốn/chai</th>
+                          <th className="font-medium">Giá vốn/sp</th>
                           <th className="font-medium">Thành tiền</th>
                         </>
                       ) : null}
@@ -1411,7 +1411,7 @@ export default function InventoryPage() {
                   const nextCanUseCase = toUnitsPerCase(product?.unitsPerCase) > 1;
                   const nextUnitType =
                     movementForm.unitType === "thung" && !nextCanUseCase
-                      ? "chai"
+                      ? "sanpham"
                       : movementForm.unitType;
                   setMovementForm({
                     ...movementForm,
@@ -1433,20 +1433,20 @@ export default function InventoryPage() {
                 <SearchableSelect
                   id="unitType"
                   options={[
-                    { value: "chai", label: "Chai" },
+                    { value: "sanpham", label: "Sản phẩm" },
                     ...(canUseCase
                       ? [
                           {
                             value: "thung",
                             label: "Thùng",
-                            description: `1 thùng = ${selectedUnitsPerCase} chai`,
+                            description: `1 thùng = ${selectedUnitsPerCase} sản phẩm`,
                           },
                         ]
                       : []),
                   ]}
                   value={movementForm.unitType}
                   onChange={(next) => {
-                    const unitType = next as "chai" | "thung";
+                    const unitType = next as "sanpham" | "thung";
                     setMovementForm({
                       ...movementForm,
                       unitType,
@@ -1479,7 +1479,7 @@ export default function InventoryPage() {
             {movementType === "import" ? (
               <div className="space-y-2">
                 <Label htmlFor="unitCost">
-                  Giá nhập / {movementForm.unitType === "thung" ? "thùng" : "chai"} *
+                  Giá nhập / {movementForm.unitType === "thung" ? "thùng" : "sp"} *
                 </Label>
                 <VndInput
                   id="unitCost"
@@ -1586,11 +1586,11 @@ export default function InventoryPage() {
             {selectedProduct && (
               <p className="text-xs text-[var(--color-text-inverse)]">
                 {canUseCase
-                  ? `Quy cách: 1 thùng = ${selectedUnitsPerCase} chai. Tồn kho luôn lưu theo chai.`
-                  : "Sản phẩm chưa cấu hình số chai/thùng — chỉ nhập/xuất theo chai."}
+                  ? `Quy cách: 1 thùng = ${selectedUnitsPerCase} sản phẩm. Tồn kho luôn lưu theo sản phẩm.`
+                  : "Sản phẩm chưa cấu hình số sản phẩm/thùng — chỉ nhập/xuất theo sản phẩm."}
                 {movementForm.unitType === "thung" &&
                   movementForm.quantity !== "" &&
-                  ` → ${Number(movementForm.quantity) * selectedUnitsPerCase} chai.`}
+                  ` → ${Number(movementForm.quantity) * selectedUnitsPerCase} sản phẩm.`}
               </p>
             )}
             <div className="space-y-2">

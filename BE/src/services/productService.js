@@ -52,6 +52,7 @@ const pickProductPayload = (reqBody, userId) => {
   return {
     name: reqBody.name,
     categoryId: reqBody.categoryId,
+    pestType: reqBody.pestType ?? '',
     price: reqBody.price,
     sku: reqBody.sku ?? '',
     description: reqBody.description ?? '',
@@ -99,6 +100,10 @@ const getList = async (query) => {
 
   if (query.categoryId) {
     findQuery.categoryId = new ObjectId(query.categoryId)
+  }
+
+  if (query.pestType) {
+    findQuery.pestType = query.pestType
   }
 
   const searchFilter = buildSearchFilter(
@@ -179,6 +184,7 @@ const update = async (productId, updateData) => {
     'name',
     'sku',
     'categoryId',
+    'pestType',
     'description',
     'shortDescription',
     'unit',

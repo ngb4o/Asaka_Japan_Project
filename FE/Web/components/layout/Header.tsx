@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
+const SCROLL_THRESHOLD = 40;
+const SCROLL_DELTA = 8;
+
 function resolveNavHref(href: string) {
   return href.startsWith("#") ? `/${href}` : href;
 }
@@ -25,32 +28,61 @@ export function Header() {
   const isSolidHeaderPage =
     pathname.startsWith("/products") || pathname.startsWith("/news/");
   const [scrolled, setScrolled] = useState(false);
+  const [visible, setVisible] = useState(true);
   const [open, setOpen] = useState(false);
+  const lastScrollY = useRef(0);
   const useSolidStyle = scrolled || isSolidHeaderPage;
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    const onScroll = () => {
+      const currentY = window.scrollY;
+      setScrolled(currentY > SCROLL_THRESHOLD);
+
+      if (window.innerWidth >= 1024 || open) {
+        setVisible(true);
+        lastScrollY.current = currentY;
+        return;
+      }
+
+      const delta = currentY - lastScrollY.current;
+      if (currentY <= SCROLL_THRESHOLD) {
+        setVisible(true);
+      } else if (delta > SCROLL_DELTA) {
+        setVisible(false);
+      } else if (delta < -SCROLL_DELTA) {
+        setVisible(true);
+      }
+
+      lastScrollY.current = currentY;
+    };
+
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [open]);
 
   return (
     <header
       className={cn(
         "fixed inset-x-0 top-0 z-50 bg-transparent transition-all duration-[400ms]",
+        !visible && "-translate-y-full lg:translate-y-0",
         useSolidStyle &&
           "bg-[var(--color-surface-glass)] shadow-[var(--shadow-glass)] backdrop-blur-[16px] [-webkit-backdrop-filter:blur(16px)] border-b border-[var(--color-border-subtle)] lg:border-white/40"
       )}
     >
 
-      <div className="container-wide flex h-20 items-center justify-between px-[var(--space-6)]">
+      <div className="container-wide flex h-14 items-center justify-between px-[var(--space-6)] lg:h-20">
         <Link
           href="/"
-          className="flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)] focus-visible:ring-offset-2 rounded-lg"
+          className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)] focus-visible:ring-offset-2 rounded-lg lg:gap-3"
           aria-label={`${COMPANY.shortName} - Trang chủ`}
         >
-          <BrandLogo size={48} priority className="drop-shadow-sm" />
+          <BrandLogo size={36} priority className="drop-shadow-sm lg:hidden" />
+          <BrandLogo size={48} priority className="drop-shadow-sm hidden lg:inline-flex" />
           <span className="hidden sm:block">
             <span
               className={cn(
@@ -100,7 +132,7 @@ export function Header() {
                   : "text-white hover:bg-white/10 hover:text-white"
               )}
             >
-              <Menu className="h-6 w-6" />
+              <Menu className="h-5 w-5 lg:h-6 lg:w-6" />
             </Button>
           </SheetTrigger>
           <SheetContent side="right">

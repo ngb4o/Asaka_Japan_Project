@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { HERO_STATS } from "@/lib/constants";
@@ -66,7 +67,7 @@ export function HeroSection() {
                 size="lg"
                 className="h-10 px-5 text-[length:var(--text-sm)] border-white text-white hover:bg-white/10 md:h-14 md:px-10 md:text-[length:var(--text-lg)]"
               >
-                <a href="#products">Khám phá sản phẩm</a>
+                <Link href="/products">Khám phá sản phẩm</Link>
               </Button>
             </motion.div>
           </StaggerChildren>

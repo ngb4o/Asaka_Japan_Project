@@ -138,13 +138,13 @@ export function FeaturedProductsSection() {
     >
       <FadeUp>
         {loading ? (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 lg:gap-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-6">
             {Array.from({ length: 3 }).map((_, index) => (
               <div
                 key={`skeleton-${index}`}
                 className="overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]"
               >
-                <div className="aspect-[4/5] animate-pulse bg-[var(--color-surface-muted)] sm:aspect-square lg:aspect-[4/5]" />
+                <div className="aspect-[4/3] animate-pulse bg-[var(--color-surface-muted)] sm:aspect-square lg:aspect-[4/5]" />
                 <div className="space-y-2 p-4">
                   <div className="h-4 w-2/3 animate-pulse rounded bg-[var(--color-surface-muted)]" />
                   <div className="h-3 w-full animate-pulse rounded bg-[var(--color-surface-muted)]" />
@@ -170,17 +170,17 @@ export function FeaturedProductsSection() {
             >
               {products.map((product) => {
                 const cardClassName =
-                  "group relative flex w-[calc((100%_-_12px)/2)] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] transition-all duration-[400ms] hover:border-[var(--color-text-secondary)]/25 sm:w-[calc((100%_-_32px)/2)] sm:rounded-[var(--radius-card)] lg:w-[calc((100%_-_48px)/3)]";
+                  "group relative flex w-full shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] transition-all duration-[400ms] hover:border-[var(--color-text-secondary)]/25 sm:w-[calc((100%_-_32px)/2)] sm:rounded-[var(--radius-card)] lg:w-[calc((100%_-_48px)/3)]";
                 const cardContent = (
                   <>
-                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-[var(--color-surface-muted)] sm:aspect-square lg:aspect-[4/5]">
+                    <div className="relative aspect-[3/4] w-full overflow-hidden bg-[var(--color-surface-muted)] sm:aspect-[4/5] lg:aspect-[3/4]">
                       {product.image ? (
                         <Image
                           src={product.image}
                           alt={product.alt}
                           fill
                           className="object-cover transition-transform duration-[600ms] group-hover:scale-105"
-                          sizes="(max-width: 1024px) 50vw, 30vw"
+                          sizes="(max-width: 640px) 80vw, (max-width: 1024px) 40vw, 25vw"
                           unoptimized={product.image.includes("localhost")}
                         />
                       ) : (
@@ -189,8 +189,8 @@ export function FeaturedProductsSection() {
                         </div>
                       )}
 
-                      <div className="absolute left-3 top-3 sm:left-4 sm:top-4 lg:left-5 lg:top-5">
-                        <span className="inline-flex rounded-full bg-[var(--color-text-secondary)] px-2 py-1 text-[10px] font-semibold text-white sm:px-3 sm:py-1.5 sm:text-[length:var(--text-xs)]">
+                      <div className="absolute left-4 top-4 sm:left-4 sm:top-4 lg:left-5 lg:top-5">
+                        <span className="inline-flex rounded-full bg-[var(--color-text-secondary)] px-3 py-1.5 text-[length:var(--text-xs)] font-semibold text-white">
                           {product.category}
                         </span>
                       </div>
@@ -200,11 +200,11 @@ export function FeaturedProductsSection() {
                       </div>
                     </div>
 
-                    <div className="flex flex-1 flex-col gap-2 border-t border-[var(--color-border-subtle)] p-3 sm:gap-2.5 sm:p-4 lg:min-h-[11.5rem] lg:gap-3 lg:p-6">
-                      <h3 className="line-clamp-2 text-[length:var(--text-sm)] font-semibold leading-tight text-[var(--color-text-primary)] sm:text-[length:var(--text-lg)] lg:text-[length:var(--text-xl)]">
+                    <div className="flex flex-1 flex-col gap-2.5 border-t border-[var(--color-border-subtle)] p-4 sm:gap-2.5 sm:p-4 lg:min-h-[11.5rem] lg:gap-3 lg:p-6">
+                      <h3 className="line-clamp-2 text-[length:var(--text-lg)] font-semibold leading-tight text-[var(--color-text-primary)] sm:text-[length:var(--text-lg)] lg:text-[length:var(--text-xl)]">
                         {product.name}
                       </h3>
-                      <p className="line-clamp-2 text-[length:var(--text-xs)] font-normal leading-relaxed text-[var(--color-text-inverse)] sm:text-[length:var(--text-sm)] lg:text-[length:var(--text-md)]">
+                      <p className="line-clamp-2 text-[length:var(--text-sm)] font-normal leading-relaxed text-[var(--color-text-inverse)] sm:text-[length:var(--text-sm)] lg:text-[length:var(--text-md)]">
                         {product.benefit}
                       </p>
                       <div className="mt-auto hidden pt-1 lg:block">
@@ -271,7 +271,7 @@ export function FeaturedProductsSection() {
             </div>
             <Link
               href="/products"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[#016502]"
+              className="inline-flex items-center gap-2 text-[length:var(--text-sm)] font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[#016502] sm:text-[length:var(--text-md)]"
             >
               Xem tất cả sản phẩm
               <ArrowUpRight className="h-4 w-4" aria-hidden="true" />

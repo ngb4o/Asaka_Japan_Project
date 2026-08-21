@@ -1,4 +1,5 @@
 import type {
+  PestTypeOption,
   ProductCategoryInput,
   ProductInput,
   NewsInput,
@@ -11,6 +12,7 @@ export type ProductFormValues = {
   categoryId: string;
   price: number | "";
   sku?: string;
+  pestType?: string;
   description?: string;
   shortDescription?: string;
   unit?: string;
@@ -28,6 +30,7 @@ export type ProductCategoryFormValues = {
   name: string;
   description?: string;
   status?: "active" | "inactive";
+  pestTypes?: PestTypeOption[];
 };
 
 export function buildProductPayload(form: ProductFormValues): ProductInput {
@@ -38,14 +41,14 @@ export function buildProductPayload(form: ProductFormValues): ProductInput {
   };
 
   if (form.sku?.trim()) payload.sku = form.sku.trim();
-  payload.unit = "chai";
+  payload.unit = "sanpham";
   if (form.unitsPerCase !== "" && form.unitsPerCase !== undefined) {
     payload.unitsPerCase = Number(form.unitsPerCase) || 1;
   } else {
     payload.unitsPerCase = 1;
   }
   payload.packaging =
-    payload.unitsPerCase > 1 ? `Thùng ${payload.unitsPerCase} chai` : "";
+    payload.unitsPerCase > 1 ? `Thùng ${payload.unitsPerCase} sp` : "";
   if (form.costPrice !== "" && form.costPrice !== undefined) {
     payload.costPrice = Number(form.costPrice);
   }
@@ -69,6 +72,7 @@ export function buildProductPayload(form: ProductFormValues): ProductInput {
     payload.displayOrder = Math.max(0, Math.floor(Number(form.displayOrder) || 0));
   }
   if (form.status) payload.status = form.status;
+  if (form.pestType) payload.pestType = form.pestType;
 
   return payload;
 }
@@ -82,6 +86,9 @@ export function buildProductCategoryPayload(
 
   if (form.description?.trim()) payload.description = form.description.trim();
   if (form.status) payload.status = form.status;
+  if (form.pestTypes && form.pestTypes.length > 0) {
+    payload.pestTypes = form.pestTypes;
+  }
 
   return payload;
 }
@@ -95,7 +102,7 @@ export function validateProductForm(form: ProductFormValues): string | null {
     form.unitsPerCase !== undefined &&
     Number(form.unitsPerCase) < 1
   ) {
-    return "Số chai/thùng phải lớn hơn hoặc bằng 1";
+    return "Số sản phẩm/thùng phải lớn hơn hoặc bằng 1";
   }
   if (form.images && form.images.length > 5) {
     return "Mỗi sản phẩm tối đa 5 ảnh";
@@ -121,6 +128,18 @@ export function validateProductCategoryForm(
 ): string | null {
   if (!form.name.trim()) return "Vui lòng nhập tên loại sản phẩm";
   if (form.name.trim().length < 2) return "Tên loại phải có ít nhất 2 ký tự";
+  if (form.pestTypes) {
+    const duplicates = form.pestTypes
+      .map(pt => pt.value)
+      .filter((v, i, arr) => arr.indexOf(v) !== i);
+    if (duplicates.length > 0) {
+      return `Giá trị loại con bị trùng: ${duplicates.join(', ')}`;
+    }
+    for (const pt of form.pestTypes) {
+      if (!pt.value.trim()) return "Giá trị loại con không được trống";
+      if (!pt.label.trim()) return "Nhãn loại con không được trống";
+    }
+  }
   return null;
 }
 
@@ -198,7 +217,7 @@ export type InventoryMovementFormValues = {
   warehouseId: string;
   productId: string;
   quantity: number | "";
-  unitType: "chai" | "thung";
+  unitType: "sanpham" | "thung";
   note?: string;
   unitCost?: number | "";
   supplierId?: string;
@@ -213,7 +232,7 @@ export function buildInventoryMovementPayload(
     warehouseId: form.warehouseId,
     productId: form.productId,
     quantity: Number(form.quantity) || 0,
-    unitType: form.unitType || "chai",
+    unitType: form.unitType || "sanpham",
   };
 
   if (form.note?.trim()) payload.note = form.note.trim();

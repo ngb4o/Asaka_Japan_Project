@@ -311,7 +311,7 @@ function ProductValueList({
                   <p className="truncate text-xs text-[var(--color-text-inverse)]">
                     {[
                       row.productSku,
-                      row.quantity != null ? `Còn ${row.quantity} chai` : null,
+                      row.quantity != null ? `Còn ${row.quantity} sản phẩm` : null,
                     ]
                       .filter(Boolean)
                       .join(" · ") || "—"}

@@ -3,12 +3,12 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { Eye } from "@/components/ui/icons";
-import { ImageLightbox } from "@/components/ui/image-lightbox";
+import { ImageGallery } from "@/components/ui/image-gallery";
 import { getImageUrl } from "@/lib/api/uploads";
 import { cn } from "@/lib/utils";
 
 type PreviewableImageProps = {
-  src: string;
+  src?: string;
   alt?: string;
   /** Outer size / layout classes when not using `fill` */
   className?: string;
@@ -19,10 +19,12 @@ type PreviewableImageProps = {
   children?: ReactNode;
   /** Extra class on the hover eye overlay */
   overlayClassName?: string;
+  /** Full list of images for lightbox navigation */
+  images?: string[];
 };
 
 /**
- * Thumbnail that opens ImageLightbox on click and shows an Eye icon on hover.
+ * Thumbnail that opens ImageGallery fullscreen on click.
  */
 export function PreviewableImage({
   src,
@@ -32,17 +34,27 @@ export function PreviewableImage({
   fill = false,
   children,
   overlayClassName,
+  images,
 }: PreviewableImageProps) {
-  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [broken, setBroken] = useState(false);
   const COMPANY_LOGO = "/images/brand/logo.png";
 
   useEffect(() => {
     setBroken(false);
+    setActiveIndex(0);
   }, [src]);
 
-  const resolved = broken || !src ? COMPANY_LOGO : src;
+  const allImages = images?.length ? images : src ? [src] : [];
+  const displayThumb = allImages[0];
+  const resolved = broken || !displayThumb ? COMPANY_LOGO : displayThumb;
   const displaySrc = getImageUrl(resolved) || COMPANY_LOGO;
+
+  function openLightbox(index: number) {
+    setActiveIndex(index);
+    setLightboxOpen(true);
+  }
 
   return (
     <>
@@ -51,7 +63,7 @@ export function PreviewableImage({
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          setPreviewSrc(resolved);
+          openLightbox(0);
         }}
         aria-label={alt}
         className={cn(
@@ -64,7 +76,7 @@ export function PreviewableImage({
           alt={alt}
           fill
           className={cn(
-            broken || !src ? "object-contain p-2" : "object-cover",
+            broken || !displayThumb ? "object-contain p-2" : "object-cover",
             imgClassName
           )}
           unoptimized
@@ -83,11 +95,16 @@ export function PreviewableImage({
         {children}
       </button>
 
-      <ImageLightbox
-        src={previewSrc}
-        alt={alt}
-        onClose={() => setPreviewSrc(null)}
-      />
+      {lightboxOpen && (
+        <ImageGallery
+          images={allImages}
+          alt={alt}
+          activeIndex={activeIndex}
+          onIndexChange={setActiveIndex}
+          lightboxOpen={lightboxOpen}
+          onLightboxClose={() => setLightboxOpen(false)}
+        />
+      )}
     </>
   );
 }

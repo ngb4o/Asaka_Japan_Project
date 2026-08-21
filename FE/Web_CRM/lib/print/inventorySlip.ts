@@ -18,7 +18,7 @@ type InventorySlipInput = {
 };
 
 const UNIT_LABELS: Record<string, string> = {
-  chai: "Chai",
+  sanpham: "Sản phẩm",
   thung: "Thùng",
 };
 

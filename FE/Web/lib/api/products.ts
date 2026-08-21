@@ -65,6 +65,7 @@ export async function getFeaturedProducts(limit = 12): Promise<FeaturedProductCa
 export async function getProducts(params?: {
   search?: string;
   categoryId?: string;
+  pestType?: string;
   page?: number;
   limit?: number;
 }) {
@@ -79,6 +80,9 @@ export async function getProducts(params?: {
   }
   if (params?.categoryId) {
     query.set("categoryId", params.categoryId);
+  }
+  if (params?.pestType) {
+    query.set("pestType", params.pestType);
   }
 
   const result = await apiRequest<PaginatedProducts>(`/products?${query.toString()}`);

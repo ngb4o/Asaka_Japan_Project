@@ -24,6 +24,7 @@ import {
 } from "@/lib/api/chat";
 import { ApiClientError } from "@/lib/api/client";
 import { uploadProductImage } from "@/lib/api/uploads";
+import { compressImage } from "@/lib/imageCompression";
 import {
   emitCrmDataChanged,
   entitiesForChatTool,
@@ -529,13 +530,9 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
 
   async function handleImageFile(file: File | undefined) {
     if (!file || streaming) return;
-    if (file.size > 20 * 1024 * 1024) {
-      toast.warning("Ảnh tối đa 20MB");
-      return;
-    }
     setUploadingImage(true);
     try {
-      const result = await uploadProductImage(file);
+      const result = await uploadProductImage(await compressImage(file));
       setPendingImageUrl(result.url);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Tải ảnh thất bại");

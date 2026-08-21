@@ -1,4 +1,4 @@
-export type InventoryUnitType = "chai" | "thung";
+export type InventoryUnitType = "sanpham" | "thung";
 
 export function toUnitsPerCase(value?: number | null) {
   const parsed = Number(value);
@@ -17,7 +17,7 @@ export function getStockDisplayParts(
 ): StockDisplayParts {
   const base = Number(quantityBase) || 0;
   const perCase = toUnitsPerCase(unitsPerCase);
-  const primary = `${base} chai`;
+  const primary = `${base} sản phẩm`;
 
   if (perCase <= 1) {
     return { primary, secondary: null };
@@ -27,7 +27,7 @@ export function getStockDisplayParts(
   const bottles = base % perCase;
 
   if (cases > 0 && bottles > 0) {
-    return { primary, secondary: `${cases} thùng + ${bottles} chai` };
+    return { primary, secondary: `${cases} thùng + ${bottles} sản phẩm` };
   }
 
   if (cases > 0) {
@@ -47,11 +47,10 @@ export function getMovementQuantityParts(
   unitType: InventoryUnitType | string | undefined,
   quantityBase?: number
 ): StockDisplayParts {
-  const type = unitType === "thung" ? "thung" : "chai";
-  const primary = `${quantity} ${type === "thung" ? "thùng" : "chai"}`;
+  const primary = `${quantity} sản phẩm`;
 
-  if (type === "thung" && quantityBase != null) {
-    return { primary, secondary: `${quantityBase} chai` };
+  if (unitType === "thung" && quantityBase != null) {
+    return { primary, secondary: `${quantityBase} sản phẩm` };
   }
 
   return { primary, secondary: null };

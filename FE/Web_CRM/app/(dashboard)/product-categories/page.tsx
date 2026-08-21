@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, RefreshCw, Trash2 } from "@/components/ui/icons";
+import { Pencil, Plus, RefreshCw, Trash2, X } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,7 +43,7 @@ import {
   getProductCategories,
   updateProductCategory,
 } from "@/lib/api/product-categories";
-import type { ProductCategory } from "@/lib/types";
+import type { PestTypeOption, ProductCategory } from "@/lib/types";
 import { ApiClientError } from "@/lib/api/client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMobilePagedList } from "@/lib/hooks/useMobilePagedList";
@@ -59,6 +59,7 @@ import {
 const EMPTY_FORM: ProductCategoryFormValues = {
   name: "",
   status: "active",
+  pestTypes: [],
 };
 
 const EMPTY_LIST_FILTERS = { status: "" };
@@ -126,6 +127,7 @@ export default function ProductCategoriesPage() {
       name: item.name,
       description: item.description,
       status: item.status,
+      pestTypes: item.pestTypes ? [...item.pestTypes] : [],
     });
     setDialogOpen(true);
   }
@@ -146,6 +148,7 @@ export default function ProductCategoriesPage() {
         name: item.name,
         description: item.description,
         status,
+        pestTypes: item.pestTypes,
       });
       toast.success("Đã cập nhật trạng thái");
     } catch (err) {
@@ -295,6 +298,22 @@ export default function ProductCategoriesPage() {
                           </Badge>
                         }
                       />
+                      {item.pestTypes && item.pestTypes.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {item.pestTypes.slice(0, 4).map((pt) => (
+                            <span
+                              key={pt.value}
+                              className="inline-flex items-center rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-700">
+                              {pt.label}
+                            </span>
+                          ))}
+                          {item.pestTypes.length > 4 && (
+                            <span className="inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                              +{item.pestTypes.length - 4}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       <MobileRecordActions>
                         <SearchableSelect
@@ -352,6 +371,7 @@ export default function ProductCategoriesPage() {
                     <th className="font-medium">Slug</th>
                     <th className="font-medium">Trạng thái</th>
                     <th className="font-medium">Mô tả</th>
+                    <th className="font-medium">Loại con</th>
                     <th className="font-medium text-right">Thao tác</th>
                   </tr>
                 </thead>
@@ -379,6 +399,26 @@ export default function ProductCategoriesPage() {
                       </td>
                       <td className="max-w-xs truncate text-[var(--color-text-inverse)]">
                         {item.description || "—"}
+                      </td>
+                      <td>
+                        {item.pestTypes && item.pestTypes.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 max-w-[200px]">
+                            {item.pestTypes.slice(0, 3).map((pt) => (
+                              <span
+                                key={pt.value}
+                                className="inline-flex items-center rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-700">
+                                {pt.label}
+                              </span>
+                            ))}
+                            {item.pestTypes.length > 3 && (
+                              <span className="inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                                +{item.pestTypes.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[var(--color-text-inverse)]">—</span>
+                        )}
                       </td>
                       <td>
                         <div className="flex justify-end gap-2">
@@ -459,6 +499,75 @@ export default function ProductCategoriesPage() {
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
             </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Loại con (pestTypes)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setForm((f) => ({
+                      ...f,
+                      pestTypes: [
+                        ...(f.pestTypes || []),
+                        { value: "", label: "" },
+                      ],
+                    }))
+                  }>
+                  <Plus className="h-3 w-3" />
+                  Thêm loại con
+                </Button>
+              </div>
+
+              {(!form.pestTypes || form.pestTypes.length === 0) ? (
+                <p className="text-sm text-[var(--color-text-inverse)]">
+                  Chưa có loại con nào. Nhấn "Thêm loại con" để tạo.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {form.pestTypes!.map((pt, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        placeholder="Giá trị (slug, VD: sau-duc-than)"
+                        value={pt.value}
+                        onChange={(e) => {
+                          const updated = [...(form.pestTypes || [])];
+                          updated[index] = { ...updated[index], value: e.target.value };
+                          setForm((f) => ({ ...f, pestTypes: updated }));
+                        }}
+                        className="flex-1 font-mono text-xs"
+                      />
+                      <Input
+                        placeholder="Nhãn hiển thị (VD: Sâu đục thân)"
+                        value={pt.label}
+                        onChange={(e) => {
+                          const updated = [...(form.pestTypes || [])];
+                          updated[index] = { ...updated[index], label: e.target.value };
+                          setForm((f) => ({ ...f, pestTypes: updated }));
+                        }}
+                        className="flex-[2]"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 w-9 shrink-0 text-red-500 hover:text-red-600"
+                        onClick={() => {
+                          const updated = [...(form.pestTypes || [])];
+                          updated.splice(index, 1);
+                          setForm((f) => ({ ...f, pestTypes: updated }));
+                        }}
+                        title="Xóa loại con">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Hủy
