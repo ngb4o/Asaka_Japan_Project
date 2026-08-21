@@ -303,6 +303,13 @@ export type LeadUpdateInput = {
   dealerId?: string | null;
   lat?: number | null;
   lng?: number | null;
+  name?: string;
+  phone?: string | null;
+  email?: string | null;
+  company?: string | null;
+  region?: string | null;
+  message?: string | null;
+  type?: Lead["type"];
 };
 
 export type Dealer = {

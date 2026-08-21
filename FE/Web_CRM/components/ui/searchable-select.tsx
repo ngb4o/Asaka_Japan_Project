@@ -31,6 +31,8 @@ type SearchableSelectProps = {
     onClick?: (event: React.MouseEvent) => void;
     disabled?: boolean;
   }>;
+  /** Called when an option is selected, before closing dropdown. Return true to prevent closing. */
+  onSelect?: (value: string) => boolean | void;
 };
 
 export function SearchableSelect({
@@ -47,6 +49,7 @@ export function SearchableSelect({
   clearable = false,
   id,
   trigger,
+  onSelect,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -93,7 +96,10 @@ export function SearchableSelect({
 
   function handleSelect(nextValue: string) {
     onChange(nextValue);
-    setOpen(false);
+    const shouldPreventClose = onSelect?.(nextValue);
+    if (!shouldPreventClose) {
+      setOpen(false);
+    }
   }
 
   function handleOptionPointerDown(event: React.PointerEvent) {

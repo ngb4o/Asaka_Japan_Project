@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { MapPin, Pencil, Plus, RefreshCw, Trash2, UserPlus } from "@/components/ui/icons";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Eye, MapPin, Pencil, Plus, RefreshCw, Trash2, UserPlus } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -62,7 +62,7 @@ import {
   placeMapsDestination,
 } from "@/lib/maps/directions";
 
-const EMPTY_LIST_FILTERS = { status: "", type: "" };
+const EMPTY_LIST_FILTERS = { status: "", type: "", region: "" };
 
 const EMPTY_FORM: LeadInput = {
   name: "",
@@ -72,6 +72,7 @@ const EMPTY_FORM: LeadInput = {
   region: "",
   message: "",
   type: "contact",
+  source: "",
 };
 
 function geoFromLead(item: Lead): GeoLocationValue | null {
@@ -103,6 +104,12 @@ export default function LeadsPage() {
   const [detailGeo, setDetailGeo] = useState<GeoLocationValue | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Lead | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editGeo, setEditGeo] = useState<GeoLocationValue | null>(null);
+  const [regionOptions, setRegionOptions] = useState<{ value: string; label: string }[]>([]);
+  const [isAddingRegion, setIsAddingRegion] = useState(false);
+  const regionInputRef = useRef<HTMLInputElement>(null);
   const isLeadAction = (id: string, kind: "status" | "convert" | "delete") =>
     updatingId === `${kind}:${id}`;
 
@@ -112,10 +119,11 @@ export default function LeadsPage() {
         search: search || undefined,
         status: filters.applied.status || undefined,
         type: filters.applied.type || undefined,
+        region: filters.applied.region || undefined,
         page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
       }),
-    [search, filters.applied.status, filters.applied.type]
+    [search, filters.applied.status, filters.applied.type, filters.applied.region]
   );
 
   const onError = useCallback(
@@ -158,6 +166,19 @@ export default function LeadsPage() {
   });
 
   useEffect(() => {
+    const regions = Array.from(
+      new Set(
+        items
+          .map((item) => item.region)
+          .filter((r): r is string => Boolean(r.trim()))
+      )
+    ).sort();
+    setRegionOptions(
+      regions.map((r) => ({ value: r, label: r }))
+    );
+  }, [items]);
+
+  useEffect(() => {
     void reload();
     // Reload when filter query changes (fetchPage identity).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -166,8 +187,31 @@ export default function LeadsPage() {
   function openCreate() {
     setForm(EMPTY_FORM);
     setCreateGeo(null);
+    setIsAddingRegion(false);
     setCreateOpen(true);
   }
+
+  function openEdit(lead: Lead) {
+    setEditing(lead);
+    setForm({
+      name: lead.name,
+      phone: lead.phone || "",
+      email: lead.email || "",
+      company: lead.company || "",
+      region: lead.region || "",
+      message: lead.message || "",
+      type: lead.type,
+    });
+    setEditGeo(geoFromLead(lead));
+    setIsAddingRegion(false);
+    setEditOpen(true);
+  }
+
+  useEffect(() => {
+    if (isAddingRegion) {
+      regionInputRef.current?.focus();
+    }
+  }, [isAddingRegion]);
 
   async function handleCreate() {
     if (form.name.trim().length < 2) {
@@ -238,6 +282,36 @@ export default function LeadsPage() {
       });
       toast.success("Đã cập nhật lead");
       setSelected(null);
+      await reload();
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : "Lưu thất bại");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleEdit() {
+    if (!editing) return;
+    if (form.name.trim().length < 2) {
+      toast.warning("Nhập tên khách tiềm năng");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await updateLead(editing.id, {
+        name: form.name,
+        phone: form.phone || null,
+        email: form.email || null,
+        company: form.company || null,
+        region: form.region || null,
+        message: form.message || null,
+        type: form.type,
+        lat: editGeo?.lat ?? null,
+        lng: editGeo?.lng ?? null,
+      });
+      toast.success("Đã cập nhật khách tiềm năng");
+      setEditOpen(false);
+      setEditing(null);
       await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Lưu thất bại");
@@ -391,6 +465,15 @@ export default function LeadsPage() {
                 ...STATUS_OPTIONS.leadType,
               ]}
             />
+            <FilterOptionList
+              label="Khu vực"
+              value={filters.draft.region}
+              onChange={(value) => filters.setDraftValue("region", value)}
+              options={[
+                { value: "", label: "Tất cả khu vực" },
+                ...regionOptions,
+              ]}
+            />
           </FilterDrawer>
 
           {items.length === 0 ? (
@@ -460,7 +543,7 @@ export default function LeadsPage() {
                         {typeLabel ? <MobileMetaChip>{typeLabel}</MobileMetaChip> : null}
                       </div>
 
-                      <MobileRecordActions>
+                        <MobileRecordActions>
                         <SearchableSelect
                           options={STATUS_OPTIONS.lead}
                           value={item.status}
@@ -486,9 +569,19 @@ export default function LeadsPage() {
                           size="sm"
                           className="h-9 min-w-9"
                           onClick={() => openDetail(item)}
-                          title="Sửa">
-                          <Pencil className="h-4 w-4" />
+                          title="Xem chi tiết">
+                          <Eye className="h-4 w-4" />
                         </Button>
+                        {canWrite ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 min-w-9"
+                            onClick={() => openEdit(item)}
+                            title="Sửa">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        ) : null}
                         {!item.dealerId && item.type === "dealer" ? (
                           <Button
                             variant="outline"
@@ -568,9 +661,18 @@ export default function LeadsPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => openDetail(item)}
-                              title="Sửa">
-                              <Pencil className="h-4 w-4" />
+                              title="Xem chi tiết">
+                              <Eye className="h-4 w-4" />
                             </Button>
+                            {canWrite ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEdit(item)}
+                                title="Sửa">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            ) : null}
                             {!item.dealerId && item.type === "dealer" ? (
                               <Button
                                 variant="outline"
@@ -664,11 +766,45 @@ export default function LeadsPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="lead-region">Khu vực</Label>
-                <Input
-                  id="lead-region"
-                  value={form.region || ""}
-                  onChange={(e) => setForm({ ...form, region: e.target.value })}
-                />
+                {isAddingRegion ? (
+                  <div className="flex gap-2">
+                    <Input
+                      id="lead-region"
+                      ref={regionInputRef}
+                      value={form.region}
+                      onChange={(e) => setForm({ ...form, region: e.target.value })}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsAddingRegion(false);
+                        setForm({ ...form, region: "" });
+                      }}
+                    >
+                      Hủy
+                    </Button>
+                  </div>
+                ) : (
+                  <SearchableSelect
+                    options={[{ value: "__add__", label: "+ Thêm khu vực mới" }, ...regionOptions]}
+                    value={form.region ?? ""}
+                    onChange={(value) => {
+                      if (value !== "__add__") {
+                        setForm({ ...form, region: value });
+                      }
+                    }}
+                    onSelect={(value) => {
+                      if (value === "__add__") {
+                        setIsAddingRegion(true);
+                        return true; // prevent close
+                      }
+                      return false;
+                    }}
+                    clearable
+                  />
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Loại</Label>
@@ -816,6 +952,124 @@ export default function LeadsPage() {
               </DialogFooter>
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={(open) => !open && setEditOpen(false)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Sửa khách tiềm năng" : "Thêm khách tiềm năng"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); void handleEdit(); }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-lead-name">Họ tên *</Label>
+              <Input
+                id="edit-lead-name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-lead-phone">SĐT</Label>
+                <Input
+                  id="edit-lead-phone"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-lead-email">Email</Label>
+                <Input
+                  id="edit-lead-email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-lead-company">Công ty</Label>
+              <Input
+                id="edit-lead-company"
+                value={form.company}
+                onChange={(e) => setForm({ ...form, company: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-lead-region">Khu vực</Label>
+              {isAddingRegion ? (
+                <div className="flex gap-2">
+                  <Input
+                    id="edit-lead-region"
+                    ref={regionInputRef}
+                    value={form.region}
+                    onChange={(e) => setForm({ ...form, region: e.target.value })}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsAddingRegion(false);
+                      setForm({ ...form, region: "" });
+                    }}
+                  >
+                    Hủy
+                  </Button>
+                </div>
+              ) : (
+                <SearchableSelect
+                  options={[{ value: "__add__", label: "+ Thêm khu vực mới" }, ...regionOptions]}
+                  value={form.region ?? ""}
+                  onChange={(value) => {
+                    if (value !== "__add__") {
+                      setForm({ ...form, region: value });
+                    }
+                  }}
+                  onSelect={(value) => {
+                    if (value === "__add__") {
+                      setIsAddingRegion(true);
+                      return true; // prevent close
+                    }
+                    return false;
+                  }}
+                  clearable
+                />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-lead-message">Nội dung</Label>
+              <Textarea
+                id="edit-lead-message"
+                value={form.message}
+                onChange={(e) => setForm({ ...form, message: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Loại</Label>
+              <SearchableSelect
+                options={STATUS_OPTIONS.leadType}
+                value={form.type ?? "contact"}
+                onChange={(value) => setForm({ ...form, type: value as Lead["type"] })}
+                searchable={false}
+              />
+            </div>
+            <LocationCapture
+              label="GPS"
+              value={editGeo}
+              onChange={setEditGeo}
+            />
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
+                Hủy
+              </Button>
+              <Button type="submit" loading={submitting}>
+                Lưu
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

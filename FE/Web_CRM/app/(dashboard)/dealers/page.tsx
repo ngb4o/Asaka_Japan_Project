@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Eye, Pencil, Plus, RefreshCw, Trash2 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,7 +83,7 @@ const EMPTY_FORM: DealerFormValues = {
   geo: null,
 };
 
-const EMPTY_LIST_FILTERS = { status: "", tier: "" };
+const EMPTY_LIST_FILTERS = { status: "", tier: "", region: "" };
 
 export default function DealersPage() {
   const confirm = useConfirm();
@@ -99,6 +99,9 @@ export default function DealersPage() {
   const [form, setForm] = useState<DealerFormValues>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [regionOptions, setRegionOptions] = useState<{ value: string; label: string }[]>([]);
+  const [isAddingRegion, setIsAddingRegion] = useState(false);
+  const regionInputRef = useRef<HTMLInputElement>(null);
   const isDealerAction = (id: string, kind: "update" | "delete") =>
     updatingId === `${kind}:${id}`;
 
@@ -108,10 +111,11 @@ export default function DealersPage() {
         search: search || undefined,
         status: filters.applied.status || undefined,
         tier: filters.applied.tier || undefined,
+        region: filters.applied.region || undefined,
         page: pageNum,
         limit: DEFAULT_PAGE_SIZE,
       }),
-    [search, filters.applied.status, filters.applied.tier]
+    [search, filters.applied.status, filters.applied.tier, filters.applied.region]
   );
 
   const onError = useCallback(
@@ -144,6 +148,25 @@ export default function DealersPage() {
     void reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchPage]);
+
+  useEffect(() => {
+    const regions = Array.from(
+      new Set(
+        items
+          .map((item) => item.region)
+          .filter((r): r is string => Boolean(r.trim()))
+      )
+    ).sort();
+    setRegionOptions(
+      regions.map((r) => ({ value: r, label: r }))
+    );
+  }, [items]);
+
+  useEffect(() => {
+    if (isAddingRegion) {
+      regionInputRef.current?.focus();
+    }
+  }, [isAddingRegion]);
 
   function openCreate() {
     setEditing(null);
@@ -352,6 +375,15 @@ export default function DealersPage() {
               options={[
                 { value: "", label: "Tất cả hạng" },
                 ...STATUS_OPTIONS.dealerTier,
+              ]}
+            />
+            <FilterOptionList
+              label="Khu vực"
+              value={filters.draft.region}
+              onChange={(value) => filters.setDraftValue("region", value)}
+              options={[
+                { value: "", label: "Tất cả khu vực" },
+                ...regionOptions,
               ]}
             />
           </FilterDrawer>
@@ -663,11 +695,45 @@ export default function DealersPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="region">Khu vực</Label>
-                <Input
-                  id="region"
-                  value={form.region}
-                  onChange={(e) => setForm({ ...form, region: e.target.value })}
-                />
+                {isAddingRegion ? (
+                  <div className="flex gap-2">
+                    <Input
+                      id="region"
+                      ref={regionInputRef}
+                      value={form.region}
+                      onChange={(e) => setForm({ ...form, region: e.target.value })}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsAddingRegion(false);
+                        setForm({ ...form, region: "" });
+                      }}
+                    >
+                      Hủy
+                    </Button>
+                  </div>
+                ) : (
+                  <SearchableSelect
+                    options={[{ value: "__add__", label: "+ Thêm khu vực mới" }, ...regionOptions]}
+                    value={form.region}
+                    onChange={(value) => {
+                      if (value !== "__add__") {
+                        setForm({ ...form, region: value });
+                      }
+                    }}
+                    onSelect={(value) => {
+                      if (value === "__add__") {
+                        setIsAddingRegion(true);
+                        return true; // prevent close
+                      }
+                      return false;
+                    }}
+                    clearable
+                  />
+                )}
               </div>
             </div>
             <div className="space-y-2">

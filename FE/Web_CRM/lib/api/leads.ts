@@ -21,11 +21,13 @@ export async function getLeads(params?: {
   search?: string;
   status?: string;
   type?: string;
+  region?: string;
 } & PaginationParams) {
   const query = new URLSearchParams();
   if (params?.search) query.set("search", params.search);
   if (params?.status) query.set("status", params.status);
   if (params?.type) query.set("type", params.type);
+  if (params?.region) query.set("region", params.region);
   appendPaginationParams(query, params);
 
   const suffix = query.toString() ? `?${query.toString()}` : "";
