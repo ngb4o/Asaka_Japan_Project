@@ -363,86 +363,86 @@ export default function ProductCategoriesPage() {
               </MobileInfiniteList>
 
               <div className="crm-table-scroll hidden lg:block">
-              <div className="crm-table-frame">
-                <table className="crm-data-table min-w-[640px]">
-                <thead>
-                  <tr>
-                    <th className="font-medium">Tên</th>
-                    <th className="font-medium">Slug</th>
-                    <th className="font-medium">Trạng thái</th>
-                    <th className="font-medium">Mô tả</th>
-                    <th className="font-medium">Loại con</th>
-                    <th className="font-medium text-right">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => (
-                    <tr key={item.id}>
-                      <td className="font-medium">{item.name}</td>
-                      <td className="text-[var(--color-text-inverse)]">{item.slug}</td>
-                      <td>
-                        <div className="w-[140px]">
-                          <SearchableSelect
-                            options={STATUS_OPTIONS.category}
-                            value={item.status}
-                            onChange={(value) =>
-                              void handleQuickStatus(
-                                item,
-                                value as ProductCategory["status"]
-                              )
-                            }
-                            searchable={false}
-                            disabled={actionId === `status:${item.id}`}
-                            triggerClassName="h-8 text-xs"
-                          />
-                        </div>
-                      </td>
-                      <td className="max-w-xs truncate text-[var(--color-text-inverse)]">
-                        {item.description || "—"}
-                      </td>
-                      <td>
-                        {item.pestTypes && item.pestTypes.length > 0 ? (
-                          <div className="flex flex-wrap gap-1 max-w-[200px]">
-                            {item.pestTypes.slice(0, 3).map((pt) => (
-                              <span
-                                key={pt.value}
-                                className="inline-flex items-center rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-700">
-                                {pt.label}
-                              </span>
-                            ))}
-                            {item.pestTypes.length > 3 && (
-                              <span className="inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
-                                +{item.pestTypes.length - 3}
-                              </span>
+                <div className="crm-table-frame">
+                  <table className="crm-data-table min-w-[640px]">
+                    <thead>
+                      <tr>
+                        <th className="font-medium">Tên</th>
+                        <th className="font-medium">Slug</th>
+                        <th className="font-medium">Trạng thái</th>
+                        <th className="font-medium">Mô tả</th>
+                        <th className="font-medium">Loại con</th>
+                        <th className="font-medium text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item) => (
+                        <tr key={item.id}>
+                          <td className="font-medium">{item.name}</td>
+                          <td className="text-[var(--color-text-inverse)]">{item.slug}</td>
+                          <td>
+                            <div className="w-[140px]">
+                              <SearchableSelect
+                                options={STATUS_OPTIONS.category}
+                                value={item.status}
+                                onChange={(value) =>
+                                  void handleQuickStatus(
+                                    item,
+                                    value as ProductCategory["status"]
+                                  )
+                                }
+                                searchable={false}
+                                disabled={actionId === `status:${item.id}`}
+                                triggerClassName="h-8 text-xs"
+                              />
+                            </div>
+                          </td>
+                          <td className="max-w-xs truncate text-[var(--color-text-inverse)]">
+                            {item.description || "—"}
+                          </td>
+                          <td>
+                            {item.pestTypes && item.pestTypes.length > 0 ? (
+                              <div className="flex flex-wrap gap-1 max-w-[200px]">
+                                {item.pestTypes.slice(0, 3).map((pt) => (
+                                  <span
+                                    key={pt.value}
+                                    className="inline-flex items-center rounded bg-orange-100 px-1.5 py-0.5 text-xs font-medium text-orange-700">
+                                    {pt.label}
+                                  </span>
+                                ))}
+                                {item.pestTypes.length > 3 && (
+                                  <span className="inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                                    +{item.pestTypes.length - 3}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-[var(--color-text-inverse)]">—</span>
                             )}
-                          </div>
-                        ) : (
-                          <span className="text-[var(--color-text-inverse)]">—</span>
-                        )}
-                      </td>
-                      <td>
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEdit(item)}
-                            title="Sửa">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            loading={actionId === item.id}
-                            onClick={() => handleDelete(item)} title="Xóa">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
+                          </td>
+                          <td>
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEdit(item)}
+                                title="Sửa">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                loading={actionId === item.id}
+                                onClick={() => handleDelete(item)} title="Xóa">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <Pagination
@@ -523,7 +523,7 @@ export default function ProductCategoriesPage() {
 
               {(!form.pestTypes || form.pestTypes.length === 0) ? (
                 <p className="text-sm text-[var(--color-text-inverse)]">
-                  Chưa có loại con nào. Nhấn "Thêm loại con" để tạo.
+                  Chưa có loại con nào. Nhấn “Thêm loại con” để tạo.
                 </p>
               ) : (
                 <div className="space-y-2">
