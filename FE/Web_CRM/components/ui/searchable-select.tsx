@@ -205,7 +205,7 @@ export function SearchableSelect({
         role="listbox"
         className={cn(
           !isMobile && "max-h-60 overflow-y-auto p-1",
-          isMobile && "h-[40vh] overflow-y-auto"
+          isMobile && query && "h-[40vh] overflow-y-auto"
         )}
         onWheel={(event) => event.stopPropagation()}
         onScroll={() => {
