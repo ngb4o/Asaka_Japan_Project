@@ -22,6 +22,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
+import { RegionSelect } from "@/components/ui/region-select";
 import { PhoneLink } from "@/components/ui/smart-text";
 import {
   MobileMetaChip,
@@ -100,8 +101,6 @@ export default function DealersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [regionOptions, setRegionOptions] = useState<{ value: string; label: string }[]>([]);
-  const [isAddingRegion, setIsAddingRegion] = useState(false);
-  const regionInputRef = useRef<HTMLInputElement>(null);
   const isDealerAction = (id: string, kind: "update" | "delete") =>
     updatingId === `${kind}:${id}`;
 
@@ -161,12 +160,6 @@ export default function DealersPage() {
       regions.map((r) => ({ value: r, label: r }))
     );
   }, [items]);
-
-  useEffect(() => {
-    if (isAddingRegion) {
-      regionInputRef.current?.focus();
-    }
-  }, [isAddingRegion]);
 
   function openCreate() {
     setEditing(null);
@@ -695,45 +688,11 @@ export default function DealersPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="region">Khu vực</Label>
-                {isAddingRegion ? (
-                  <div className="flex gap-2">
-                    <Input
-                      id="region"
-                      ref={regionInputRef}
-                      value={form.region}
-                      onChange={(e) => setForm({ ...form, region: e.target.value })}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setIsAddingRegion(false);
-                        setForm({ ...form, region: "" });
-                      }}
-                    >
-                      Hủy
-                    </Button>
-                  </div>
-                ) : (
-                  <SearchableSelect
-                    options={[{ value: "__add__", label: "+ Thêm khu vực mới" }, ...regionOptions]}
-                    value={form.region}
-                    onChange={(value) => {
-                      if (value !== "__add__") {
-                        setForm({ ...form, region: value });
-                      }
-                    }}
-                    onSelect={(value) => {
-                      if (value === "__add__") {
-                        setIsAddingRegion(true);
-                        return true; // prevent close
-                      }
-                      return false;
-                    }}
-                    clearable
-                  />
-                )}
+                <RegionSelect
+                  id="region"
+                  value={form.region}
+                  onChange={(value) => setForm({ ...form, region: value })}
+                />
               </div>
             </div>
             <div className="space-y-2">

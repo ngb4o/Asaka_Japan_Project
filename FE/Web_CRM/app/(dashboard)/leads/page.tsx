@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Eye, MapPin, Pencil, Plus, RefreshCw, Trash2, UserPlus } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { SearchableSelect, STATUS_OPTIONS } from "@/components/ui/searchable-select";
+import { RegionSelect } from "@/components/ui/region-select";
 import { Copyable, PhoneLink } from "@/components/ui/smart-text";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -108,8 +109,6 @@ export default function LeadsPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editGeo, setEditGeo] = useState<GeoLocationValue | null>(null);
   const [regionOptions, setRegionOptions] = useState<{ value: string; label: string }[]>([]);
-  const [isAddingRegion, setIsAddingRegion] = useState(false);
-  const regionInputRef = useRef<HTMLInputElement>(null);
   const isLeadAction = (id: string, kind: "status" | "convert" | "delete") =>
     updatingId === `${kind}:${id}`;
 
@@ -187,7 +186,6 @@ export default function LeadsPage() {
   function openCreate() {
     setForm(EMPTY_FORM);
     setCreateGeo(null);
-    setIsAddingRegion(false);
     setCreateOpen(true);
   }
 
@@ -203,15 +201,8 @@ export default function LeadsPage() {
       type: lead.type,
     });
     setEditGeo(geoFromLead(lead));
-    setIsAddingRegion(false);
     setEditOpen(true);
   }
-
-  useEffect(() => {
-    if (isAddingRegion) {
-      regionInputRef.current?.focus();
-    }
-  }, [isAddingRegion]);
 
   async function handleCreate() {
     if (form.name.trim().length < 2) {
@@ -766,45 +757,11 @@ export default function LeadsPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="lead-region">Khu vực</Label>
-                {isAddingRegion ? (
-                  <div className="flex gap-2">
-                    <Input
-                      id="lead-region"
-                      ref={regionInputRef}
-                      value={form.region}
-                      onChange={(e) => setForm({ ...form, region: e.target.value })}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setIsAddingRegion(false);
-                        setForm({ ...form, region: "" });
-                      }}
-                    >
-                      Hủy
-                    </Button>
-                  </div>
-                ) : (
-                  <SearchableSelect
-                    options={[{ value: "__add__", label: "+ Thêm khu vực mới" }, ...regionOptions]}
-                    value={form.region ?? ""}
-                    onChange={(value) => {
-                      if (value !== "__add__") {
-                        setForm({ ...form, region: value });
-                      }
-                    }}
-                    onSelect={(value) => {
-                      if (value === "__add__") {
-                        setIsAddingRegion(true);
-                        return true; // prevent close
-                      }
-                      return false;
-                    }}
-                    clearable
-                  />
-                )}
+                <RegionSelect
+                  id="lead-region"
+                  value={form.region ?? ""}
+                  onChange={(value) => setForm({ ...form, region: value })}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Loại</Label>
@@ -999,45 +956,11 @@ export default function LeadsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-lead-region">Khu vực</Label>
-              {isAddingRegion ? (
-                <div className="flex gap-2">
-                  <Input
-                    id="edit-lead-region"
-                    ref={regionInputRef}
-                    value={form.region}
-                    onChange={(e) => setForm({ ...form, region: e.target.value })}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setIsAddingRegion(false);
-                      setForm({ ...form, region: "" });
-                    }}
-                  >
-                    Hủy
-                  </Button>
-                </div>
-              ) : (
-                <SearchableSelect
-                  options={[{ value: "__add__", label: "+ Thêm khu vực mới" }, ...regionOptions]}
-                  value={form.region ?? ""}
-                  onChange={(value) => {
-                    if (value !== "__add__") {
-                      setForm({ ...form, region: value });
-                    }
-                  }}
-                  onSelect={(value) => {
-                    if (value === "__add__") {
-                      setIsAddingRegion(true);
-                      return true; // prevent close
-                    }
-                    return false;
-                  }}
-                  clearable
-                />
-              )}
+              <RegionSelect
+                id="edit-lead-region"
+                value={form.region ?? ""}
+                onChange={(value) => setForm({ ...form, region: value })}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-lead-message">Nội dung</Label>

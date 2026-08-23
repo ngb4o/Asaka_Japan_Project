@@ -20,6 +20,7 @@ import { purchaseRoute } from '~/routes/v1/purchaseRoute'
 import { payablesRoute } from '~/routes/v1/payablesRoute'
 import { notificationRoute } from '~/routes/v1/notificationRoute'
 import { chatRoute } from '~/routes/v1/chatRoute'
+import { regionRoute } from '~/routes/v1/regionRoute'
 
 const Router = express.Router()
 
@@ -55,5 +56,6 @@ Router.use('/purchases', purchaseRoute)
 Router.use('/payables', payablesRoute)
 Router.use('/notifications', notificationRoute)
 Router.use('/chat', chatRoute)
+Router.use('/regions', regionRoute)
 
 export const APIs_V1 = Router
