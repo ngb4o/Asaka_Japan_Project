@@ -523,7 +523,7 @@ export default function ProductCategoriesPage() {
 
               {(!form.pestTypes || form.pestTypes.length === 0) ? (
                 <p className="text-sm text-[var(--color-text-inverse)]">
-                  Chưa có loại con nào. Nhấn "Thêm loại con" để tạo.
+                  Chưa có loại con nào. Nhấn &ldquo;Thêm loại con&rdquo; để tạo.
                 </p>
               ) : (
                 <div className="space-y-2">

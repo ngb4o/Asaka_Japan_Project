@@ -133,6 +133,7 @@ export default function SuppliersPage() {
   useEffect(() => {
     if (!allowed) return;
     void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowed, fetchPage]);
 
   function openCreate() {
