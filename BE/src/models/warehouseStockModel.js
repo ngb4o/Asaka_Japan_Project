@@ -102,6 +102,44 @@ const decreaseStock = async (warehouseId, productId, quantity, session = null) =
   return unwrapFindOneAndUpdate(result)
 }
 
+const adjustStock = async (warehouseId, productId, delta, session = null) => {
+  const options = session ? { session } : {}
+  const now = new Date()
+
+  if (delta === 0) {
+    return await findOneByWarehouseAndProduct(warehouseId, productId, session)
+  }
+
+  if (delta > 0) {
+    return await increaseStock(warehouseId, productId, delta, session)
+  }
+
+  const absDelta = Math.abs(delta)
+  const current = await findOneByWarehouseAndProduct(warehouseId, productId, session)
+  const currentQty = Number(current?.quantity) || 0
+
+  if (currentQty < absDelta) {
+    return null
+  }
+
+  const result = await GET_DB().collection(WAREHOUSE_STOCK_COLLECTION_NAME).findOneAndUpdate(
+    {
+      warehouseId: new ObjectId(warehouseId),
+      productId: new ObjectId(productId)
+    },
+    {
+      $inc: { quantity: delta },
+      $set: { updatedAt: now }
+    },
+    {
+      returnDocument: 'after',
+      ...options
+    }
+  )
+
+  return unwrapFindOneAndUpdate(result)
+}
+
 /** Mongo driver may return the doc directly or `{ value: doc|null }`. */
 function unwrapFindOneAndUpdate(result) {
   if (result == null) return null
@@ -180,6 +218,7 @@ export const warehouseStockModel = {
   findMany,
   increaseStock,
   decreaseStock,
+  adjustStock,
   getTotalByProductId,
   getTotalsByProductIds,
   countByWarehouseId,

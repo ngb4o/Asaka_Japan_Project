@@ -40,5 +40,11 @@ Router.post(
   inventoryValidation.exportStock,
   inventoryController.exportStock
 )
+Router.put(
+  '/transactions/:id',
+  requireRoles('warehouse'),
+  inventoryValidation.updateTransaction,
+  inventoryController.updateTransaction
+)
 
 export const inventoryRoute = Router

@@ -24,7 +24,15 @@ const importSchema = movementSchema.keys({
   unitCost: Joi.number().min(0).required()
 })
 
+const updateSchema = Joi.object({
+  note: Joi.string().trim().allow('').max(500).optional(),
+  supplierId: Joi.string().pattern(OBJECT_ID_RULE).allow(null, '').optional(),
+  quantity: Joi.number().integer().min(1).optional(),
+  unitCost: Joi.number().min(0).optional(),
+})
+
 export const inventoryValidation = {
   importStock: validateRequest(importSchema),
-  exportStock: validateRequest(movementSchema)
+  exportStock: validateRequest(movementSchema),
+  updateTransaction: validateRequest(updateSchema)
 }

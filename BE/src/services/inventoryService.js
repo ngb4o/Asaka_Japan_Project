@@ -312,6 +312,137 @@ const exportStock = async (reqBody, userId) => {
   return result.formatted
 }
 
+const updateTransaction = async (transactionId, reqBody, userId) => {
+  return await runInTransaction(async (session) => {
+    const txn = await inventoryTransactionModel.findOneById(transactionId)
+    if (!txn) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy phiếu kho!')
+    }
+
+    if (txn.purchaseId) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Phiếu đã gắn với phiếu nhập mua. Vui lòng sửa phiếu nhập mua.'
+      )
+    }
+
+    const { quantity, unitCost, note, supplierId } = reqBody
+
+    const updates = {}
+    if (note !== undefined) {
+      updates.note = String(note || '').trim().slice(0, 500)
+    }
+
+    if (supplierId !== undefined) {
+      if (supplierId) {
+        const supplier = await supplierModel.findOneById(supplierId)
+        if (!supplier) {
+          throw new ApiError(StatusCodes.BAD_REQUEST, 'Không tìm thấy nhà cung cấp!')
+        }
+        if (supplier.status !== supplierModel.SUPPLIER_STATUS.ACTIVE) {
+          throw new ApiError(StatusCodes.BAD_REQUEST, 'Nhà cung cấp đang ngưng!')
+        }
+        updates.supplierId = new ObjectId(supplierId)
+      } else {
+        updates.supplierId = null
+      }
+    }
+
+    const isImport = txn.type === inventoryTransactionModel.TRANSACTION_TYPE.IMPORT
+
+    if (quantity !== undefined && quantity !== txn.quantity) {
+      const newQty = Number(quantity)
+      if (!Number.isFinite(newQty) || newQty <= 0) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Số lượng phải lớn hơn 0!')
+      }
+
+      const product = await productModel.findOneById(txn.productId.toString())
+      const unitsPerCase = toUnitsPerCase(product?.unitsPerCase)
+      const oldQtyBase = Number(txn.quantityBase) || Number(txn.quantity) || 0
+      const newQtyBase = toBaseQuantity(newQty, txn.unitType || UNIT_TYPE.BOTTLE, unitsPerCase)
+      const delta = newQtyBase - oldQtyBase
+
+      if (delta !== 0) {
+        const adjusted = await warehouseStockModel.adjustStock(
+          txn.warehouseId.toString(),
+          txn.productId.toString(),
+          delta,
+          session
+        )
+
+        if (!adjusted) {
+          throw new ApiError(
+            StatusCodes.BAD_REQUEST,
+            isImport
+              ? 'Tồn kho không đủ để giảm số lượng!'
+              : 'Tồn kho hiện tại không đủ để điều chỉnh!'
+          )
+        }
+
+        const currentStock = await warehouseStockModel.findOneByWarehouseAndProduct(
+          txn.warehouseId.toString(),
+          txn.productId.toString(),
+          session
+        )
+
+        updates.quantity = newQty
+        updates.quantityBase = newQtyBase
+        updates.balanceAfter = currentStock ? Number(currentStock.quantity) : 0
+
+        staffNotifyService.onStockChanged({
+          productId: txn.productId.toString(),
+          warehouseId: txn.warehouseId.toString(),
+          quantity: updates.balanceAfter,
+          previousQuantity: updates.balanceAfter - delta
+        })
+      }
+    }
+
+    if (isImport && unitCost !== undefined && unitCost !== txn.unitCost) {
+      const newUnitCost = Math.max(0, Number(unitCost) || 0)
+      updates.unitCost = newUnitCost
+      updates.totalCost = Math.round(newUnitCost * (updates.quantity || txn.quantity) * 100) / 100
+
+      const product = await productModel.findOneById(txn.productId.toString())
+      if (product) {
+        const unitsPerCase = toUnitsPerCase(product.unitsPerCase)
+        const qtyBase = updates.quantityBase || Number(txn.quantityBase) || Number(txn.quantity) || 0
+        const prevQty = Math.max(0, Number(product.costPrice) || 0)
+        const newCostPerBottle = txn.unitType === UNIT_TYPE.CASE
+          ? newUnitCost / Math.max(1, unitsPerCase)
+          : newUnitCost
+        const totalQty = Number(product.totalQuantity) || 0
+        const nextCost = totalQty > 0
+          ? (totalQty * prevQty + qtyBase * newCostPerBottle) / totalQty
+          : newCostPerBottle
+
+        await productModel.update(txn.productId.toString(), {
+          costPrice: Math.round(nextCost * 100) / 100
+        })
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      const formatted = formatDocument(txn)
+      return { ...formatted, warehouseName: '', productName: '' }
+    }
+
+    await inventoryTransactionModel.updateOne(transactionId, updates, session)
+
+    const updated = await inventoryTransactionModel.findOneById(transactionId)
+    const formatted = formatDocument(updated)
+
+    const warehouse = await warehouseModel.findOneById(updated.warehouseId.toString())
+    const product = await productModel.findOneById(updated.productId.toString())
+
+    return {
+      ...formatted,
+      warehouseName: warehouse?.name || '',
+      productName: product?.name || ''
+    }
+  })
+}
+
 const getStocks = async (query) => {
   const findQuery = {}
 
@@ -878,5 +1009,6 @@ export const inventoryService = {
   getStocks,
   getStockValuation,
   getFlowReport,
-  getTransactions
+  getTransactions,
+  updateTransaction
 }

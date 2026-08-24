@@ -76,3 +76,13 @@ export async function exportStock(data: InventoryMovementInput) {
     body: data,
   });
 }
+
+export async function updateInventoryTransaction(
+  id: string,
+  data: { note?: string; supplierId?: string | null; quantity?: number; unitCost?: number }
+) {
+  return apiRequest<InventoryTransaction>(`/inventory/transactions/${id}`, {
+    method: "PUT",
+    body: data,
+  });
+}

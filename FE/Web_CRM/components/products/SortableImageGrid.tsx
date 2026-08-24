@@ -42,11 +42,13 @@ function SortableImageItem({
   index,
   label,
   onRemove,
+  isMobile,
 }: {
   image: string;
   index: number;
   label: string;
   onRemove: () => void;
+  isMobile: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: image });
@@ -82,7 +84,7 @@ function SortableImageItem({
         <div
           {...attributes}
           {...listeners}
-          className="flex h-7 w-7 cursor-grab items-center justify-center rounded-full bg-white/80 text-[var(--color-text-inverse)] opacity-0 shadow-sm transition-opacity hover:bg-white group-hover:opacity-100 active:cursor-grabbing">
+          className="hidden h-7 w-7 cursor-grab items-center justify-center rounded-full bg-white/80 text-[var(--color-text-inverse)] shadow-sm transition-opacity hover:bg-white active:cursor-grabbing lg:flex">
           <GripVertical className="h-4 w-4" />
         </div>
       </div>
@@ -90,7 +92,7 @@ function SortableImageItem({
         type="button"
         variant="danger"
         size="sm"
-        className="absolute right-1 top-1 z-[1] h-7 w-7 rounded-full p-0 opacity-0 shadow transition-opacity group-hover:opacity-100"
+        className="absolute right-1 top-1 z-[1] hidden h-7 w-7 rounded-full p-0 shadow transition-opacity active:scale-95 lg:flex"
         onClick={(e) => {
           e.stopPropagation();
           onRemove();
@@ -98,6 +100,14 @@ function SortableImageItem({
         title="Xóa ảnh">
         <X className="h-3.5 w-3.5" />
       </Button>
+      {isMobile && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute inset-0 cursor-grab active:cursor-grabbing"
+          title="Giữ và kéo để sắp xếp"
+        />
+      )}
     </div>
   );
 }
@@ -184,7 +194,7 @@ export function SortableImageGrid({
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: 180, tolerance: 8 },
+      activationConstraint: { delay: 100, tolerance: 12 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -221,6 +231,7 @@ export function SortableImageGrid({
                 image={image}
                 index={index}
                 label={label}
+                isMobile={isMobile}
                 onRemove={() => {
                   const next = images.filter((_, i) => i !== index);
                   onChange(next);

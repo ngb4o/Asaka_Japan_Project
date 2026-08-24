@@ -91,10 +91,37 @@ const findMany = async (query = {}, options = {}) => {
   return { items, total, limit, skip }
 }
 
+const findOneById = async (id) => {
+  return await GET_DB()
+    .collection(INVENTORY_TRANSACTION_COLLECTION_NAME)
+    .findOne({ _id: new ObjectId(id) })
+}
+
+const updateOne = async (id, data, session = null) => {
+  const validData = {}
+  if (data.note !== undefined) validData.note = String(data.note).trim().slice(0, 500)
+  if (data.supplierId !== undefined) {
+    validData.supplierId = data.supplierId ? new ObjectId(data.supplierId) : null
+  }
+  if (data.quantity !== undefined) validData.quantity = Number(data.quantity)
+  if (data.quantityBase !== undefined) validData.quantityBase = Number(data.quantityBase)
+  if (data.unitCost !== undefined) validData.unitCost = Number(data.unitCost)
+  if (data.totalCost !== undefined) validData.totalCost = Number(data.totalCost)
+  if (data.balanceAfter !== undefined) validData.balanceAfter = Number(data.balanceAfter)
+
+  const options = session ? { session, limit: 1 } : { limit: 1 }
+
+  return await GET_DB()
+    .collection(INVENTORY_TRANSACTION_COLLECTION_NAME)
+    .updateOne({ _id: new ObjectId(id) }, { $set: validData }, options)
+}
+
 export const inventoryTransactionModel = {
   INVENTORY_TRANSACTION_COLLECTION_NAME,
   TRANSACTION_TYPE,
   UNIT_TYPE,
   createNew,
-  findMany
+  findMany,
+  findOneById,
+  updateOne
 }

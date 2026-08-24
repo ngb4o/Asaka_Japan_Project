@@ -79,11 +79,25 @@ const getFlowReport = async (req, res, next) => {
   }
 }
 
+const updateTransaction = async (req, res, next) => {
+  try {
+    const result = await inventoryService.updateTransaction(req.params.id, req.body, req.userId)
+
+    res.status(StatusCodes.OK).json({
+      message: 'Cập nhật phiếu kho thành công!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const inventoryController = {
   importStock,
   exportStock,
   getStocks,
   getStockValuation,
   getFlowReport,
-  getTransactions
+  getTransactions,
+  updateTransaction
 }

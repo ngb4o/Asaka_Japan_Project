@@ -70,6 +70,7 @@ import {
   getInventoryTransactions,
   getWarehouseStocks,
   importStock,
+  updateInventoryTransaction,
 } from "@/lib/api/inventory";
 import { getProduct, getProducts } from "@/lib/api/products";
 import {
@@ -207,6 +208,12 @@ export default function InventoryPage() {
   const [warehouseSubmitting, setWarehouseSubmitting] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
   const [printId, setPrintId] = useState<string | null>(null);
+  const [editTxn, setEditTxn] = useState<InventoryTransaction | null>(null);
+  const [editNote, setEditNote] = useState("");
+  const [editSupplierId, setEditSupplierId] = useState("");
+  const [editQuantity, setEditQuantity] = useState<number | "">("");
+  const [editUnitCost, setEditUnitCost] = useState<number | "">("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
   const [valuation, setValuation] = useState<InventoryStockValuation | null>(
     null
   );
@@ -534,6 +541,60 @@ export default function InventoryPage() {
       );
     } finally {
       setPrintId(null);
+    }
+  }
+
+  function openEditTransaction(item: InventoryTransaction) {
+    if (!canMoveStock) {
+      toast.warning("Chỉ quản trị hoặc kho được sửa phiếu.");
+      return;
+    }
+    setEditTxn(item);
+    setEditNote(item.note || "");
+    setEditSupplierId((item as any).supplierId || "");
+    setEditQuantity(item.quantity);
+    setEditUnitCost(item.unitCost ?? "");
+  }
+
+  function closeEditTransaction() {
+    setEditTxn(null);
+    setEditNote("");
+    setEditSupplierId("");
+    setEditQuantity("");
+    setEditUnitCost("");
+    setEditSubmitting(false);
+  }
+
+  async function handleEditTransactionSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!editTxn) return;
+
+    const body: { note: string; supplierId: string | null; quantity?: number; unitCost?: number } = {
+      note: editNote,
+      supplierId: editSupplierId || null,
+    };
+
+    if (editTxn.type === "import") {
+      if (editQuantity !== "" && editQuantity !== editTxn.quantity) {
+        body.quantity = Number(editQuantity);
+      }
+      if (editUnitCost !== "" && editUnitCost !== editTxn.unitCost) {
+        body.unitCost = Number(editUnitCost);
+      }
+    }
+
+    setEditSubmitting(true);
+    try {
+      await updateInventoryTransaction(editTxn.id, body);
+      toast.success("Đã cập nhật phiếu kho");
+      closeEditTransaction();
+      await Promise.all([reloadTransactions(), reloadStocks(), loadValuation()]);
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Cập nhật thất bại"
+      );
+    } finally {
+      setEditSubmitting(false);
     }
   }
 
@@ -1151,15 +1212,25 @@ export default function InventoryPage() {
                         </>
                       }
                       actions={
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-9 min-w-9"
-                          title="In phiếu"
-                          loading={printId === item.id}
-                          onClick={() => void handlePrintTransaction(item)}>
-                          <Printer className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-9 min-w-9"
+                            title="Sửa phiếu"
+                            onClick={() => openEditTransaction(item)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-9 min-w-9"
+                            title="In phiếu"
+                            loading={printId === item.id}
+                            onClick={() => void handlePrintTransaction(item)}>
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                        </div>
                       }>
                       {item.note ? (
                         <p className="truncate text-xs text-[var(--color-text-inverse)]">
@@ -1185,7 +1256,7 @@ export default function InventoryPage() {
                         <th className="font-medium">Thành tiền</th>
                       ) : null}
                       <th className="font-medium">Ghi chú</th>
-                      <th className="text-right font-medium">In</th>
+                      <th className="text-right font-medium">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1238,7 +1309,14 @@ export default function InventoryPage() {
                           {item.note || "—"}
                         </td>
                         <td>
-                          <div className="flex justify-end">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              title="Sửa phiếu"
+                              onClick={() => openEditTransaction(item)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                             <Button
                               size="sm"
                               variant="outline"
@@ -1610,6 +1688,133 @@ export default function InventoryPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit transaction dialog ── */}
+      <Dialog open={editTxn !== null} onOpenChange={(open) => !open && closeEditTransaction()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Sửa phiếu {editTxn?.type === "import" ? "nhập kho" : "xuất kho"}
+            </DialogTitle>
+          </DialogHeader>
+          {editTxn && (
+            <form onSubmit={handleEditTransactionSubmit} className="space-y-4">
+              {/* Warehouse (readonly) */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-warehouse">Kho</Label>
+                <Input
+                  id="edit-warehouse"
+                  value={editTxn.warehouseName || "—"}
+                  disabled
+                />
+              </div>
+
+              {/* Product (readonly) */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-product">Sản phẩm</Label>
+                <Input
+                  id="edit-product"
+                  value={editTxn.productName || "—"}
+                  disabled
+                />
+              </div>
+
+              {/* Unit type (readonly) */}
+              <div className="space-y-2">
+                <Label>Đơn vị</Label>
+                <Input
+                  value={
+                    editTxn.unitType === "thung"
+                      ? `Thùng (1 thùng = ${editTxn.unitsPerCase || 1} sản phẩm)`
+                      : "Sản phẩm"
+                  }
+                  disabled
+                />
+              </div>
+
+              {/* Quantity & Unit cost */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-quantity">Số lượng *</Label>
+                  <Input
+                    id="edit-quantity"
+                    type="number"
+                    min={1}
+                    value={editQuantity}
+                    onChange={(e) =>
+                      setEditQuantity(e.target.value === "" ? "" : Number(e.target.value))
+                    }
+                  />
+                </div>
+                {editTxn.type === "import" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-unitcost">
+                      Giá nhập / {editTxn.unitType === "thung" ? "thùng" : "sp"} *
+                    </Label>
+                    <VndInput
+                      id="edit-unitcost"
+                      value={editUnitCost ?? ""}
+                      onValueChange={(v) => setEditUnitCost(v ?? "")}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Warning when changing quantity or cost */}
+              {(editQuantity !== "" && editQuantity !== editTxn.quantity) ||
+              (editTxn.type === "import" &&
+                editUnitCost !== "" &&
+                editUnitCost !== editTxn.unitCost) ? (
+                <p className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  ⚠️ Sửa số lượng hoặc giá sẽ điều chỉnh tồn kho và giá vốn.
+                </p>
+              ) : null}
+
+              {/* Supplier (import only) */}
+              {editTxn.type === "import" && (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-supplier">Nhà cung cấp</Label>
+                  <SearchableSelect
+                    id="edit-supplier"
+                    options={[
+                      { value: "", label: "Không gắn NCC" },
+                      ...suppliers.map((s) => ({
+                        value: s.id,
+                        label: s.name,
+                        description: s.phone,
+                      })),
+                    ]}
+                    value={editSupplierId}
+                    onChange={setEditSupplierId}
+                    placeholder="Không gắn NCC"
+                    searchPlaceholder="Tìm NCC..."
+                    clearable
+                  />
+                </div>
+              )}
+
+              {/* Note */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-note">Ghi chú</Label>
+                <Textarea
+                  id="edit-note"
+                  value={editNote}
+                  onChange={(e) => setEditNote(e.target.value)}
+                />
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={closeEditTransaction}>
+                  Hủy
+                </Button>
+                <Button type="submit" loading={editSubmitting}>
+                  Lưu
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </div>

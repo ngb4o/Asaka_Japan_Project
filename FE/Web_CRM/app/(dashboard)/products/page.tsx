@@ -207,14 +207,17 @@ export default function ProductsPage() {
       const payload = buildProductPayload(form);
 
       if (editing) {
-        await updateProduct(editing.id, payload);
+        const updated = await updateProduct(editing.id, payload);
+        setItems((prev) =>
+          prev.map((item) => (item.id === editing.id ? { ...item, ...updated } : item))
+        );
         toast.success("Đã cập nhật sản phẩm");
       } else {
         await createProduct(payload);
         toast.success("Đã thêm sản phẩm");
+        void reload();
       }
       setDialogOpen(false);
-      await reload();
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : "Lưu thất bại");
     } finally {
