@@ -19,6 +19,7 @@ export type ProductFormValues = {
   unitsPerCase?: number | "";
   costPrice?: number | "";
   activeIngredient?: string;
+  application?: string;
   packaging?: string;
   image?: string;
   images?: string[];
@@ -54,6 +55,9 @@ export function buildProductPayload(form: ProductFormValues): ProductInput {
   }
   if (form.activeIngredient?.trim()) {
     payload.activeIngredient = form.activeIngredient.trim();
+  }
+  if (form.application !== undefined) {
+    payload.application = form.application.trim().slice(0, 2000);
   }
   if (form.shortDescription !== undefined) {
     payload.shortDescription = form.shortDescription.trim().slice(0, 300);
@@ -217,7 +221,7 @@ export type InventoryMovementFormValues = {
   warehouseId: string;
   productId: string;
   quantity: number | "";
-  unitType: "sanpham" | "thung";
+  unitType: "chai" | "thung";
   note?: string;
   unitCost?: number | "";
   supplierId?: string;
@@ -232,7 +236,7 @@ export function buildInventoryMovementPayload(
     warehouseId: form.warehouseId,
     productId: form.productId,
     quantity: Number(form.quantity) || 0,
-    unitType: form.unitType || "sanpham",
+    unitType: form.unitType || "chai",
   };
 
   if (form.note?.trim()) payload.note = form.note.trim();

@@ -81,6 +81,7 @@ const OPS_NAV = [
   "/news",
   "/trips",
   "/payroll",
+  "/quotes",
   "/settings",
 ] as const;
 
@@ -97,6 +98,7 @@ const NAV_BY_ROLE: Record<UserRole, string[]> = {
     "/products",
     "/inventory",
     "/news",
+    "/quotes",
     "/employees",
     "/trips",
     "/payroll",
@@ -125,6 +127,7 @@ const NAV_BY_ROLE: Record<UserRole, string[]> = {
     "/orders",
     "/receivables",
     "/suppliers",
+    "/quotes",
     "/employees",
     "/trips",
     "/payroll",
@@ -135,7 +138,6 @@ const NAV_BY_ROLE: Record<UserRole, string[]> = {
 export function canAccessPath(roleOrRoles: RoleInput, href: string) {
   const roles = resolveRoles(roleOrRoles);
   if (!roles.length) return false;
-  if (href === "/quotes" || href.startsWith("/quotes/")) return false;
   if (roles.includes("admin")) return true;
   const allowed = new Set<string>();
   for (const role of roles) {
@@ -266,6 +268,9 @@ export function canManageTripsFinance(roleOrRoles?: RoleInput) {
 }
 
 /** Sales/warehouse may edit only trips they created or belong to as member. */
+export function canManageQuotes(roleOrRoles?: RoleInput) {
+  return hasAnyRole(roleOrRoles, "sales");
+}
 export function canOperateTrip(
   trip: {
     createdBy?: string | null;

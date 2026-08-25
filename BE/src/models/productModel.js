@@ -24,6 +24,7 @@ const PRODUCT_COLLECTION_SCHEMA = Joi.object({
   price: Joi.number().required().min(0),
   costPrice: Joi.number().min(0).default(0),
   activeIngredient: optionalText(200).default(''),
+  application: optionalText(2000).default(''),
   packaging: optionalText(100).default(''),
   image: optionalText(500).default(''),
   images: Joi.array().items(optionalText(500)).max(5).default([]),

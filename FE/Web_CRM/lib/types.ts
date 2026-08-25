@@ -62,6 +62,7 @@ export type Product = {
   price: number;
   costPrice: number;
   activeIngredient: string;
+  application?: string;
   packaging: string;
   image: string;
   images: string[];
@@ -101,6 +102,7 @@ export type ProductInput = {
   price: number;
   costPrice?: number;
   activeIngredient?: string;
+  application?: string;
   packaging?: string;
   image?: string;
   images?: string[];
@@ -229,7 +231,7 @@ export type InventoryFlowReport = {
   slowMoving: InventoryFlowCapitalRow[];
 };
 
-export type InventoryUnitType = "sanpham" | "thung";
+export type InventoryUnitType = "chai" | "thung";
 
 export type InventoryTransaction = {
   id: string;

@@ -118,7 +118,7 @@ const EMPTY_MOVEMENT_FORM: InventoryMovementFormValues = {
   warehouseId: "",
   productId: "",
   quantity: "",
-  unitType: "sanpham",
+  unitType: "chai",
   unitCost: "",
   supplierId: "",
   dueDate: "",
@@ -128,7 +128,7 @@ const EMPTY_MOVEMENT_FORM: InventoryMovementFormValues = {
 
 function suggestUnitCost(
   product: Product | undefined,
-  unitType: "sanpham" | "thung"
+  unitType: "chai" | "thung"
 ): number | "" {
   if (!product) return "";
   const cost = Number(product.costPrice) || 0;
@@ -501,8 +501,8 @@ export default function InventoryPage() {
       warehouseId: activeWarehouses.length === 1 ? activeWarehouses[0].id : "",
       productId: firstProduct?.id || "",
       quantity: "",
-      unitType: "sanpham",
-      unitCost: type === "import" ? suggestUnitCost(firstProduct, "sanpham") : "",
+      unitType: "chai",
+      unitCost: type === "import" ? suggestUnitCost(firstProduct, "chai") : "",
       supplierId: "",
       dueDate: "",
       paymentStatus: "unpaid",
@@ -1489,7 +1489,7 @@ export default function InventoryPage() {
                   const nextCanUseCase = toUnitsPerCase(product?.unitsPerCase) > 1;
                   const nextUnitType =
                     movementForm.unitType === "thung" && !nextCanUseCase
-                      ? "sanpham"
+                      ? "chai"
                       : movementForm.unitType;
                   setMovementForm({
                     ...movementForm,
@@ -1511,7 +1511,7 @@ export default function InventoryPage() {
                 <SearchableSelect
                   id="unitType"
                   options={[
-                    { value: "sanpham", label: "Sản phẩm" },
+                    { value: "chai", label: "Sản phẩm" },
                     ...(canUseCase
                       ? [
                           {
@@ -1524,7 +1524,7 @@ export default function InventoryPage() {
                   ]}
                   value={movementForm.unitType}
                   onChange={(next) => {
-                    const unitType = next as "sanpham" | "thung";
+                    const unitType = next as "chai" | "thung";
                     setMovementForm({
                       ...movementForm,
                       unitType,

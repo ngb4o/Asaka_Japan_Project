@@ -61,6 +61,7 @@ const pickProductPayload = (reqBody, userId) => {
     unitsPerCase: reqBody.unitsPerCase ?? 1,
     costPrice: reqBody.costPrice ?? 0,
     activeIngredient: reqBody.activeIngredient ?? '',
+    application: reqBody.application ?? '',
     packaging: reqBody.packaging ?? '',
     image,
     images,
@@ -192,6 +193,7 @@ const update = async (productId, updateData) => {
     'price',
     'costPrice',
     'activeIngredient',
+    'application',
     'packaging',
     'displayOrder',
     'status'

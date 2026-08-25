@@ -26,6 +26,12 @@ type SearchableSelectProps = {
   searchable?: boolean;
   clearable?: boolean;
   id?: string;
+  /**
+   * Extra values to mark as "selected" in the list (e.g. multi-select chips
+   * where the trigger holds a single value but more items should be checked).
+   * Items here are not selectable themselves — they're shown with a tick.
+   */
+  selectedValues?: string[];
   /** Custom trigger (e.g. icon button). Opens the same picker. */
   trigger?: React.ReactElement<{
     onClick?: (event: React.MouseEvent) => void;
@@ -50,6 +56,7 @@ export function SearchableSelect({
   id,
   trigger,
   onSelect,
+  selectedValues,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -124,12 +131,14 @@ export function SearchableSelect({
 
   function handleOptionPointerUp(
     event: React.PointerEvent,
-    nextValue: string
+    nextValue: string,
+    isSelected: boolean
   ) {
     if (event.button !== 0) return;
     const start = pointerStartRef.current;
     pointerStartRef.current = null;
     if (!start || start.moved) return;
+    if (!nextValue || isSelected) return;
     handleSelect(nextValue);
   }
 
@@ -217,34 +226,38 @@ export function SearchableSelect({
           </p>
         ) : (
           filtered.map((option) => {
-            const isSelected = option.value === value;
+            const isSelected =
+              option.value === value ||
+              (selectedValues?.includes(option.value) ?? false);
 
             return (
               <div
                 key={option.value || "__empty"}
                 role="option"
                 aria-selected={isSelected}
-                tabIndex={0}
+                tabIndex={option.value === "" ? -1 : 0}
+                aria-disabled={option.value === "" || isSelected && option.value !== value}
                 className={cn(
                   "flex w-full cursor-pointer items-start gap-2 text-left transition-colors select-none",
                   isMobile
                     ? "rounded-none px-4 py-3.5 text-base"
                     : "rounded-lg px-3 py-2.5 text-sm",
+                  option.value === "" && "cursor-default",
                   isSelected
-                    ? "bg-[var(--color-text-secondary)]/10 text-[var(--color-text-secondary)]"
+                    ? "text-[var(--color-text-secondary)]"
                     : "text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]"
                 )}
                 onPointerDown={handleOptionPointerDown}
                 onPointerMove={handleOptionPointerMove}
                 onPointerUp={(event) =>
-                  handleOptionPointerUp(event, option.value)
+                  handleOptionPointerUp(event, option.value, isSelected)
                 }
                 onPointerCancel={handleOptionPointerCancel}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    handleSelect(option.value);
-                  }
+                  if (event.key !== "Enter" && event.key !== " ") return;
+                  event.preventDefault();
+                  if (!option.value || isSelected) return;
+                  handleSelect(option.value);
                 }}>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{option.label}</span>

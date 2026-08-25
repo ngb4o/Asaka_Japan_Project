@@ -635,3 +635,27 @@ html[data-density="lg"] {
 .crm-workspace-loader {
   animation: workspace-load 1.1s ease-in-out infinite;
 }
+
+/* Quote print styles: hide chrome, only show the .print-area block. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    margin: 0;
+    padding: 12mm;
+    border: 0;
+    box-shadow: none;
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

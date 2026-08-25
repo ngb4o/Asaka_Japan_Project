@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   BriefcaseBusiness,
   ChevronDown,
+  FileText,
   Handshake,
   KeyRound,
   LayoutDashboard,
@@ -88,6 +89,7 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Công nợ",
         icon: AlertTriangle,
       },
+      { href: "/quotes", label: "Báo giá", icon: FileText },
     ],
   },
   {

@@ -178,7 +178,8 @@ export default function ProductsPage() {
       unitsPerCase: item.unitsPerCase || 1,
       price: item.price,
       costPrice: item.costPrice,
-      activeIngredient: item.activeIngredient,
+      activeIngredient: item.activeIngredient || "",
+      application: item.application || "",
       packaging: item.packaging,
       image: item.image,
       images:
@@ -839,6 +840,48 @@ export default function ProductsPage() {
                 className="min-h-[88px]"
                 placeholder="1–2 câu ngắn hiển thị dưới tên sản phẩm trên trang chủ..."
               />
+            </div>
+            <div className="col-span-2 grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="activeIngredient">Hoạt chất</Label>
+                  <span className="text-xs text-[var(--color-text-inverse)]">
+                    {(form.activeIngredient || "").length}/200
+                  </span>
+                </div>
+                <Textarea
+                  id="activeIngredient"
+                  value={form.activeIngredient || ""}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      activeIngredient: e.target.value.slice(0, 200),
+                    }))
+                  }
+                  className="min-h-[96px] resize-y"
+                  placeholder="VD: Imidacloprid 20%, Abamectin 3.6%..."
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="application">Công dụng</Label>
+                  <span className="text-xs text-[var(--color-text-inverse)]">
+                    {(form.application || "").length}/2000
+                  </span>
+                </div>
+                <Textarea
+                  id="application"
+                  value={form.application || ""}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      application: e.target.value.slice(0, 2000),
+                    }))
+                  }
+                  className="min-h-[96px] resize-y"
+                  placeholder="VD: Đặc trị rầy nâu, rầy xanh, bọ trĩ trên lúa; pha 10–15 ml/bình 16 lít..."
+                />
+              </div>
             </div>
             <div className="col-span-2">
               <ProductDescriptionField
