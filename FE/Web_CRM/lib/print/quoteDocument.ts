@@ -53,7 +53,7 @@ function buildPrintHtml(input: PrintQuoteInput) {
         <td>${line.activeIngredient ? `<div class="multiline">${escapeHtml(line.activeIngredient)}</div>` : "—"}</td>
         <td>${line.application ? `<div class="multiline">${escapeHtml(line.application)}</div>` : "—"}</td>
         <td class="num">${line.unitsPerCase || "—"}</td>
-        <td class="num strong">${formatCurrency(unitPrice)}</td>
+        <td class="num strong">${unitPrice.toLocaleString("vi-VN")}</td>
       </tr>`;
     })
     .join("");
@@ -104,15 +104,15 @@ function buildPrintHtml(input: PrintQuoteInput) {
 }
 
     .logo {
-      width: 80px;
-      height: 80px;
+      width: 100px;
+      height: 100px;
       object-fit: contain;
       flex-shrink: 0;
     }
 
     .logo-fallback {
-      width: 80px;
-      height: 80px;
+      width: 100px;
+      height: 100px;
       flex-shrink: 0;
       border: 1px solid #000;
       display: flex;
@@ -128,10 +128,12 @@ function buildPrintHtml(input: PrintQuoteInput) {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      color: #c00;
     }
 
     .brand-tagline {
       font-size: 14px;
+      font-weight: 700;
       font-style: italic;
       margin-top: 4px;
     }
@@ -139,20 +141,22 @@ function buildPrintHtml(input: PrintQuoteInput) {
     .brand-contact {
       margin-top: 6px;
       font-size: 13px;
+      font-weight: 700;
       line-height: 1.6;
     }
 
     .doc-title {
-  font-size: 24px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  text-align: center;
-  margin: 28px 0 12px;
-}
+      font-size: 24px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-align: center;
+      margin: 28px 0 12px;
+      color: #0055b3;
+    }
 
     table {
-      width: 100%;
+      width: 99%;
       border-collapse: collapse;
       margin-top: 8px;
       font-size: 12px;
@@ -160,7 +164,7 @@ function buildPrintHtml(input: PrintQuoteInput) {
 
     thead th {
       border: 1px solid #000;
-      background: #fff;
+      background: #f0f4f8;
       color: #000;
       font-size: 11px;
       font-weight: 700;
@@ -212,7 +216,7 @@ function buildPrintHtml(input: PrintQuoteInput) {
           <div class="brand-name">${escapeHtml(company.name)}</div>
           <div class="brand-tagline">${escapeHtml(company.tagline)}</div>
           <div class="brand-contact">
-            ${escapeHtml(company.address)}<br />
+            ĐC: ${escapeHtml(company.address)}<br />
             MST: ${escapeHtml(company.taxCode)} — ĐT: ${escapeHtml(company.phone)}
           </div>
         </div>
