@@ -97,7 +97,7 @@ export function QuoteLineTable({
                 <th className="font-medium">Hoạt chất</th>
                 <th className="font-medium">Công dụng</th>
                 <th className="text-right font-medium">Giá vốn</th>
-                <th className="text-right font-medium">% LN</th>
+                <th className="text-right font-medium">% Lợi nhuận</th>
                 <th className="text-right font-medium">Đơn giá</th>
                 <th className="text-right font-medium">SL/thùng</th>
                 <th className="text-right font-medium">Thao tác</th>
@@ -211,10 +211,16 @@ export function QuoteLineTable({
               key={`${line.productId}-${index}`}
               className="rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3">
               <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="whitespace-pre-line break-words text-sm font-semibold">
-                    {index + 1}. {line.name}
-                  </p>
+                <div className="min-w-0 flex-1">
+                  <Textarea
+                    value={line.name || ""}
+                    onChange={(event) =>
+                      updateLine(index, { name: event.target.value })
+                    }
+                    placeholder="Tên sản phẩm..."
+                    className="min-h-[72px] w-full resize-y text-sm font-semibold"
+                    disabled={disabled}
+                  />
                   {line.sku ? (
                     <p className="mt-1 whitespace-pre-line break-words text-xs text-[var(--color-text-inverse)]">
                       SKU: {line.sku}
@@ -249,7 +255,7 @@ export function QuoteLineTable({
 
               <div className="mt-2 space-y-1">
                 <label className="text-xs text-[var(--color-text-inverse)]">
-                  % LN
+                  % Lợi nhuận
                 </label>
                 <Input
                   type="number"

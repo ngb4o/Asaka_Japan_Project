@@ -283,7 +283,7 @@ export function QuoteFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="quote-margin">% lợi nhuận mặc định *</Label>
+              <Label htmlFor="quote-margin">% Lợi nhuận mặc định *</Label>
               <Input
                 id="quote-margin"
                 type="number"
