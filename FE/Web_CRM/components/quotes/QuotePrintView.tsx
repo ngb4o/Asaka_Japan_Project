@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactElement } from "react";
 import { Printer } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
@@ -90,40 +91,67 @@ export function QuotePrintView({
               </tr>
             </thead>
             <tbody>
-              {quote.lines.map((line, index) => {
-                const unitPrice = lineUnitPrice(line.costPrice, line.marginPercent);
-                return (
-                  <tr key={`${line.productId}-${index}`}>
-                    <td className="border border-slate-900 px-2 py-2 text-center align-middle">
-                      {index + 1}
-                    </td>
-                    <td className="border border-slate-900 px-2 py-2 text-center align-middle">
-                      <p className="font-bold">{line.name}</p>
-                      {line.sku ? (
-                        <p className="text-[11px] italic text-slate-500">
-                          SKU: {line.sku}
-                        </p>
-                      ) : null}
-                    </td>
-                    <td className="border border-slate-900 px-2 py-2 text-center align-middle whitespace-pre-line">
-                      {line.activeIngredient || (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="border border-slate-900 px-2 py-2 text-center align-middle whitespace-pre-line">
-                      {line.application || (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="border border-slate-900 px-2 py-2 text-center align-middle tabular-nums">
-                      {line.unitsPerCase || "—"}
-                    </td>
-                    <td className="border border-slate-900 px-2 py-2 text-center align-middle font-bold tabular-nums">
-                      {formatCurrency(unitPrice)}
-                    </td>
-                  </tr>
-                );
-              })}
+              {(() => {
+                let lastCategory = "";
+                let stt = 0;
+                const sections: ReactElement[] = [];
+                quote.lines.forEach((line, index) => {
+                  const cat = line.categoryName || "Chưa phân loại";
+                  if (cat !== lastCategory) {
+                    sections.push(
+                      <tr
+                        key={`cat-${index}`}
+                        className="bg-blue-700 text-white"
+                      >
+                        <th
+                          colSpan={6}
+                          className="border border-blue-900 px-3 py-2 text-left text-[13px] font-bold uppercase tracking-wider"
+                        >
+                          {cat}
+                        </th>
+                      </tr>
+                    );
+                    lastCategory = cat;
+                  }
+                  stt += 1;
+                  const unitPrice = lineUnitPrice(
+                    line.costPrice,
+                    line.marginPercent
+                  );
+                  sections.push(
+                    <tr key={`${line.productId}-${index}`}>
+                      <td className="border border-slate-900 px-2 py-2 text-center align-middle">
+                        {stt}
+                      </td>
+                      <td className="border border-slate-900 px-2 py-2 text-center align-middle">
+                        <p className="font-bold">{line.name}</p>
+                        {line.sku ? (
+                          <p className="text-[11px] italic text-slate-500">
+                            SKU: {line.sku}
+                          </p>
+                        ) : null}
+                      </td>
+                      <td className="border border-slate-900 px-2 py-2 text-center align-middle whitespace-pre-line">
+                        {line.activeIngredient || (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="border border-slate-900 px-2 py-2 text-center align-middle whitespace-pre-line">
+                        {line.application || (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="border border-slate-900 px-2 py-2 text-center align-middle tabular-nums">
+                        {line.unitsPerCase || "—"}
+                      </td>
+                      <td className="border border-slate-900 px-2 py-2 text-center align-middle font-bold tabular-nums">
+                        {formatCurrency(unitPrice)}
+                      </td>
+                    </tr>
+                  );
+                });
+                return sections;
+              })()}
             </tbody>
           </table>
         </section>

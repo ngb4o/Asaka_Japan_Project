@@ -4,6 +4,8 @@ import { StatusCodes } from 'http-status-codes'
 import { slugify, formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { buildSearchFilter } from '~/utils/search.js'
+import { ObjectId } from 'mongodb'
+import { GET_DB } from '~/config/mongodb'
 
 const createNew = async (reqBody, userId) => {
   const slug = slugify(reqBody.slug || reqBody.name)
@@ -19,6 +21,7 @@ const createNew = async (reqBody, userId) => {
     description: reqBody.description || '',
     pestTypes: reqBody.pestTypes || [],
     status: reqBody.status || productCategoryModel.PRODUCT_CATEGORY_STATUS.ACTIVE,
+    order: typeof reqBody.order === 'number' ? reqBody.order : 9999,
     createdBy: userId
   })
 
@@ -40,7 +43,8 @@ const getList = async (query) => {
 
   const options = {
     limit: pagination.limit,
-    skip: pagination.skip
+    skip: pagination.skip,
+    sort: { order: 1, name: 1 }
   }
 
   const result = await productCategoryModel.findMany(findQuery, options)
@@ -99,6 +103,10 @@ const update = async (categoryId, updateData) => {
     dataToUpdate.pestTypes = updateData.pestTypes
   }
 
+  if (updateData.order !== undefined) {
+    dataToUpdate.order = updateData.order
+  }
+
   await productCategoryModel.update(categoryId, dataToUpdate)
 
   const updatedCategory = await productCategoryModel.findOneById(categoryId)
@@ -125,10 +133,49 @@ const deleteOne = async (categoryId) => {
   return { message: 'Đã xóa loại sản phẩm thành công!' }
 }
 
+const reorder = async (orderedIds) => {
+  if (!Array.isArray(orderedIds) || !orderedIds.length) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Danh sách id không hợp lệ!')
+  }
+
+  const uniqueIds = [...new Set(orderedIds)]
+  if (uniqueIds.length !== orderedIds.length) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Danh sách id bị trùng lặp!')
+  }
+
+  const collection = GET_DB().collection(
+    productCategoryModel.PRODUCT_CATEGORY_COLLECTION_NAME
+  )
+
+  const objectIds = uniqueIds.map((id) => new ObjectId(id))
+  const existing = await collection
+    .find({ _id: { $in: objectIds }, _destroy: false }, { projection: { _id: 1 } })
+    .toArray()
+
+  if (existing.length !== uniqueIds.length) {
+    const found = new Set(existing.map((d) => d._id.toString()))
+    const missing = uniqueIds.find((id) => !found.has(id))
+    throw new ApiError(StatusCodes.NOT_FOUND, `Không tìm thấy loại sản phẩm: ${missing}`)
+  }
+
+  const now = new Date()
+  const bulkOps = orderedIds.map((id, index) => ({
+    updateOne: {
+      filter: { _id: new ObjectId(id), _destroy: false },
+      update: { $set: { order: index, updatedAt: now } }
+    }
+  }))
+
+  await collection.bulkWrite(bulkOps)
+
+  return { message: 'Đã cập nhật thứ tự loại sản phẩm.', updated: orderedIds.length }
+}
+
 export const productCategoryService = {
   createNew,
   getList,
   getDetails,
   update,
-  deleteOne
+  deleteOne,
+  reorder
 }

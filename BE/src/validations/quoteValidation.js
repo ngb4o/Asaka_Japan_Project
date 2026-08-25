@@ -25,7 +25,9 @@ const createSchema = Joi.object({
     .items(Joi.string().pattern(OBJECT_ID_RULE))
     .optional()
     .default([]),
-  lines: Joi.array().items(quoteLineSchema).optional().default([])
+  lines: Joi.array().items(quoteLineSchema).optional().default([]),
+  validFrom: Joi.date().iso().allow(null).optional(),
+  validUntil: Joi.date().iso().allow(null).optional()
 })
 
 const updateSchema = Joi.object({
@@ -35,7 +37,9 @@ const updateSchema = Joi.object({
   dealerIds: Joi.array()
     .items(Joi.string().pattern(OBJECT_ID_RULE))
     .optional(),
-  lines: Joi.array().items(quoteLineSchema).optional()
+  lines: Joi.array().items(quoteLineSchema).optional(),
+  validFrom: Joi.date().iso().allow(null).optional(),
+  validUntil: Joi.date().iso().allow(null).optional()
 }).min(1)
 
 export const quoteValidation = {

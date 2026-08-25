@@ -13,6 +13,8 @@ const QUOTE_INCLUDE_FIELDS = {
   defaultMarginPercent: 1,
   dealerIds: 1,
   lines: 1,
+  validFrom: 1,
+  validUntil: 1,
   createdBy: 1,
   createdAt: 1,
   updatedAt: 1
@@ -24,6 +26,8 @@ const pickQuotePayload = (reqBody, userId) => ({
   defaultMarginPercent: Number(reqBody.defaultMarginPercent) || 0,
   dealerIds: Array.isArray(reqBody.dealerIds) ? reqBody.dealerIds : [],
   lines: Array.isArray(reqBody.lines) ? reqBody.lines : [],
+  validFrom: reqBody.validFrom ? new Date(reqBody.validFrom) : null,
+  validUntil: reqBody.validUntil ? new Date(reqBody.validUntil) : null,
   createdBy: userId
 })
 
@@ -116,6 +120,12 @@ const update = async (quoteId, updateData) => {
   }
   if (updateData.dealerIds !== undefined) dataToUpdate.dealerIds = updateData.dealerIds
   if (updateData.lines !== undefined) dataToUpdate.lines = updateData.lines
+  if (updateData.validFrom !== undefined) {
+    dataToUpdate.validFrom = updateData.validFrom ? new Date(updateData.validFrom) : null
+  }
+  if (updateData.validUntil !== undefined) {
+    dataToUpdate.validUntil = updateData.validUntil ? new Date(updateData.validUntil) : null
+  }
 
   await quoteModel.update(quoteId, dataToUpdate)
   return await getDetails(quoteId)

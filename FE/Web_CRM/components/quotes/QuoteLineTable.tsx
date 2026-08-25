@@ -52,23 +52,35 @@ export function QuoteLineTable({
   const keyword = (search || "").trim().toLowerCase();
   const [editingPriceRow, setEditingPriceRow] = useState<number | null>(null);
   const [editingPriceValue, setEditingPriceValue] = useState<string>("");
+
+  const sortedLines = useMemo(() => {
+    const indexed = lines.map((line, i) => ({ line, originalIndex: i }));
+    indexed.sort((a, b) => {
+      const aCat = (a.line.categoryName || "").toLowerCase();
+      const bCat = (b.line.categoryName || "").toLowerCase();
+      if (aCat !== bCat) return aCat.localeCompare(bCat, "vi");
+      return a.originalIndex - b.originalIndex;
+    });
+    return indexed;
+  }, [lines]);
+
   const filteredIndices = useMemo(() => {
-    if (!keyword) return lines.map((_, i) => i);
-    return lines
-      .map((line, i) => ({ line, i }))
+    if (!keyword) return sortedLines.map((s) => s.originalIndex);
+    return sortedLines
       .filter(({ line }) => {
         const haystack = [
           line.name || "",
           line.sku || "",
           line.activeIngredient || "",
           line.application || "",
+          line.categoryName || "",
         ]
           .join(" ")
           .toLowerCase();
         return haystack.includes(keyword);
       })
-      .map(({ i }) => i);
-  }, [lines, keyword]);
+      .map((s) => s.originalIndex);
+  }, [sortedLines, keyword]);
 
   function updateLine(index: number, patch: Partial<QuoteLine>) {
     onChange(
@@ -79,6 +91,340 @@ export function QuoteLineTable({
   function removeLine(index: number) {
     onChange(lines.filter((_, i) => i !== index));
   }
+
+  const visibleRows = useMemo(() => {
+    const rows: Array<
+      | { kind: "group"; categoryName: string; key: string }
+      | { kind: "line"; line: QuoteLine; index: number; stt: number; key: string }
+    > = [];
+    let stt = 0;
+    let lastCategory = "";
+    for (const index of filteredIndices) {
+      const line = lines[index];
+      const cat = line.categoryName || "Chưa phân loại";
+      if (cat !== lastCategory) {
+        rows.push({ kind: "group", categoryName: cat, key: `g-${cat}-${rows.length}` });
+        lastCategory = cat;
+      }
+      stt += 1;
+      rows.push({
+        kind: "line",
+        line,
+        index,
+        stt,
+        key: `${line.productId}-${index}`,
+      });
+    }
+    return rows;
+  }, [filteredIndices, lines]);
+
+  const DesktopRow = ({
+    line,
+    index,
+    stt,
+  }: {
+    line: QuoteLine;
+    index: number;
+    stt: number;
+  }) => {
+    const unitPrice = line.overrideUnitPrice ?? calculateUnitPrice(
+      line.costPrice,
+      line.marginPercent
+    );
+    return (
+      <tr key={`${line.productId}-${index}`}>
+        <td className="tabular-nums text-[var(--color-text-inverse)]">{stt}</td>
+        <td className="w-[260px] min-w-[260px] align-top">
+          <Textarea
+            value={line.name || ""}
+            onChange={(event) => updateLine(index, { name: event.target.value })}
+            placeholder="Tên sản phẩm..."
+            className="min-h-[88px] w-full resize-y text-sm font-medium"
+            disabled={disabled}
+          />
+          {line.sku ? (
+            <p className="mt-1 whitespace-pre-line break-words text-xs text-[var(--color-text-inverse)]">
+              SKU: {line.sku}
+            </p>
+          ) : null}
+        </td>
+        <td className="min-w-[220px] align-top">
+          <Textarea
+            value={line.activeIngredient || ""}
+            onChange={(event) =>
+              updateLine(index, { activeIngredient: event.target.value })
+            }
+            placeholder="Hoạt chất..."
+            className="min-h-[88px] w-full resize-y text-sm"
+            disabled={disabled}
+          />
+        </td>
+        <td className="min-w-[260px] align-top">
+          <Textarea
+            value={line.application || ""}
+            onChange={(event) => updateLine(index, { application: event.target.value })}
+            placeholder="Công dụng..."
+            className="min-h-[88px] w-full resize-y text-sm"
+            disabled={disabled}
+          />
+        </td>
+        <td className="whitespace-nowrap text-right tabular-nums">
+          {formatCurrency(line.costPrice || 0)}
+        </td>
+        <td className="whitespace-nowrap text-right tabular-nums">
+          {line.overrideUnitPrice != null ? (
+            <div className="flex items-center justify-end gap-1">
+              <span className="italic text-blue-600">
+                {calculateMarginFromPrice(line.costPrice, line.overrideUnitPrice).toFixed(1)}
+              </span>
+              <button
+                className="ml-1 cursor-pointer rounded px-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                title="Xóa đơn giá tùy chỉnh, quay về tính từ %"
+                onClick={() => updateLine(index, { overrideUnitPrice: null })}
+                disabled={disabled}
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <Input
+              type="number"
+              min={0}
+              step={0.1}
+              className="ml-auto h-8 w-20 px-2 text-right tabular-nums"
+              value={String(line.marginPercent ?? "")}
+              onChange={(event) => {
+                const next = event.target.value;
+                updateLine(index, {
+                  marginPercent: next === "" ? defaultMargin : Number(next),
+                  overrideUnitPrice: null,
+                });
+              }}
+              disabled={disabled}
+            />
+          )}
+        </td>
+        <td className="whitespace-nowrap text-right font-medium tabular-nums">
+          {editingPriceRow === index ? (
+            <Input
+              type="number"
+              min={0}
+              className="h-8 w-28 px-2 text-right tabular-nums"
+              value={editingPriceValue}
+              autoFocus
+              onChange={(e) => setEditingPriceValue(e.target.value)}
+              onBlur={() => {
+                const price = Number(editingPriceValue);
+                if (!isNaN(price) && price > 0) {
+                  updateLine(index, { overrideUnitPrice: price });
+                } else {
+                  updateLine(index, { overrideUnitPrice: null });
+                }
+                setEditingPriceRow(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const price = Number(editingPriceValue);
+                  if (!isNaN(price) && price > 0) {
+                    updateLine(index, { overrideUnitPrice: price });
+                  } else {
+                    updateLine(index, { overrideUnitPrice: null });
+                  }
+                  setEditingPriceRow(null);
+                }
+                if (e.key === "Escape") {
+                  setEditingPriceRow(null);
+                }
+              }}
+            />
+          ) : (
+            <button
+              className="cursor-pointer rounded px-1 hover:bg-[var(--color-surface-muted)]"
+              onClick={() => {
+                setEditingPriceRow(index);
+                setEditingPriceValue(String(unitPrice));
+              }}
+              disabled={disabled}
+            >
+              {formatCurrency(unitPrice)}
+            </button>
+          )}
+        </td>
+        <td className="whitespace-nowrap text-center tabular-nums text-sm text-[var(--color-text-inverse)]">
+          {line.unitsPerCase ?? "—"}
+        </td>
+        <td className="text-right">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 hover:border-red-300"
+            onClick={() => removeLine(index)}
+            disabled={disabled}
+            title="Xóa dòng"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </td>
+      </tr>
+    );
+  };
+
+  const MobileRow = ({
+    line,
+    index,
+  }: {
+    line: QuoteLine;
+    index: number;
+  }) => {
+    const unitPrice = line.overrideUnitPrice ?? calculateUnitPrice(
+      line.costPrice,
+      line.marginPercent
+    );
+    return (
+      <div
+        key={`${line.productId}-${index}`}
+        className="rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <Textarea
+              value={line.name || ""}
+              onChange={(event) => updateLine(index, { name: event.target.value })}
+              placeholder="Tên sản phẩm..."
+              className="min-h-[72px] w-full resize-y text-sm font-semibold"
+              disabled={disabled}
+            />
+            {line.sku ? (
+              <p className="mt-1 whitespace-pre-line break-words text-xs text-[var(--color-text-inverse)]">
+                SKU: {line.sku}
+              </p>
+            ) : null}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 hover:border-red-300"
+            onClick={() => removeLine(index)}
+            disabled={disabled}
+            title="Xóa dòng"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="mt-2 space-y-1">
+          <label className="text-xs text-[var(--color-text-inverse)]">Hoạt chất</label>
+          <Textarea
+            value={line.activeIngredient || ""}
+            onChange={(event) =>
+              updateLine(index, { activeIngredient: event.target.value })
+            }
+            placeholder="Hoạt chất..."
+            className="min-h-[96px] w-full resize-y text-sm"
+            disabled={disabled}
+          />
+        </div>
+
+        <div className="mt-2 space-y-1">
+          <label className="text-xs text-[var(--color-text-inverse)]">% Lợi nhuận</label>
+          {line.overrideUnitPrice != null ? (
+            <div className="flex items-center gap-2">
+              <span className="italic text-blue-600">
+                {calculateMarginFromPrice(line.costPrice, line.overrideUnitPrice).toFixed(1)}%
+              </span>
+              <button
+                className="cursor-pointer rounded px-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                title="Xóa đơn giá tùy chỉnh"
+                onClick={() => updateLine(index, { overrideUnitPrice: null })}
+                disabled={disabled}
+              >
+                ✕ Bỏ
+              </button>
+            </div>
+          ) : (
+            <Input
+              type="number"
+              min={0}
+              step={0.1}
+              className="h-9 tabular-nums"
+              value={String(line.marginPercent ?? "")}
+              onChange={(event) => {
+                const next = event.target.value;
+                updateLine(index, {
+                  marginPercent: next === "" ? defaultMargin : Number(next),
+                  overrideUnitPrice: null,
+                });
+              }}
+              disabled={disabled}
+            />
+          )}
+
+          <div className="mt-2 space-y-1">
+            <label className="text-xs text-[var(--color-text-inverse)]">Công dụng</label>
+            <Textarea
+              value={line.application || ""}
+              onChange={(event) =>
+                updateLine(index, { application: event.target.value })
+              }
+              placeholder="Công dụng..."
+              className="min-h-[96px] w-full resize-y text-sm"
+              disabled={disabled}
+            />
+          </div>
+
+          <div className="mt-2 flex items-center justify-between gap-4">
+            <span className="text-sm text-[var(--color-text-inverse)]">
+              Giá vốn: {formatCurrency(line.costPrice || 0)}
+            </span>
+            {editingPriceRow === index ? (
+              <Input
+                type="number"
+                min={0}
+                className="h-9 w-36 tabular-nums text-right"
+                value={editingPriceValue}
+                autoFocus
+                onChange={(e) => setEditingPriceValue(e.target.value)}
+                onBlur={() => {
+                  const price = Number(editingPriceValue);
+                  if (!isNaN(price) && price > 0) {
+                    updateLine(index, { overrideUnitPrice: price });
+                  } else {
+                    updateLine(index, { overrideUnitPrice: null });
+                  }
+                  setEditingPriceRow(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const price = Number(editingPriceValue);
+                    if (!isNaN(price) && price > 0) {
+                      updateLine(index, { overrideUnitPrice: price });
+                    } else {
+                      updateLine(index, { overrideUnitPrice: null });
+                    }
+                    setEditingPriceRow(null);
+                  }
+                  if (e.key === "Escape") {
+                    setEditingPriceRow(null);
+                  }
+                }}
+              />
+            ) : (
+              <button
+                className="text-base font-semibold cursor-pointer hover:text-blue-600"
+                onClick={() => {
+                  setEditingPriceRow(index);
+                  setEditingPriceValue(String(unitPrice));
+                }}
+                disabled={disabled}
+              >
+                Đơn giá: {formatCurrency(unitPrice)}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (lines.length === 0) {
     return (
@@ -115,154 +461,26 @@ export function QuoteLineTable({
               </tr>
             </thead>
             <tbody>
-              {filteredIndices.map((index) => {
-                const line = lines[index];
-                const unitPrice = line.overrideUnitPrice ?? calculateUnitPrice(
-                  line.costPrice,
-                  line.marginPercent
-                );
+              {visibleRows.map((row) => {
+                if (row.kind === "group") {
+                  return (
+                    <tr key={row.key} className="bg-[var(--color-surface-muted)]">
+                      <td
+                        colSpan={9}
+                        className="border-y border-[var(--color-border-subtle)] px-3 py-1.5 text-left text-xs font-bold uppercase tracking-wide text-[var(--color-text-primary)]"
+                      >
+                        {row.categoryName}
+                      </td>
+                    </tr>
+                  );
+                }
                 return (
-                  <tr key={`${line.productId}-${index}`}>
-                    <td className="tabular-nums text-[var(--color-text-inverse)]">
-                      {index + 1}
-                    </td>
-                    <td className="w-[260px] min-w-[260px] align-top">
-                      <Textarea
-                        value={line.name || ""}
-                        onChange={(event) =>
-                          updateLine(index, { name: event.target.value })
-                        }
-                        placeholder="Tên sản phẩm..."
-                        className="min-h-[88px] w-full resize-y text-sm font-medium"
-                        disabled={disabled}
-                      />
-                      {line.sku ? (
-                        <p className="mt-1 whitespace-pre-line break-words text-xs text-[var(--color-text-inverse)]">
-                          SKU: {line.sku}
-                        </p>
-                      ) : null}
-                    </td>
-                    <td className="min-w-[220px] align-top">
-                      <Textarea
-                        value={line.activeIngredient || ""}
-                        onChange={(event) =>
-                          updateLine(index, {
-                            activeIngredient: event.target.value,
-                          })
-                        }
-                        placeholder="Hoạt chất..."
-                        className="min-h-[88px] w-full resize-y text-sm"
-                        disabled={disabled}
-                      />
-                    </td>
-                    <td className="min-w-[260px] align-top">
-                      <Textarea
-                        value={line.application || ""}
-                        onChange={(event) =>
-                          updateLine(index, { application: event.target.value })
-                        }
-                        placeholder="Công dụng..."
-                        className="min-h-[88px] w-full resize-y text-sm"
-                        disabled={disabled}
-                      />
-                    </td>
-                    <td className="whitespace-nowrap text-right tabular-nums">
-                      {formatCurrency(line.costPrice || 0)}
-                    </td>
-                    <td className="whitespace-nowrap text-right tabular-nums">
-                      {line.overrideUnitPrice != null ? (
-                        <div className="flex items-center justify-end gap-1">
-                          <span className="italic text-blue-600">
-                            {calculateMarginFromPrice(line.costPrice, line.overrideUnitPrice).toFixed(1)}
-                          </span>
-                          <button
-                            className="ml-1 cursor-pointer rounded px-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                            title="Xóa đơn giá tùy chỉnh, quay về tính từ %"
-                            onClick={() => updateLine(index, { overrideUnitPrice: null })}
-                            disabled={disabled}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ) : (
-                        <Input
-                          type="number"
-                          min={0}
-                          step={0.1}
-                          className="ml-auto h-8 w-20 px-2 text-right tabular-nums"
-                          value={String(line.marginPercent ?? "")}
-                          onChange={(event) => {
-                            const next = event.target.value;
-                            updateLine(index, {
-                              marginPercent: next === "" ? defaultMargin : Number(next),
-                              overrideUnitPrice: null,
-                            });
-                          }}
-                          disabled={disabled}
-                        />
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap text-right font-medium tabular-nums">
-                      {editingPriceRow === index ? (
-                        <Input
-                          type="number"
-                          min={0}
-                          className="h-8 w-28 px-2 text-right tabular-nums"
-                          value={editingPriceValue}
-                          autoFocus
-                          onChange={(e) => setEditingPriceValue(e.target.value)}
-                          onBlur={() => {
-                            const price = Number(editingPriceValue);
-                            if (!isNaN(price) && price > 0) {
-                              updateLine(index, { overrideUnitPrice: price });
-                            } else {
-                              updateLine(index, { overrideUnitPrice: null });
-                            }
-                            setEditingPriceRow(null);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              const price = Number(editingPriceValue);
-                              if (!isNaN(price) && price > 0) {
-                                updateLine(index, { overrideUnitPrice: price });
-                              } else {
-                                updateLine(index, { overrideUnitPrice: null });
-                              }
-                              setEditingPriceRow(null);
-                            }
-                            if (e.key === "Escape") {
-                              setEditingPriceRow(null);
-                            }
-                          }}
-                        />
-                      ) : (
-                        <button
-                          className="cursor-pointer rounded px-1 hover:bg-[var(--color-surface-muted)]"
-                          onClick={() => {
-                            setEditingPriceRow(index);
-                            setEditingPriceValue(String(unitPrice));
-                          }}
-                          disabled={disabled}
-                        >
-                          {formatCurrency(unitPrice)}
-                        </button>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap text-center tabular-nums text-sm text-[var(--color-text-inverse)]">
-                      {line.unitsPerCase ?? "—"}
-                    </td>
-                    <td className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 hover:border-red-300"
-                        onClick={() => removeLine(index)}
-                        disabled={disabled}
-                        title="Xóa dòng">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
+                  <DesktopRow
+                    key={row.key}
+                    line={row.line}
+                    index={row.index}
+                    stt={row.stt}
+                  />
                 );
               })}
             </tbody>
@@ -271,162 +489,18 @@ export function QuoteLineTable({
       </div>
 
       <div className="space-y-2 lg:hidden">
-        {filteredIndices.map((index) => {
-          const line = lines[index];
-          const unitPrice = line.overrideUnitPrice ?? calculateUnitPrice(
-            line.costPrice,
-            line.marginPercent
-          );
-          return (
-            <div
-              key={`${line.productId}-${index}`}
-              className="rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <Textarea
-                    value={line.name || ""}
-                    onChange={(event) =>
-                      updateLine(index, { name: event.target.value })
-                    }
-                    placeholder="Tên sản phẩm..."
-                    className="min-h-[72px] w-full resize-y text-sm font-semibold"
-                    disabled={disabled}
-                  />
-                  {line.sku ? (
-                    <p className="mt-1 whitespace-pre-line break-words text-xs text-[var(--color-text-inverse)]">
-                      SKU: {line.sku}
-                    </p>
-                  ) : null}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 hover:border-red-300"
-                  onClick={() => removeLine(index)}
-                  disabled={disabled}
-                  title="Xóa dòng">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+        {visibleRows.map((row) => {
+          if (row.kind === "group") {
+            return (
+              <div
+                key={row.key}
+                className="rounded-md bg-[var(--color-surface-muted)] px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-[var(--color-text-primary)]"
+              >
+                {row.categoryName}
               </div>
-
-              <div className="mt-2 space-y-1">
-                <label className="text-xs text-[var(--color-text-inverse)]">
-                  Hoạt chất
-                </label>
-                <Textarea
-                  value={line.activeIngredient || ""}
-                  onChange={(event) =>
-                    updateLine(index, { activeIngredient: event.target.value })
-                  }
-                  placeholder="Hoạt chất..."
-                  className="min-h-[96px] w-full resize-y text-sm"
-                  disabled={disabled}
-                />
-              </div>
-
-              <div className="mt-2 space-y-1">
-                <label className="text-xs text-[var(--color-text-inverse)]">
-                  % Lợi nhuận
-                </label>
-                {line.overrideUnitPrice != null ? (
-                  <div className="flex items-center gap-2">
-                    <span className="italic text-blue-600">
-                      {calculateMarginFromPrice(line.costPrice, line.overrideUnitPrice).toFixed(1)}%
-                    </span>
-                    <button
-                      className="cursor-pointer rounded px-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                      title="Xóa đơn giá tùy chỉnh"
-                      onClick={() => updateLine(index, { overrideUnitPrice: null })}
-                      disabled={disabled}
-                    >
-                      ✕ Bỏ
-                    </button>
-                  </div>
-                ) : (
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.1}
-                    className="h-9 tabular-nums"
-                    value={String(line.marginPercent ?? "")}
-                    onChange={(event) => {
-                      const next = event.target.value;
-                      updateLine(index, {
-                        marginPercent: next === "" ? defaultMargin : Number(next),
-                        overrideUnitPrice: null,
-                      });
-                    }}
-                    disabled={disabled}
-                  />
-                )}
-
-              <div className="mt-2 space-y-1">
-                <label className="text-xs text-[var(--color-text-inverse)]">
-                  Công dụng
-                </label>
-                <Textarea
-                  value={line.application || ""}
-                  onChange={(event) =>
-                    updateLine(index, { application: event.target.value })
-                  }
-                  placeholder="Công dụng..."
-                  className="min-h-[96px] w-full resize-y text-sm"
-                  disabled={disabled}
-                />
-              </div>
-
-              <div className="mt-2 flex items-center justify-between gap-4">
-                <span className="text-sm text-[var(--color-text-inverse)]">
-                  Giá vốn: {formatCurrency(line.costPrice || 0)}
-                </span>
-                {editingPriceRow === index ? (
-                  <Input
-                    type="number"
-                    min={0}
-                    className="h-9 w-36 tabular-nums text-right"
-                    value={editingPriceValue}
-                    autoFocus
-                    onChange={(e) => setEditingPriceValue(e.target.value)}
-                    onBlur={() => {
-                      const price = Number(editingPriceValue);
-                      if (!isNaN(price) && price > 0) {
-                        updateLine(index, { overrideUnitPrice: price });
-                      } else {
-                        updateLine(index, { overrideUnitPrice: null });
-                      }
-                      setEditingPriceRow(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const price = Number(editingPriceValue);
-                        if (!isNaN(price) && price > 0) {
-                          updateLine(index, { overrideUnitPrice: price });
-                        } else {
-                          updateLine(index, { overrideUnitPrice: null });
-                        }
-                        setEditingPriceRow(null);
-                      }
-                      if (e.key === "Escape") {
-                        setEditingPriceRow(null);
-                      }
-                    }}
-                  />
-                ) : (
-                  <button
-                    className="text-base font-semibold cursor-pointer hover:text-blue-600"
-                    onClick={() => {
-                      setEditingPriceRow(index);
-                      setEditingPriceValue(String(unitPrice));
-                    }}
-                    disabled={disabled}
-                  >
-                      Đơn giá: {formatCurrency(unitPrice)}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
+            );
+          }
+          return <MobileRow key={row.key} line={row.line} index={row.index} />;
         })}
       </div>
     </div>

@@ -78,7 +78,13 @@ function buildPrintHtml(input: PrintQuoteInput) {
       ? `${window.location.origin}/images/brand/logo.png`
       : "";
 
-  const rows = groupLinesByVariant(input.quote.lines)
+  const sortedLines = [...input.quote.lines].sort((a, b) => {
+    const aCat = (a.categoryName || "").trim().toLowerCase();
+    const bCat = (b.categoryName || "").trim().toLowerCase();
+    if (aCat !== bCat) return aCat.localeCompare(bCat, "vi");
+    return 0;
+  });
+  const rows = groupLinesByVariant(sortedLines)
     .map((group, index) => {
       const isMulti = group.length > 1;
       const first = group[0];
@@ -275,22 +281,23 @@ function buildPrintHtml(input: PrintQuoteInput) {
     ========================= */
 
     .header {
-      display: flex;
-      align-items: flex-start;
+      display: grid;
+      grid-template-columns: 120px 1fr 120px;
+      align-items: center;
       gap: 16px;
       padding-bottom: 0;
     }
 
     .logo {
-      width: 100px;
-      height: 100px;
+      width: 140px;
+      height: 140px;
       object-fit: contain;
       flex-shrink: 0;
     }
 
     .logo-fallback {
-      width: 100px;
-      height: 100px;
+      width: 140px;
+      height: 140px;
       flex-shrink: 0;
       border: 1px solid #000;
       display: flex;
@@ -301,8 +308,13 @@ function buildPrintHtml(input: PrintQuoteInput) {
       letter-spacing: 0.5px;
     }
 
+    .brand-info {
+      flex: 1;
+      text-align: center;
+    }
+
     .brand-name {
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -310,7 +322,7 @@ function buildPrintHtml(input: PrintQuoteInput) {
     }
 
     .brand-tagline {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 700;
       font-style: italic;
       margin-top: 4px;
@@ -318,7 +330,7 @@ function buildPrintHtml(input: PrintQuoteInput) {
 
     .brand-contact {
       margin-top: 6px;
-      font-size: 13px;
+      font-size: 16px;
       font-weight: 700;
       line-height: 1.6;
     }
@@ -328,12 +340,12 @@ function buildPrintHtml(input: PrintQuoteInput) {
     ========================= */
 
     .doc-title {
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 2px;
       text-align: center;
-      margin: 28px 0 12px;
+      margin: 12px 0 8px;
       color: #0055b3;
     }
 
@@ -353,7 +365,7 @@ function buildPrintHtml(input: PrintQuoteInput) {
       width: 99%;
       border-collapse: collapse;
       margin-top: 8px;
-      font-size: 14px;
+      font-size: 16px;
       table-layout: fixed;
     }
 
@@ -496,7 +508,7 @@ function buildPrintHtml(input: PrintQuoteInput) {
       : `<div class="logo-fallback">LOGO</div>`
     }
 
-        <div>
+        <div class="brand-info">
           <div class="brand-name">
             ${escapeHtml(company.name)}
           </div>
@@ -512,6 +524,8 @@ function buildPrintHtml(input: PrintQuoteInput) {
             — ĐT: ${escapeHtml(company.phone)}
           </div>
         </div>
+
+        <div aria-hidden="true"></div>
       </div>
 
       <!-- TITLE -->

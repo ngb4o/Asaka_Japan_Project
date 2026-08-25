@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchInput } from "@/components/ui/search-input";
+import { DateInput } from "@/components/ui/date-input";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,8 @@ const EMPTY_FORM = {
   defaultMarginPercent: 30,
   dealerIds: [] as string[],
   lines: [] as QuoteLine[],
+  validFrom: "",
+  validUntil: "",
 };
 
 function productToLine(product: Product): QuoteLine {
@@ -48,6 +51,8 @@ function productToLine(product: Product): QuoteLine {
     productId: product.id,
     name: product.name,
     sku: product.sku,
+    categoryId: product.categoryId,
+    categoryName: product.categoryName,
     activeIngredient: product.activeIngredient || "",
     application: product.application || "",
     unitsPerCase: product.unitsPerCase || 1,
@@ -83,6 +88,8 @@ export function QuoteFormDialog({
         defaultMarginPercent: Number(editing.defaultMarginPercent) || 0,
         dealerIds: [...(editing.dealerIds || [])],
         lines: (editing.lines || []).map((line) => ({ ...line })),
+        validFrom: editing.validFrom ? editing.validFrom.slice(0, 10) : "",
+        validUntil: editing.validUntil ? editing.validUntil.slice(0, 10) : "",
       });
     } else {
       setForm({ ...EMPTY_FORM });
@@ -243,10 +250,14 @@ export function QuoteFormDialog({
         description: "",
         defaultMarginPercent: Number(form.defaultMarginPercent) || 0,
         dealerIds: form.dealerIds,
+        validFrom: form.validFrom || null,
+        validUntil: form.validUntil || null,
         lines: form.lines.map((line) => ({
           productId: line.productId,
           name: line.name,
           sku: line.sku || "",
+          categoryId: line.categoryId || "",
+          categoryName: line.categoryName || "",
           activeIngredient: line.activeIngredient || "",
           application: line.application || "",
           unitsPerCase: line.unitsPerCase || 1,
@@ -304,6 +315,31 @@ export function QuoteFormDialog({
                     })),
                   }));
                 }}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="quote-valid-from">Thời gian bắt đầu</Label>
+              <DateInput
+                id="quote-valid-from"
+                value={form.validFrom}
+                onChange={(value) =>
+                  setForm({ ...form, validFrom: value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quote-valid-until">
+                Thời gian kết thúc (để trống nếu không giới hạn)
+              </Label>
+              <DateInput
+                id="quote-valid-until"
+                value={form.validUntil}
+                onChange={(value) =>
+                  setForm({ ...form, validUntil: value })
+                }
               />
             </div>
           </div>

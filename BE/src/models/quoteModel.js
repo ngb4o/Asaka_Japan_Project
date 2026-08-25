@@ -11,6 +11,8 @@ const QUOTE_LINE_SCHEMA = Joi.object({
   productId: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
   name: Joi.string().required().min(1).max(200).trim(),
   sku: optionalText(50).default(''),
+  categoryId: optionalText(50).default(''),
+  categoryName: optionalText(100).default(''),
   activeIngredient: optionalText(200).default(''),
   application: optionalText(2000).default(''),
   unitsPerCase: Joi.number().integer().min(1).default(1),
@@ -28,6 +30,8 @@ const QUOTE_COLLECTION_SCHEMA = Joi.object({
     .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
     .default([]),
   lines: Joi.array().items(QUOTE_LINE_SCHEMA).default([]),
+  validFrom: Joi.date().allow(null).default(null),
+  validUntil: Joi.date().allow(null).default(null),
   createdBy: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(null),

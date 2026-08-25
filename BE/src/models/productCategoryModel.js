@@ -25,6 +25,7 @@ const PRODUCT_CATEGORY_COLLECTION_SCHEMA = Joi.object({
   status: Joi.string()
     .valid(PRODUCT_CATEGORY_STATUS.ACTIVE, PRODUCT_CATEGORY_STATUS.INACTIVE)
     .default(PRODUCT_CATEGORY_STATUS.ACTIVE),
+  order: Joi.number().integer().min(0).default(9999),
   createdBy: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(null),

@@ -2,6 +2,9 @@ export interface QuoteLine {
   productId: string
   name: string
   sku?: string
+  /** Loại sản phẩm (VD: Thuốc trừ sâu, Phân bón) */
+  categoryId?: string
+  categoryName?: string
   activeIngredient?: string
   application: string
   unitsPerCase: number
@@ -47,5 +50,7 @@ export interface QuoteFormPayload {
   description: string
   defaultMarginPercent: number
   dealerIds: string[]
+  validFrom?: string | null
+  validUntil?: string | null
   lines: QuoteLine[]
 }
