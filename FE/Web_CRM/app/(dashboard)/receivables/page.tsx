@@ -1025,15 +1025,17 @@ export default function ReceivablesPage() {
                 <div className="flex flex-col gap-3">
                   {debtInvoices.map((invoice) => {
                     const remaining = remainingInvoice(invoice);
-                    const lineItems = (invoice.items || []).map((item) => ({
-                      productId: item.productId,
-                      productName: item.productName,
-                      quantity: item.quantity,
-                      unitType: item.unitType,
-                      quantityBase: item.quantityBase,
-                      unitPrice: item.unitCost || 0,
-                      lineTotal: item.totalCost || 0,
-                    }));
+                    const lineItems = (invoice.items || [])
+                      .map((item) => ({
+                        productId: item.productId,
+                        productName: item.productName,
+                        quantity: item.quantity,
+                        unitType: (item.unitType ?? "thung") as "thung",
+                        quantityBase: item.quantityBase,
+                        unitPrice: item.unitCost || 0,
+                        lineTotal: item.totalCost || 0,
+                      }))
+                      .filter((item) => item.productId);
                     return (
                       <MobileRecordCard key={invoice.id} className="p-4">
                         <div className="mb-3 flex items-start justify-between gap-3">
