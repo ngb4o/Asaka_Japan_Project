@@ -156,7 +156,7 @@ export function QuoteLineTable({
                       />
                     </td>
                     <td className="whitespace-nowrap text-right tabular-nums">
-                      {formatCurrency(line.costPrice || 0)}
+                    {(line.costPrice || 0).toLocaleString("vi-VN")}
                     </td>
                     <td className="text-right">
                       <Input
@@ -175,7 +175,7 @@ export function QuoteLineTable({
                       />
                     </td>
                     <td className="whitespace-nowrap text-right font-medium tabular-nums">
-                      {formatCurrency(unitPrice)}
+                    {unitPrice.toLocaleString("vi-VN")}
                     </td>
                     <td className="whitespace-nowrap text-center tabular-nums text-sm text-[var(--color-text-inverse)]">
                       {line.unitsPerCase ?? "—"}
@@ -290,9 +290,9 @@ export function QuoteLineTable({
 
               <div className="mt-2 flex items-center justify-between">
                 <span className="text-sm text-[var(--color-text-inverse)]">
-                  Giá vốn {formatCurrency(line.costPrice || 0)}
+                Giá vốn {(line.costPrice || 0).toLocaleString("vi-VN")}
                 </span>
-                <span className="text-base font-semibold">Đơn giá {formatCurrency(unitPrice)}</span>
+                <span className="text-base font-semibold">Đơn giá {unitPrice.toLocaleString("vi-VN")}</span>
               </div>
             </div>
           );
