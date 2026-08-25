@@ -16,7 +16,8 @@ const QUOTE_LINE_SCHEMA = Joi.object({
   unitsPerCase: Joi.number().integer().min(1).default(1),
   costPrice: Joi.number().min(0).required(),
   quantity: Joi.number().integer().min(1).default(1),
-  marginPercent: Joi.number().min(0).max(1000).required()
+  marginPercent: Joi.number().min(0).max(1000).required(),
+  overrideUnitPrice: Joi.number().min(0).allow(null).default(null)
 })
 
 const QUOTE_COLLECTION_SCHEMA = Joi.object({

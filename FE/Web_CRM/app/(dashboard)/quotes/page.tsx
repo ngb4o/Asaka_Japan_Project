@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  Eye,
   Pencil,
   Plus,
   Printer,
@@ -195,9 +196,28 @@ export default function QuotesPage() {
     }
   }
 
+  async function handleDirectPrintAdmin(item: Quote) {
+    setViewLoadingId(item.id);
+    try {
+      const detail = await getQuote(item.id);
+      printQuoteDocument({ quote: detail, forAdmin: true });
+    } catch (err) {
+      toast.error(
+        err instanceof ApiClientError ? err.message : "Không tải được chi tiết"
+      );
+    } finally {
+      setViewLoadingId(null);
+    }
+  }
+
   function handlePrint() {
     if (!viewingQuote) return;
     printQuoteDocument({ quote: viewingQuote });
+  }
+
+  function handlePrintAdmin() {
+    if (!viewingQuote) return;
+    printQuoteDocument({ quote: viewingQuote, forAdmin: true });
   }
 
   if (loading && items.length === 0) {
@@ -267,7 +287,8 @@ export default function QuotesPage() {
                         calculateLineTotal(
                           line.costPrice,
                           line.marginPercent,
-                          line.quantity
+                          line.quantity,
+                          line.overrideUnitPrice
                         ),
                       0
                     );
@@ -321,6 +342,16 @@ export default function QuotesPage() {
                               loading={viewLoadingId === item.id}
                               title="In">
                               <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-9 w-9 p-0"
+                              onClick={() => void handleDirectPrintAdmin(item)}
+                              loading={viewLoadingId === item.id}
+                              title="In cho Admin">
+                              <Printer className="h-4 w-4" />
+                              <span className="sr-only">A</span>
                             </Button>
                             <Button
                               variant="outline"
@@ -405,6 +436,16 @@ export default function QuotesPage() {
                                   variant="outline"
                                   size="sm"
                                   className="h-9 w-9 p-0"
+                                  onClick={() => void handleDirectPrintAdmin(item)}
+                                  loading={viewLoadingId === item.id}
+                                  title="In cho Admin">
+                                  <Printer className="h-4 w-4" />
+                                  <span className="sr-only">A</span>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-9 w-9 p-0"
                                   onClick={() => openEdit(item)}
                                   title="Sửa">
                                   <Pencil className="h-4 w-4" />
@@ -458,6 +499,10 @@ export default function QuotesPage() {
           {viewingQuote ? (
             <div className="space-y-4">
               <div className="no-print flex justify-end gap-2">
+                <Button variant="outline" onClick={handlePrintAdmin}>
+                  <Printer className="h-4 w-4" />
+                  In cho Admin
+                </Button>
                 <Button variant="print" onClick={handlePrint}>
                   <Printer className="h-4 w-4" />
                   In / Xuất PDF

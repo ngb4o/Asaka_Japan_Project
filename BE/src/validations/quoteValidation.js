@@ -13,7 +13,8 @@ const quoteLineSchema = Joi.object({
   unitsPerCase: Joi.number().integer().min(1).optional(),
   costPrice: Joi.number().min(0).required(),
   quantity: Joi.number().integer().min(1).optional(),
-  marginPercent: Joi.number().min(0).max(1000).required()
+  marginPercent: Joi.number().min(0).max(1000).required(),
+  overrideUnitPrice: Joi.number().min(0).allow(null).optional()
 })
 
 const createSchema = Joi.object({

@@ -216,7 +216,8 @@ export function QuoteFormDialog({
           calculateLineTotal(
             line.costPrice,
             line.marginPercent,
-            line.quantity
+            line.quantity,
+            line.overrideUnitPrice
           ),
         0
       ),
@@ -252,6 +253,7 @@ export function QuoteFormDialog({
           costPrice: Number(line.costPrice) || 0,
           quantity: Math.max(1, Number(line.quantity) || 1),
           marginPercent: Number(line.marginPercent) || 0,
+          overrideUnitPrice: line.overrideUnitPrice ?? null,
         })),
       };
       await onSubmit(payload);
@@ -265,7 +267,7 @@ export function QuoteFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-[95vw] xl:max-w-[1600px]">
         <DialogHeader>
           <DialogTitle>{editing ? "Sửa báo giá" : "Tạo báo giá"}</DialogTitle>
         </DialogHeader>

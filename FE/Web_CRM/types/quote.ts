@@ -8,6 +8,8 @@ export interface QuoteLine {
   costPrice: number
   quantity: number
   marginPercent: number
+  /** When set, this price is used instead of calculating from margin. */
+  overrideUnitPrice?: number | null
 }
 
 export interface QuoteDealerSummary {
@@ -27,6 +29,8 @@ export interface Quote {
   createdBy: string
   createdAt: string
   updatedAt?: string | null
+  validFrom?: string | null
+  validUntil?: string | null
 }
 
 export interface QuoteListResponse {

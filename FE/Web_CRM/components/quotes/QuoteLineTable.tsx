@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Trash2 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,12 +25,21 @@ export function calculateUnitPrice(costPrice: number, marginPercent: number) {
   return Math.round(cost * (1 + margin / 100));
 }
 
+export function calculateMarginFromPrice(costPrice: number, unitPrice: number) {
+  const cost = Number(costPrice) || 0;
+  const price = Number(unitPrice) || 0;
+  if (cost <= 0 || price <= 0) return 0;
+  return Math.round(((price - cost) / cost) * 1000) / 10;
+}
+
 export function calculateLineTotal(
   costPrice: number,
   marginPercent: number,
-  quantity: number
+  quantity: number,
+  overrideUnitPrice?: number | null
 ) {
-  return calculateUnitPrice(costPrice, marginPercent) * (quantity || 0);
+  const unitPrice = overrideUnitPrice ?? calculateUnitPrice(costPrice, marginPercent);
+  return unitPrice * (quantity || 0);
 }
 
 export function QuoteLineTable({
@@ -41,6 +50,8 @@ export function QuoteLineTable({
   search,
 }: QuoteLineTableProps) {
   const keyword = (search || "").trim().toLowerCase();
+  const [editingPriceRow, setEditingPriceRow] = useState<number | null>(null);
+  const [editingPriceValue, setEditingPriceValue] = useState<string>("");
   const filteredIndices = useMemo(() => {
     if (!keyword) return lines.map((_, i) => i);
     return lines
@@ -106,7 +117,7 @@ export function QuoteLineTable({
             <tbody>
               {filteredIndices.map((index) => {
                 const line = lines[index];
-                const unitPrice = calculateUnitPrice(
+                const unitPrice = line.overrideUnitPrice ?? calculateUnitPrice(
                   line.costPrice,
                   line.marginPercent
                 );
@@ -156,26 +167,86 @@ export function QuoteLineTable({
                       />
                     </td>
                     <td className="whitespace-nowrap text-right tabular-nums">
-                    {(line.costPrice || 0).toLocaleString("vi-VN")}
+                      {formatCurrency(line.costPrice || 0)}
                     </td>
-                    <td className="text-right">
-                      <Input
-                        type="number"
-                        min={0}
-                        step={0.1}
-                        className="ml-auto h-8 w-20 px-2 text-right tabular-nums"
-                        value={String(line.marginPercent ?? "")}
-                        onChange={(event) => {
-                          const next = event.target.value;
-                          updateLine(index, {
-                            marginPercent: next === "" ? defaultMargin : Number(next),
-                          });
-                        }}
-                        disabled={disabled}
-                      />
+                    <td className="whitespace-nowrap text-right tabular-nums">
+                      {line.overrideUnitPrice != null ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="italic text-blue-600">
+                            {calculateMarginFromPrice(line.costPrice, line.overrideUnitPrice).toFixed(1)}
+                          </span>
+                          <button
+                            className="ml-1 cursor-pointer rounded px-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                            title="Xóa đơn giá tùy chỉnh, quay về tính từ %"
+                            onClick={() => updateLine(index, { overrideUnitPrice: null })}
+                            disabled={disabled}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <Input
+                          type="number"
+                          min={0}
+                          step={0.1}
+                          className="ml-auto h-8 w-20 px-2 text-right tabular-nums"
+                          value={String(line.marginPercent ?? "")}
+                          onChange={(event) => {
+                            const next = event.target.value;
+                            updateLine(index, {
+                              marginPercent: next === "" ? defaultMargin : Number(next),
+                              overrideUnitPrice: null,
+                            });
+                          }}
+                          disabled={disabled}
+                        />
+                      )}
                     </td>
                     <td className="whitespace-nowrap text-right font-medium tabular-nums">
-                    {unitPrice.toLocaleString("vi-VN")}
+                      {editingPriceRow === index ? (
+                        <Input
+                          type="number"
+                          min={0}
+                          className="h-8 w-28 px-2 text-right tabular-nums"
+                          value={editingPriceValue}
+                          autoFocus
+                          onChange={(e) => setEditingPriceValue(e.target.value)}
+                          onBlur={() => {
+                            const price = Number(editingPriceValue);
+                            if (!isNaN(price) && price > 0) {
+                              updateLine(index, { overrideUnitPrice: price });
+                            } else {
+                              updateLine(index, { overrideUnitPrice: null });
+                            }
+                            setEditingPriceRow(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              const price = Number(editingPriceValue);
+                              if (!isNaN(price) && price > 0) {
+                                updateLine(index, { overrideUnitPrice: price });
+                              } else {
+                                updateLine(index, { overrideUnitPrice: null });
+                              }
+                              setEditingPriceRow(null);
+                            }
+                            if (e.key === "Escape") {
+                              setEditingPriceRow(null);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <button
+                          className="cursor-pointer rounded px-1 hover:bg-[var(--color-surface-muted)]"
+                          onClick={() => {
+                            setEditingPriceRow(index);
+                            setEditingPriceValue(String(unitPrice));
+                          }}
+                          disabled={disabled}
+                        >
+                          {formatCurrency(unitPrice)}
+                        </button>
+                      )}
                     </td>
                     <td className="whitespace-nowrap text-center tabular-nums text-sm text-[var(--color-text-inverse)]">
                       {line.unitsPerCase ?? "—"}
@@ -202,7 +273,7 @@ export function QuoteLineTable({
       <div className="space-y-2 lg:hidden">
         {filteredIndices.map((index) => {
           const line = lines[index];
-          const unitPrice = calculateUnitPrice(
+          const unitPrice = line.overrideUnitPrice ?? calculateUnitPrice(
             line.costPrice,
             line.marginPercent
           );
@@ -257,21 +328,37 @@ export function QuoteLineTable({
                 <label className="text-xs text-[var(--color-text-inverse)]">
                   % Lợi nhuận
                 </label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.1}
-                  className="h-9 tabular-nums"
-                  value={String(line.marginPercent ?? "")}
-                  onChange={(event) => {
-                    const next = event.target.value;
-                    updateLine(index, {
-                      marginPercent: next === "" ? defaultMargin : Number(next),
-                    });
-                  }}
-                  disabled={disabled}
-                />
-              </div>
+                {line.overrideUnitPrice != null ? (
+                  <div className="flex items-center gap-2">
+                    <span className="italic text-blue-600">
+                      {calculateMarginFromPrice(line.costPrice, line.overrideUnitPrice).toFixed(1)}%
+                    </span>
+                    <button
+                      className="cursor-pointer rounded px-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                      title="Xóa đơn giá tùy chỉnh"
+                      onClick={() => updateLine(index, { overrideUnitPrice: null })}
+                      disabled={disabled}
+                    >
+                      ✕ Bỏ
+                    </button>
+                  </div>
+                ) : (
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    className="h-9 tabular-nums"
+                    value={String(line.marginPercent ?? "")}
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      updateLine(index, {
+                        marginPercent: next === "" ? defaultMargin : Number(next),
+                        overrideUnitPrice: null,
+                      });
+                    }}
+                    disabled={disabled}
+                  />
+                )}
 
               <div className="mt-2 space-y-1">
                 <label className="text-xs text-[var(--color-text-inverse)]">
@@ -288,11 +375,55 @@ export function QuoteLineTable({
                 />
               </div>
 
-              <div className="mt-2 flex items-center justify-between">
+              <div className="mt-2 flex items-center justify-between gap-4">
                 <span className="text-sm text-[var(--color-text-inverse)]">
-                Giá vốn {(line.costPrice || 0).toLocaleString("vi-VN")}
+                  Giá vốn: {formatCurrency(line.costPrice || 0)}
                 </span>
-                <span className="text-base font-semibold">Đơn giá {unitPrice.toLocaleString("vi-VN")}</span>
+                {editingPriceRow === index ? (
+                  <Input
+                    type="number"
+                    min={0}
+                    className="h-9 w-36 tabular-nums text-right"
+                    value={editingPriceValue}
+                    autoFocus
+                    onChange={(e) => setEditingPriceValue(e.target.value)}
+                    onBlur={() => {
+                      const price = Number(editingPriceValue);
+                      if (!isNaN(price) && price > 0) {
+                        updateLine(index, { overrideUnitPrice: price });
+                      } else {
+                        updateLine(index, { overrideUnitPrice: null });
+                      }
+                      setEditingPriceRow(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const price = Number(editingPriceValue);
+                        if (!isNaN(price) && price > 0) {
+                          updateLine(index, { overrideUnitPrice: price });
+                        } else {
+                          updateLine(index, { overrideUnitPrice: null });
+                        }
+                        setEditingPriceRow(null);
+                      }
+                      if (e.key === "Escape") {
+                        setEditingPriceRow(null);
+                      }
+                    }}
+                  />
+                ) : (
+                  <button
+                    className="text-base font-semibold cursor-pointer hover:text-blue-600"
+                    onClick={() => {
+                      setEditingPriceRow(index);
+                      setEditingPriceValue(String(unitPrice));
+                    }}
+                    disabled={disabled}
+                  >
+                      Đơn giá: {formatCurrency(unitPrice)}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
