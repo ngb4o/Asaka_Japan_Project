@@ -5,8 +5,7 @@ import {
   type QueuedMutation,
 } from "@/lib/offline/mutation-queue";
 import { getStoredToken } from "@/lib/auth/session";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8017/api";
+import { getApiUrl } from "@/lib/api/baseUrl";
 
 const SYNC_EVENT = "crm:online-sync";
 
@@ -64,7 +63,7 @@ async function replayMutation(item: QueuedMutation) {
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${item.path}`, {
+    response = await fetch(`${getApiUrl()}${item.path}`, {
       method: item.method,
       headers,
       body: item.body !== undefined ? JSON.stringify(item.body) : undefined,

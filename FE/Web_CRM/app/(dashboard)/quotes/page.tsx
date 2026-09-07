@@ -22,8 +22,8 @@ import { Pagination } from "@/components/ui/pagination";
 import { MobileInfiniteList } from "@/components/ui/mobile-infinite-list";
 import {
   MobileMetaChip,
+  MobileRecordActions,
   MobileRecordCard,
-  MobileStatTile,
 } from "@/components/ui/mobile-record-card";
 import { PAGE_SKELETONS, PageSkeleton } from "@/components/ui/page-skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -279,7 +279,7 @@ export default function QuotesPage() {
                 hasMore={hasMore}
                 loadingMore={loadingMore}
                 disabled={loading}>
-                <div className="flex flex-col gap-2.5">
+                <div className="flex flex-col gap-3">
                   {items.map((item) => {
                     const totalValue = item.lines.reduce(
                       (sum, line) =>
@@ -292,86 +292,104 @@ export default function QuotesPage() {
                         ),
                       0
                     );
-                    const dealerCount = item.dealerIds?.length || 0;
+                    const dealerNames = (item.dealerIds || []).map(getDealerName);
+                    const dealerSummary =
+                      dealerNames.length === 0
+                        ? "Chưa gán đại lý"
+                        : dealerNames.length <= 2
+                          ? dealerNames.join(", ")
+                          : `${dealerNames.slice(0, 2).join(", ")} +${dealerNames.length - 2}`;
                     return (
-                      <MobileRecordCard key={item.id}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-semibold text-[var(--color-text-primary)]">
-                              {item.name}
+                      <MobileRecordCard key={item.id} className="p-4">
+                        <div className="min-w-0">
+                          <p className="line-clamp-2 text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
+                            {item.name}
+                          </p>
+                          <p className="mt-1 text-sm text-[var(--color-text-inverse)]">
+                            {formatDateDisplay(item.createdAt)}
+                            {" · "}
+                            {item.lines.length} SP
+                            {" · "}
+                            LN {item.defaultMarginPercent}%
+                          </p>
+                        </div>
+
+                        <div className="mt-3.5 flex items-end justify-between gap-4 border-y border-[var(--color-border-subtle)] py-3">
+                          <div className="min-w-0">
+                            <p className="text-xs text-[var(--color-text-inverse)]">
+                              Tổng giá trị
+                            </p>
+                            <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-secondary)]">
+                              {formatCurrency(totalValue)}
+                            </p>
+                          </div>
+                          <div className="min-w-0 text-right">
+                            <p className="text-xs text-[var(--color-text-inverse)]">
+                              Đại lý
+                            </p>
+                            <p className="mt-0.5 text-base font-bold tabular-nums text-[var(--color-text-primary)]">
+                              {item.dealerIds?.length || 0}
                             </p>
                           </div>
                         </div>
 
-                        <div className="mt-3 grid grid-cols-3 gap-2">
-                          <MobileStatTile label="Sản phẩm">
-                            {item.lines.length}
-                          </MobileStatTile>
-                          <MobileStatTile label="Đại lý">
-                            {dealerCount}
-                          </MobileStatTile>
-                          <MobileStatTile label="Tổng">
-                            {formatCurrency(totalValue)}
-                          </MobileStatTile>
-                        </div>
-
-                        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                          {item.dealerIds?.map((id) => (
-                            <MobileMetaChip key={id}>
-                              {getDealerName(id)}
-                            </MobileMetaChip>
-                          ))}
-                        </div>
-
-                        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                          <MobileMetaChip>
-                            % LN: {item.defaultMarginPercent}%
-                          </MobileMetaChip>
-                          <MobileMetaChip>
-                            {formatDateDisplay(item.createdAt)}
+                        <div className="mt-3 min-w-0">
+                          <MobileMetaChip className="max-w-full">
+                            {dealerSummary}
                           </MobileMetaChip>
                         </div>
 
-                        {canEdit ? (
-                          <div className="mt-3 flex justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-9 w-9 p-0"
-                              onClick={() => void handleDirectPrint(item)}
-                              loading={viewLoadingId === item.id}
-                              title="In">
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-9 w-9 p-0"
-                              onClick={() => void handleDirectPrintAdmin(item)}
-                              loading={viewLoadingId === item.id}
-                              title="In cho Admin">
-                              <Printer className="h-4 w-4" />
-                              <span className="sr-only">A</span>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-9 w-9 p-0"
-                              onClick={() => openEdit(item)}
-                              title="Sửa">
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              className="h-9 w-9 p-0"
-                              loading={actionId === item.id}
-                              onClick={() => handleDelete(item)}
-                              title="Xóa">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : null}
+                        <MobileRecordActions>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 min-w-9"
+                            onClick={() => void openView(item)}
+                            loading={viewLoadingId === item.id}
+                            title="Xem">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 min-w-9 px-2.5"
+                            onClick={() => void handleDirectPrint(item)}
+                            loading={viewLoadingId === item.id}
+                            title="In cho đại lý">
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 px-2.5"
+                            onClick={() => void handleDirectPrintAdmin(item)}
+                            loading={viewLoadingId === item.id}
+                            title="In nội bộ">
+                            <Printer className="h-4 w-4" />
+                            <span className="text-xs font-medium">NB</span>
+                          </Button>
+                          {canEdit ? (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-9 min-w-9"
+                                onClick={() => openEdit(item)}
+                                title="Sửa">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                className="h-9 min-w-9"
+                                loading={actionId === item.id}
+                                onClick={() => handleDelete(item)}
+                                title="Xóa">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : null}
+                        </MobileRecordActions>
                       </MobileRecordCard>
                     );
                   })}

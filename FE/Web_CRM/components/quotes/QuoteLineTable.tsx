@@ -283,19 +283,19 @@ export function QuoteLineTable({
     return (
       <div
         key={`${line.productId}-${index}`}
-        className="rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3"
+        className="w-full min-w-0 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3"
       >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <Textarea
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <Input
               value={line.name || ""}
               onChange={(event) => updateLine(index, { name: event.target.value })}
               placeholder="Tên sản phẩm..."
-              className="min-h-[72px] w-full resize-y text-sm font-semibold"
+              className="h-10 w-full min-w-0 text-sm font-semibold"
               disabled={disabled}
             />
             {line.sku ? (
-              <p className="mt-1 whitespace-pre-line break-words text-xs text-[var(--color-text-inverse)]">
+              <p className="truncate text-xs text-[var(--color-text-inverse)]">
                 SKU: {line.sku}
               </p>
             ) : null}
@@ -303,7 +303,7 @@ export function QuoteLineTable({
           <Button
             variant="outline"
             size="sm"
-            className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 hover:border-red-300"
+            className="mt-0.5 h-10 w-10 shrink-0 p-0 text-red-500 hover:border-red-300 hover:bg-red-50"
             onClick={() => removeLine(index)}
             disabled={disabled}
             title="Xóa dòng"
@@ -312,75 +312,88 @@ export function QuoteLineTable({
           </Button>
         </div>
 
-        <div className="mt-2 space-y-1">
-          <label className="text-xs text-[var(--color-text-inverse)]">Hoạt chất</label>
-          <Textarea
-            value={line.activeIngredient || ""}
-            onChange={(event) =>
-              updateLine(index, { activeIngredient: event.target.value })
-            }
-            placeholder="Hoạt chất..."
-            className="min-h-[96px] w-full resize-y text-sm"
-            disabled={disabled}
-          />
-        </div>
-
-        <div className="mt-2 space-y-1">
-          <label className="text-xs text-[var(--color-text-inverse)]">% Lợi nhuận</label>
-          {line.overrideUnitPrice != null ? (
-            <div className="flex items-center gap-2">
-              <span className="italic text-blue-600">
-                {calculateMarginFromPrice(line.costPrice, line.overrideUnitPrice).toFixed(1)}%
-              </span>
-              <button
-                className="cursor-pointer rounded px-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                title="Xóa đơn giá tùy chỉnh"
-                onClick={() => updateLine(index, { overrideUnitPrice: null })}
-                disabled={disabled}
-              >
-                ✕ Bỏ
-              </button>
-            </div>
-          ) : (
-            <Input
-              type="number"
-              min={0}
-              step={0.1}
-              className="h-9 tabular-nums"
-              value={String(line.marginPercent ?? "")}
-              onChange={(event) => {
-                const next = event.target.value;
-                updateLine(index, {
-                  marginPercent: next === "" ? defaultMargin : Number(next),
-                  overrideUnitPrice: null,
-                });
-              }}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <label className="col-span-2 space-y-1">
+            <span className="text-xs text-[var(--color-text-inverse)]">Hoạt chất</span>
+            <Textarea
+              rows={2}
+              value={line.activeIngredient || ""}
+              onChange={(event) =>
+                updateLine(index, { activeIngredient: event.target.value })
+              }
+              placeholder="Hoạt chất..."
+              className="min-h-[56px] w-full resize-y py-2 text-sm"
               disabled={disabled}
             />
-          )}
-
-          <div className="mt-2 space-y-1">
-            <label className="text-xs text-[var(--color-text-inverse)]">Công dụng</label>
+          </label>
+          <label className="col-span-2 space-y-1">
+            <span className="text-xs text-[var(--color-text-inverse)]">Công dụng</span>
             <Textarea
+              rows={2}
               value={line.application || ""}
               onChange={(event) =>
                 updateLine(index, { application: event.target.value })
               }
               placeholder="Công dụng..."
-              className="min-h-[96px] w-full resize-y text-sm"
+              className="min-h-[56px] w-full resize-y py-2 text-sm"
               disabled={disabled}
             />
-          </div>
+          </label>
+        </div>
 
-          <div className="mt-2 flex items-center justify-between gap-4">
-            <span className="text-sm text-[var(--color-text-inverse)]">
-              Giá vốn: {formatCurrency(line.costPrice || 0)}
-            </span>
+        <div className="mt-3 grid grid-cols-2 gap-2 border-t border-[var(--color-border-subtle)] pt-3">
+          <div>
+            <p className="text-xs text-[var(--color-text-inverse)]">Giá vốn</p>
+            <p className="mt-0.5 text-sm font-medium tabular-nums">
+              {formatCurrency(line.costPrice || 0)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-[var(--color-text-inverse)]">% Lợi nhuận</p>
+            {line.overrideUnitPrice != null ? (
+              <div className="mt-0.5 flex items-center gap-1.5">
+                <span className="text-sm font-medium italic text-blue-600">
+                  {calculateMarginFromPrice(
+                    line.costPrice,
+                    line.overrideUnitPrice
+                  ).toFixed(1)}
+                  %
+                </span>
+                <button
+                  type="button"
+                  className="text-xs text-[var(--color-text-inverse)]"
+                  title="Xóa đơn giá tùy chỉnh"
+                  onClick={() => updateLine(index, { overrideUnitPrice: null })}
+                  disabled={disabled}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <Input
+                type="number"
+                min={0}
+                step={0.1}
+                className="mt-1 h-9 w-full min-w-0 tabular-nums"
+                value={String(line.marginPercent ?? "")}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  updateLine(index, {
+                    marginPercent: next === "" ? defaultMargin : Number(next),
+                    overrideUnitPrice: null,
+                  });
+                }}
+                disabled={disabled}
+              />
+            )}
+          </div>
+          <div className="col-span-2">
+            <p className="text-xs text-[var(--color-text-inverse)]">Đơn giá</p>
             {editingPriceRow === index ? (
               <Input
                 type="number"
                 min={0}
-                className="h-9 w-36 tabular-nums text-right"
+                className="mt-1 h-9 w-full tabular-nums"
                 value={editingPriceValue}
                 autoFocus
                 onChange={(e) => setEditingPriceValue(e.target.value)}
@@ -410,14 +423,15 @@ export function QuoteLineTable({
               />
             ) : (
               <button
-                className="text-base font-semibold cursor-pointer hover:text-blue-600"
+                type="button"
+                className="mt-0.5 text-left text-base font-semibold tabular-nums text-[var(--color-text-secondary)]"
                 onClick={() => {
                   setEditingPriceRow(index);
                   setEditingPriceValue(String(unitPrice));
                 }}
                 disabled={disabled}
               >
-                Đơn giá: {formatCurrency(unitPrice)}
+                {formatCurrency(unitPrice)}
               </button>
             )}
           </div>
@@ -488,7 +502,7 @@ export function QuoteLineTable({
         </div>
       </div>
 
-      <div className="space-y-2 lg:hidden">
+      <div className="w-full min-w-0 space-y-2 lg:hidden">
         {visibleRows.map((row) => {
           if (row.kind === "group") {
             return (

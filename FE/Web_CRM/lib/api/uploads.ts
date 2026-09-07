@@ -1,11 +1,8 @@
 import type { ApiResponse } from "@/lib/types";
 import { getStoredToken } from "@/lib/auth/session";
+import { getApiBaseUrl, getApiUrl } from "@/lib/api/baseUrl";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8017/api";
-
-export function getApiBaseUrl() {
-  return API_URL.replace(/\/api\/?$/, "");
-}
+export { getApiBaseUrl };
 
 export function getImageUrl(path?: string) {
   if (!path) return "";
@@ -46,7 +43,7 @@ async function uploadImage(file: File, endpoint: string): Promise<UploadResult> 
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await fetch(`${getApiUrl()}${endpoint}`, {
     method: "POST",
     headers,
     body: formData,

@@ -179,11 +179,12 @@ export function BottomSheet({
         style={{ maxHeight }}>
         <div
           className={cn(
-            "relative flex max-h-full min-h-0 w-full flex-col overflow-hidden rounded-t-2xl bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] shadow-[0_-12px_40px_rgba(0,0,0,0.22)]",
+            "relative flex max-h-full min-h-0 w-full max-w-none flex-col overflow-hidden rounded-t-2xl bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] shadow-[0_-12px_40px_rgba(0,0,0,0.22)]",
             !settled &&
               "origin-bottom will-change-transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
             !settled && (entered ? "translate-y-0" : "translate-y-full"),
-            className
+            className,
+            "w-full max-w-none"
           )}
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           onTransitionEnd={handlePanelTransitionEnd}>

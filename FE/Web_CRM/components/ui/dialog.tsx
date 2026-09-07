@@ -162,7 +162,7 @@ const DialogContent = React.forwardRef<
           onOpenChange={onOpenChange}
           maxHeight="90dvh"
           showClose={false}
-          className={cn("relative", className)}
+          className={cn("relative", className, "w-full max-w-none")}
         >
           <DialogClose className="absolute right-2.5 top-2.5 z-30 inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-inverse)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]">
             <X className="h-4 w-4" />

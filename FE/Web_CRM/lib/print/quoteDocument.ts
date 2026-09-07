@@ -365,7 +365,7 @@ function buildPrintHtml(input: PrintQuoteInput) {
       width: 99%;
       border-collapse: collapse;
       margin-top: 8px;
-      font-size: 16px;
+      font-size: 14px;
       table-layout: fixed;
     }
 

@@ -23,6 +23,7 @@ const START_SERVER = () => {
           return (
             hostname === 'localhost' ||
             hostname === '127.0.0.1' ||
+            hostname.endsWith('.local') ||
             /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
             /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
             /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)

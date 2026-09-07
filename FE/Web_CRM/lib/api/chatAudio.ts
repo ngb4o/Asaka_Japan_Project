@@ -1,7 +1,6 @@
 import { getStoredToken } from "@/lib/auth/session";
 import { ApiClientError } from "@/lib/api/client";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8017/api";
+import { getApiUrl } from "@/lib/api/baseUrl";
 
 export async function transcribeChatAudio(
   file: Blob,
@@ -10,7 +9,7 @@ export async function transcribeChatAudio(
   const formData = new FormData();
   formData.append("audio", file, filename);
   const token = getStoredToken();
-  const response = await fetch(`${API_URL}/chat/transcribe`, {
+  const response = await fetch(`${getApiUrl()}/chat/transcribe`, {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,

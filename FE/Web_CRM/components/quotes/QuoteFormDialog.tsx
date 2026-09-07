@@ -278,11 +278,11 @@ export function QuoteFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] xl:max-w-[1600px]">
+      <DialogContent className="lg:max-w-[95vw] xl:max-w-[1600px]">
         <DialogHeader>
           <DialogTitle>{editing ? "Sửa báo giá" : "Tạo báo giá"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="min-w-0 space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="quote-name">Tên báo giá *</Label>
@@ -409,8 +409,6 @@ export function QuoteFormDialog({
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-            </div>
             {form.lines.length > 0 ? (
               <SearchInput
                 placeholder="Tìm sản phẩm trong bảng..."

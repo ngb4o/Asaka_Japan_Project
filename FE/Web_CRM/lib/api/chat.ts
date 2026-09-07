@@ -1,7 +1,6 @@
 import { getStoredToken } from "@/lib/auth/session";
 import { ApiClientError, apiRequest } from "@/lib/api/client";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8017/api";
+import { getApiUrl } from "@/lib/api/baseUrl";
 
 export type ChatHistoryMessage = {
   role: "user" | "assistant";
@@ -71,7 +70,7 @@ export async function streamChatMessage(
   signal?: AbortSignal
 ) {
   const token = getStoredToken();
-  const response = await fetch(`${API_URL}/chat/messages`, {
+  const response = await fetch(`${getApiUrl()}/chat/messages`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

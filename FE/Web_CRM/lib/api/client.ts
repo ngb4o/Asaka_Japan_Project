@@ -11,8 +11,7 @@ import {
   enqueueMutation,
 } from "@/lib/offline/mutation-queue";
 import { requestBackgroundSync } from "@/lib/offline/sync";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8017/api";
+import { getApiUrl } from "@/lib/api/baseUrl";
 
 export class ApiClientError extends Error {
   statusCode: number;
@@ -65,7 +64,7 @@ export async function apiRequest<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${getApiUrl()}${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
