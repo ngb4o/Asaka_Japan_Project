@@ -8,6 +8,8 @@ const quoteLineSchema = Joi.object({
   productId: Joi.string().pattern(OBJECT_ID_RULE).required(),
   name: Joi.string().trim().min(1).max(200).required(),
   sku: optionalText.max(50),
+  categoryId: optionalText.max(50),
+  categoryName: optionalText.max(100),
   activeIngredient: optionalText.max(200),
   application: optionalText.max(2000),
   unitsPerCase: Joi.number().integer().min(1).optional(),

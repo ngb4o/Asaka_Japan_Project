@@ -95,7 +95,13 @@ export function QuotePrintView({
                 let lastCategory = "";
                 let stt = 0;
                 const sections: ReactElement[] = [];
-                quote.lines.forEach((line, index) => {
+                const sortedLines = [...quote.lines].sort((a, b) => {
+                  const aCat = (a.categoryName || "Chưa phân loại").toLowerCase();
+                  const bCat = (b.categoryName || "Chưa phân loại").toLowerCase();
+                  if (aCat !== bCat) return aCat.localeCompare(bCat, "vi");
+                  return 0;
+                });
+                sortedLines.forEach((line, index) => {
                   const cat = line.categoryName || "Chưa phân loại";
                   if (cat !== lastCategory) {
                     sections.push(

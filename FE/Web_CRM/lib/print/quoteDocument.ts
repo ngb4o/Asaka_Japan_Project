@@ -55,12 +55,17 @@ function splitVariant(name: string) {
   return { baseName: baseName || raw, variantLabel };
 }
 
+function categoryLabel(line: QuoteLine) {
+  const name = (line.categoryName || "").trim();
+  return name || "Chưa phân loại";
+}
+
 function groupLinesByVariant(lines: QuoteLine[]) {
   const groups = new Map<string, QuoteLine[]>();
   const order: string[] = [];
   for (const line of lines) {
     const { baseName } = splitVariant(line.name || "");
-    const key = baseName.toLowerCase();
+    const key = `${categoryLabel(line).toLowerCase()}::${baseName.toLowerCase()}`;
     if (!groups.has(key)) {
       groups.set(key, []);
       order.push(key);
@@ -79,15 +84,19 @@ function buildPrintHtml(input: PrintQuoteInput) {
       : "";
 
   const sortedLines = [...input.quote.lines].sort((a, b) => {
-    const aCat = (a.categoryName || "").trim().toLowerCase();
-    const bCat = (b.categoryName || "").trim().toLowerCase();
+    const aCat = categoryLabel(a).toLowerCase();
+    const bCat = categoryLabel(b).toLowerCase();
     if (aCat !== bCat) return aCat.localeCompare(bCat, "vi");
     return 0;
   });
+  let stt = 0;
+
   const rows = groupLinesByVariant(sortedLines)
-    .map((group, index) => {
+    .map((group) => {
       const isMulti = group.length > 1;
       const first = group[0];
+
+      stt += 1;
       const { baseName } = splitVariant(first.name || "");
       const displayName = isMulti ? baseName : first.name || "—";
 
@@ -177,11 +186,11 @@ function buildPrintHtml(input: PrintQuoteInput) {
         : "";
 
       return `
-        <tr>
+  <tr>
           ${!input.forAdmin
           ? `
                 <td class="center">
-                  ${index + 1}
+                  ${stt}
                 </td>
               `
           : ""
@@ -195,27 +204,24 @@ function buildPrintHtml(input: PrintQuoteInput) {
             ${skuCell}
           </td>
 
-          ${
-            !input.forAdmin
-              ? `
+          ${!input.forAdmin
+          ? `
                 <td>
-                  ${
-                    first.activeIngredient
-                      ? `<div class="multiline">${escapeHtml(first.activeIngredient)}</div>`
-                      : "—"
-                  }
+                  ${first.activeIngredient
+            ? `<div class="multiline">${escapeHtml(first.activeIngredient)}</div>`
+            : "—"
+          }
                 </td>
 
                 <td>
-                  ${
-                    first.application
-                      ? `<div class="multiline">${escapeHtml(first.application)}</div>`
-                      : "—"
-                  }
+                  ${first.application
+            ? `<div class="multiline">${escapeHtml(first.application)}</div>`
+            : "—"
+          }
                 </td>
               `
-              : ""
-          }
+          : ""
+        }
 
           <td class="num">
             ${qtyCell}
@@ -406,6 +412,19 @@ function buildPrintHtml(input: PrintQuoteInput) {
       break-inside: avoid;
     }
 
+    .category-cell {
+      background: #1d4ed8;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      text-align: left;
+      padding: 8px 10px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
     /* =========================
        CONTENT
     ========================= */
@@ -565,9 +584,8 @@ function buildPrintHtml(input: PrintQuoteInput) {
               Sản phẩm
             </th>
 
-            ${
-              !input.forAdmin
-                ? `
+            ${!input.forAdmin
+      ? `
                   <!-- Hoạt chất -->
                   <th style="width: 22%">
                     Hoạt chất
@@ -578,8 +596,8 @@ function buildPrintHtml(input: PrintQuoteInput) {
                     Công dụng
                   </th>
                 `
-                : ""
-            }
+      : ""
+    }
 
             <!-- GIẢM -->
             ${input.forAdmin
