@@ -6,7 +6,7 @@ const ITEM_COLLECTION_NAME = 'items'
 
 const ITEM_SCHEMA = Joi.object({
   name: Joi.string().required().min(2).max(200).trim(),
-  image: Joi.string().trim().allow('').max(500).default(''),
+  image: Joi.string().trim().allow('').max(1000).default(''),
   quantity: Joi.number().min(0).required(),
   column: Joi.number().integer().min(1).max(9999).allow(null).default(null),
   createdAt: Joi.date().default(() => new Date()),

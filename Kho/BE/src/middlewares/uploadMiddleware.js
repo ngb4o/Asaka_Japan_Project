@@ -1,7 +1,7 @@
 import multer from 'multer'
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
-import { saveLocalImage } from '~/utils/saveImage'
+import { saveItemImage } from '~/utils/saveImage'
 
 const fileFilter = (_req, file, cb) => {
   const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
@@ -37,7 +37,7 @@ export const uploadItemImage = (req, res, next) => {
 }
 
 const persistImage = async (req) => {
-  const saved = await saveLocalImage(req.file, 'items')
+  const saved = await saveItemImage(req.file, 'items')
   req.body.image = saved.url
 }
 
