@@ -67,33 +67,54 @@ const saveLocalImage = async (file, folderName) => {
   }
 }
 
-const uploadToCloudinary = (file, folderName) =>
+const uploadToCloudinary = (file, folderName, format) =>
   new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: `asaka/${folderName}`,
-        resource_type: 'image',
-        overwrite: false
-      },
-      (error, result) => {
-        if (error) {
-          reject(error)
-          return
-        }
+    const options = {
+      folder: `asaka/${folderName}`,
+      resource_type: 'image',
+      overwrite: false
+    }
+    if (format) options.format = format
 
-        resolve({
-          url: result.secure_url,
-          filename: result.public_id,
-          size: file.size,
-          mimetype: file.mimetype
-        })
+    let settled = false
+    const fail = (error) => {
+      if (settled) return
+      settled = true
+      reject(error || new Error('Cloudinary upload failed'))
+    }
+    const succeed = (value) => {
+      if (settled) return
+      settled = true
+      resolve(value)
+    }
+
+    const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
+      if (error || !result) {
+        fail(error)
+        return
       }
-    )
 
+      succeed({
+        url: result.secure_url,
+        filename: result.public_id,
+        size: result.bytes || file.size,
+        mimetype: format === 'jpg' ? 'image/jpeg' : file.mimetype
+      })
+    })
+
+    stream.on('error', fail)
     stream.end(file.buffer)
   })
 
 export const saveItemImage = async (file, folderName = 'items') => {
+  if (isHeic(file) && isCloudinaryEnabled()) {
+    try {
+      return await uploadToCloudinary(file, folderName, 'jpg')
+    } catch {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Không đọc được ảnh HEIC. Hãy thử JPEG hoặc PNG.')
+    }
+  }
+
   const image = await toJpeg(file)
   if (isCloudinaryEnabled()) return uploadToCloudinary(image, folderName)
   return saveLocalImage(image, folderName)

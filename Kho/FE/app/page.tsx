@@ -438,7 +438,8 @@ function ItemDialog({
         image: file,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Lưu sản phẩm thất bại");
+      const message = err instanceof Error ? err.message : "";
+      setError(message && message !== "Failed to fetch" ? message : "Không tải được ảnh lên. Hãy thử lại.");
       setSubmitting(false);
     }
   }
