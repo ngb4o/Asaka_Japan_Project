@@ -1,5 +1,16 @@
 import 'dotenv/config'
 
+const DEFAULT_CORS_ORIGINS = [
+  'http://localhost:3002',
+  'http://127.0.0.1:3002',
+  'https://crm-mldd.vercel.app'
+]
+
+const envOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+
 export const env = {
   MONGODB_URI: process.env.MONGODB_URI,
   DATABASE_NAME: process.env.DATABASE_NAME || 'kho',
@@ -10,8 +21,5 @@ export const env = {
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
-  CORS_ORIGINS: (process.env.CORS_ORIGIN || 'http://localhost:3002,http://127.0.0.1:3002,https://crm-mldd.vercel.app')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean)
+  CORS_ORIGINS: [...new Set([...DEFAULT_CORS_ORIGINS, ...envOrigins])]
 }
