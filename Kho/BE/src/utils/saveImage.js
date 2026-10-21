@@ -1,9 +1,51 @@
 import fs from 'fs'
 import path from 'path'
 import { randomBytes } from 'crypto'
+import { createRequire } from 'module'
+import { StatusCodes } from 'http-status-codes'
 import { cloudinary, isCloudinaryEnabled } from '~/config/cloudinary'
+import ApiError from '~/utils/ApiError'
+
+const require = createRequire(__filename)
+const convertHeic = require('heic-convert')
 
 const SAFE_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif'])
+const HEIC_EXT = new Set(['.heic', '.heif'])
+const HEIC_MIME = new Set([
+  'image/heic',
+  'image/heif',
+  'image/heic-sequence',
+  'image/heif-sequence'
+])
+
+const isHeic = (file) => {
+  const mime = String(file.mimetype || '').toLowerCase()
+  const ext = path.extname(file.originalname || '').toLowerCase()
+  return HEIC_MIME.has(mime) || HEIC_EXT.has(ext)
+}
+
+const toJpeg = async (file) => {
+  if (!isHeic(file)) return file
+
+  try {
+    const output = await convertHeic({
+      buffer: Buffer.from(file.buffer),
+      format: 'JPEG',
+      quality: 0.9
+    })
+    const buffer = Buffer.from(output)
+    const base = path.basename(file.originalname || 'anh', path.extname(file.originalname || ''))
+
+    return {
+      buffer,
+      size: buffer.length,
+      mimetype: 'image/jpeg',
+      originalname: `${base}.jpg`
+    }
+  } catch {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Không đọc được ảnh HEIC. Hãy thử JPEG hoặc PNG.')
+  }
+}
 
 const uploadsRoot = () => path.resolve(process.cwd(), 'uploads')
 
@@ -52,8 +94,9 @@ const uploadToCloudinary = (file, folderName) =>
   })
 
 export const saveItemImage = async (file, folderName = 'items') => {
-  if (isCloudinaryEnabled()) return uploadToCloudinary(file, folderName)
-  return saveLocalImage(file, folderName)
+  const image = await toJpeg(file)
+  if (isCloudinaryEnabled()) return uploadToCloudinary(image, folderName)
+  return saveLocalImage(image, folderName)
 }
 
 const cloudinaryPublicId = (url) => {

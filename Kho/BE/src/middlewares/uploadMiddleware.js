@@ -1,17 +1,34 @@
+import path from 'path'
 import multer from 'multer'
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
 import { saveItemImage } from '~/utils/saveImage'
 
-const fileFilter = (_req, file, cb) => {
-  const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+const ALLOWED_MIME = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/heic',
+  'image/heif',
+  'image/heic-sequence',
+  'image/heif-sequence'
+])
 
-  if (allowed.includes(file.mimetype)) {
+const IMAGE_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.heif'])
+
+const fileFilter = (_req, file, cb) => {
+  const mime = String(file.mimetype || '').toLowerCase()
+  const ext = path.extname(file.originalname || '').toLowerCase()
+  const mimeMissing = !mime || mime === 'application/octet-stream'
+
+  if (ALLOWED_MIME.has(mime) || (mimeMissing && IMAGE_EXT.has(ext))) {
     cb(null, true)
     return
   }
 
-  cb(new Error('Chỉ nhận ảnh JPEG, PNG, WEBP hoặc GIF'), false)
+  cb(new Error('Chỉ nhận ảnh JPEG, PNG, WEBP, GIF hoặc HEIC'), false)
 }
 
 const upload = multer({

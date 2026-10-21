@@ -16,6 +16,7 @@ import {
 import { useCallback, useEffect, useId, useState } from "react";
 import { PreviewableImage } from "@/components/PreviewableImage";
 import { createItem, deleteItem, listItems, mediaUrl, updateItem } from "@/lib/api";
+import { isAllowedImage, prepareImageFile } from "@/lib/imageFile";
 import type { ItemInput, ItemList, WarehouseItem } from "@/lib/types";
 
 const PAGE_SIZE = 12;
@@ -358,6 +359,7 @@ function ItemDialog({
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState(editing?.image ? mediaUrl(editing.image) : "");
   const [error, setError] = useState("");
+  const [preparing, setPreparing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -374,19 +376,29 @@ function ItemDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  function chooseFile(next: File | null) {
+  async function chooseFile(next: File | null) {
     if (!next) return;
-    if (!next.type.startsWith("image/")) {
-      setError("Chỉ nhận file ảnh");
+    if (!isAllowedImage(next)) {
+      setError("Chỉ nhận ảnh JPEG, PNG, WEBP, GIF hoặc HEIC");
       return;
     }
     if (next.size > MAX_IMAGE_BYTES) {
       setError("Ảnh tối đa 20MB");
       return;
     }
+
     setError("");
-    setFile(next);
-    setPreview(URL.createObjectURL(next));
+    setPreparing(true);
+    try {
+      const prepared = await prepareImageFile(next);
+      setFile(prepared);
+      setPreview(URL.createObjectURL(prepared));
+    } catch {
+      setFile(next);
+      setPreview("");
+    } finally {
+      setPreparing(false);
+    }
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -486,13 +498,19 @@ function ItemDialog({
                 htmlFor={imageInputId}
                 className="flex h-28 w-28 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)] text-xs text-[var(--color-text-inverse)] hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
               >
-                <ImagePlus className="h-5 w-5" />
-                {preview ? "Đổi ảnh" : "Thêm ảnh"}
+                {preparing ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
+                {preparing ? "Đang xử lý" : preview ? "Đổi ảnh" : "Thêm ảnh"}
               </label>
+              {file && !preview ? (
+                <p className="self-end text-xs text-[var(--color-text-inverse)]">
+                  Đã chọn {file.name}. Ảnh sẽ được chuyển sang JPEG khi lưu.
+                </p>
+              ) : null}
               <input
                 id={imageInputId}
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif"
+                disabled={preparing}
                 className="sr-only"
                 onChange={(event) => {
                   chooseFile(event.target.files?.[0] ?? null);
@@ -506,7 +524,7 @@ function ItemDialog({
             <button type="button" onClick={onClose} className={`${outlineButton} h-10 px-4 text-sm`}>
               Hủy
             </button>
-            <button type="submit" disabled={submitting} className={primaryButton}>
+            <button type="submit" disabled={submitting || preparing} className={primaryButton}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Lưu
             </button>
