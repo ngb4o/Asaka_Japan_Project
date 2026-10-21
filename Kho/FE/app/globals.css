@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-barlow), sans-serif;
+  --radius-card: 14px;
+  --radius-button: 10px;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #017d03;
+  --color-text-tertiary: #ffffff;
+  --color-text-inverse: #64748b;
+  --color-surface-base: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-surface-muted: #f1f5f9;
+  --color-border-subtle: #e2e8f0;
+  --color-badge-success-bg: #dcfce7;
+  --color-badge-success-fg: #15803d;
+  --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.04);
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 4px 12px rgb(15 23 42 / 0.08);
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface-muted);
+  color: var(--color-text-primary);
+  font-family: var(--font-barlow), sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+@layer components {
+  .crm-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .crm-table-frame {
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-border-subtle);
+  }
+
+  .crm-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 15px;
+    line-height: 1.35rem;
+  }
+
+  .crm-data-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .crm-data-table thead tr {
+    background: var(--color-text-secondary);
+    color: #fff;
+  }
+
+  .crm-data-table th,
+  .crm-data-table td {
+    border: 1px solid var(--color-border-subtle);
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+  }
+
+  .crm-data-table th {
+    font-weight: 600;
+    color: #fff;
+    border-color: color-mix(in srgb, var(--color-text-secondary) 75%, #000);
+  }
+
+  .crm-data-table tbody tr {
+    transition: background-color 150ms ease;
+  }
+
+  .crm-data-table tbody tr:hover {
+    background: color-mix(in srgb, var(--color-surface-muted) 70%, transparent);
+  }
+
+  .crm-toolbar-elevated {
+    box-shadow: var(--shadow-card), 0 0 0 1px rgb(15 23 42 / 0.03);
+  }
+}
+
+@media (max-width: 1023px) {
+  .crm-page-flush {
+    min-height: 100%;
+    background-color: var(--color-surface-elevated);
+  }
+
+  .crm-page-flush [data-crm-card] {
+    border-radius: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    box-shadow: none;
+    background-color: var(--color-surface-elevated);
+  }
+}
+
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+  select {
+    font-size: 16px !important;
+  }
+}

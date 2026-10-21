@@ -1,0 +1,10 @@
+{
+  "name": "kho",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,blue \"npm run dev --prefix BE\" \"npm run dev --prefix FE\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
