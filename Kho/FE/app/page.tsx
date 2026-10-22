@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { PreviewableImage } from "@/components/PreviewableImage";
+import { PwaInstallBanner } from "@/components/PwaInstall";
 import { createItem, deleteItem, listItems, mediaUrl, updateItem } from "@/lib/api";
 import { isAllowedImage, prepareImageFile } from "@/lib/imageFile";
 import type { ItemInput, ItemList, WarehouseItem } from "@/lib/types";
@@ -186,6 +187,7 @@ export default function HomePage() {
           </button>
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 sm:p-4">
+          <PwaInstallBanner />
           <div className="flex shrink-0 gap-2">
             <SearchBox value={query} onSearch={handleSearch} />
           </div>
