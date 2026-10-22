@@ -17,10 +17,10 @@ const quantityField = Joi.number().min(0).messages({
   'any.required': 'Số lượng là bắt buộc'
 })
 
-const columnField = Joi.number().integer().min(1).max(9999).allow(null).empty('').messages({
+const columnField = Joi.number().integer().min(0).max(9999).allow(null).empty('').messages({
   'number.base': 'Cột phải là số nguyên',
   'number.integer': 'Cột phải là số nguyên',
-  'number.min': 'Cột phải từ 1 trở lên',
+  'number.min': 'Cột phải từ 0 trở lên',
   'number.max': 'Cột tối đa 9999',
   'any.required': 'Cột là bắt buộc'
 })

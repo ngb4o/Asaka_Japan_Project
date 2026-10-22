@@ -13,7 +13,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { PreviewableImage } from "@/components/PreviewableImage";
 import { createItem, deleteItem, listItems, mediaUrl, updateItem } from "@/lib/api";
 import { isAllowedImage, prepareImageFile } from "@/lib/imageFile";
@@ -33,12 +33,19 @@ const emptyList: ItemList = {
 };
 
 export default function HomePage() {
+  const isMobile = useIsMobile();
   const [data, setData] = useState<ItemList>(emptyList);
+  const [items, setItems] = useState<WarehouseItem[]>([]);
   const [query, setQuery] = useState("");
   const [column, setColumn] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [ready, setReady] = useState(false);
+  const requestRef = useRef(0);
+  const loadingMoreRef = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<WarehouseItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<WarehouseItem | null>(null);
@@ -50,28 +57,69 @@ export default function HomePage() {
     setPage(1);
   }, []);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const fetchList = useCallback(async (nextPage: number, append: boolean) => {
+    const requestId = ++requestRef.current;
+    if (append) {
+      loadingMoreRef.current = true;
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+
     try {
       const next = await listItems({
         q: query || undefined,
         column: column || undefined,
-        page,
+        page: nextPage,
         limit: PAGE_SIZE,
       });
+      if (requestId !== requestRef.current) return;
       setData(next);
-      if (next.page !== page) setPage(next.page);
+      setItems((current) => {
+        if (!append) return next.items;
+        const seen = new Set(current.map((item) => item.id));
+        return [...current, ...next.items.filter((item) => !seen.has(item.id))];
+      });
     } catch (error) {
-      setToast(error instanceof Error ? error.message : "Không tải được dữ liệu");
+      if (requestId === requestRef.current) {
+        setToast(error instanceof Error ? error.message : "Không tải được dữ liệu");
+      }
     } finally {
-      setLoading(false);
-      setReady(true);
+      if (requestId === requestRef.current) {
+        setLoading(false);
+        setLoadingMore(false);
+        loadingMoreRef.current = false;
+        setReady(true);
+      }
     }
-  }, [column, page, query]);
+  }, [column, query]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (isMobile === null) return;
+    void fetchList(isMobile ? 1 : page, false);
+  }, [fetchList, isMobile, isMobile ? 1 : page]);
+
+  const loadMore = useCallback(() => {
+    if (isMobile !== true || loading || loadingMoreRef.current) return;
+    if (data.page >= data.totalPages) return;
+    void fetchList(data.page + 1, true);
+  }, [data.page, data.totalPages, fetchList, isMobile, loading]);
+
+  useEffect(() => {
+    if (isMobile !== true) return;
+    const root = scrollRef.current;
+    const sentinel = sentinelRef.current;
+    if (!root || !sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) loadMore();
+      },
+      { root, rootMargin: "240px 0px", threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [isMobile, items.length, loadMore]);
 
   useEffect(() => {
     if (!toast) return;
@@ -99,7 +147,7 @@ export default function HomePage() {
     }
     setDialogOpen(false);
     setEditing(null);
-    await load();
+    await fetchList(isMobile ? 1 : page, false);
   }
 
   async function handleDelete() {
@@ -113,7 +161,7 @@ export default function HomePage() {
         setDialogOpen(false);
         setEditing(null);
       }
-      await load();
+      await fetchList(isMobile ? 1 : page, false);
     } catch (error) {
       setToast(error instanceof Error ? error.message : "Xóa thất bại");
     } finally {
@@ -121,7 +169,7 @@ export default function HomePage() {
     }
   }
 
-  if (!ready && loading) {
+  if (isMobile === null || (!ready && loading)) {
     return <PageSkeleton />;
   }
 
@@ -129,24 +177,20 @@ export default function HomePage() {
 
   return (
     <div className="flex h-dvh flex-col bg-[var(--color-surface-muted)] p-3 sm:p-4">
-      <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight">Sản phẩm</h1>
-        <button type="button" onClick={openCreate} className={`${primaryButton} shrink-0`}>
-          <Plus className="h-4 w-4" />
-          Thêm sản phẩm
-        </button>
-      </div>
-
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)]">
-        <div className="flex shrink-0 items-center border-b border-[var(--color-border-subtle)] px-4 py-3">
-          <h2 className="text-base font-semibold tracking-tight">Danh sách</h2>
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3">
+          <h1 className="text-base font-semibold tracking-tight">Danh sách</h1>
+          <button type="button" onClick={openCreate} className={`${primaryButton} shrink-0`}>
+            <Plus className="h-4 w-4" />
+            Thêm sản phẩm
+          </button>
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 sm:p-4">
           <div className="flex shrink-0 gap-2">
             <SearchBox value={query} onSearch={handleSearch} />
           </div>
 
-            {data.items.length === 0 ? (
+            {items.length === 0 ? (
               <div className="flex min-h-0 flex-1 items-center justify-center">
               <EmptyState
                 title={filteredEmpty ? "Không có sản phẩm khớp bộ lọc" : "Chưa có sản phẩm"}
@@ -159,52 +203,52 @@ export default function HomePage() {
               </div>
             ) : (
               <div className="flex min-h-0 flex-1 flex-col gap-3">
-                <div className="min-h-0 flex-1 space-y-3 overflow-y-auto lg:hidden">
-                  {data.items.map((item) => (
-                    <article
-                      key={item.id}
-                      className="rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-card)] ring-1 ring-black/[0.03]"
-                    >
-                      <div className="flex gap-3">
-                        <div className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]">
+                <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto lg:hidden">
+                  <div className="grid grid-cols-2 gap-3">
+                    {items.map((item) => (
+                      <article
+                        key={item.id}
+                        className="flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] ring-1 ring-black/[0.03]"
+                      >
+                        <div className="relative aspect-square bg-[var(--color-surface-muted)]">
                           {item.image ? (
                             <PreviewableImage src={mediaUrl(item.image)} alt={item.name} />
                           ) : (
                             <span className="flex h-full w-full items-center justify-center text-[var(--color-text-inverse)]">
-                              <ImageIcon className="h-6 w-6" />
+                              <ImageIcon className="h-7 w-7" />
                             </span>
                           )}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="line-clamp-2 text-sm font-semibold leading-snug">{item.name}</p>
-                            <span className="shrink-0 rounded-full bg-[var(--color-badge-success-bg)] px-2 py-0.5 text-xs font-semibold text-[var(--color-badge-success-fg)]">
-                              {item.column == null ? "Chưa có cột" : `Cột ${item.column}`}
-                            </span>
-                          </div>
-                          <div className="mt-2">
-                            <span className="inline-flex rounded-md bg-[var(--color-surface-muted)] px-2.5 py-1 text-sm font-medium">
-                              Số lượng {formatQuantity(item.quantity)}
-                            </span>
+                        <div className="flex flex-1 flex-col gap-2 p-2.5">
+                          <p className="line-clamp-2 text-sm font-semibold leading-snug">{item.name}</p>
+                          <p className="text-xs text-[var(--color-text-inverse)]">
+                            SL {formatQuantity(item.quantity)} · {item.column == null ? "Chưa có cột" : `Cột ${item.column}`}
+                          </p>
+                          <div className="mt-auto flex justify-end gap-2">
+                            <button type="button" className={outlineButton} title="Sửa" onClick={() => openEdit(item)}>
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              className={dangerButton}
+                              title="Xóa"
+                              disabled={actionId === item.id}
+                              onClick={() => setPendingDelete(item)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </div>
                         </div>
-                      </div>
-                      <div className="mt-3.5 flex justify-end gap-2 border-t border-[var(--color-border-subtle)] pt-3.5">
-                        <button type="button" className={outlineButton} title="Sửa" onClick={() => openEdit(item)}>
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          className={dangerButton}
-                          title="Xóa"
-                          disabled={actionId === item.id}
-                          onClick={() => setPendingDelete(item)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </article>
-                  ))}
+                      </article>
+                    ))}
+                  </div>
+                  <div ref={sentinelRef} className="h-1" aria-hidden />
+                  {loadingMore ? (
+                    <div className="flex items-center justify-center gap-2 py-4 text-xs text-[var(--color-text-inverse)]">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Đang tải thêm...
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="crm-table-scroll hidden min-h-0 flex-1 overflow-auto lg:block">
@@ -220,7 +264,7 @@ export default function HomePage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {data.items.map((item) => (
+                        {items.map((item) => (
                           <tr key={item.id}>
                             <td>
                               {item.image ? (
@@ -418,9 +462,9 @@ function ItemDialog({
     }
     if (
       columnValue != null &&
-      (!Number.isInteger(columnValue) || columnValue < 1 || columnValue > 9999)
+      (!Number.isInteger(columnValue) || columnValue < 0 || columnValue > 9999)
     ) {
-      setError("Cột phải là số nguyên từ 1 đến 9999");
+      setError("Cột phải là số nguyên từ 0 đến 9999");
       return;
     }
     if (!editing && !file) {
@@ -608,7 +652,7 @@ function Pagination({
   const pages = visiblePages(page, totalPages);
 
   return (
-    <div className="flex shrink-0 flex-col gap-3 border-t border-[var(--color-border-subtle)] pt-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="hidden shrink-0 flex-col gap-3 border-t border-[var(--color-border-subtle)] pt-3 sm:flex-row sm:items-center sm:justify-between lg:flex">
       <p className="text-sm text-[var(--color-text-inverse)]">
         Hiển thị <span className="font-medium text-[var(--color-text-primary)]">{from}</span>
         {" - "}
@@ -657,6 +701,20 @@ function Pagination({
   );
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  return isMobile;
+}
+
 function visiblePages(page: number, totalPages: number) {
   if (totalPages <= 5) return Array.from({ length: totalPages }, (_, index) => index + 1);
   const pages = new Set<number>([1, totalPages, page]);
@@ -668,7 +726,6 @@ function visiblePages(page: number, totalPages: number) {
 function PageSkeleton() {
   return (
     <div className="flex h-dvh flex-col bg-[var(--color-surface-muted)] p-3 sm:p-4">
-      <div className="mb-3 h-10 w-40 shrink-0 animate-pulse rounded-lg bg-white" />
       <div className="min-h-0 flex-1 animate-pulse rounded-[var(--radius-card)] bg-white" />
     </div>
   );

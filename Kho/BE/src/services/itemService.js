@@ -14,7 +14,7 @@ const getList = async (query = {}) => {
   if (search) Object.assign(filter, search)
 
   const column = parseInt(query.column, 10)
-  if (Number.isFinite(column) && column >= 1) filter.column = column
+  if (Number.isFinite(column) && column >= 0) filter.column = column
 
   const result = await itemModel.findMany(filter, {
     limit,
