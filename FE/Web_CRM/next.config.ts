@@ -55,7 +55,7 @@ const nextConfig: NextConfig = {
         })),
       {
         protocol: "https",
-        hostname: "asaka-api.onrender.com",
+        hostname: "asakajapan-api.onrender.com",
         pathname: "/uploads/**",
       },
       {
