@@ -8,6 +8,8 @@ import { APIs_V1 } from '~/routes/v1'
 import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware'
 import { itemModel } from '~/models/itemModel'
 import { movementModel } from '~/models/movementModel'
+import { userModel } from '~/models/userModel'
+import { authService } from '~/services/authService'
 
 const isDevOrigin = (origin) => {
   if (env.BUILD_MODE !== 'dev') return false
@@ -64,7 +66,22 @@ const START_SERVER = () => {
 }
 
 CONNECT_DB()
-  .then(() => Promise.all([itemModel.ensureIndexes(), movementModel.ensureIndexes()]))
+  .then(() => Promise.all([
+    itemModel.ensureIndexes(),
+    movementModel.ensureIndexes(),
+    userModel.ensureIndexes()
+  ]))
+  .then(() => authService.ensureAdmin())
+  .then((account) => {
+    if (account?.created) console.log(`Đã tạo tài khoản kho "${account.username}"`)
+    if (account?.reason === 'updated') console.log(`Đã cập nhật mật khẩu kho "${account.username}"`)
+    if (account?.reason === 'missing-env') {
+      console.warn('Chưa có ADMIN_USERNAME / ADMIN_PASSWORD, chưa tạo được tài khoản kho')
+    }
+    if (account?.reason === 'short-password') {
+      console.warn('ADMIN_PASSWORD cần ít nhất 6 ký tự, chưa cập nhật tài khoản kho')
+    }
+  })
   .then(() => {
     console.log('Connected to MongoDB')
     START_SERVER()

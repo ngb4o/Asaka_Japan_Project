@@ -38,6 +38,7 @@ export type StockMovement = {
   type: MovementType;
   quantity: number;
   note: string;
+  createdBy: string;
   balanceAfter: number;
   createdAt: string;
 };
@@ -59,4 +60,15 @@ export type MovementInput = {
 export type MovementResult = {
   movement: StockMovement;
   item: WarehouseItem;
+};
+
+export type AuthUser = {
+  id: string;
+  username: string;
+  name: string;
+};
+
+export type LoginResult = {
+  token: string;
+  user: AuthUser;
 };

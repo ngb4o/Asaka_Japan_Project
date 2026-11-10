@@ -29,7 +29,10 @@ const getByItem = async (req, res, next) => {
 
 const create = async (req, res, next) => {
   try {
-    const result = await movementService.record(req.params.id, req.body)
+    const result = await movementService.record(req.params.id, {
+      ...req.body,
+      createdBy: req.user?.name || req.user?.username || ''
+    })
     const verb = req.body.type === 'out' ? 'xuất' : 'nhập'
 
     res.status(StatusCodes.CREATED).json({

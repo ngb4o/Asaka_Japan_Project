@@ -8,6 +8,7 @@ import {
   ImagePlus,
   Inbox,
   Loader2,
+  LogOut,
   Pencil,
   Plus,
   Search,
@@ -15,11 +16,13 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { LoginScreen } from "@/components/LoginScreen";
 import { MovementDialog } from "@/components/MovementDialog";
 import { PreviewableImage } from "@/components/PreviewableImage";
 import { PwaInstallBanner } from "@/components/PwaInstall";
 import { StockJournal } from "@/components/StockJournal";
-import { createItem, deleteItem, listItems, mediaUrl, updateItem } from "@/lib/api";
+import { createItem, currentUser, deleteItem, listItems, mediaUrl, updateItem } from "@/lib/api";
+import { clearToken, getToken } from "@/lib/session";
 import { isAllowedImage, prepareImageFile } from "@/lib/imageFile";
 import type { ItemInput, ItemList, WarehouseItem } from "@/lib/types";
 
@@ -54,6 +57,8 @@ export default function HomePage() {
   const [editing, setEditing] = useState<WarehouseItem | null>(null);
   const [movementItem, setMovementItem] = useState<WarehouseItem | null>(null);
   const [journalOpen, setJournalOpen] = useState(false);
+  const [session, setSession] = useState<"checking" | "guest" | "in">("checking");
+  const [accountName, setAccountName] = useState("");
   const [pendingDelete, setPendingDelete] = useState<WarehouseItem | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
   const [toast, setToast] = useState("");
@@ -101,9 +106,40 @@ export default function HomePage() {
   }, [column, query]);
 
   useEffect(() => {
-    if (isMobile === null) return;
+    let active = true;
+    if (!getToken()) {
+      setSession("guest");
+      return;
+    }
+    currentUser()
+      .then((user) => {
+        if (!active) return;
+        setAccountName(user.name);
+        setSession("in");
+      })
+      .catch(() => {
+        if (!active) return;
+        clearToken();
+        setSession("guest");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    function onUnauthorized() {
+      setAccountName("");
+      setSession("guest");
+    }
+    window.addEventListener("kho-unauthorized", onUnauthorized);
+    return () => window.removeEventListener("kho-unauthorized", onUnauthorized);
+  }, []);
+
+  useEffect(() => {
+    if (session !== "in" || isMobile === null) return;
     void fetchList(isMobile ? 1 : page, false);
-  }, [fetchList, isMobile, isMobile ? 1 : page]);
+  }, [fetchList, isMobile, session, isMobile ? 1 : page]);
 
   const loadMore = useCallback(() => {
     if (isMobile !== true || loading || loadingMoreRef.current) return;
@@ -175,8 +211,28 @@ export default function HomePage() {
     }
   }
 
-  if (isMobile === null || (!ready && loading)) {
+  function logout() {
+    clearToken();
+    setAccountName("");
+    setJournalOpen(false);
+    setDialogOpen(false);
+    setMovementItem(null);
+    setSession("guest");
+  }
+
+  if (session === "checking" || (session === "in" && (isMobile === null || (!ready && loading)))) {
     return <PageSkeleton />;
+  }
+
+  if (session === "guest") {
+    return (
+      <LoginScreen
+        onSuccess={(user) => {
+          setAccountName(user.name);
+          setSession("in");
+        }}
+      />
+    );
   }
 
   const filteredEmpty = Boolean(query || column);
@@ -187,6 +243,10 @@ export default function HomePage() {
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3">
           <h1 className="text-base font-semibold tracking-tight">{journalOpen ? "Sổ xuất nhập" : "Danh sách"}</h1>
           <div className="flex shrink-0 gap-2">
+            <button type="button" onClick={logout} className={`${outlineButton} h-10 px-3 text-sm`} title="Đăng xuất">
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">{accountName || "Đăng xuất"}</span>
+            </button>
             <button
               type="button"
               onClick={() => setJournalOpen((open) => !open)}

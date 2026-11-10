@@ -12,6 +12,7 @@ const MOVEMENT_SCHEMA = Joi.object({
   type: Joi.string().valid(...MOVEMENT_TYPES).required(),
   quantity: Joi.number().greater(0).required(),
   note: Joi.string().trim().allow('').max(300).default(''),
+  createdBy: Joi.string().trim().allow('').max(80).default(''),
   balanceAfter: Joi.number().min(0).required(),
   createdAt: Joi.date().default(() => new Date())
 })

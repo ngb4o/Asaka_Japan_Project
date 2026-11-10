@@ -58,6 +58,7 @@ const record = async (itemId, payload) => {
 
   const type = payload.type === 'out' ? 'out' : 'in'
   const note = String(payload.note || '').trim()
+  const createdBy = String(payload.createdBy || '').trim()
   const session = GET_CLIENT().startSession()
   let movement = null
   let item = null
@@ -91,6 +92,7 @@ const record = async (itemId, payload) => {
         type,
         quantity,
         note,
+        createdBy,
         balanceAfter
       }, session)
 
@@ -101,6 +103,7 @@ const record = async (itemId, payload) => {
         type,
         quantity,
         note,
+        createdBy,
         balanceAfter,
         createdAt: new Date()
       }
@@ -116,7 +119,9 @@ const record = async (itemId, payload) => {
   }
 }
 
-const recordOpening = async (item) => {
+const actorName = (actor) => String(actor?.name || actor?.username || '').trim()
+
+const recordOpening = async (item, actor) => {
   const quantity = roundQuantity(item.quantity)
   if (!(quantity > 0)) return null
 
@@ -126,6 +131,7 @@ const recordOpening = async (item) => {
     type: 'in',
     quantity,
     note: 'Tồn đầu',
+    createdBy: actorName(actor),
     balanceAfter: quantity
   })
 

@@ -14,6 +14,7 @@
   "dependencies": {
     "@babel/runtime": "^7.22.10",
     "async-exit-hook": "^2.0.1",
+    "bcryptjs": "^3.0.3",
     "cloudinary": "^2.11.0",
     "cross-env": "^7.0.3",
     "dotenv": "^16.3.1",
@@ -21,6 +22,7 @@
     "heic-convert": "^2.1.0",
     "http-status-codes": "^2.3.0",
     "joi": "^17.10.2",
+    "jsonwebtoken": "^9.0.3",
     "mongodb": "5.5",
     "multer": "^2.2.0"
   },

@@ -16,7 +16,7 @@ const getList = async (req, res, next) => {
 
 const createNew = async (req, res, next) => {
   try {
-    const result = await itemService.createNew(req.body)
+    const result = await itemService.createNew(req.body, req.user)
 
     res.status(StatusCodes.CREATED).json({
       message: 'Đã thêm sản phẩm vào kho!',
@@ -29,7 +29,7 @@ const createNew = async (req, res, next) => {
 
 const update = async (req, res, next) => {
   try {
-    const result = await itemService.update(req.params.id, req.body)
+    const result = await itemService.update(req.params.id, req.body, req.user)
 
     res.status(StatusCodes.OK).json({
       message: 'Đã cập nhật sản phẩm!',

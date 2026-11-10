@@ -21,5 +21,9 @@ export const env = {
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
-  CORS_ORIGINS: [...new Set([...DEFAULT_CORS_ORIGINS, ...envOrigins])]
+  CORS_ORIGINS: [...new Set([...DEFAULT_CORS_ORIGINS, ...envOrigins])],
+  JWT_SECRET: process.env.JWT_SECRET,
+  ADMIN_USERNAME: (process.env.ADMIN_USERNAME || '').trim().toLowerCase(),
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '',
+  ADMIN_NAME: (process.env.ADMIN_NAME || 'Quản kho').trim()
 }

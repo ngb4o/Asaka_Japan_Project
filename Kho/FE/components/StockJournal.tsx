@@ -160,6 +160,7 @@ export function StockJournal() {
                 </p>
                 <p className="mt-1 text-xs text-[var(--color-text-inverse)]">
                   {formatWhen(movement.createdAt)}
+                  {movement.createdBy ? ` · ${movement.createdBy}` : ""}
                   {movement.note ? ` · ${movement.note}` : ""}
                 </p>
               </article>
@@ -183,6 +184,7 @@ export function StockJournal() {
                     <th className="font-medium">Loại</th>
                     <th className="font-medium">Số lượng</th>
                     <th className="font-medium">Tồn sau</th>
+                    <th className="font-medium">Người</th>
                     <th className="font-medium">Ghi chú</th>
                   </tr>
                 </thead>
@@ -199,6 +201,7 @@ export function StockJournal() {
                         {formatQuantity(movement.quantity)}
                       </td>
                       <td className="tabular-nums">{formatQuantity(movement.balanceAfter)}</td>
+                      <td>{movement.createdBy || "—"}</td>
                       <td className="text-sm text-[var(--color-text-inverse)]">{movement.note || "—"}</td>
                     </tr>
                   ))}

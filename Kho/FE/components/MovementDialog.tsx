@@ -171,6 +171,7 @@ export function MovementDialog({
                     </p>
                     <p className="truncate text-xs text-[var(--color-text-inverse)]">
                       {formatWhen(movement.createdAt)}
+                      {movement.createdBy ? ` · ${movement.createdBy}` : ""}
                       {movement.note ? ` · ${movement.note}` : ""}
                     </p>
                   </div>

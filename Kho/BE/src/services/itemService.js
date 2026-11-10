@@ -40,7 +40,7 @@ const getList = async (query = {}) => {
   }
 }
 
-const createNew = async (payload) => {
+const createNew = async (payload, actor) => {
   const created = await itemModel.createNew({
     name: payload.name,
     image: payload.image || '',
@@ -49,11 +49,11 @@ const createNew = async (payload) => {
   })
 
   const item = await itemModel.findOneById(created.insertedId)
-  await movementService.recordOpening(item)
+  await movementService.recordOpening(item, actor)
   return formatDocument(item)
 }
 
-const update = async (id, payload) => {
+const update = async (id, payload, actor) => {
   const current = await itemModel.findOneById(id)
   if (!current) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy sản phẩm')
@@ -72,7 +72,8 @@ const update = async (id, payload) => {
       await movementService.record(id, {
         type: nextQuantity > currentQuantity ? 'in' : 'out',
         quantity: roundQuantity(Math.abs(nextQuantity - currentQuantity)),
-        note: 'Điều chỉnh tồn'
+        note: 'Điều chỉnh tồn',
+        createdBy: actor?.name || actor?.username || ''
       })
     }
     delete nextPayload.quantity
