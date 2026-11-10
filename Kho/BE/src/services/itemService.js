@@ -5,6 +5,7 @@ import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { buildSearchFilter } from '~/utils/search'
 import { removeStoredImage } from '~/utils/saveImage'
+import { movementService, roundQuantity } from '~/services/movementService'
 
 const getList = async (query = {}) => {
   const { page, limit, skip } = parsePaginationQuery(query)
@@ -48,6 +49,7 @@ const createNew = async (payload) => {
   })
 
   const item = await itemModel.findOneById(created.insertedId)
+  await movementService.recordOpening(item)
   return formatDocument(item)
 }
 
@@ -62,7 +64,26 @@ const update = async (id, payload) => {
     await removeStoredImage(current.image)
   }
 
-  const updated = await itemModel.update(id, payload)
+  const nextPayload = { ...payload }
+  if (nextPayload.quantity != null) {
+    const nextQuantity = roundQuantity(nextPayload.quantity)
+    const currentQuantity = roundQuantity(current.quantity)
+    if (nextQuantity !== currentQuantity) {
+      await movementService.record(id, {
+        type: nextQuantity > currentQuantity ? 'in' : 'out',
+        quantity: roundQuantity(Math.abs(nextQuantity - currentQuantity)),
+        note: 'Điều chỉnh tồn'
+      })
+    }
+    delete nextPayload.quantity
+  }
+
+  if (!Object.keys(nextPayload).length) {
+    const latest = await itemModel.findOneById(id)
+    return formatDocument(latest)
+  }
+
+  const updated = await itemModel.update(id, nextPayload)
   if (!updated) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy sản phẩm')
   }

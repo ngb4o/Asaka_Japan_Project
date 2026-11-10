@@ -1,4 +1,11 @@
-import type { ItemInput, ItemList, WarehouseItem } from "@/lib/types";
+import type {
+  ItemInput,
+  ItemList,
+  MovementInput,
+  MovementList,
+  MovementResult,
+  WarehouseItem,
+} from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8018";
 
@@ -61,4 +68,29 @@ export async function deleteItem(id: string) {
     method: "DELETE",
   });
   return readData<{ id: string }>(response);
+}
+
+export async function listMovements(
+  params: { q?: string; type?: string; itemId?: string; page?: number; limit?: number } = {}
+) {
+  const search = new URLSearchParams();
+  search.set("limit", String(params.limit ?? 20));
+  search.set("page", String(params.page ?? 1));
+  if (params.q) search.set("q", params.q);
+  if (params.type) search.set("type", params.type);
+  if (params.itemId) search.set("itemId", params.itemId);
+
+  const response = await fetch(`${API_URL}/api/v1/movements?${search.toString()}`, {
+    cache: "no-store",
+  });
+  return readData<MovementList>(response);
+}
+
+export async function createMovement(itemId: string, input: MovementInput) {
+  const response = await fetch(`${API_URL}/api/v1/movements/items/${itemId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return readData<MovementResult>(response);
 }

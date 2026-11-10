@@ -7,6 +7,7 @@ import { env } from '~/config/environment'
 import { APIs_V1 } from '~/routes/v1'
 import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware'
 import { itemModel } from '~/models/itemModel'
+import { movementModel } from '~/models/movementModel'
 
 const isDevOrigin = (origin) => {
   if (env.BUILD_MODE !== 'dev') return false
@@ -63,7 +64,7 @@ const START_SERVER = () => {
 }
 
 CONNECT_DB()
-  .then(() => itemModel.ensureIndexes())
+  .then(() => Promise.all([itemModel.ensureIndexes(), movementModel.ensureIndexes()]))
   .then(() => {
     console.log('Connected to MongoDB')
     START_SERVER()

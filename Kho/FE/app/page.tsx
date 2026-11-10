@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowDownUp,
   ChevronLeft,
   ChevronRight,
   ImageIcon,
@@ -14,8 +15,10 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { MovementDialog } from "@/components/MovementDialog";
 import { PreviewableImage } from "@/components/PreviewableImage";
 import { PwaInstallBanner } from "@/components/PwaInstall";
+import { StockJournal } from "@/components/StockJournal";
 import { createItem, deleteItem, listItems, mediaUrl, updateItem } from "@/lib/api";
 import { isAllowedImage, prepareImageFile } from "@/lib/imageFile";
 import type { ItemInput, ItemList, WarehouseItem } from "@/lib/types";
@@ -49,6 +52,8 @@ export default function HomePage() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<WarehouseItem | null>(null);
+  const [movementItem, setMovementItem] = useState<WarehouseItem | null>(null);
+  const [journalOpen, setJournalOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<WarehouseItem | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
   const [toast, setToast] = useState("");
@@ -180,14 +185,27 @@ export default function HomePage() {
     <div className="flex h-dvh flex-col bg-[var(--color-surface-muted)] p-3 sm:p-4">
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)]">
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3">
-          <h1 className="text-base font-semibold tracking-tight">Danh sách</h1>
-          <button type="button" onClick={openCreate} className={`${primaryButton} shrink-0`}>
-            <Plus className="h-4 w-4" />
-            Thêm sản phẩm
-          </button>
+          <h1 className="text-base font-semibold tracking-tight">{journalOpen ? "Sổ xuất nhập" : "Danh sách"}</h1>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={() => setJournalOpen((open) => !open)}
+              className={`${outlineButton} h-10 px-3 text-sm`}
+            >
+              {journalOpen ? "Danh sách" : "Sổ kho"}
+            </button>
+            {journalOpen ? null : (
+              <button type="button" onClick={openCreate} className={`${primaryButton} shrink-0`}>
+                <Plus className="h-4 w-4" />
+                Thêm sản phẩm
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 sm:p-4">
           <PwaInstallBanner />
+          {journalOpen ? <StockJournal /> : (
+          <>
           <div className="flex shrink-0 gap-2">
             <SearchBox value={query} onSearch={handleSearch} />
           </div>
@@ -227,6 +245,9 @@ export default function HomePage() {
                             SL {formatQuantity(item.quantity)} · {item.column == null ? "Chưa có cột" : `Cột ${item.column}`}
                           </p>
                           <div className="mt-auto flex justify-end gap-2">
+                            <button type="button" className={outlineButton} title="Xuất nhập" onClick={() => setMovementItem(item)}>
+                              <ArrowDownUp className="h-4 w-4" />
+                            </button>
                             <button type="button" className={outlineButton} title="Sửa" onClick={() => openEdit(item)}>
                               <Pencil className="h-4 w-4" />
                             </button>
@@ -282,6 +303,10 @@ export default function HomePage() {
                             <td className="tabular-nums">{item.column ?? "—"}</td>
                             <td>
                               <div className="flex justify-end gap-2">
+                                <button type="button" className={outlineButton} title="Xuất nhập" onClick={() => setMovementItem(item)}>
+                                  <ArrowDownUp className="h-4 w-4" />
+                                  Xuất nhập
+                                </button>
                                 <button type="button" className={outlineButton} title="Sửa" onClick={() => openEdit(item)}>
                                   <Pencil className="h-4 w-4" />
                                 </button>
@@ -313,6 +338,8 @@ export default function HomePage() {
                 />
               </div>
             )}
+          </>
+          )}
           </div>
         </section>
 
@@ -325,6 +352,18 @@ export default function HomePage() {
             setEditing(null);
           }}
           onSubmit={handleSubmit}
+        />
+      ) : null}
+
+      {movementItem ? (
+        <MovementDialog
+          item={movementItem}
+          onClose={() => setMovementItem(null)}
+          onDone={(message) => {
+            setToast(message);
+            setMovementItem(null);
+            void fetchList(isMobile ? 1 : page, false);
+          }}
         />
       ) : null}
 

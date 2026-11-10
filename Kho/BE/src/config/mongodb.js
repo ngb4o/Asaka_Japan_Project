@@ -24,3 +24,5 @@ export const GET_DB = () => {
   if (!databaseInstance) throw new Error('Must connect to database first!')
   return databaseInstance
 }
+
+export const GET_CLIENT = () => mongoClientInstance
