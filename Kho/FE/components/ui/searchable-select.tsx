@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Check, ChevronsUpDown, Search, X } from "lucide-react";
+import { foldText } from "@/lib/text";
 
 export type SelectOption = {
   value: string;
@@ -50,10 +51,10 @@ export function SearchableSelect({
   );
 
   const filtered = useMemo(() => {
-    const keyword = query.trim().toLowerCase();
+    const keyword = foldText(query.trim());
     if (!keyword) return options;
     return options.filter((option) => {
-      const haystack = `${option.label} ${option.description || ""}`.toLowerCase();
+      const haystack = foldText(`${option.label} ${option.description || ""}`);
       return haystack.includes(keyword);
     });
   }, [options, query]);

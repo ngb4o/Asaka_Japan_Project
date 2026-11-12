@@ -3,6 +3,7 @@
 import { ArrowDownToLine, ArrowUpFromLine, Loader2, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createMovement, listItems, listMovements } from "@/lib/api";
+import { foldText } from "@/lib/text";
 import type { MovementType, StockMovement, WarehouseItem } from "@/lib/types";
 
 const fieldClass =
@@ -31,9 +32,9 @@ export function MovementDialog({
   const item = picked;
 
   const matches = useMemo(() => {
-    const keyword = productQuery.trim().toLowerCase();
+    const keyword = foldText(productQuery.trim());
     const source = keyword
-      ? catalog.filter((entry) => entry.name.toLowerCase().includes(keyword))
+      ? catalog.filter((entry) => foldText(entry.name).includes(keyword))
       : catalog;
     return source.slice(0, 8);
   }, [catalog, productQuery]);
@@ -115,10 +116,10 @@ export function MovementDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <button type="button" aria-label="Đóng" className="absolute inset-0" onClick={onClose} />
-      <div className="relative max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-[var(--color-surface-elevated)] shadow-xl sm:max-w-lg sm:rounded-xl">
-        <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] px-4 py-4 sm:px-6">
+      <div className="relative flex h-[640px] w-[720px] max-h-[calc(100vh-2rem)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl bg-[var(--color-surface-elevated)] shadow-xl">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-6 py-4">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold">{type === "in" ? "Nhập kho" : "Xuất kho"}</h2>
             <p className="truncate text-sm text-[var(--color-text-inverse)]">{item ? item.name : "Chọn sản phẩm"}</p>
@@ -132,9 +133,10 @@ export function MovementDialog({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="grid gap-4 px-4 py-4 sm:px-6">
+        <div className="min-h-0 flex-1 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="grid gap-4 px-6 py-4">
           {fixedItem ? null : item ? (
-            <div className="flex items-center justify-between gap-3 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] px-3 py-2">
+            <div className="flex h-12 items-center justify-between gap-3 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] px-3">
               <p className="min-w-0 truncate text-sm font-medium">{item.name}</p>
               <button
                 type="button"
@@ -163,7 +165,7 @@ export function MovementDialog({
                   className={`${fieldClass} pl-9`}
                 />
               </div>
-              <ul className="max-h-40 overflow-y-auto rounded-[var(--radius-button)] border border-[var(--color-border-subtle)]">
+              <ul className="h-40 overflow-y-auto rounded-[var(--radius-button)] border border-[var(--color-border-subtle)]">
                 {matches.length === 0 ? (
                   <li className="px-3 py-3 text-sm text-[var(--color-text-inverse)]">Không có sản phẩm khớp.</li>
                 ) : (
@@ -241,7 +243,7 @@ export function MovementDialog({
             </span>
           </p>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
-          <div className="flex justify-end gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={onClose} className={outlineButton}>
               Hủy
             </button>
@@ -251,10 +253,9 @@ export function MovementDialog({
             </button>
           </div>
         </form>
-        {item ? (
-        <div className="border-t border-[var(--color-border-subtle)] px-4 py-4 sm:px-6">
+        <div className="min-h-36 border-t border-[var(--color-border-subtle)] px-6 py-4">
           <p className="mb-2 text-sm font-semibold">Phiếu gần đây</p>
-          {history.length === 0 ? (
+          {!item || history.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có phiếu cho sản phẩm này.</p>
           ) : (
             <ul className="space-y-2">
@@ -278,7 +279,7 @@ export function MovementDialog({
             </ul>
           )}
         </div>
-        ) : null}
+        </div>
       </div>
     </div>
   );
@@ -320,19 +321,19 @@ function sanitizeQuantity(value: string) {
 }
 
 const primaryButton =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#016502] disabled:opacity-50";
+  "inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#016502] disabled:opacity-50";
 
 const outlineButton =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-4 text-sm font-semibold shadow-sm transition hover:bg-[var(--color-surface-muted)] disabled:opacity-50";
+  "inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-4 text-sm font-semibold shadow-sm transition hover:bg-[var(--color-surface-muted)] disabled:opacity-50";
 
 const dangerButton =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50";
+  "inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-button)] bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50";
 
 const idleChoice =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] text-sm font-semibold";
+  "inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] text-sm font-semibold";
 
 const activeChoice =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] text-sm font-semibold text-white";
+  "inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] text-sm font-semibold text-white";
 
 const activeOut =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-red-600 text-sm font-semibold text-white";
+  "inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-button)] bg-red-600 text-sm font-semibold text-white";

@@ -1,7 +1,9 @@
 "use client";
 
-import { FileText } from "lucide-react";
+import { FileText, Search, X } from "lucide-react";
 import Link from "next/link";
+import { useMemo, useState } from "react";
+import { foldText } from "@/lib/text";
 
 const FORMS = [
   {
@@ -62,13 +64,43 @@ const FORMS = [
 ];
 
 export default function PhieuPage() {
+  const [query, setQuery] = useState("");
+  const forms = useMemo(() => {
+    const keyword = foldText(query.trim());
+    if (!keyword) return FORMS;
+    return FORMS.filter((form) => foldText(`${form.title} ${form.detail}`).includes(keyword));
+  }, [query]);
+
   return (
     <div className="h-full overflow-y-auto">
       <section className="rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-white p-4 shadow-[var(--shadow-soft)]">
         <h1 className="text-base font-semibold">Phiếu</h1>
         <p className="mt-1 text-sm text-[var(--color-text-inverse)]">Mỗi loại phiếu là một trang riêng.</p>
+        <div className="relative mt-4">
+          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--color-text-inverse)]" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Tìm loại phiếu..."
+            aria-label="Tìm loại phiếu"
+            className="h-10 w-full rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] pr-9 pl-9 text-sm shadow-sm outline-none placeholder:text-[var(--color-text-inverse)] focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)]"
+          />
+          {query ? (
+            <button
+              type="button"
+              aria-label="Xóa tìm kiếm"
+              className="absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--color-text-inverse)] hover:bg-[var(--color-surface-muted)]"
+              onClick={() => setQuery("")}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
+        </div>
+        {forms.length === 0 ? (
+          <p className="px-2 py-10 text-center text-sm text-[var(--color-text-inverse)]">Không có phiếu khớp.</p>
+        ) : (
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {FORMS.map((form) => (
+          {forms.map((form) => (
             <Link
               key={form.href}
               href={form.href}
@@ -84,6 +116,7 @@ export default function PhieuPage() {
             </Link>
           ))}
         </div>
+        )}
       </section>
     </div>
   );

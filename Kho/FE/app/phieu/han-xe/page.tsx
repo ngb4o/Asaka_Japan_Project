@@ -418,11 +418,13 @@ export default function WeldProposalPage() {
             </tr>
           </tbody>
         </table>
-        <div className="mt-8 grid grid-cols-3 text-center text-sm">
+        <div className="mt-8 grid grid-cols-4 text-center text-sm">
           <p>Người đề xuất</p>
+          <p>Điều Hành</p>
           <p>Kế Toán</p>
           <p>Kế Toán Trưởng</p>
           <p className="mt-10">Nguyễn Gia Bảo</p>
+          <p className="mt-10">Nguyễn Thị Hà</p>
           <p className="mt-10">Phạm Thị Hải Lý</p>
           <p className="mt-10">Vũ Tiến Trung</p>
         </div>
