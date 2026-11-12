@@ -6,8 +6,20 @@ import { CONNECT_DB, CLOSE_DB } from '~/config/mongodb'
 import { env } from '~/config/environment'
 import { APIs_V1 } from '~/routes/v1'
 import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware'
+import { driverModel } from '~/models/driverModel'
 import { itemModel } from '~/models/itemModel'
 import { movementModel } from '~/models/movementModel'
+import { proposalModel } from '~/models/proposalModel'
+import { electricProposalModel } from '~/models/electricProposalModel'
+import { officeProposalModel } from '~/models/officeProposalModel'
+import { weldProposalModel } from '~/models/weldProposalModel'
+import { viettelProposalModel } from '~/models/viettelProposalModel'
+import { utilityProposalModel } from '~/models/utilityProposalModel'
+import { rentalProposalModel } from '~/models/rentalProposalModel'
+import { ongDiaProposalModel } from '~/models/ongDiaProposalModel'
+import { phucVinhProposalModel } from '~/models/phucVinhProposalModel'
+import { tireProposalModel } from '~/models/tireProposalModel'
+import { slipModel } from '~/models/slipModel'
 import { userModel } from '~/models/userModel'
 import { authService } from '~/services/authService'
 
@@ -68,7 +80,19 @@ const START_SERVER = () => {
 CONNECT_DB()
   .then(() => Promise.all([
     itemModel.ensureIndexes(),
+    driverModel.ensureIndexes(),
     movementModel.ensureIndexes(),
+    slipModel.ensureIndexes(),
+    proposalModel.ensureIndexes(),
+    tireProposalModel.ensureIndexes(),
+    electricProposalModel.ensureIndexes(),
+    phucVinhProposalModel.ensureIndexes(),
+    officeProposalModel.ensureIndexes(),
+    weldProposalModel.ensureIndexes(),
+    viettelProposalModel.ensureIndexes(),
+    utilityProposalModel.ensureIndexes(),
+    rentalProposalModel.ensureIndexes(),
+    ongDiaProposalModel.ensureIndexes(),
     userModel.ensureIndexes()
   ]))
   .then(() => authService.ensureAdmin())

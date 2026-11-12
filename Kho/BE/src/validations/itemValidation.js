@@ -17,6 +17,10 @@ const quantityField = Joi.number().min(0).messages({
   'any.required': 'Số lượng là bắt buộc'
 })
 
+const unitField = Joi.string().trim().max(30).allow('').empty('').default('').messages({
+  'string.max': 'Đơn vị tính tối đa 30 ký tự'
+})
+
 const columnField = Joi.number().integer().min(0).max(9999).allow(null).empty('').messages({
   'number.base': 'Cột phải là số nguyên',
   'number.integer': 'Cột phải là số nguyên',
@@ -28,12 +32,14 @@ const columnField = Joi.number().integer().min(0).max(9999).allow(null).empty(''
 const createSchema = Joi.object({
   name: nameField.required(),
   quantity: quantityField.required(),
+  unit: unitField.optional(),
   column: columnField.optional().default(null)
 })
 
 const updateSchema = Joi.object({
   name: nameField.optional(),
   quantity: quantityField.optional(),
+  unit: unitField.optional(),
   column: columnField.optional()
 }).min(1)
 

@@ -1,33 +1,47 @@
 "use client";
 
-import { ArrowDownToLine, ArrowUpFromLine, Loader2, X } from "lucide-react";
-import { useEffect, useState } from "react";
-import { createMovement, listMovements } from "@/lib/api";
+import { ArrowDownToLine, ArrowUpFromLine, Loader2, Search, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { createMovement, listItems, listMovements } from "@/lib/api";
 import type { MovementType, StockMovement, WarehouseItem } from "@/lib/types";
 
 const fieldClass =
   "flex h-10 w-full rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 text-sm font-normal shadow-sm outline-none placeholder:text-[var(--color-text-inverse)] focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)]";
 
 export function MovementDialog({
-  item,
+  item: fixedItem = null,
+  type: lockedType,
   onClose,
   onDone,
 }: {
-  item: WarehouseItem;
+  item?: WarehouseItem | null;
+  type?: MovementType;
   onClose: () => void;
   onDone: (message: string) => void;
 }) {
-  const [type, setType] = useState<MovementType>("in");
+  const [type, setType] = useState<MovementType>(lockedType ?? "in");
+  const [picked, setPicked] = useState<WarehouseItem | null>(fixedItem);
+  const [catalog, setCatalog] = useState<WarehouseItem[]>([]);
+  const [productQuery, setProductQuery] = useState("");
   const [quantity, setQuantity] = useState("");
   const [note, setNote] = useState("");
   const [history, setHistory] = useState<StockMovement[]>([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const item = picked;
+
+  const matches = useMemo(() => {
+    const keyword = productQuery.trim().toLowerCase();
+    const source = keyword
+      ? catalog.filter((entry) => entry.name.toLowerCase().includes(keyword))
+      : catalog;
+    return source.slice(0, 8);
+  }, [catalog, productQuery]);
 
   const amount = Number(quantity);
-  const nextBalance = Number.isFinite(amount)
+  const nextBalance = item && Number.isFinite(amount)
     ? Math.round((item.quantity + (type === "in" ? amount : -amount)) * 100) / 100
-    : item.quantity;
+    : item?.quantity ?? 0;
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -38,6 +52,25 @@ export function MovementDialog({
   }, [onClose]);
 
   useEffect(() => {
+    if (fixedItem) return;
+    let active = true;
+    listItems({ limit: 500 })
+      .then((result) => {
+        if (active) setCatalog(result.items);
+      })
+      .catch(() => {
+        if (active) setCatalog([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [fixedItem]);
+
+  useEffect(() => {
+    if (!item) {
+      setHistory([]);
+      return;
+    }
     let active = true;
     listMovements({ itemId: item.id, limit: 8 })
       .then((result) => {
@@ -49,10 +82,14 @@ export function MovementDialog({
     return () => {
       active = false;
     };
-  }, [item.id]);
+  }, [item]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (!item) {
+      setError("Chọn sản phẩm");
+      return;
+    }
     if (!Number.isFinite(amount) || amount <= 0) {
       setError("Số lượng phải lớn hơn 0");
       return;
@@ -83,8 +120,8 @@ export function MovementDialog({
       <div className="relative max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-[var(--color-surface-elevated)] shadow-xl sm:max-w-lg sm:rounded-xl">
         <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] px-4 py-4 sm:px-6">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold">Xuất nhập kho</h2>
-            <p className="truncate text-sm text-[var(--color-text-inverse)]">{item.name}</p>
+            <h2 className="text-lg font-semibold">{type === "in" ? "Nhập kho" : "Xuất kho"}</h2>
+            <p className="truncate text-sm text-[var(--color-text-inverse)]">{item ? item.name : "Chọn sản phẩm"}</p>
           </div>
           <button
             type="button"
@@ -96,11 +133,67 @@ export function MovementDialog({
           </button>
         </div>
         <form onSubmit={handleSubmit} className="grid gap-4 px-4 py-4 sm:px-6">
-          <p className="text-sm">
-            Tồn hiện tại{" "}
-            <span className="font-semibold tabular-nums">{formatQuantity(item.quantity)}</span>
-            {item.column == null ? "" : ` · Cột ${item.column}`}
-          </p>
+          {fixedItem ? null : item ? (
+            <div className="flex items-center justify-between gap-3 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] px-3 py-2">
+              <p className="min-w-0 truncate text-sm font-medium">{item.name}</p>
+              <button
+                type="button"
+                className="shrink-0 text-sm font-semibold text-[var(--color-text-secondary)]"
+                onClick={() => {
+                  setPicked(null);
+                  setProductQuery("");
+                }}
+              >
+                Đổi
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium" htmlFor="movement-product">
+                Sản phẩm *
+              </label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--color-text-inverse)]" />
+                <input
+                  id="movement-product"
+                  value={productQuery}
+                  autoFocus
+                  placeholder="Tìm sản phẩm..."
+                  onChange={(event) => setProductQuery(event.target.value)}
+                  className={`${fieldClass} pl-9`}
+                />
+              </div>
+              <ul className="max-h-40 overflow-y-auto rounded-[var(--radius-button)] border border-[var(--color-border-subtle)]">
+                {matches.length === 0 ? (
+                  <li className="px-3 py-3 text-sm text-[var(--color-text-inverse)]">Không có sản phẩm khớp.</li>
+                ) : (
+                  matches.map((entry) => (
+                    <li key={entry.id}>
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-[var(--color-surface-muted)]"
+                        onClick={() => setPicked(entry)}
+                      >
+                        <span className="min-w-0 truncate font-medium">{entry.name}</span>
+                        <span className="shrink-0 tabular-nums text-[var(--color-text-inverse)]">
+                          Tồn {formatQuantity(entry.quantity)}{entry.unit ? ` ${entry.unit}` : ""}
+                        </span>
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          )}
+          {item ? (
+            <p className="text-sm">
+              Tồn hiện tại{" "}
+              <span className="font-semibold tabular-nums">{formatQuantity(item.quantity)}</span>
+              {item.unit ? ` ${item.unit}` : ""}
+              {item.column == null ? "" : ` · Cột ${item.column}`}
+            </p>
+          ) : null}
+          {lockedType ? null : (
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -119,13 +212,14 @@ export function MovementDialog({
               Xuất
             </button>
           </div>
+          )}
           <label className="space-y-2 text-sm font-medium">
             <span className="block">Số lượng *</span>
             <input
               inputMode="decimal"
               value={quantity}
               placeholder="0"
-              autoFocus
+              autoFocus={Boolean(fixedItem)}
               onChange={(event) => setQuantity(sanitizeQuantity(event.target.value))}
               className={fieldClass}
             />
@@ -143,7 +237,7 @@ export function MovementDialog({
           <p className="text-sm">
             Tồn sau phiếu{" "}
             <span className={`font-semibold tabular-nums ${nextBalance < 0 ? "text-red-600" : ""}`}>
-              {Number.isFinite(amount) && amount > 0 ? formatQuantity(Math.max(nextBalance, 0)) : formatQuantity(item.quantity)}
+              {item && Number.isFinite(amount) && amount > 0 ? formatQuantity(Math.max(nextBalance, 0)) : formatQuantity(item?.quantity ?? 0)}
             </span>
           </p>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -157,6 +251,7 @@ export function MovementDialog({
             </button>
           </div>
         </form>
+        {item ? (
         <div className="border-t border-[var(--color-border-subtle)] px-4 py-4 sm:px-6">
           <p className="mb-2 text-sm font-semibold">Phiếu gần đây</p>
           {history.length === 0 ? (
@@ -183,6 +278,7 @@ export function MovementDialog({
             </ul>
           )}
         </div>
+        ) : null}
       </div>
     </div>
   );

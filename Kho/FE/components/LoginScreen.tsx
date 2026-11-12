@@ -27,7 +27,7 @@ export function LoginScreen({ onSuccess }: { onSuccess: (user: AuthUser) => void
   }
 
   return (
-    <div className="relative flex h-dvh items-center justify-center overflow-hidden p-4">
+    <div className="relative flex h-full items-center justify-center overflow-hidden p-4">
       <img
         src="/images/backgrounds/hero.jpg"
         alt=""

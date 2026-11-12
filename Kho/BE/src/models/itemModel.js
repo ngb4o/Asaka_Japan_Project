@@ -8,6 +8,7 @@ const ITEM_SCHEMA = Joi.object({
   name: Joi.string().required().min(2).max(200).trim(),
   image: Joi.string().trim().allow('').max(1000).default(''),
   quantity: Joi.number().min(0).required(),
+  unit: Joi.string().trim().max(30).allow('').default(''),
   column: Joi.number().integer().min(0).max(9999).allow(null).default(null),
   createdAt: Joi.date().default(() => new Date()),
   updatedAt: Joi.date().default(null),

@@ -45,6 +45,7 @@ const createNew = async (payload, actor) => {
     name: payload.name,
     image: payload.image || '',
     quantity: payload.quantity,
+    unit: payload.unit || '',
     column: payload.column ?? null
   })
 

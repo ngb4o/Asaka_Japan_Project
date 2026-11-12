@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { GET_CLIENT, GET_DB } from '~/config/mongodb'
 import { itemModel } from '~/models/itemModel'
 import { movementModel } from '~/models/movementModel'
+import { slipModel } from '~/models/slipModel'
 import ApiError from '~/utils/ApiError'
 import { formatDocument, formatDocuments } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
@@ -10,6 +11,25 @@ import { buildSearchFilter } from '~/utils/search'
 import { OBJECT_ID_RULE } from '~/utils/validators'
 
 export const roundQuantity = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100
+
+export const sumAllocatedQuantities = async (movementIds, exceptSlipId = null, session = null) => {
+  const totals = new Map()
+  if (!movementIds.length) return totals
+  const objectIds = movementIds.map((id) => new ObjectId(id))
+  const filter = { 'lines.movementId': { $in: objectIds } }
+  if (exceptSlipId) filter._id = { $ne: new ObjectId(exceptSlipId) }
+  const options = session ? { session } : {}
+  const slips = await GET_DB().collection(slipModel.SLIP_COLLECTION_NAME).find(filter, options).toArray()
+  const wanted = new Set(movementIds.map((id) => String(id)))
+  for (const slip of slips) {
+    for (const line of slip.lines || []) {
+      const key = line.movementId.toString()
+      if (!wanted.has(key)) continue
+      totals.set(key, roundQuantity((totals.get(key) || 0) + Number(line.quantity || 0)))
+    }
+  }
+  return totals
+}
 
 const formatMovement = (doc) => {
   const formatted = formatDocument(doc)
@@ -29,9 +49,25 @@ const getList = async (query = {}) => {
   }
 
   if (query.type === 'in' || query.type === 'out') filter.type = query.type
+  if (query.unassigned === '1' || query.unassigned === 'true') {
+    filter.type = 'out'
+    if (query.includeSlip) {
+      if (!OBJECT_ID_RULE.test(String(query.includeSlip))) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Id phiếu không hợp lệ')
+      }
+      filter.$or = [{ slipId: null }, { slipId: new ObjectId(String(query.includeSlip)) }]
+    } else {
+      filter.slipId = null
+    }
+  }
 
   const search = buildSearchFilter(['itemName', 'note'], query.q || '')
-  if (search) Object.assign(filter, search)
+  if (search && filter.$or) {
+    filter.$and = [{ $or: filter.$or }, search]
+    delete filter.$or
+  } else if (search) {
+    Object.assign(filter, search)
+  }
 
   const result = await movementModel.findMany(filter, {
     limit,
@@ -39,11 +75,22 @@ const getList = async (query = {}) => {
     sort: { createdAt: -1 }
   })
 
+  let items = formatDocuments(result.items).map((item) => ({
+    ...item,
+    itemId: item.itemId?.toString()
+  }))
+
+  if (query.unassigned === '1' || query.unassigned === 'true') {
+    const allocated = await sumAllocatedQuantities(items.map((item) => item.id), query.includeSlip || null)
+    items = items.flatMap((item) => {
+      const available = roundQuantity(item.quantity - (allocated.get(item.id) || 0))
+      if (!(available > 0)) return []
+      return [{ ...item, available }]
+    })
+  }
+
   return buildPaginationResult({
-    items: formatDocuments(result.items).map((item) => ({
-      ...item,
-      itemId: item.itemId?.toString()
-    })),
+    items,
     total: result.total,
     limit,
     skip

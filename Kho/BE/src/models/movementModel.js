@@ -14,6 +14,7 @@ const MOVEMENT_SCHEMA = Joi.object({
   note: Joi.string().trim().allow('').max(300).default(''),
   createdBy: Joi.string().trim().allow('').max(80).default(''),
   balanceAfter: Joi.number().min(0).required(),
+  slipId: Joi.any().allow(null).default(null),
   createdAt: Joi.date().default(() => new Date())
 })
 
@@ -38,6 +39,7 @@ const ensureIndexes = async () => {
   const collection = GET_DB().collection(MOVEMENT_COLLECTION_NAME)
   await collection.createIndex({ createdAt: -1 })
   await collection.createIndex({ itemId: 1, createdAt: -1 })
+  await collection.createIndex({ type: 1, slipId: 1, createdAt: -1 })
 }
 
 export const movementModel = {

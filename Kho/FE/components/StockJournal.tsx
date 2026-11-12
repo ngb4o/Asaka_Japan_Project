@@ -16,7 +16,7 @@ const emptyList: MovementList = {
   totalPages: 1,
 };
 
-export function StockJournal() {
+export function StockJournal({ revision = 0 }: { revision?: number }) {
   const isMobile = useIsMobile();
   const [data, setData] = useState<MovementList>(emptyList);
   const [items, setItems] = useState<StockMovement[]>([]);
@@ -71,7 +71,7 @@ export function StockJournal() {
   useEffect(() => {
     if (isMobile === null) return;
     void fetchList(isMobile ? 1 : page, false);
-  }, [fetchList, isMobile, isMobile ? 1 : page]);
+  }, [fetchList, isMobile, isMobile ? 1 : page, revision]);
 
   const loadMore = useCallback(() => {
     if (isMobile !== true || loading || loadingMoreRef.current) return;
@@ -138,7 +138,7 @@ export function StockJournal() {
             <Inbox className="h-5 w-5 text-[var(--color-text-inverse)]" />
             <p className="text-sm font-medium">Chưa có phiếu xuất nhập</p>
             <p className="max-w-sm text-sm text-[var(--color-text-inverse)]">
-              Bấm xuất nhập trên một sản phẩm để ghi phiếu. Số tồn sẽ cộng hoặc trừ theo phiếu đó.
+              Bấm Nhập kho hoặc Xuất kho để ghi phiếu. Số tồn sẽ cộng hoặc trừ theo phiếu đó.
             </p>
           </div>
         </div>

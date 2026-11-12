@@ -16,6 +16,7 @@
   --color-badge-success-fg: #15803d;
   --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.04);
   --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 4px 12px rgb(15 23 42 / 0.08);
+  --shadow-elevated: 0 10px 30px rgb(15 23 42 / 0.1);
 }
 
 html,
@@ -121,5 +122,26 @@ button {
   input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
   select {
     font-size: 16px !important;
+  }
+}
+
+@media print {
+  html,
+  body,
+  .app-shell,
+  .app-shell > div,
+  main {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .app-shell,
+  .app-shell > div {
+    display: block !important;
+  }
+
+  main {
+    padding: 0 !important;
   }
 }

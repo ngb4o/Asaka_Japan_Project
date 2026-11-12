@@ -1,14 +1,12 @@
 "use client";
 
 import {
-  ArrowDownUp,
   ChevronLeft,
   ChevronRight,
   ImageIcon,
   ImagePlus,
   Inbox,
   Loader2,
-  LogOut,
   Pencil,
   Plus,
   Search,
@@ -16,13 +14,9 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { LoginScreen } from "@/components/LoginScreen";
-import { MovementDialog } from "@/components/MovementDialog";
 import { PreviewableImage } from "@/components/PreviewableImage";
 import { PwaInstallBanner } from "@/components/PwaInstall";
-import { StockJournal } from "@/components/StockJournal";
-import { createItem, currentUser, deleteItem, listItems, mediaUrl, updateItem } from "@/lib/api";
-import { clearToken, getToken } from "@/lib/session";
+import { createItem, deleteItem, listItems, mediaUrl, updateItem } from "@/lib/api";
 import { isAllowedImage, prepareImageFile } from "@/lib/imageFile";
 import type { ItemInput, ItemList, WarehouseItem } from "@/lib/types";
 
@@ -55,10 +49,6 @@ export default function HomePage() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<WarehouseItem | null>(null);
-  const [movementItem, setMovementItem] = useState<WarehouseItem | null>(null);
-  const [journalOpen, setJournalOpen] = useState(false);
-  const [session, setSession] = useState<"checking" | "guest" | "in">("checking");
-  const [accountName, setAccountName] = useState("");
   const [pendingDelete, setPendingDelete] = useState<WarehouseItem | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
   const [toast, setToast] = useState("");
@@ -106,40 +96,9 @@ export default function HomePage() {
   }, [column, query]);
 
   useEffect(() => {
-    let active = true;
-    if (!getToken()) {
-      setSession("guest");
-      return;
-    }
-    currentUser()
-      .then((user) => {
-        if (!active) return;
-        setAccountName(user.name);
-        setSession("in");
-      })
-      .catch(() => {
-        if (!active) return;
-        clearToken();
-        setSession("guest");
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    function onUnauthorized() {
-      setAccountName("");
-      setSession("guest");
-    }
-    window.addEventListener("kho-unauthorized", onUnauthorized);
-    return () => window.removeEventListener("kho-unauthorized", onUnauthorized);
-  }, []);
-
-  useEffect(() => {
-    if (session !== "in" || isMobile === null) return;
+    if (isMobile === null) return;
     void fetchList(isMobile ? 1 : page, false);
-  }, [fetchList, isMobile, session, isMobile ? 1 : page]);
+  }, [fetchList, isMobile, isMobile ? 1 : page]);
 
   const loadMore = useCallback(() => {
     if (isMobile !== true || loading || loadingMoreRef.current) return;
@@ -185,7 +144,7 @@ export default function HomePage() {
       setToast("Đã cập nhật sản phẩm");
     } else {
       await createItem(input);
-      setToast("Đã thêm sản phẩm vào kho");
+      setToast("Đã thêm sản phẩm");
     }
     setDialogOpen(false);
     setEditing(null);
@@ -211,61 +170,26 @@ export default function HomePage() {
     }
   }
 
-  function logout() {
-    clearToken();
-    setAccountName("");
-    setJournalOpen(false);
-    setDialogOpen(false);
-    setMovementItem(null);
-    setSession("guest");
-  }
-
-  if (session === "checking" || (session === "in" && (isMobile === null || (!ready && loading)))) {
+  if (isMobile === null || (!ready && loading)) {
     return <PageSkeleton />;
-  }
-
-  if (session === "guest") {
-    return (
-      <LoginScreen
-        onSuccess={(user) => {
-          setAccountName(user.name);
-          setSession("in");
-        }}
-      />
-    );
   }
 
   const filteredEmpty = Boolean(query || column);
 
   return (
-    <div className="flex h-dvh flex-col bg-[var(--color-surface-muted)] p-3 sm:p-4">
+    <div className="flex h-full min-h-0 flex-col">
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)]">
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3">
-          <h1 className="text-base font-semibold tracking-tight">{journalOpen ? "Sổ xuất nhập" : "Danh sách"}</h1>
+            <h1 className="text-base font-semibold tracking-tight">Sản phẩm</h1>
           <div className="flex shrink-0 gap-2">
-            <button type="button" onClick={logout} className={`${outlineButton} h-10 px-3 text-sm`} title="Đăng xuất">
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">{accountName || "Đăng xuất"}</span>
+            <button type="button" onClick={openCreate} className={`${primaryButton} shrink-0`}>
+              <Plus className="h-4 w-4" />
+              Thêm sản phẩm
             </button>
-            <button
-              type="button"
-              onClick={() => setJournalOpen((open) => !open)}
-              className={`${outlineButton} h-10 px-3 text-sm`}
-            >
-              {journalOpen ? "Danh sách" : "Sổ kho"}
-            </button>
-            {journalOpen ? null : (
-              <button type="button" onClick={openCreate} className={`${primaryButton} shrink-0`}>
-                <Plus className="h-4 w-4" />
-                Thêm sản phẩm
-              </button>
-            )}
           </div>
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 sm:p-4">
           <PwaInstallBanner />
-          {journalOpen ? <StockJournal /> : (
-          <>
           <div className="flex shrink-0 gap-2">
             <SearchBox value={query} onSearch={handleSearch} />
           </div>
@@ -277,7 +201,7 @@ export default function HomePage() {
                 description={
                   filteredEmpty
                     ? "Thử tên khác hoặc chọn tất cả cột."
-                    : "Thêm sản phẩm với ảnh, số lượng và số cột trong kho."
+                    : "Thêm sản phẩm với ảnh và số cột. Số tồn được ghi ở Kho hàng."
                 }
               />
               </div>
@@ -302,12 +226,9 @@ export default function HomePage() {
                         <div className="flex flex-1 flex-col gap-2 p-2.5">
                           <p className="line-clamp-2 text-sm font-semibold leading-snug">{item.name}</p>
                           <p className="text-xs text-[var(--color-text-inverse)]">
-                            SL {formatQuantity(item.quantity)} · {item.column == null ? "Chưa có cột" : `Cột ${item.column}`}
+                            Tồn {formatQuantity(item.quantity)} {item.unit} · {item.column == null ? "Chưa có cột" : `Cột ${item.column}`}
                           </p>
                           <div className="mt-auto flex justify-end gap-2">
-                            <button type="button" className={outlineButton} title="Xuất nhập" onClick={() => setMovementItem(item)}>
-                              <ArrowDownUp className="h-4 w-4" />
-                            </button>
                             <button type="button" className={outlineButton} title="Sửa" onClick={() => openEdit(item)}>
                               <Pencil className="h-4 w-4" />
                             </button>
@@ -336,12 +257,13 @@ export default function HomePage() {
 
                 <div className="crm-table-scroll hidden min-h-0 flex-1 overflow-auto lg:block">
                   <div className="crm-table-frame min-h-full border-0">
-                    <table className="crm-data-table min-w-[720px]">
+                    <table className="crm-data-table min-w-[760px]">
                       <thead>
                         <tr>
                           <th className="font-medium">Ảnh</th>
                           <th className="font-medium">Tên</th>
-                          <th className="font-medium">Số lượng</th>
+                          <th className="font-medium">ĐVT</th>
+                          <th className="font-medium">Tồn kho</th>
                           <th className="font-medium">Cột</th>
                           <th className="text-right font-medium">Thao tác</th>
                         </tr>
@@ -359,14 +281,11 @@ export default function HomePage() {
                               )}
                             </td>
                             <td className="font-medium">{item.name}</td>
+                            <td>{item.unit || "—"}</td>
                             <td className="font-medium tabular-nums">{formatQuantity(item.quantity)}</td>
                             <td className="tabular-nums">{item.column ?? "—"}</td>
                             <td>
                               <div className="flex justify-end gap-2">
-                                <button type="button" className={outlineButton} title="Xuất nhập" onClick={() => setMovementItem(item)}>
-                                  <ArrowDownUp className="h-4 w-4" />
-                                  Xuất nhập
-                                </button>
                                 <button type="button" className={outlineButton} title="Sửa" onClick={() => openEdit(item)}>
                                   <Pencil className="h-4 w-4" />
                                 </button>
@@ -398,8 +317,6 @@ export default function HomePage() {
                 />
               </div>
             )}
-          </>
-          )}
           </div>
         </section>
 
@@ -412,18 +329,6 @@ export default function HomePage() {
             setEditing(null);
           }}
           onSubmit={handleSubmit}
-        />
-      ) : null}
-
-      {movementItem ? (
-        <MovementDialog
-          item={movementItem}
-          onClose={() => setMovementItem(null)}
-          onDone={(message) => {
-            setToast(message);
-            setMovementItem(null);
-            void fetchList(isMobile ? 1 : page, false);
-          }}
         />
       ) : null}
 
@@ -499,7 +404,7 @@ function ItemDialog({
 }) {
   const imageInputId = useId();
   const [name, setName] = useState(editing?.name ?? "");
-  const [quantity, setQuantity] = useState(editing ? String(editing.quantity) : "");
+  const [unit, setUnit] = useState(editing?.unit ?? "");
   const [column, setColumn] = useState(editing?.column == null ? "" : String(editing.column));
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState(editing?.image ? mediaUrl(editing.image) : "");
@@ -549,16 +454,11 @@ function ItemDialog({
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     const trimmedName = name.trim();
-    const quantityValue = Number(quantity);
     const columnText = column.trim();
     const columnValue = columnText ? Number(columnText) : null;
 
     if (trimmedName.length < 2) {
       setError("Tên sản phẩm tối thiểu 2 ký tự");
-      return;
-    }
-    if (!Number.isFinite(quantityValue) || quantityValue < 0) {
-      setError("Số lượng phải là số từ 0 trở lên");
       return;
     }
     if (
@@ -578,9 +478,10 @@ function ItemDialog({
     try {
       await onSubmit({
         name: trimmedName,
-        quantity: quantityValue,
+        unit: unit.trim(),
         column: columnValue,
         image: file,
+        ...(editing ? {} : { quantity: 0 }),
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
@@ -608,28 +509,26 @@ function ItemDialog({
           <Field label="Tên sản phẩm *" htmlFor="item-name">
             <input id="item-name" value={name} onChange={(event) => setName(event.target.value)} className={fieldClass} />
           </Field>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Số lượng *" htmlFor="item-quantity">
-              <input
-                id="item-quantity"
-                inputMode="decimal"
-                value={quantity}
-                placeholder="0"
-                onChange={(event) => setQuantity(sanitizeQuantity(event.target.value))}
-                className={fieldClass}
-              />
-            </Field>
-            <Field label="Cột" htmlFor="item-column">
-              <input
-                id="item-column"
-                inputMode="numeric"
-                value={column}
-                placeholder="Nhập sau"
-                onChange={(event) => setColumn(event.target.value.replace(/[^\d]/g, ""))}
-                className={fieldClass}
-              />
-            </Field>
-          </div>
+          <Field label="Đơn vị tính" htmlFor="item-unit">
+            <input
+              id="item-unit"
+              value={unit}
+              maxLength={30}
+              placeholder="Cái, bộ, lít..."
+              onChange={(event) => setUnit(event.target.value)}
+              className={fieldClass}
+            />
+          </Field>
+          <Field label="Cột" htmlFor="item-column">
+            <input
+              id="item-column"
+              inputMode="numeric"
+              value={column}
+              placeholder="Nhập sau"
+              onChange={(event) => setColumn(event.target.value.replace(/[^\d]/g, ""))}
+              className={fieldClass}
+            />
+          </Field>
           <div className="space-y-2">
             <label htmlFor={imageInputId} className="text-sm font-medium">
               Ảnh sản phẩm{editing ? "" : " *"}
@@ -826,7 +725,7 @@ function visiblePages(page: number, totalPages: number) {
 
 function PageSkeleton() {
   return (
-    <div className="flex h-dvh flex-col bg-[var(--color-surface-muted)] p-3 sm:p-4">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="min-h-0 flex-1 animate-pulse rounded-[var(--radius-card)] bg-white" />
     </div>
   );
@@ -834,13 +733,6 @@ function PageSkeleton() {
 
 function formatQuantity(value: number) {
   return value.toLocaleString("vi-VN", { maximumFractionDigits: 2 });
-}
-
-function sanitizeQuantity(value: string) {
-  const cleaned = value.replace(/[^\d.,]/g, "").replace(",", ".");
-  const [whole, ...fraction] = cleaned.split(".");
-  if (!fraction.length) return whole;
-  return `${whole}.${fraction.join("").slice(0, 2)}`;
 }
 
 function Field({

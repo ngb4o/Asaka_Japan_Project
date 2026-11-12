@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow } from "next/font/google";
+import { AuthGate } from "@/components/AuthGate";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -39,7 +40,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi">
-      <body className={`${barlow.variable} antialiased`}>{children}</body>
+      <body className={`${barlow.variable} h-full antialiased`}>
+        <AuthGate>{children}</AuthGate>
+      </body>
     </html>
   );
 }
