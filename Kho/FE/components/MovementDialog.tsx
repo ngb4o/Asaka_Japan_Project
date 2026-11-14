@@ -2,9 +2,9 @@
 
 import { ArrowDownToLine, ArrowUpFromLine, Loader2, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { createMovement, listItems, listMovements } from "@/lib/api";
+import { createMovement, listDrivers, listItems, listMovements } from "@/lib/api";
 import { foldText } from "@/lib/text";
-import type { MovementType, StockMovement, WarehouseItem } from "@/lib/types";
+import type { Driver, MovementType, StockMovement, WarehouseItem } from "@/lib/types";
 
 const fieldClass =
   "flex h-10 w-full rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 text-sm font-normal shadow-sm outline-none placeholder:text-[var(--color-text-inverse)] focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)]";
@@ -24,6 +24,9 @@ export function MovementDialog({
   const [picked, setPicked] = useState<WarehouseItem | null>(fixedItem);
   const [catalog, setCatalog] = useState<WarehouseItem[]>([]);
   const [productQuery, setProductQuery] = useState("");
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [driverId, setDriverId] = useState("");
+  const [driverQuery, setDriverQuery] = useState("");
   const [quantity, setQuantity] = useState("");
   const [note, setNote] = useState("");
   const [history, setHistory] = useState<StockMovement[]>([]);
@@ -38,6 +41,15 @@ export function MovementDialog({
       : catalog;
     return source.slice(0, 8);
   }, [catalog, productQuery]);
+
+  const driver = drivers.find((entry) => entry.id === driverId) ?? null;
+  const driverMatches = useMemo(() => {
+    const keyword = foldText(driverQuery.trim());
+    const source = keyword
+      ? drivers.filter((entry) => foldText(`${entry.name} ${entry.plate} ${entry.mooc}`).includes(keyword))
+      : drivers;
+    return source.slice(0, 8);
+  }, [driverQuery, drivers]);
 
   const amount = Number(quantity);
   const nextBalance = item && Number.isFinite(amount)
@@ -66,6 +78,21 @@ export function MovementDialog({
       active = false;
     };
   }, [fixedItem]);
+
+  useEffect(() => {
+    if (lockedType === "in") return;
+    let active = true;
+    listDrivers({ limit: 500 })
+      .then((result) => {
+        if (active) setDrivers(result.items);
+      })
+      .catch(() => {
+        if (active) setDrivers([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [lockedType]);
 
   useEffect(() => {
     if (!item) {
@@ -99,6 +126,10 @@ export function MovementDialog({
       setError("Tồn kho không đủ để xuất");
       return;
     }
+    if (type === "out" && !driver) {
+      setError("Chọn lái xe");
+      return;
+    }
 
     setSubmitting(true);
     setError("");
@@ -107,8 +138,11 @@ export function MovementDialog({
         type,
         quantity: amount,
         note: note.trim(),
+        ...(type === "out" && driver ? { driverId: driver.id } : {}),
       });
-      onDone(type === "in" ? `Đã nhập ${formatQuantity(amount)} ${item.name}` : `Đã xuất ${formatQuantity(amount)} ${item.name}`);
+      onDone(type === "in"
+        ? `Đã nhập ${formatQuantity(amount)} ${item.name}`
+        : `Đã xuất ${formatQuantity(amount)} ${item.name} cho ${driver?.name ?? ""}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không lưu được phiếu");
       setSubmitting(false);
@@ -215,6 +249,64 @@ export function MovementDialog({
             </button>
           </div>
           )}
+          {type === "out" ? (
+            driver ? (
+              <div className="flex h-14 items-center justify-between gap-3 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] px-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{driver.name}</p>
+                  <p className="truncate text-xs text-[var(--color-text-inverse)]">
+                    Đầu {driver.plate || "—"} · Mooc {driver.mooc || "—"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="shrink-0 text-sm font-semibold text-[var(--color-text-secondary)]"
+                  onClick={() => {
+                    setDriverId("");
+                    setDriverQuery("");
+                  }}
+                >
+                  Đổi
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium" htmlFor="movement-driver">
+                  Lái xe *
+                </label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--color-text-inverse)]" />
+                  <input
+                    id="movement-driver"
+                    value={driverQuery}
+                    placeholder="Tìm lái xe, biển đầu, biển mooc..."
+                    onChange={(event) => setDriverQuery(event.target.value)}
+                    className={`${fieldClass} pl-9`}
+                  />
+                </div>
+                <ul className="h-32 overflow-y-auto rounded-[var(--radius-button)] border border-[var(--color-border-subtle)]">
+                  {driverMatches.length === 0 ? (
+                    <li className="px-3 py-3 text-sm text-[var(--color-text-inverse)]">Không có lái xe khớp.</li>
+                  ) : (
+                    driverMatches.map((entry) => (
+                      <li key={entry.id}>
+                        <button
+                          type="button"
+                          className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-[var(--color-surface-muted)]"
+                          onClick={() => setDriverId(entry.id)}
+                        >
+                          <span className="min-w-0 flex-1 truncate font-medium">{entry.name}</span>
+                          <span className="max-w-[55%] shrink-0 truncate text-[var(--color-text-inverse)]">
+                            Đầu {entry.plate || "—"} · Mooc {entry.mooc || "—"}
+                          </span>
+                        </button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>
+            )
+          ) : null}
           <label className="space-y-2 text-sm font-medium">
             <span className="block">Số lượng *</span>
             <input
@@ -270,6 +362,9 @@ export function MovementDialog({
                       {movement.createdBy ? ` · ${movement.createdBy}` : ""}
                       {movement.note ? ` · ${movement.note}` : ""}
                     </p>
+                    {formatRecipient(movement) ? (
+                      <p className="truncate text-xs text-[var(--color-text-inverse)]">{formatRecipient(movement)}</p>
+                    ) : null}
                   </div>
                   <p className="shrink-0 tabular-nums text-[var(--color-text-inverse)]">
                     Còn {formatQuantity(movement.balanceAfter)}
@@ -296,6 +391,13 @@ export function MovementBadge({ type }: { type: MovementType }) {
       {incoming ? "Nhập" : "Xuất"}
     </span>
   );
+}
+
+export function formatRecipient(movement: Pick<StockMovement, "type" | "driverName" | "plate" | "mooc">) {
+  if (movement.type !== "out") return "";
+  const name = movement.driverName?.trim();
+  if (!name) return "";
+  return `${name} · Đầu ${movement.plate?.trim() || "—"} · Mooc ${movement.mooc?.trim() || "—"}`;
 }
 
 export function formatQuantity(value: number) {

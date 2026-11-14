@@ -201,7 +201,7 @@ export default function HomePage() {
                 description={
                   filteredEmpty
                     ? "Thử tên khác hoặc chọn tất cả cột."
-                    : "Thêm sản phẩm với ảnh và số cột. Số tồn được ghi ở Kho hàng."
+                    : "Thêm tên sản phẩm và số cột. Ảnh có thể để trống. Số tồn được ghi ở Kho hàng."
                 }
               />
               </div>
@@ -468,11 +468,6 @@ function ItemDialog({
       setError("Cột phải là số nguyên từ 0 đến 9999");
       return;
     }
-    if (!editing && !file) {
-      setError("Hãy chọn ảnh sản phẩm");
-      return;
-    }
-
     setSubmitting(true);
     setError("");
     try {
@@ -485,7 +480,7 @@ function ItemDialog({
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
-      setError(message && message !== "Failed to fetch" ? message : "Không tải được ảnh lên. Hãy thử lại.");
+      setError(message && message !== "Failed to fetch" ? message : "Không lưu được sản phẩm. Hãy thử lại.");
       setSubmitting(false);
     }
   }
@@ -531,7 +526,7 @@ function ItemDialog({
           </Field>
           <div className="space-y-2">
             <label htmlFor={imageInputId} className="text-sm font-medium">
-              Ảnh sản phẩm{editing ? "" : " *"}
+              Ảnh sản phẩm
             </label>
             <div className="flex gap-3">
               {preview ? (

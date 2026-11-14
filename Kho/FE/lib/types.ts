@@ -40,6 +40,10 @@ export type StockMovement = {
   type: MovementType;
   quantity: number;
   note: string;
+  driverId?: string;
+  driverName?: string;
+  plate?: string;
+  mooc?: string;
   createdBy: string;
   balanceAfter: number;
   available?: number;
@@ -58,6 +62,7 @@ export type MovementInput = {
   type: MovementType;
   quantity: number;
   note: string;
+  driverId?: string;
 };
 
 export type MovementResult = {

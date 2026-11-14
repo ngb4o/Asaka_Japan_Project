@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb'
 import { StatusCodes } from 'http-status-codes'
 import { GET_CLIENT, GET_DB } from '~/config/mongodb'
+import { driverModel } from '~/models/driverModel'
 import { itemModel } from '~/models/itemModel'
 import { movementModel } from '~/models/movementModel'
 import { slipModel } from '~/models/slipModel'
@@ -61,7 +62,7 @@ const getList = async (query = {}) => {
     }
   }
 
-  const search = buildSearchFilter(['itemName', 'note'], query.q || '')
+  const search = buildSearchFilter(['itemName', 'note', 'driverName', 'plate', 'mooc'], query.q || '')
   if (search && filter.$or) {
     filter.$and = [{ $or: filter.$or }, search]
     delete filter.$or
@@ -106,6 +107,20 @@ const record = async (itemId, payload) => {
   const type = payload.type === 'out' ? 'out' : 'in'
   const note = String(payload.note || '').trim()
   const createdBy = String(payload.createdBy || '').trim()
+  const driver = { driverId: '', driverName: '', plate: '', mooc: '' }
+
+  if (type === 'out') {
+    const driverId = String(payload.driverId || '').trim()
+    if (!OBJECT_ID_RULE.test(driverId)) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Chọn lái xe')
+    }
+    const found = await driverModel.findOneById(driverId)
+    if (!found) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy lái xe')
+    driver.driverId = found._id.toString()
+    driver.driverName = found.name
+    driver.plate = found.plate || ''
+    driver.mooc = found.mooc || ''
+  }
   const session = GET_CLIENT().startSession()
   let movement = null
   let item = null
@@ -139,6 +154,7 @@ const record = async (itemId, payload) => {
         type,
         quantity,
         note,
+        ...driver,
         createdBy,
         balanceAfter
       }, session)
@@ -150,6 +166,7 @@ const record = async (itemId, payload) => {
         type,
         quantity,
         note,
+        ...driver,
         createdBy,
         balanceAfter,
         createdAt: new Date()

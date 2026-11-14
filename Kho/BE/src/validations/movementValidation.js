@@ -17,7 +17,8 @@ const createSchema = Joi.object({
   }),
   note: Joi.string().trim().allow('').max(300).default('').messages({
     'string.max': 'Ghi chú tối đa 300 ký tự'
-  })
+  }),
+  driverId: Joi.string().trim().allow('').max(30).default('')
 })
 
 const validateItemId = (req, res, next) => {

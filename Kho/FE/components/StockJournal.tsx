@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Inbox, Loader2, Search, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MovementBadge, formatQuantity, formatWhen } from "@/components/MovementDialog";
+import { MovementBadge, formatQuantity, formatRecipient, formatWhen } from "@/components/MovementDialog";
 import { listMovements } from "@/lib/api";
 import type { MovementList, StockMovement } from "@/lib/types";
 
@@ -163,6 +163,9 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
                   {movement.createdBy ? ` · ${movement.createdBy}` : ""}
                   {movement.note ? ` · ${movement.note}` : ""}
                 </p>
+                {formatRecipient(movement) ? (
+                  <p className="mt-1 truncate text-xs text-[var(--color-text-inverse)]">{formatRecipient(movement)}</p>
+                ) : null}
               </article>
             ))}
             <div ref={sentinelRef} className="h-1" aria-hidden />
@@ -176,7 +179,7 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
 
           <div className="crm-table-scroll hidden min-h-0 flex-1 overflow-auto lg:block">
             <div className="crm-table-frame min-h-full border-0">
-              <table className="crm-data-table min-w-[760px]">
+              <table className="crm-data-table min-w-[980px]">
                 <thead>
                   <tr>
                     <th className="font-medium">Thời gian</th>
@@ -184,6 +187,7 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
                     <th className="font-medium">Loại</th>
                     <th className="font-medium">Số lượng</th>
                     <th className="font-medium">Tồn sau</th>
+                    <th className="font-medium">Xuất cho</th>
                     <th className="font-medium">Người</th>
                     <th className="font-medium">Ghi chú</th>
                   </tr>
@@ -201,6 +205,7 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
                         {formatQuantity(movement.quantity)}
                       </td>
                       <td className="tabular-nums">{formatQuantity(movement.balanceAfter)}</td>
+                      <td className="text-sm">{formatRecipient(movement) || "—"}</td>
                       <td>{movement.createdBy || "—"}</td>
                       <td className="text-sm text-[var(--color-text-inverse)]">{movement.note || "—"}</td>
                     </tr>

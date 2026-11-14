@@ -1,6 +1,6 @@
 import express from 'express'
 import { itemController } from '~/controllers/itemController'
-import { attachUploadedImage, requireItemImage, uploadItemImage } from '~/middlewares/uploadMiddleware'
+import { attachUploadedImage, uploadItemImage } from '~/middlewares/uploadMiddleware'
 import { itemValidation } from '~/validations/itemValidation'
 
 const Router = express.Router()
@@ -10,7 +10,7 @@ Router.route('/')
   .post(
     uploadItemImage,
     itemValidation.createNew,
-    requireItemImage,
+    attachUploadedImage,
     itemController.createNew
   )
 
