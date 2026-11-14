@@ -126,10 +126,6 @@ export function MovementDialog({
       setError("Tồn kho không đủ để xuất");
       return;
     }
-    if (type === "out" && !driver) {
-      setError("Chọn lái xe");
-      return;
-    }
 
     setSubmitting(true);
     setError("");
@@ -142,7 +138,9 @@ export function MovementDialog({
       });
       onDone(type === "in"
         ? `Đã nhập ${formatQuantity(amount)} ${item.name}`
-        : `Đã xuất ${formatQuantity(amount)} ${item.name} cho ${driver?.name ?? ""}`);
+        : driver
+          ? `Đã xuất ${formatQuantity(amount)} ${item.name} cho ${driver.name}`
+          : `Đã xuất ${formatQuantity(amount)} ${item.name}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không lưu được phiếu");
       setSubmitting(false);
@@ -272,7 +270,7 @@ export function MovementDialog({
             ) : (
               <div className="space-y-2">
                 <label className="block text-sm font-medium" htmlFor="movement-driver">
-                  Lái xe *
+                  Lái xe
                 </label>
                 <div className="relative">
                   <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--color-text-inverse)]" />

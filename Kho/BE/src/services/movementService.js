@@ -109,10 +109,10 @@ const record = async (itemId, payload) => {
   const createdBy = String(payload.createdBy || '').trim()
   const driver = { driverId: '', driverName: '', plate: '', mooc: '' }
 
-  if (type === 'out') {
-    const driverId = String(payload.driverId || '').trim()
+  if (type === 'out' && String(payload.driverId || '').trim()) {
+    const driverId = String(payload.driverId).trim()
     if (!OBJECT_ID_RULE.test(driverId)) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Chọn lái xe')
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Lái xe không hợp lệ')
     }
     const found = await driverModel.findOneById(driverId)
     if (!found) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy lái xe')
