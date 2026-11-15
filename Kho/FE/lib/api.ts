@@ -21,6 +21,11 @@ import type {
   OngDiaProposal,
   PhucVinhProposal,
   TireProposal,
+  Tire,
+  TireList,
+  TireEvent,
+  TireMountInput,
+  TireMoveInput,
   WarehouseItem,
 } from "@/lib/types";
 
@@ -101,6 +106,8 @@ export async function listMovements(
   params: {
     q?: string;
     type?: string;
+    from?: string;
+    to?: string;
     itemId?: string;
     unassigned?: boolean;
     includeSlip?: string;
@@ -113,6 +120,8 @@ export async function listMovements(
   search.set("page", String(params.page ?? 1));
   if (params.q) search.set("q", params.q);
   if (params.type) search.set("type", params.type);
+  if (params.from) search.set("from", params.from);
+  if (params.to) search.set("to", params.to);
   if (params.itemId) search.set("itemId", params.itemId);
   if (params.unassigned) search.set("unassigned", "1");
   if (params.includeSlip) search.set("includeSlip", params.includeSlip);
@@ -594,6 +603,51 @@ export async function login(username: string, password: string) {
     cache: "no-store",
   });
   return readData<LoginResult>(response);
+}
+
+export async function listTires(
+  params: { q?: string; kind?: string; plate?: string; page?: number; limit?: number } = {}
+) {
+  const search = new URLSearchParams();
+  search.set("limit", String(params.limit ?? 50));
+  search.set("page", String(params.page ?? 1));
+  if (params.q) search.set("q", params.q);
+  if (params.kind) search.set("kind", params.kind);
+  if (params.plate) search.set("plate", params.plate);
+  const response = await authorizedFetch(`${API_URL}/api/v1/tires?${search.toString()}`);
+  return readData<TireList>(response);
+}
+
+export async function getTire(id: string) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/tires/${id}`);
+  return readData<{ tire: Tire; events: TireEvent[] }>(response);
+}
+
+export async function mountTires(input: TireMountInput) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/tires/mount`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return readData<Tire[]>(response);
+}
+
+export async function correctTire(id: string, input: { serial: string; brand: string; wear: number }) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/tires/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return readData<Tire>(response);
+}
+
+export async function moveTire(id: string, input: TireMoveInput) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/tires/${id}/move`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return readData<Tire>(response);
 }
 
 export async function listDrivers(

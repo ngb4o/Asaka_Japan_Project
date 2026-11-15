@@ -298,6 +298,75 @@ export type ExportSlip = {
   updatedAt?: string;
 };
 
+export type TireKind = "dau" | "mooc" | "kho";
+
+export type TirePosition = "trai-ngoai" | "trai-trong" | "phai-ngoai" | "phai-trong" | "don" | "ngoai" | "";
+
+export type TireSide = "trai" | "phai";
+
+export type TirePlace = {
+  kind: TireKind;
+  plate: string;
+  axle: number | null;
+  position: TirePosition;
+};
+
+export type Tire = {
+  id: string;
+  serial: string;
+  brand: string;
+  wear: number | null;
+  place: TirePlace;
+  note: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type TireEvent = {
+  id: string;
+  tireId: string;
+  serial: string;
+  type: "nhap" | "gan" | "chuyen" | "thao";
+  from: TirePlace | null;
+  to: TirePlace;
+  note: string;
+  wear?: number | null;
+  createdBy: string;
+  createdAt: string;
+};
+
+export type TireList = {
+  items: Tire[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
+export type TireMountLine = {
+  serial: string;
+  brand: string;
+  wear: number;
+  axle: number;
+  side: TireSide;
+};
+
+export type TireMountInput = {
+  kind: "dau" | "mooc";
+  plate: string;
+  lines: TireMountLine[];
+};
+
+export type TireMoveInput = {
+  kind: TireKind;
+  plate: string;
+  axle: number | null;
+  position: TireSide | "ngoai" | "";
+  brand: string;
+  wear: number;
+  note: string;
+};
+
 export type Driver = {
   id: string;
   name: string;

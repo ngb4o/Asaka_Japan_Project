@@ -32,6 +32,27 @@ export const sumAllocatedQuantities = async (movementIds, exceptSlipId = null, s
   return totals
 }
 
+const DATE_RULE = /^(\d{4})-(\d{2})-(\d{2})$/
+
+const parseCalendarDate = (value) => {
+  const text = String(value || '').trim()
+  if (!text) return null
+  const match = DATE_RULE.exec(text)
+  if (!match) throw new ApiError(StatusCodes.BAD_REQUEST, 'Ngày lọc không hợp lệ')
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const probe = new Date(Date.UTC(year, month - 1, day))
+  if (probe.getUTCFullYear() !== year || probe.getUTCMonth() !== month - 1 || probe.getUTCDate() !== day) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Ngày lọc không hợp lệ')
+  }
+  return { year, month, day, key: text }
+}
+
+const startOfVietnamDay = ({ year, month, day }) => new Date(Date.UTC(year, month - 1, day, -7, 0, 0, 0))
+
+const endOfVietnamDay = ({ year, month, day }) => new Date(Date.UTC(year, month - 1, day, 16, 59, 59, 999))
+
 const formatMovement = (doc) => {
   const formatted = formatDocument(doc)
   if (formatted?.itemId) formatted.itemId = formatted.itemId.toString()
@@ -50,6 +71,17 @@ const getList = async (query = {}) => {
   }
 
   if (query.type === 'in' || query.type === 'out') filter.type = query.type
+
+  const fromDate = parseCalendarDate(query.from)
+  const toDate = parseCalendarDate(query.to)
+  if (fromDate || toDate) {
+    const [earlier, later] = fromDate && toDate && fromDate.key > toDate.key
+      ? [toDate, fromDate]
+      : [fromDate, toDate]
+    filter.createdAt = {}
+    if (earlier) filter.createdAt.$gte = startOfVietnamDay(earlier)
+    if (later) filter.createdAt.$lte = endOfVietnamDay(later)
+  }
   if (query.unassigned === '1' || query.unassigned === 'true') {
     filter.type = 'out'
     if (query.includeSlip) {

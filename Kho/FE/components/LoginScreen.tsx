@@ -37,7 +37,7 @@ export function LoginScreen({ onSuccess }: { onSuccess: (user: AuthUser) => void
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(1,125,3,0.25),transparent_55%)]" />
       <form
         onSubmit={handleSubmit}
-        className="relative z-10 w-full max-w-sm rounded-[20px] border border-white/20 bg-[var(--color-surface-elevated)]/95 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-md"
+        className="ui-pop relative z-10 w-full max-w-sm rounded-[20px] border border-white/20 bg-[var(--color-surface-elevated)]/95 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-md"
       >
         <h1 className="text-xl font-semibold">Kho hàng</h1>
         <p className="mt-1 text-sm text-[var(--color-text-inverse)]">Đăng nhập để xem và xuất nhập kho.</p>

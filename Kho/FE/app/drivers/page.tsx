@@ -203,7 +203,7 @@ export default function DriversPage() {
         />
       ) : null}
       {pendingDelete ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
           <div className="w-full max-w-sm rounded-[var(--radius-card)] bg-white p-4 shadow-[var(--shadow-elevated)]">
             <p className="font-semibold">Xóa lái xe?</p>
             <p className="mt-1 text-sm text-[var(--color-text-inverse)]">{pendingDelete.name}</p>
@@ -257,7 +257,7 @@ function DriverDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
       <form onSubmit={(event) => void submit(event)} className="w-full max-w-md rounded-[var(--radius-card)] bg-white p-4 shadow-[var(--shadow-elevated)]">
         <div className="mb-3 flex items-center justify-between">
           <h2 id={titleId} className="text-base font-semibold">{driver ? "Sửa lái xe" : "Thêm lái xe"}</h2>

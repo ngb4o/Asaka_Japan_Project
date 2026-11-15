@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, LogOut, Menu, Package, Truck, Warehouse, X } from "lucide-react";
+import { CircleDot, FileText, LogOut, Menu, Package, Truck, Warehouse, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -8,6 +8,7 @@ import { useState } from "react";
 const NAV = [
   { href: "/", label: "Sản phẩm", icon: Package },
   { href: "/kho", label: "Kho hàng", icon: Warehouse },
+  { href: "/lop", label: "Lốp", icon: CircleDot },
   { href: "/drivers", label: "Lái xe", icon: Truck },
   { href: "/phieu", label: "Phiếu", icon: FileText },
 ];
@@ -77,7 +78,7 @@ export function AppShell({
       {menuOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden print:hidden">
           <button type="button" aria-label="Đóng menu" className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
-          <aside className="relative z-10 flex h-full w-[min(100vw-2.5rem,288px)] flex-col bg-[#0c2810] text-[#ecfdf3] shadow-2xl">
+          <aside className="ui-drawer relative z-10 flex h-full w-[min(100vw-2.5rem,288px)] flex-col bg-[#0c2810] text-[#ecfdf3] shadow-2xl">
             <button
               type="button"
               aria-label="Đóng"
@@ -91,7 +92,7 @@ export function AppShell({
         </div>
       ) : null}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b border-[#e2e8f0] bg-white px-3 print:hidden">
+        <header className="flex h-12 shrink-0 items-center gap-2 border-b border-[#e2e8f0] bg-white px-3 lg:hidden print:hidden">
           <button
             type="button"
             aria-label="Mở menu"
@@ -102,7 +103,11 @@ export function AppShell({
           </button>
           <p className="truncate text-sm font-semibold">Kho hàng</p>
         </header>
-        <main className="min-h-0 flex-1 overflow-hidden p-3 sm:p-4">{children}</main>
+        <main className="min-h-0 flex-1 overflow-hidden p-3 sm:p-4">
+          <div key={pathname} className="ui-page h-full min-h-0">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

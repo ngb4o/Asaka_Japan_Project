@@ -22,6 +22,8 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
   const [items, setItems] = useState<StockMovement[]>([]);
   const [query, setQuery] = useState("");
   const [type, setType] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -44,6 +46,8 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
       const next = await listMovements({
         q: query || undefined,
         type: type || undefined,
+        from: from || undefined,
+        to: to || undefined,
         page: nextPage,
         limit: PAGE_SIZE,
       });
@@ -66,7 +70,7 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
         loadingMoreRef.current = false;
       }
     }
-  }, [query, type]);
+  }, [from, query, to, type]);
 
   useEffect(() => {
     if (isMobile === null) return;
@@ -104,7 +108,7 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
             setPage(1);
           }}
         />
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           {[
             ["", "Tất cả"],
             ["in", "Nhập"],
@@ -122,6 +126,35 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
               {label}
             </button>
           ))}
+          <DateField
+            label="Từ ngày"
+            value={from}
+            onChange={(value) => {
+              setFrom(value);
+              setPage(1);
+            }}
+          />
+          <DateField
+            label="Đến ngày"
+            value={to}
+            onChange={(value) => {
+              setTo(value);
+              setPage(1);
+            }}
+          />
+          {from || to ? (
+            <button
+              type="button"
+              className={idleFilter}
+              onClick={() => {
+                setFrom("");
+                setTo("");
+                setPage(1);
+              }}
+            >
+              Xóa ngày
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -136,9 +169,11 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
         <div className="flex min-h-0 flex-1 items-center justify-center">
           <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
             <Inbox className="h-5 w-5 text-[var(--color-text-inverse)]" />
-            <p className="text-sm font-medium">Chưa có phiếu xuất nhập</p>
+            <p className="text-sm font-medium">{query || type || from || to ? "Không có phiếu khớp" : "Chưa có phiếu xuất nhập"}</p>
             <p className="max-w-sm text-sm text-[var(--color-text-inverse)]">
-              Bấm Nhập kho hoặc Xuất kho để ghi phiếu. Số tồn sẽ cộng hoặc trừ theo phiếu đó.
+              {query || type || from || to
+                ? "Thử đổi từ khóa, loại phiếu hoặc khoảng ngày."
+                : "Bấm Nhập kho hoặc Xuất kho để ghi phiếu. Số tồn sẽ cộng hoặc trừ theo phiếu đó."}
             </p>
           </div>
         </div>
@@ -249,7 +284,7 @@ function SearchBox({ value, onSearch }: { value: string; onSearch: (value: strin
       <input
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
-        placeholder="Tìm sản phẩm hoặc ghi chú..."
+        placeholder="Tìm sản phẩm, ghi chú, biển số..."
         aria-label="Tìm phiếu xuất nhập"
         className="h-10 w-full rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] pr-9 pl-9 text-sm shadow-sm outline-none placeholder:text-[var(--color-text-inverse)] focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)]"
       />
@@ -267,6 +302,29 @@ function SearchBox({ value, onSearch }: { value: string; onSearch: (value: strin
         </button>
       ) : null}
     </div>
+  );
+}
+
+function DateField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 text-sm shadow-sm">
+      <span className="shrink-0 text-[var(--color-text-inverse)]">{label}</span>
+      <input
+        type="date"
+        value={value}
+        aria-label={label}
+        onChange={(event) => onChange(event.target.value)}
+        className="bg-transparent text-sm outline-none"
+      />
+    </label>
   );
 }
 
