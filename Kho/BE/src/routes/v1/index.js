@@ -9,6 +9,7 @@ import { slipRoute } from '~/routes/v1/slipRoute'
 import { electricProposalRoute } from '~/routes/v1/electricProposalRoute'
 import { officeProposalRoute } from '~/routes/v1/officeProposalRoute'
 import { weldProposalRoute } from '~/routes/v1/weldProposalRoute'
+import { advanceProposalRoute } from '~/routes/v1/advanceProposalRoute'
 import { viettelProposalRoute } from '~/routes/v1/viettelProposalRoute'
 import { utilityProposalRoute } from '~/routes/v1/utilityProposalRoute'
 import { rentalProposalRoute } from '~/routes/v1/rentalProposalRoute'
@@ -38,6 +39,7 @@ Router.use('/electric-proposals', verifyToken, electricProposalRoute)
 Router.use('/phuc-vinh-proposals', verifyToken, phucVinhProposalRoute)
 Router.use('/office-proposals', verifyToken, officeProposalRoute)
 Router.use('/weld-proposals', verifyToken, weldProposalRoute)
+Router.use('/advance-proposals', verifyToken, advanceProposalRoute)
 Router.use('/viettel-proposals', verifyToken, viettelProposalRoute)
 Router.use('/utility-proposals', verifyToken, utilityProposalRoute)
 Router.use('/rental-proposals', verifyToken, rentalProposalRoute)

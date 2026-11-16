@@ -16,6 +16,7 @@ import type {
   ElectricProposal,
   OfficeProposal,
   WeldProposal,
+  AdvanceProposal,
   ViettelProposal,
   UtilityProposal,
   RentalProposal,
@@ -450,6 +451,49 @@ export async function updateOngDiaProposal(id: string, input: OngDiaProposalInpu
 
 export async function deleteOngDiaProposal(id: string) {
   const response = await authorizedFetch(`${API_URL}/api/v1/ong-dia-proposals/${id}`, { method: "DELETE" });
+  return readData<{ id: string }>(response);
+}
+
+export type AdvanceProposalInput = {
+  reportDate: string;
+  fullName: string;
+  department: string;
+  content: string;
+  amount: number;
+  amountWords: string;
+  bankAccount: string;
+};
+
+export async function listAdvanceProposals() {
+  const response = await authorizedFetch(`${API_URL}/api/v1/advance-proposals`);
+  return readData<AdvanceProposal[]>(response);
+}
+
+export async function getAdvanceProposal(id: string) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/advance-proposals/${id}`);
+  return readData<AdvanceProposal>(response);
+}
+
+export async function createAdvanceProposal(input: AdvanceProposalInput) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/advance-proposals`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return readData<{ id: string }>(response);
+}
+
+export async function updateAdvanceProposal(id: string, input: AdvanceProposalInput) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/advance-proposals/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return readData<{ id: string }>(response);
+}
+
+export async function deleteAdvanceProposal(id: string) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/advance-proposals/${id}`, { method: "DELETE" });
   return readData<{ id: string }>(response);
 }
 

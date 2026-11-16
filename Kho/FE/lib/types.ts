@@ -166,6 +166,19 @@ export type WeldProposalLine = {
   note: string;
 };
 
+export type AdvanceProposal = {
+  id: string;
+  reportDate: string;
+  fullName: string;
+  department: string;
+  content: string;
+  amount: number;
+  amountWords: string;
+  bankAccount: string;
+  createdAt: string;
+  updatedAt?: string;
+};
+
 export type WeldProposal = {
   id: string;
   reportDate: string;

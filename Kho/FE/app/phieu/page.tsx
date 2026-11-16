@@ -12,6 +12,11 @@ const FORMS = [
     detail: "Chọn lái xe, nhập số km, chọn vật tư, rồi tải file Word mẫu đã điền.",
   },
   {
+    href: "/phieu/tam-ung",
+    title: "Giấy đề nghị tạm ứng",
+    detail: "Ngày, họ tên, nội dung, số tiền và tài khoản. Lưu nháp hoặc tải sheet.",
+  },
+  {
     href: "/phieu/de-xuat-thanh-toan",
     title: "Báo cáo đề xuất và thanh toán vật tư",
     detail: "Lưu nháp hoặc tải sheet Excel đúng mẫu, với ngày, nội dung đề xuất và bảng vật tư.",

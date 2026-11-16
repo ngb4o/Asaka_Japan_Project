@@ -15,6 +15,7 @@ import {
   listUtilityProposals,
   listViettelProposals,
   listWeldProposals,
+  listAdvanceProposals,
 } from "@/lib/api";
 
 const PREFETCH_AT_KEY = "kho_offline_prefetch_at";
@@ -38,6 +39,7 @@ export const OFFLINE_ROUTES = [
   "/phieu/thue-xe",
   "/phieu/ong-dia",
   "/phieu/han-xe",
+  "/phieu/tam-ung",
   "/phieu/gui-hang-viettel",
   "/phieu/dien-nuoc-vp",
 ];
@@ -119,6 +121,7 @@ export async function prefetchOfflineData() {
       listRentalProposals(),
       listOngDiaProposals(),
       listWeldProposals(),
+      listAdvanceProposals(),
       listViettelProposals(),
       listUtilityProposals(),
     ]);
