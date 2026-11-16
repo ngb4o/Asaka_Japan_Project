@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { buildFilledOngDiaSheet } from "@/lib/fillOngDiaSheet";
 import type { OngDiaProposal } from "@/lib/types";
+import { DateInput } from "@/components/ui/date-input";
 
 type Line = {
   id: number;
@@ -310,7 +311,7 @@ export default function OngDiaProposalPage() {
         {showPreview ? null : <div className="space-y-4 p-4">
           <label className="block text-sm font-medium">
             Ngày
-            <input type="date" value={reportDate} onChange={(event) => setReportDate(event.target.value)} className={`${fieldClass} mt-1 max-w-48`} />
+            <DateInput value={reportDate} onChange={setReportDate} className="mt-1 max-w-48" />
           </label>
           <label className="block text-sm font-medium">
             V/v

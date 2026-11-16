@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { createProposal, deleteProposal, getProposal, listProposals, updateProposal, type ProposalInput } from "@/lib/api";
 import { buildFilledProposalSheet } from "@/lib/fillProposalSheet";
 import type { ProposalSlip } from "@/lib/types";
+import { DateInput } from "@/components/ui/date-input";
 
 type Line = {
   id: number;
@@ -329,12 +330,7 @@ export default function ProposalPaymentPage() {
           <div className="grid gap-3 md:grid-cols-[12rem_minmax(0,1fr)]">
             <label className="block text-sm font-medium">
               Ngày
-              <input
-                type="date"
-                value={reportDate}
-                onChange={(event) => changeReportDate(event.target.value)}
-                className={`${fieldClass} mt-1 flex justify-between`}
-              />
+              <DateInput value={reportDate} onChange={changeReportDate} className="mt-1" />
             </label>
             <label className="block text-sm font-medium">
               Nội dung đề xuất
@@ -362,13 +358,7 @@ export default function ProposalPaymentPage() {
                 const amount = lineAmount(line);
                 return (
                   <div key={line.id} className={lineGridClass}>
-                    <input
-                      type="date"
-                      value={line.date}
-                      onChange={(event) => updateLine(line.id, { date: event.target.value })}
-                      className={fieldClass}
-                      aria-label="Ngày tháng"
-                    />
+                    <DateInput value={line.date} onChange={(value) => updateLine(line.id, { date: value })} ariaLabel="Ngày tháng" />
                     <input
                       value={line.name}
                       onChange={(event) => updateLine(line.id, { name: event.target.value })}

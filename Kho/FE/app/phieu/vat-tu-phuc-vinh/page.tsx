@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { buildFilledPhucVinhSheet } from "@/lib/fillPhucVinhSheet";
 import type { PhucVinhProposal } from "@/lib/types";
+import { DateInput } from "@/components/ui/date-input";
 
 type Line = {
   id: number;
@@ -334,7 +335,7 @@ export default function PhucVinhProposalPage() {
         {showPreview ? null : <div className="space-y-4 p-4">
           <label className="block text-sm font-medium">
             Ngày
-            <input type="date" value={reportDate} onChange={(event) => changeReportDate(event.target.value)} className={`${fieldClass} mt-1 max-w-48`} />
+            <DateInput value={reportDate} onChange={changeReportDate} className="mt-1 max-w-48" />
           </label>
           <label className="block text-sm font-medium">
             V/v

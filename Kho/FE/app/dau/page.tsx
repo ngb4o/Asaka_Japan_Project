@@ -6,6 +6,7 @@ import { ListSkeleton } from "@/components/PageSkeleton";
 import { getOil, listOils, recordOilChange, setOilKm } from "@/lib/api";
 import type { DistanceOil, EngineOil, OilEvent, OilKind, OilStatus, OilVehicle } from "@/lib/types";
 import { foldText } from "@/lib/text";
+import { DateInput } from "@/components/ui/date-input";
 
 const KINDS: { id: OilKind; label: string }[] = [
   { id: "may", label: "Dầu máy" },
@@ -283,7 +284,7 @@ function VehicleDialog({
             <p className="text-sm font-semibold">Km hiện tại</p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_11rem]">
               <input value={km} inputMode="numeric" onChange={(event) => setKm(event.target.value.replace(/[^\d]/g, ""))} className={fieldClass} aria-label="Km hiện tại" placeholder="Nhập km đồng hồ" />
-              <input type="date" value={kmDate} onChange={(event) => setKmDate(event.target.value)} className={fieldClass} aria-label="Ngày nhập km" />
+              <DateInput value={kmDate} onChange={setKmDate} ariaLabel="Ngày nhập km" />
             </div>
             <button type="button" className={`${primaryButton} w-full`} disabled={saving} onClick={() => void saveKm()}>Lưu km</button>
           </section>
@@ -301,7 +302,7 @@ function VehicleDialog({
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_11rem]">
               <input value={changeKm} inputMode="numeric" onChange={(event) => setChangeKm(event.target.value.replace(/[^\d]/g, ""))} className={fieldClass} aria-label="Km lúc thay" placeholder="Km lúc thay" />
-              <input type="date" value={changeDate} onChange={(event) => setChangeDate(event.target.value)} className={fieldClass} aria-label="Ngày thay" />
+              <DateInput value={changeDate} onChange={setChangeDate} ariaLabel="Ngày thay" />
             </div>
             <input value={note} onChange={(event) => setNote(event.target.value)} className={fieldClass} placeholder="Ghi chú" aria-label="Ghi chú thay dầu" />
             <button type="button" className={`${primaryButton} w-full`} disabled={saving} onClick={() => void saveChange()}>

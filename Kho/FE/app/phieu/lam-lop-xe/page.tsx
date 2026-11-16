@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { buildFilledTireSheet } from "@/lib/fillTireSheet";
 import type { TireProposal } from "@/lib/types";
+import { DateInput } from "@/components/ui/date-input";
 
 type Line = {
   id: number;
@@ -346,7 +347,7 @@ export default function TireProposalPage() {
         {showPreview ? null : <div className="space-y-4 p-4">
           <label className="block text-sm font-medium">
             Ngày
-            <input type="date" value={reportDate} onChange={(event) => changeReportDate(event.target.value)} className={`${fieldClass} mt-1 max-w-48`} />
+            <DateInput value={reportDate} onChange={changeReportDate} className="mt-1 max-w-48" />
           </label>
           <label className="block text-sm font-medium">
             V/v
@@ -373,7 +374,7 @@ export default function TireProposalPage() {
                 const amount = lineAmount(line);
                 return (
                   <div key={line.id} className={lineGridClass}>
-                    <input type="date" value={line.date} onChange={(event) => updateLine(line.id, { date: event.target.value })} className={fieldClass} aria-label="Ngày sửa chữa" />
+                    <DateInput value={line.date} onChange={(value) => updateLine(line.id, { date: value })} ariaLabel="Ngày sửa chữa" />
                     <input value={line.plate} onChange={(event) => updateLine(line.id, { plate: event.target.value })} className={fieldClass} aria-label="Biển số" placeholder="29H85017 Lái xe: Lê Đình Long" />
                     <input value={line.name} onChange={(event) => updateLine(line.id, { name: event.target.value })} className={fieldClass} aria-label="Danh mục" placeholder="Vá lốp" />
                     <input value={line.unit} onChange={(event) => updateLine(line.id, { unit: event.target.value })} className={fieldClass} aria-label="ĐVT" />

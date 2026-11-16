@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { buildFilledOfficeSheet } from "@/lib/fillOfficeSheet";
 import type { OfficeProposal } from "@/lib/types";
+import { DateInput } from "@/components/ui/date-input";
 
 type Line = {
   id: number;
@@ -318,7 +319,7 @@ export default function OfficeProposalPage() {
         {showPreview ? null : <div className="space-y-4 p-4">
           <label className="block text-sm font-medium">
             Ngày
-            <input type="date" value={reportDate} onChange={(event) => setReportDate(event.target.value)} className={`${fieldClass} mt-1 max-w-48`} />
+            <DateInput value={reportDate} onChange={setReportDate} className="mt-1 max-w-48" />
           </label>
           <label className="block text-sm font-medium">
             V/v
@@ -344,7 +345,7 @@ export default function OfficeProposalPage() {
                 const amount = lineAmount(line);
                 return (
                   <div key={line.id} className={lineGridClass}>
-                    <input type="date" value={line.date} onChange={(event) => updateLine(line.id, { date: event.target.value })} className={fieldClass} aria-label="Ngày tháng" />
+                    <DateInput value={line.date} onChange={(value) => updateLine(line.id, { date: value })} ariaLabel="Ngày tháng" />
                     <input value={line.name} onChange={(event) => updateLine(line.id, { name: event.target.value })} className={fieldClass} aria-label="Tên vật tư" placeholder="Giấy A4 plus" />
                     <input value={line.unit} onChange={(event) => updateLine(line.id, { unit: event.target.value })} className={fieldClass} aria-label="ĐVT" placeholder="Ram" />
                     <input inputMode="decimal" value={line.quantity} onChange={(event) => { const next = event.target.value; if (next !== "" && !/^\d*([.,]\d{0,2})?$/.test(next)) return; updateLine(line.id, { quantity: next }); }} className={fieldClass} aria-label="SL" />

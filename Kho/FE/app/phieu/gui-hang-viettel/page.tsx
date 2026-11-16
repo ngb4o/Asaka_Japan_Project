@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { buildFilledViettelSheet } from "@/lib/fillViettelSheet";
 import type { ViettelProposal } from "@/lib/types";
+import { DateInput } from "@/components/ui/date-input";
 
 type Line = {
   id: number;
@@ -306,7 +307,7 @@ export default function ViettelProposalPage() {
         {showPreview ? null : <div className="space-y-4 p-4">
           <label className="block text-sm font-medium">
             Ngày
-            <input type="date" value={reportDate} onChange={(event) => setReportDate(event.target.value)} className={`${fieldClass} mt-1 max-w-48`} />
+            <DateInput value={reportDate} onChange={setReportDate} className="mt-1 max-w-48" />
           </label>
           <label className="block text-sm font-medium">
             V/v
@@ -328,7 +329,7 @@ export default function ViettelProposalPage() {
               {lines.map((line) => {
                 return (
                   <div key={line.id} className={lineGridClass}>
-                    <input type="date" value={line.date} onChange={(event) => updateLine(line.id, { date: event.target.value })} className={fieldClass} aria-label="Ngày gửi" />
+                    <DateInput value={line.date} onChange={(value) => updateLine(line.id, { date: value })} ariaLabel="Ngày gửi" />
                     <input value={line.receiver} onChange={(event) => updateLine(line.id, { receiver: event.target.value })} className={fieldClass} aria-label="Địa chỉ người nhận" placeholder="Chị Hà ( Công ty Mai Linh Đông Đô )" />
                     <input inputMode="numeric" value={line.fee} onChange={(event) => { const next = event.target.value; if (next !== "" && !/^\d*$/.test(next)) return; updateLine(line.id, { fee: next }); }} className={fieldClass} aria-label="Phí cước" />
                     <input value={line.note} onChange={(event) => updateLine(line.id, { note: event.target.value })} className={fieldClass} aria-label="Ghi chú" placeholder="Tờ phơi" />

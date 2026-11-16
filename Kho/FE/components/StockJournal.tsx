@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Inbox, Loader2, Search, X } from "lucide-rea
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MovementBadge, formatQuantity, formatRecipient, formatWhen } from "@/components/MovementDialog";
 import { ListSkeleton } from "@/components/PageSkeleton";
+import { DateInput } from "@/components/ui/date-input";
 import { listMovements } from "@/lib/api";
 import type { MovementList, StockMovement } from "@/lib/types";
 
@@ -101,7 +102,7 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+      <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
         <SearchBox
           value={query}
           onSearch={(value) => {
@@ -312,18 +313,7 @@ function DateField({
   value: string;
   onChange: (value: string) => void;
 }) {
-  return (
-    <label className="inline-flex h-10 max-w-full items-center gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 text-sm shadow-sm">
-      <span className="shrink-0 text-[var(--color-text-inverse)]">{label}</span>
-      <input
-        type="date"
-        value={value}
-        aria-label={label}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-[9.25rem] max-w-[46vw] bg-transparent text-sm outline-none"
-      />
-    </label>
-  );
+  return <DateInput value={value} onChange={onChange} ariaLabel={label} placeholder={label} className="w-[11.5rem] max-w-[46vw]" />;
 }
 
 function Pagination({

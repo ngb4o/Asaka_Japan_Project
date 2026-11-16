@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { buildFilledUtilitySheet } from "@/lib/fillUtilitySheet";
 import type { UtilityProposal } from "@/lib/types";
+import { DateInput } from "@/components/ui/date-input";
 
 const DEFAULT_SUBJECT = "V/v : Chi phí điện, nước, Internet tại đội xe Đà Nẵng tháng 10/2026";
 const DEFAULT_CONTENT = "Nội dung đề xuất gồm: Chi phí tiền điện, nước, Internet tháng 09/2026 tại đội xe Đà Nẵng.";
@@ -359,7 +360,7 @@ export default function UtilityProposalPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm font-medium">
               Ngày
-              <input type="date" value={reportDate} onChange={(event) => setReportDate(event.target.value)} className={`${fieldClass} mt-1`} />
+              <DateInput value={reportDate} onChange={setReportDate} className="mt-1" />
             </label>
             <label className="block text-sm font-medium">
               Kỳ phiếu báo
