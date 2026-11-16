@@ -34,7 +34,7 @@ export function ListSkeleton({ rows = 7 }: { rows?: number }) {
         ))}
       </div>
       <div className="hidden min-h-0 flex-1 overflow-hidden lg:block">
-        <div className="h-11 rounded-t-xl bg-[#017d03]" />
+        <div className="h-11 rounded-t-xl bg-[var(--color-text-secondary)]" />
         <div className="divide-y divide-[var(--color-border-subtle)] rounded-b-xl border border-t-0 border-[var(--color-border-subtle)]">
           {Array.from({ length: rows }, (_, index) => (
             <div key={index} className="grid grid-cols-4 gap-6 px-4 py-4">

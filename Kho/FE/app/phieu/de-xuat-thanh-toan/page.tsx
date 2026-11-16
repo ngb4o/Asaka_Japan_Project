@@ -576,7 +576,7 @@ const secondaryButton =
   "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-white px-4 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] disabled:opacity-50";
 
 const primaryButton =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#016502] disabled:opacity-50";
+  "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)] disabled:opacity-50";
 
 const dangerButton =
   "inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-button)] bg-red-600 text-white hover:bg-red-700";

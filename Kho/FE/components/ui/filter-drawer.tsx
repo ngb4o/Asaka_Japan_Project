@@ -70,7 +70,7 @@ function FilterFooter({
       <button
         type="button"
         onClick={onDone}
-        className="inline-flex h-10 items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] text-sm font-semibold text-white hover:bg-[#016502]"
+        className="inline-flex h-10 items-center justify-center rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] text-sm font-semibold text-white hover:bg-[var(--color-brand-hover)]"
       >
         Xong
       </button>

@@ -4,6 +4,8 @@ import { ChevronDown, CircleDot, Droplet, FileText, LogOut, Package, Truck, Ware
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { OfflineBar } from "@/components/OfflineBar";
+import { OfflineWarmup } from "@/components/OfflineWarmup";
 
 const STORAGE_KEY = "kho_nav_open_groups";
 
@@ -50,6 +52,13 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    const onOnline = () => setReloadKey((value) => value + 1);
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ kho: true });
 
   useEffect(() => {
@@ -86,11 +95,11 @@ export function AppShell({
     <>
       <div className="flex shrink-0 items-center gap-2.5 px-4 py-3.5">
         <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1 shadow-sm">
-          <img src="/images/brand/logo.png" alt="ASAKA" className="h-full w-full object-contain" />
+          <img src="/icons/icon-192.png" alt="Kho hàng" className="h-full w-full object-contain" />
         </span>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-white">Kho hàng</p>
-          <p className="truncate text-xs text-[#8faf96]">ASAKA JAPAN</p>
+          <p className="truncate text-xs text-[var(--color-brand-soft)]">Mai Linh Đông Đô</p>
         </div>
       </div>
       <nav className="flex-1 space-y-2 overflow-y-auto px-3 pb-4">
@@ -104,7 +113,7 @@ export function AppShell({
                 type="button"
                 onClick={() => toggleGroup(group.id)}
                 className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${
-                  groupActive ? "bg-white/10 text-white" : "text-[#8faf96] hover:bg-white/5 hover:text-white"
+                  groupActive ? "bg-white/10 text-white" : "text-[var(--color-brand-soft)] hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <GroupIcon className="h-4 w-4 shrink-0 opacity-80" />
@@ -122,10 +131,10 @@ export function AppShell({
                           key={item.href}
                           href={item.href}
                           className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium ${
-                            active ? "bg-[rgb(1_125_3_/_0.32)] text-[#86efac]" : "text-[#8faf96] hover:bg-white/5 hover:text-white"
+                            active ? "bg-[rgb(125_182_230_/_0.22)] text-[#d7ebfa]" : "text-[var(--color-brand-soft)] hover:bg-white/5 hover:text-white"
                           }`}
                         >
-                          {active ? <span className="absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-r bg-[#86efac]" /> : null}
+                          {active ? <span className="absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-r bg-[#7ec8f0]" /> : null}
                           <Icon className="h-4 w-4 shrink-0" />
                           <span className="truncate">{item.label}</span>
                         </Link>
@@ -154,11 +163,11 @@ export function AppShell({
 
   return (
     <div className="app-shell flex h-full w-full overflow-hidden bg-[#f1f5f9]">
-      <aside className="hidden h-full w-[272px] shrink-0 flex-col bg-[#0c2810] text-[#ecfdf3] lg:flex print:hidden">{nav}</aside>
+      <aside className="hidden h-full w-[272px] shrink-0 flex-col bg-[var(--color-brand-ink)] text-[#e8f1fa] lg:flex print:hidden">{nav}</aside>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex h-12 shrink-0 items-center gap-2 border-b border-[#e2e8f0] bg-white px-3 lg:hidden print:hidden">
           <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white">
-            <img src="/images/brand/logo.png" alt="" className="h-full w-full object-contain" />
+            <img src="/icons/icon-192.png" alt="" className="h-full w-full object-contain" />
           </span>
           <p className="min-w-0 flex-1 truncate text-sm font-semibold">Kho hàng</p>
           <button
@@ -171,8 +180,10 @@ export function AppShell({
             <span className="max-w-24 truncate">{accountName || "Đăng xuất"}</span>
           </button>
         </header>
+        <OfflineWarmup />
+        <OfflineBar />
         <main className="min-h-0 flex-1 overflow-hidden p-3 sm:p-4">
-          <div key={pathname} className="ui-page h-full min-h-0 min-w-0">
+          <div key={`${pathname}-${reloadKey}`} className="ui-page h-full min-h-0 min-w-0">
             {children}
           </div>
         </main>
@@ -186,10 +197,10 @@ export function AppShell({
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={`flex min-w-0 flex-col items-center gap-1 px-0.5 py-1.5 text-[10px] leading-none font-semibold ${
-                  active ? "text-[#017d03]" : "text-[#64748b]"
+                  active ? "text-[var(--color-text-secondary)]" : "text-[#64748b]"
                 }`}
               >
-                <span className={`flex h-7 w-full max-w-12 items-center justify-center rounded-full ${active ? "bg-[#dcfce7]" : ""}`}>
+                <span className={`flex h-7 w-full max-w-12 items-center justify-center rounded-full ${active ? "bg-[var(--color-brand-mist)]" : ""}`}>
                   <Icon className="h-[18px] w-[18px]" />
                 </span>
                 <span className="w-full truncate text-center">{item.label}</span>

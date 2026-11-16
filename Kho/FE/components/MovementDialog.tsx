@@ -421,7 +421,7 @@ function sanitizeQuantity(value: string) {
 }
 
 const primaryButton =
-  "inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#016502] disabled:opacity-50";
+  "inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--color-brand-hover)] disabled:opacity-50";
 
 const outlineButton =
   "inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-4 text-sm font-semibold shadow-sm transition hover:bg-[var(--color-surface-muted)] disabled:opacity-50";

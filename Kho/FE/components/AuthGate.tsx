@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { LoginScreen } from "@/components/LoginScreen";
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { currentUser } from "@/lib/api";
+import { NetworkError, currentUser } from "@/lib/api";
+import { clearApiCache } from "@/lib/offline/api-cache";
+import { clearOfflinePrefetchStamp } from "@/lib/offline/prefetch";
 import { clearToken, getToken } from "@/lib/session";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
@@ -23,8 +25,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         setAccountName(user.name);
         setSession("in");
       })
-      .catch(() => {
+      .catch((error) => {
         if (!active) return;
+        if (error instanceof NetworkError && getToken()) {
+          setAccountName("Quản kho");
+          setSession("in");
+          return;
+        }
         clearToken();
         setSession("guest");
       });
@@ -35,6 +42,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     function onUnauthorized() {
+      void clearApiCache();
+      clearOfflinePrefetchStamp();
       setAccountName("");
       setSession("guest");
     }
@@ -44,6 +53,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   function logout() {
     clearToken();
+    void clearApiCache();
+    clearOfflinePrefetchStamp();
     setAccountName("");
     setSession("guest");
   }

@@ -106,7 +106,7 @@ export default function PhieuPage() {
               href={form.href}
               className="flex gap-3 rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] p-4 shadow-[var(--shadow-card)] hover:bg-[var(--color-surface-muted)]"
             >
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#dcfce7] text-[var(--color-text-secondary)]">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-mist)] text-[var(--color-text-secondary)]">
                 <FileText className="h-5 w-5" />
               </span>
               <span className="min-w-0">

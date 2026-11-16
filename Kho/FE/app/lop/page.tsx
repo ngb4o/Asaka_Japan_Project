@@ -172,14 +172,14 @@ export default function TirePage() {
                     </span>
                   </span>
                   <span className="shrink-0 text-sm font-semibold tabular-nums">{item.count} lốp</span>
-                </button>
+                              </button>
               ))}
             </div>
           )}
         </div>
       </section>
 
-      {toast ? <p className="fixed top-4 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[#0c2810] px-4 py-2 text-sm font-medium text-white shadow-lg">{toast}</p> : null}
+      {toast ? <p className="fixed top-4 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[var(--color-brand-ink)] px-4 py-2 text-sm font-medium text-white shadow-lg">{toast}</p> : null}
 
       {mount ? (
         <MountDialog
@@ -319,7 +319,7 @@ function VehicleUnit({
     <section className="mx-auto w-full max-w-5xl">
       <div className="mb-2 flex items-center justify-center gap-2">
         <p className="text-sm font-semibold">{title}</p>
-        <span className="rounded-md bg-[#0c2810] px-2 py-0.5 font-mono text-xs font-semibold tracking-wide text-white">{plate}</span>
+        <span className="rounded-md bg-[var(--color-brand-ink)] px-2 py-0.5 font-mono text-xs font-semibold tracking-wide text-white">{plate}</span>
       </div>
       <div className="relative">
         <div className={`pointer-events-none absolute top-0 bottom-0 left-1/2 hidden w-[9.25rem] -translate-x-1/2 shadow-[0_14px_28px_rgb(12_40_16_/_0.16)] lg:block ${cab ? "rounded-t-[4.5rem] rounded-b-xl bg-gradient-to-b from-[#2d6a4f] to-[#1b4332]" : "rounded-lg bg-gradient-to-b from-[#245c3c] to-[#14321a]"}`}>
@@ -454,7 +454,7 @@ function SerialCard({ tire, caption, query, onOpen, fluid = false }: { tire: Tir
   const size = fluid ? "h-auto min-h-[68px] w-full" : "h-[68px] w-full max-w-[168px]";
   if (!tire) {
     return (
-      <button type="button" onClick={onOpen} className={`flex ${size} flex-col justify-center rounded-xl border border-dashed border-[#cbd5e1] bg-white/80 px-2.5 text-left hover:border-[#017d03] hover:bg-[#f0fdf4]`}>
+      <button type="button" onClick={onOpen} className={`flex ${size} flex-col justify-center rounded-xl border border-dashed border-[#cbd5e1] bg-white/80 px-2.5 text-left hover:border-[var(--color-text-secondary)] hover:bg-[var(--color-brand-mist)]`}>
         <span className="text-[10px] font-semibold tracking-wide text-[#94a3b8] uppercase">{caption || "Trống"}</span>
         <span className="text-xs font-semibold text-[#64748b]">Gắn lốp</span>
       </button>
@@ -466,7 +466,7 @@ function SerialCard({ tire, caption, query, onOpen, fluid = false }: { tire: Tir
       type="button"
       onClick={onOpen}
       title={`${tire.brand ? `${tire.brand} · ` : ""}${tire.serial}`}
-      className={`flex ${size} flex-col justify-center rounded-xl border bg-white px-2.5 text-left shadow-sm hover:border-[#017d03] ${marked ? "border-[#017d03] ring-2 ring-[#017d03]/25" : "border-[#e2e8f0]"}`}
+      className={`flex ${size} flex-col justify-center rounded-xl border bg-white px-2.5 text-left shadow-sm hover:border-[var(--color-text-secondary)] ${marked ? "border-[var(--color-text-secondary)] ring-2 ring-[var(--color-text-secondary)]/25" : "border-[#e2e8f0]"}`}
     >
       {caption ? <span className="text-[10px] font-semibold tracking-wide text-[#94a3b8] uppercase">{caption}</span> : null}
       <span className="w-full truncate text-sm font-semibold tracking-tight">{tire.serial}</span>
@@ -484,7 +484,7 @@ function Wheel({ tire, onOpen }: { tire: Tire | null; onOpen: () => void }) {
       type="button"
       onClick={onOpen}
       aria-label={tire ? `Lịch sử ${tire.serial}` : "Ô trống"}
-      className={`relative h-11 w-7 rounded-[7px] border-2 shadow-sm ${tire ? "border-[#0c2810] bg-[#111827]" : "border-dashed border-[#94a3b8] bg-white"}`}
+      className={`relative h-11 w-7 rounded-[7px] border-2 shadow-sm ${tire ? "border-[var(--color-brand-ink)] bg-[#111827]" : "border-dashed border-[#94a3b8] bg-white"}`}
     >
       <span className={`absolute top-1/2 left-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border ${tire ? "border-white/70 bg-[#334155]" : "border-[#cbd5e1] bg-white"}`} />
     </button>
@@ -866,7 +866,7 @@ function MoveDialog({
               <label className="block text-sm font-medium">
                 {kind === "dau" ? "Biển đầu" : "Biển mooc"}
                 <input value={plate} onChange={(event) => setPlate(event.target.value)} className={`${fieldClass} mt-1`} required />
-              </label>
+                </label>
               <div className="grid grid-cols-2 gap-2">
                 <button type="button" className={spot === "cau" ? activeFilter : idleFilter} onClick={() => setSpot("cau")}>Gắn cầu</button>
                 <button type="button" className={spot === "ngoai" ? activeFilter : idleFilter} onClick={() => setSpot("ngoai")}>Nằm ngoài</button>
@@ -1154,7 +1154,7 @@ function formatWhen(value: string) {
 }
 
 const primaryButton =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#016502] disabled:opacity-50";
+  "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--color-brand-hover)] disabled:opacity-50";
 
 const outlineButton =
   "inline-flex h-8 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-white px-3 text-xs font-semibold shadow-sm transition hover:bg-[var(--color-surface-muted)] disabled:opacity-50";

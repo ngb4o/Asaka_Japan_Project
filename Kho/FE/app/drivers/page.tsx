@@ -214,7 +214,7 @@ export default function DriversPage() {
         </div>
       ) : null}
       {toast ? (
-        <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[#0c2810] px-4 py-2 text-sm text-white shadow-lg">
+        <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[var(--color-brand-ink)] px-4 py-2 text-sm text-white shadow-lg">
           {toast}
         </div>
       ) : null}
@@ -292,7 +292,7 @@ function Field({ label, value, onChange, required = false }: { label: string; va
 }
 
 const primaryButton =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#016502] disabled:opacity-50";
+  "inline-flex h-10 items-center justify-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-text-secondary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--color-brand-hover)] disabled:opacity-50";
 
 const outlineButton =
   "inline-flex h-8 items-center justify-center gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 text-xs font-semibold shadow-sm transition hover:bg-[var(--color-surface-muted)] disabled:opacity-50";

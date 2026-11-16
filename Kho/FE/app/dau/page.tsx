@@ -159,7 +159,7 @@ export default function OilPage() {
                   key={item.driverId}
                   type="button"
                   onClick={() => void openVehicle(item)}
-                  className="flex w-full flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] px-3 py-3 text-left hover:border-[#017d03]"
+                  className="flex w-full flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] px-3 py-3 text-left hover:border-[var(--color-text-secondary)]"
                 >
                   <span className="flex items-start justify-between gap-3">
                     <span className="min-w-0">

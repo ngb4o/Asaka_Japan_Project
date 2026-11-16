@@ -1,3 +1,4 @@
+import { emitOfflineCacheHit, readApiCache, writeApiCache } from "@/lib/offline/api-cache";
 import { clearToken, getToken } from "@/lib/session";
 import type {
   AuthUser,
@@ -35,6 +36,13 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8018";
 
+export class NetworkError extends Error {
+  constructor() {
+    super("Không kết nối được máy chủ.");
+    this.name = "NetworkError";
+  }
+}
+
 export function mediaUrl(path: string) {
   if (!path) return "";
   if (/^https?:\/\//.test(path)) return path;
@@ -53,11 +61,44 @@ async function readData<T>(response: Response): Promise<T> {
   return body.data as T;
 }
 
-function authorizedFetch(url: string, init: RequestInit = {}) {
+function rememberGet(url: string, response: Response) {
+  if (!response.ok || response.headers.get("X-Kho-Cache") === "1") return;
+  const copy = response.clone();
+  void copy
+    .json()
+    .then((body) => {
+      if (!body || !("data" in body)) return;
+      return writeApiCache(url, body.data);
+    })
+    .catch(() => undefined);
+}
+
+async function cachedGetResponse(url: string) {
+  const cached = await readApiCache(url);
+  if (!cached) return null;
+  emitOfflineCacheHit(cached.savedAt);
+  return new Response(JSON.stringify({ data: cached.data }), {
+    status: 200,
+    headers: { "Content-Type": "application/json", "X-Kho-Cache": "1" },
+  });
+}
+
+async function authorizedFetch(url: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers);
   const token = getToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  return fetch(url, { ...init, headers, cache: "no-store" });
+  const method = (init.method || "GET").toUpperCase();
+  try {
+    const response = await fetch(url, { ...init, headers, cache: "no-store" });
+    if (method === "GET") rememberGet(url, response);
+    return response;
+  } catch {
+    if (method === "GET") {
+      const cached = await cachedGetResponse(url);
+      if (cached) return cached;
+    }
+    throw new NetworkError();
+  }
 }
 
 function toFormData(input: ItemInput) {
