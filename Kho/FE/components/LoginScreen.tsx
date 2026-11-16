@@ -28,12 +28,12 @@ export function LoginScreen({ onSuccess }: { onSuccess: (user: AuthUser) => void
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-white lg:flex-row">
+    <div className="flex h-full min-h-0 flex-col bg-[#f1f5f9] lg:flex-row">
       <section className="relative h-48 shrink-0 sm:h-60 lg:h-full lg:w-[56%]">
         <img
-          src="/images/backgrounds/white-truck.jpg"
+          src="/images/backgrounds/login-truck.jpg"
           alt=""
-          className="absolute inset-0 h-full w-full object-cover object-center"
+          className="absolute inset-0 h-full w-full object-cover object-[center_40%]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#071827]/80 via-[#071827]/15 to-[#071827]/10" />
         <div className="absolute right-5 bottom-5 left-5 text-white lg:right-12 lg:bottom-12 lg:left-12">
@@ -45,8 +45,12 @@ export function LoginScreen({ onSuccess }: { onSuccess: (user: AuthUser) => void
         </div>
       </section>
 
-      <section className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto px-5 py-8 sm:px-8 lg:items-center">
-        <form onSubmit={handleSubmit} className="ui-pop w-full max-w-[380px]">
+      <section className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto px-4 py-6 sm:px-8 lg:items-center">
+        <form
+          onSubmit={handleSubmit}
+          className="ui-pop w-full max-w-[400px] rounded-2xl border border-[var(--color-border-subtle)] bg-white p-6 shadow-[var(--shadow-card)] sm:p-8"
+        >
+          <div className="mb-6 h-1 w-10 rounded-full bg-[var(--color-text-secondary)]" />
           <div className="flex items-center gap-3">
             <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-white p-1.5 shadow-sm">
               <img src="/icons/icon-192.png" alt="" className="h-full w-full object-contain" />
