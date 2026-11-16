@@ -256,7 +256,7 @@ export default function OngDiaProposalPage() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto">
+    <div className="flex h-full min-w-0 flex-col gap-3 overflow-y-auto">
       {!showPreview && drafts.length > 0 ? (
         <section className="shrink-0 rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-white shadow-[var(--shadow-soft)]">
           <button type="button" className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left" onClick={toggleDrafts} aria-expanded={draftsOpen}>
@@ -289,7 +289,7 @@ export default function OngDiaProposalPage() {
         </section>
       ) : null}
       <section className="rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-white shadow-[var(--shadow-soft)]">
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3">
+        <div className="flex flex-col gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Link href="/phieu" className="text-xs font-semibold text-[var(--color-text-secondary)]">Phiếu</Link>
             <h1 className="text-base font-semibold">Đề xuất và thanh toán ông địa</h1>
@@ -320,7 +320,7 @@ export default function OngDiaProposalPage() {
             Nội dung đề xuất
             <textarea value={content} onChange={(event) => setContent(event.target.value)} rows={2} className={`${fieldClass} mt-1 h-auto py-2`} />
           </label>
-          <div className="overflow-x-auto border-t border-[var(--color-border-subtle)] pt-4">
+          <div className="min-w-0 overflow-x-auto border-t border-[var(--color-border-subtle)] pt-4">
             <div className={lineGridClass}>
               <p className="text-sm font-medium">Danh mục</p>
               <p className="text-sm font-medium">ĐVT</p>

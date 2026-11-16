@@ -14,6 +14,9 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { PageSkeleton } from "@/components/PageSkeleton";
+import { FilterDrawer, FilterTrigger } from "@/components/ui/filter-drawer";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { PreviewableImage } from "@/components/PreviewableImage";
 import { PwaInstallBanner } from "@/components/PwaInstall";
 import { createItem, deleteItem, listItems, mediaUrl, updateItem } from "@/lib/api";
@@ -21,6 +24,28 @@ import { isAllowedImage, prepareImageFile } from "@/lib/imageFile";
 import type { ItemInput, ItemList, WarehouseItem } from "@/lib/types";
 
 const PAGE_SIZE = 12;
+
+type ProductFilter = {
+  column: string;
+  stock: string;
+  unit: string;
+  qtyMin: string;
+  qtyMax: string;
+};
+
+const emptyFilter: ProductFilter = { column: "", stock: "", unit: "", qtyMin: "", qtyMax: "" };
+
+function filterCount(value: ProductFilter) {
+  return [value.column, value.stock, value.unit, value.qtyMin || value.qtyMax].filter(Boolean).length;
+}
+
+function normalizeQty(value: string) {
+  const text = value.trim().replace(",", ".");
+  if (!text) return "";
+  const number = Number(text);
+  if (!Number.isFinite(number) || number < 0) return "";
+  return String(number);
+}
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
 const emptyList: ItemList = {
@@ -30,6 +55,7 @@ const emptyList: ItemList = {
   limit: PAGE_SIZE,
   totalPages: 1,
   columns: [],
+  units: [],
   summary: { totalItems: 0, totalQuantity: 0, columnCount: 0 },
 };
 
@@ -39,6 +65,12 @@ export default function HomePage() {
   const [items, setItems] = useState<WarehouseItem[]>([]);
   const [query, setQuery] = useState("");
   const [column, setColumn] = useState("");
+  const [stock, setStock] = useState("");
+  const [unit, setUnit] = useState("");
+  const [qtyMin, setQtyMin] = useState("");
+  const [qtyMax, setQtyMax] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterDraft, setFilterDraft] = useState<ProductFilter>(emptyFilter);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -71,6 +103,10 @@ export default function HomePage() {
       const next = await listItems({
         q: query || undefined,
         column: column || undefined,
+        stock: stock || undefined,
+        unit: unit || undefined,
+        qtyMin: qtyMin || undefined,
+        qtyMax: qtyMax || undefined,
         page: nextPage,
         limit: PAGE_SIZE,
       });
@@ -93,7 +129,7 @@ export default function HomePage() {
         setReady(true);
       }
     }
-  }, [column, query]);
+  }, [column, query, qtyMax, qtyMin, stock, unit]);
 
   useEffect(() => {
     if (isMobile === null) return;
@@ -174,12 +210,13 @@ export default function HomePage() {
     return <PageSkeleton />;
   }
 
-  const filteredEmpty = Boolean(query || column);
+  const appliedFilter = { column, stock, unit, qtyMin, qtyMax };
+  const filteredEmpty = Boolean(query || filterCount(appliedFilter));
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)]">
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3">
             <h1 className="text-base font-semibold tracking-tight">Sản phẩm</h1>
           <div className="flex shrink-0 gap-2">
             <button type="button" onClick={openCreate} className={`${primaryButton} shrink-0`}>
@@ -192,7 +229,100 @@ export default function HomePage() {
           <PwaInstallBanner />
           <div className="flex shrink-0 gap-2">
             <SearchBox value={query} onSearch={handleSearch} />
+            <FilterTrigger
+              open={filterOpen}
+              activeCount={filterCount(appliedFilter)}
+              onClick={() => {
+                setFilterDraft(appliedFilter);
+                setFilterOpen(true);
+              }}
+            />
           </div>
+          <FilterDrawer
+            open={filterOpen}
+            onOpenChange={setFilterOpen}
+            title="Bộ lọc sản phẩm"
+            draftCount={filterCount(filterDraft)}
+            onClear={() => setFilterDraft(emptyFilter)}
+            onApply={() => {
+              let nextMin = normalizeQty(filterDraft.qtyMin);
+              let nextMax = normalizeQty(filterDraft.qtyMax);
+              if (nextMin && nextMax && Number(nextMin) > Number(nextMax)) {
+                const swap = nextMin;
+                nextMin = nextMax;
+                nextMax = swap;
+              }
+              setColumn(filterDraft.column);
+              setStock(filterDraft.stock);
+              setUnit(filterDraft.unit);
+              setQtyMin(nextMin);
+              setQtyMax(nextMax);
+              setPage(1);
+              setFilterOpen(false);
+            }}
+          >
+            <FilterField label="Cột">
+              <SearchableSelect
+                title="Cột"
+                placeholder="Tất cả cột"
+                searchPlaceholder="Tìm cột..."
+                value={filterDraft.column}
+                onChange={(value) => setFilterDraft((current) => ({ ...current, column: value }))}
+                clearable
+                options={[
+                  { value: "", label: "Tất cả cột" },
+                  { value: "none", label: "Chưa có cột" },
+                  ...data.columns.map((value) => ({ value: String(value), label: `Cột ${value}` })),
+                ]}
+              />
+            </FilterField>
+            <FilterField label="Tồn kho">
+              <SearchableSelect
+                title="Tồn kho"
+                placeholder="Mọi tồn kho"
+                searchable={false}
+                value={filterDraft.stock}
+                onChange={(value) => setFilterDraft((current) => ({ ...current, stock: value }))}
+                clearable
+                options={[
+                  { value: "", label: "Mọi tồn kho" },
+                  { value: "in", label: "Còn hàng" },
+                  { value: "out", label: "Hết hàng" },
+                ]}
+              />
+            </FilterField>
+            <FilterField label="Số lượng">
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  inputMode="decimal"
+                  aria-label="Số lượng từ"
+                  placeholder="Từ"
+                  value={filterDraft.qtyMin}
+                  onChange={(event) => setFilterDraft((current) => ({ ...current, qtyMin: event.target.value.replace(/[^\d.,]/g, "") }))}
+                  className={fieldClass}
+                />
+                <input
+                  inputMode="decimal"
+                  aria-label="Số lượng đến"
+                  placeholder="Đến"
+                  value={filterDraft.qtyMax}
+                  onChange={(event) => setFilterDraft((current) => ({ ...current, qtyMax: event.target.value.replace(/[^\d.,]/g, "") }))}
+                  className={fieldClass}
+                />
+              </div>
+            </FilterField>
+            <FilterField label="Đơn vị tính">
+              <SearchableSelect
+                title="Đơn vị tính"
+                placeholder="Mọi đơn vị"
+                searchPlaceholder="Tìm đơn vị..."
+                value={filterDraft.unit}
+                onChange={(value) => setFilterDraft((current) => ({ ...current, unit: value }))}
+                clearable
+                options={[{ value: "", label: "Mọi đơn vị" }, ...data.units.map((value) => ({ value, label: value }))]}
+              />
+            </FilterField>
+          </FilterDrawer>
 
             {items.length === 0 ? (
               <div className="flex min-h-0 flex-1 items-center justify-center">
@@ -200,7 +330,7 @@ export default function HomePage() {
                 title={filteredEmpty ? "Không có sản phẩm khớp bộ lọc" : "Chưa có sản phẩm"}
                 description={
                   filteredEmpty
-                    ? "Thử tên khác hoặc chọn tất cả cột."
+                    ? "Thử từ khóa khác hoặc bỏ bớt bộ lọc."
                     : "Thêm tên sản phẩm và số cột. Ảnh có thể để trống. Số tồn được ghi ở Kho hàng."
                 }
               />
@@ -349,6 +479,15 @@ export default function HomePage() {
         </p>
       ) : null}
     </div>
+  );
+}
+
+function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block space-y-1.5 text-sm font-medium">
+      <span className="block">{label}</span>
+      {children}
+    </label>
   );
 }
 
@@ -716,14 +855,6 @@ function visiblePages(page: number, totalPages: number) {
   if (page > 1) pages.add(page - 1);
   if (page < totalPages) pages.add(page + 1);
   return [...pages].sort((a, b) => a - b);
-}
-
-function PageSkeleton() {
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="min-h-0 flex-1 animate-pulse rounded-[var(--radius-card)] bg-white" />
-    </div>
-  );
 }
 
 function formatQuantity(value: number) {

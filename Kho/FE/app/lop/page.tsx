@@ -3,6 +3,7 @@
 import { ChevronLeft, CircleDot, History, Loader2, Plus, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
 import { correctTire, getTire, listDrivers, listTires, mountTires, moveTire } from "@/lib/api";
+import { ListSkeleton } from "@/components/PageSkeleton";
 import { foldText } from "@/lib/text";
 import type { Driver, Tire, TireEvent, TireKind, TireMoveInput, TirePlace, TirePosition, TireSide } from "@/lib/types";
 
@@ -136,9 +137,7 @@ export default function TirePage() {
           </div>
 
           {loading ? (
-            <div className="flex min-h-0 flex-1 items-center justify-center text-[var(--color-text-inverse)]">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
+            <ListSkeleton />
           ) : view === "kho" ? (
             <WarehouseList tires={tires.filter((tire) => tire.place.kind === "kho")} query={query} onMove={setMoving} onHistory={(tire) => void openHistory(tire)} />
           ) : rig ? (
@@ -277,7 +276,7 @@ function RigDiagram({
           <p className="truncate text-sm text-[var(--color-text-inverse)]">Đầu {rig.plate || "—"} · Mooc {rig.mooc || "—"}</p>
         </div>
       </div>
-      <div className="mx-auto grid w-full max-w-5xl grid-cols-[minmax(0,1fr)_9.25rem_minmax(0,1fr)] text-[11px] font-semibold tracking-wide text-[#64748b] uppercase">
+      <div className="mx-auto hidden w-full max-w-5xl grid-cols-[minmax(0,1fr)_9.25rem_minmax(0,1fr)] text-[11px] font-semibold tracking-wide text-[#64748b] uppercase lg:grid">
         <span className="pr-10 text-right">Bên tài</span>
         <span />
         <span className="pl-10">Bên phụ</span>
@@ -323,7 +322,7 @@ function VehicleUnit({
         <span className="rounded-md bg-[#0c2810] px-2 py-0.5 font-mono text-xs font-semibold tracking-wide text-white">{plate}</span>
       </div>
       <div className="relative">
-        <div className={`pointer-events-none absolute top-0 bottom-0 left-1/2 w-[9.25rem] -translate-x-1/2 shadow-[0_14px_28px_rgb(12_40_16_/_0.16)] ${cab ? "rounded-t-[4.5rem] rounded-b-xl bg-gradient-to-b from-[#2d6a4f] to-[#1b4332]" : "rounded-lg bg-gradient-to-b from-[#245c3c] to-[#14321a]"}`}>
+        <div className={`pointer-events-none absolute top-0 bottom-0 left-1/2 hidden w-[9.25rem] -translate-x-1/2 shadow-[0_14px_28px_rgb(12_40_16_/_0.16)] lg:block ${cab ? "rounded-t-[4.5rem] rounded-b-xl bg-gradient-to-b from-[#2d6a4f] to-[#1b4332]" : "rounded-lg bg-gradient-to-b from-[#245c3c] to-[#14321a]"}`}>
           {cab ? null : (
             <>
               <div className="absolute inset-x-3 top-[22%] h-px bg-white/20" />
@@ -333,10 +332,10 @@ function VehicleUnit({
           )}
         </div>
         {cab ? (
-          <div className="relative mx-auto flex h-16 w-[9.25rem] items-end justify-center pb-1">
+          <div className="relative mx-auto hidden h-16 w-[9.25rem] items-end justify-center pb-1 lg:flex">
             <div className="h-8 w-[4.5rem] rounded-md border border-white/30 bg-white/15" />
           </div>
-        ) : <div className="h-4" />}
+        ) : <div className="hidden h-4 lg:block" />}
         <div className="relative">
           {Array.from({ length: count }, (_, index) => index + 1).map((axle) => (
             <AxleRow
@@ -350,7 +349,7 @@ function VehicleUnit({
             />
           ))}
         </div>
-        <div className="h-4" />
+        <div className="hidden h-4 lg:block" />
       </div>
       {outside.length > 0 ? (
         <div className="mt-3 rounded-2xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] px-3 py-2">
@@ -384,7 +383,15 @@ function AxleRow({
   const left = layoutSlots(tires, kind, axle, "trai");
   const right = layoutSlots(tires, kind, axle, "phai");
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_9.25rem_minmax(0,1fr)] items-center py-1.5">
+    <>
+    <div className="rounded-2xl border border-[#e2e8f0] bg-white p-2.5 lg:hidden">
+      <p className="mb-2 text-center text-[11px] font-semibold tracking-wide text-[#64748b] uppercase">Cầu {axle}</p>
+      <div className="grid grid-cols-2 gap-2">
+        <SlotCards slots={left} side="trai" query={query} onEmpty={() => onEmpty("trai")} onHistory={onHistory} align="stretch" />
+        <SlotCards slots={right} side="phai" query={query} onEmpty={() => onEmpty("phai")} onHistory={onHistory} align="stretch" />
+      </div>
+    </div>
+    <div className="hidden grid-cols-[minmax(0,1fr)_9.25rem_minmax(0,1fr)] items-center py-1.5 lg:grid">
       <div className="pr-9">
         <SlotCards slots={left} side="trai" query={query} onEmpty={() => onEmpty("trai")} onHistory={onHistory} align="end" />
       </div>
@@ -406,6 +413,7 @@ function AxleRow({
         <SlotCards slots={right} side="phai" query={query} onEmpty={() => onEmpty("phai")} onHistory={onHistory} align="start" />
       </div>
     </div>
+    </>
   );
 }
 
@@ -422,16 +430,19 @@ function SlotCards({
   query: string;
   onEmpty: () => void;
   onHistory: (tire: Tire) => void;
-  align: "start" | "end";
+  align: "start" | "end" | "stretch";
 }) {
+  const fluid = align === "stretch";
   return (
-    <div className={`grid gap-1.5 ${slots.length > 1 ? "grid-cols-2" : "grid-cols-1"} ${align === "end" ? "justify-items-end" : "justify-items-start"}`}>
+    <div className={fluid ? "space-y-1.5" : `grid gap-1.5 ${slots.length > 1 ? "grid-cols-2" : "grid-cols-1"} ${align === "end" ? "justify-items-end" : "justify-items-start"}`}>
+      {fluid ? <p className="text-[10px] font-semibold tracking-wide text-[#94a3b8] uppercase">{side === "trai" ? "Bên tài" : "Bên phụ"}</p> : null}
       {slots.map((tire, index) => (
         <SerialCard
           key={`${side}-${index}`}
           tire={tire}
           caption={slotCaption(side, index, slots.length)}
           query={query}
+          fluid={fluid}
           onOpen={tire ? () => onHistory(tire) : onEmpty}
         />
       ))}
@@ -439,10 +450,11 @@ function SlotCards({
   );
 }
 
-function SerialCard({ tire, caption, query, onOpen }: { tire: Tire | null; caption: string; query: string; onOpen: () => void }) {
+function SerialCard({ tire, caption, query, onOpen, fluid = false }: { tire: Tire | null; caption: string; query: string; onOpen: () => void; fluid?: boolean }) {
+  const size = fluid ? "h-auto min-h-[68px] w-full" : "h-[68px] w-full max-w-[168px]";
   if (!tire) {
     return (
-      <button type="button" onClick={onOpen} className="flex h-[68px] w-full max-w-[168px] flex-col justify-center rounded-xl border border-dashed border-[#cbd5e1] bg-white/80 px-2.5 text-left hover:border-[#017d03] hover:bg-[#f0fdf4]">
+      <button type="button" onClick={onOpen} className={`flex ${size} flex-col justify-center rounded-xl border border-dashed border-[#cbd5e1] bg-white/80 px-2.5 text-left hover:border-[#017d03] hover:bg-[#f0fdf4]`}>
         <span className="text-[10px] font-semibold tracking-wide text-[#94a3b8] uppercase">{caption || "Trống"}</span>
         <span className="text-xs font-semibold text-[#64748b]">Gắn lốp</span>
       </button>
@@ -454,7 +466,7 @@ function SerialCard({ tire, caption, query, onOpen }: { tire: Tire | null; capti
       type="button"
       onClick={onOpen}
       title={`${tire.brand ? `${tire.brand} · ` : ""}${tire.serial}`}
-      className={`flex h-[68px] w-full max-w-[168px] flex-col justify-center rounded-xl border bg-white px-2.5 text-left shadow-sm hover:border-[#017d03] ${marked ? "border-[#017d03] ring-2 ring-[#017d03]/25" : "border-[#e2e8f0]"}`}
+      className={`flex ${size} flex-col justify-center rounded-xl border bg-white px-2.5 text-left shadow-sm hover:border-[#017d03] ${marked ? "border-[#017d03] ring-2 ring-[#017d03]/25" : "border-[#e2e8f0]"}`}
     >
       {caption ? <span className="text-[10px] font-semibold tracking-wide text-[#94a3b8] uppercase">{caption}</span> : null}
       <span className="w-full truncate text-sm font-semibold tracking-tight">{tire.serial}</span>

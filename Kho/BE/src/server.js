@@ -20,6 +20,7 @@ import { ongDiaProposalModel } from '~/models/ongDiaProposalModel'
 import { phucVinhProposalModel } from '~/models/phucVinhProposalModel'
 import { tireProposalModel } from '~/models/tireProposalModel'
 import { tireModel } from '~/models/tireModel'
+import { oilModel } from '~/models/oilModel'
 import { slipModel } from '~/models/slipModel'
 import { userModel } from '~/models/userModel'
 import { authService } from '~/services/authService'
@@ -87,6 +88,7 @@ CONNECT_DB()
     proposalModel.ensureIndexes(),
     tireProposalModel.ensureIndexes(),
     tireModel.ensureIndexes(),
+    oilModel.ensureIndexes(),
     electricProposalModel.ensureIndexes(),
     phucVinhProposalModel.ensureIndexes(),
     officeProposalModel.ensureIndexes(),

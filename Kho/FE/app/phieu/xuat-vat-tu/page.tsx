@@ -347,7 +347,7 @@ export default function ExportSlipPage() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto">
+    <div className="flex h-full min-w-0 flex-col gap-3 overflow-y-auto">
       {!showPreview && drafts.length > 0 ? (
         <section className="shrink-0 rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-white shadow-[var(--shadow-soft)] print:hidden">
           <button
@@ -394,7 +394,7 @@ export default function ExportSlipPage() {
         </section>
       ) : null}
       <section className="rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-white shadow-[var(--shadow-soft)] print:hidden">
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3">
+        <div className="flex flex-col gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Link href="/phieu" className="text-xs font-semibold text-[var(--color-text-secondary)]">Phiếu</Link>
             <h1 className="text-base font-semibold">Xuất vật tư sửa chữa</h1>
@@ -418,7 +418,7 @@ export default function ExportSlipPage() {
           </div>
         </div>
         {showPreview ? null : <div className="space-y-4 p-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="block text-sm font-medium">
               Lái xe
               <div className="mt-1">
@@ -477,7 +477,7 @@ export default function ExportSlipPage() {
               ) : null}
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <label className="block text-sm font-medium">
               Người đề nghị
               <input value={requester} onChange={(event) => setRequester(event.target.value)} required placeholder="Nhập người đề nghị" className={`${fieldClass} mt-1`} />
@@ -496,7 +496,7 @@ export default function ExportSlipPage() {
             </label>
           </div>
           {lines.length > 0 ? (
-            <div className="border-t border-[var(--color-border-subtle)] pt-4">
+            <div className="min-w-0 overflow-x-auto border-t border-[var(--color-border-subtle)] pt-4">
               <div className={lineGridClass}>
                 <p className="text-sm font-medium">Tên vật tư</p>
                 <p className="text-sm font-medium">Đơn vị</p>
@@ -627,7 +627,7 @@ const primaryButton =
 const dangerButton =
   "inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-button)] bg-red-600 text-white hover:bg-red-700";
 
-const lineGridClass = "grid grid-cols-[minmax(0,1.4fr)_8rem_7.5rem_minmax(0,1fr)_auto] items-center gap-2";
+const lineGridClass = "grid min-w-[40rem] grid-cols-[minmax(12rem,1.4fr)_8rem_7.5rem_minmax(10rem,1fr)_auto] items-center gap-2";
 
 const fieldClass =
   "flex h-10 w-full rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-white px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-secondary)]";

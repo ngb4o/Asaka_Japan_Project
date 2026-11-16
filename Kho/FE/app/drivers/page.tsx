@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Loader2, Pencil, Plus, Search, Trash2, Truck, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2, Truck, X } from "lucide-react";
 import { useCallback, useEffect, useId, useState } from "react";
+import { ListSkeleton } from "@/components/PageSkeleton";
 import { createDriver, deleteDriver, listDrivers, updateDriver } from "@/lib/api";
 import type { Driver, DriverInput, DriverList } from "@/lib/types";
 
@@ -80,7 +81,7 @@ export default function DriversPage() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-soft)]">
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3">
           <h1 className="text-base font-semibold tracking-tight">Lái xe</h1>
           <button
             type="button"
@@ -108,9 +109,7 @@ export default function DriversPage() {
             />
           </label>
           {loading ? (
-            <div className="flex min-h-0 flex-1 items-center justify-center text-[var(--color-text-inverse)]">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
+            <ListSkeleton />
           ) : data.items.length === 0 ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 text-center">
               <Truck className="h-8 w-8 text-[var(--color-text-inverse)]" />
@@ -215,7 +214,7 @@ export default function DriversPage() {
         </div>
       ) : null}
       {toast ? (
-        <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[#0c2810] px-4 py-2 text-sm text-white shadow-lg">
+        <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[#0c2810] px-4 py-2 text-sm text-white shadow-lg">
           {toast}
         </div>
       ) : null}

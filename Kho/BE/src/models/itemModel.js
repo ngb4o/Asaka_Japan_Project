@@ -1,6 +1,7 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
+import { unitUtil } from '~/utils/unit'
 
 const ITEM_COLLECTION_NAME = 'items'
 
@@ -74,22 +75,38 @@ const summarize = async () => {
         _id: null,
         totalItems: { $sum: 1 },
         totalQuantity: { $sum: '$quantity' },
-        columns: { $addToSet: '$column' }
+        columns: { $addToSet: '$column' },
+        units: { $addToSet: '$unit' }
       }
     }
   ]).toArray()
 
-  const summary = rows[0] || { totalItems: 0, totalQuantity: 0, columns: [] }
+  const summary = rows[0] || { totalItems: 0, totalQuantity: 0, columns: [], units: [] }
+  const units = [...new Set(summary.units.map((unit) => unitUtil.canonicalUnit(unit)).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'vi'))
 
   return {
     totalItems: summary.totalItems,
     totalQuantity: summary.totalQuantity,
-    columns: summary.columns.filter((column) => Number.isFinite(column)).sort((a, b) => a - b)
+    columns: summary.columns.filter((column) => Number.isFinite(column)).sort((a, b) => a - b),
+    units
   }
 }
 
 const ensureIndexes = async () => {
-  await GET_DB().collection(ITEM_COLLECTION_NAME).createIndex({ column: 1, name: 1 })
+  const collection = GET_DB().collection(ITEM_COLLECTION_NAME)
+  await collection.createIndex({ column: 1, name: 1 })
+
+  const storedUnits = await collection.aggregate([
+    { $match: { _destroy: false } },
+    { $group: { _id: '$unit' } }
+  ]).toArray()
+  for (const row of storedUnits) {
+    const unit = row._id
+    const next = unitUtil.canonicalUnit(unit)
+    if (!next || next === unit) continue
+    await collection.updateMany({ unit }, { $set: { unit: next } })
+  }
 }
 
 export const itemModel = {

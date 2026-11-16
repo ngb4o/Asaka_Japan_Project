@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, Inbox, Loader2, Search, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MovementBadge, formatQuantity, formatRecipient, formatWhen } from "@/components/MovementDialog";
+import { ListSkeleton } from "@/components/PageSkeleton";
 import { listMovements } from "@/lib/api";
 import type { MovementList, StockMovement } from "@/lib/types";
 
@@ -161,10 +162,7 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
       {loading && items.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center text-sm text-[var(--color-text-inverse)]">
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Đang tải sổ kho...
-        </div>
+        <ListSkeleton />
       ) : items.length === 0 ? (
         <div className="flex min-h-0 flex-1 items-center justify-center">
           <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
@@ -315,14 +313,14 @@ function DateField({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="inline-flex h-10 items-center gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 text-sm shadow-sm">
+    <label className="inline-flex h-10 max-w-full items-center gap-2 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 text-sm shadow-sm">
       <span className="shrink-0 text-[var(--color-text-inverse)]">{label}</span>
       <input
         type="date"
         value={value}
         aria-label={label}
         onChange={(event) => onChange(event.target.value)}
-        className="bg-transparent text-sm outline-none"
+        className="w-[9.25rem] max-w-[46vw] bg-transparent text-sm outline-none"
       />
     </label>
   );

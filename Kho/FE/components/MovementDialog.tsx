@@ -150,8 +150,8 @@ export function MovementDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <button type="button" aria-label="Đóng" className="absolute inset-0" onClick={onClose} />
-      <div className="relative flex h-[640px] w-[720px] max-h-[calc(100vh-2rem)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl bg-[var(--color-surface-elevated)] shadow-xl">
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-6 py-4">
+      <div className="relative flex h-[min(640px,calc(100vh-2rem))] w-full max-w-[720px] flex-col overflow-hidden rounded-xl bg-[var(--color-surface-elevated)] shadow-xl">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-4 sm:px-6">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold">{type === "in" ? "Nhập kho" : "Xuất kho"}</h2>
             <p className="truncate text-sm text-[var(--color-text-inverse)]">{item ? item.name : "Chọn sản phẩm"}</p>
@@ -166,7 +166,7 @@ export function MovementDialog({
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
-        <form onSubmit={handleSubmit} className="grid gap-4 px-6 py-4">
+        <form id="movement-form" onSubmit={handleSubmit} className="grid min-w-0 gap-4 px-4 py-4 sm:px-6">
           {fixedItem ? null : item ? (
             <div className="flex h-12 items-center justify-between gap-3 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] px-3">
               <p className="min-w-0 truncate text-sm font-medium">{item.name}</p>
@@ -197,7 +197,7 @@ export function MovementDialog({
                   className={`${fieldClass} pl-9`}
                 />
               </div>
-              <ul className="h-40 overflow-y-auto rounded-[var(--radius-button)] border border-[var(--color-border-subtle)]">
+              <ul className="h-24 overflow-y-auto rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] sm:h-40">
                 {matches.length === 0 ? (
                   <li className="px-3 py-3 text-sm text-[var(--color-text-inverse)]">Không có sản phẩm khớp.</li>
                 ) : (
@@ -205,11 +205,11 @@ export function MovementDialog({
                     <li key={entry.id}>
                       <button
                         type="button"
-                        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-[var(--color-surface-muted)]"
+                        className="flex w-full min-w-0 flex-col items-start gap-0.5 px-3 py-2 text-left text-sm hover:bg-[var(--color-surface-muted)] sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                         onClick={() => setPicked(entry)}
                       >
-                        <span className="min-w-0 truncate font-medium">{entry.name}</span>
-                        <span className="shrink-0 tabular-nums text-[var(--color-text-inverse)]">
+                        <span className="w-full min-w-0 truncate font-medium">{entry.name}</span>
+                        <span className="shrink-0 tabular-nums text-xs text-[var(--color-text-inverse)] sm:text-sm">
                           Tồn {formatQuantity(entry.quantity)}{entry.unit ? ` ${entry.unit}` : ""}
                         </span>
                       </button>
@@ -282,7 +282,7 @@ export function MovementDialog({
                     className={`${fieldClass} pl-9`}
                   />
                 </div>
-                <ul className="h-32 overflow-y-auto rounded-[var(--radius-button)] border border-[var(--color-border-subtle)]">
+                <ul className="h-20 overflow-y-auto rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] sm:h-32">
                   {driverMatches.length === 0 ? (
                     <li className="px-3 py-3 text-sm text-[var(--color-text-inverse)]">Không có lái xe khớp.</li>
                   ) : (
@@ -290,11 +290,11 @@ export function MovementDialog({
                       <li key={entry.id}>
                         <button
                           type="button"
-                          className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-[var(--color-surface-muted)]"
+                          className="flex w-full min-w-0 flex-col items-start gap-0.5 px-3 py-2 text-left text-sm hover:bg-[var(--color-surface-muted)] sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                           onClick={() => setDriverId(entry.id)}
                         >
-                          <span className="min-w-0 flex-1 truncate font-medium">{entry.name}</span>
-                          <span className="max-w-[55%] shrink-0 truncate text-[var(--color-text-inverse)]">
+                          <span className="w-full min-w-0 truncate font-medium">{entry.name}</span>
+                          <span className="w-full min-w-0 truncate text-xs text-[var(--color-text-inverse)] sm:max-w-[55%] sm:text-sm">
                             Đầu {entry.plate || "—"} · Mooc {entry.mooc || "—"}
                           </span>
                         </button>
@@ -333,17 +333,18 @@ export function MovementDialog({
             </span>
           </p>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={onClose} className={outlineButton}>
-              Hủy
-            </button>
-            <button type="submit" disabled={submitting} className={type === "out" ? dangerButton : primaryButton}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {type === "in" ? "Nhập kho" : "Xuất kho"}
-            </button>
-          </div>
         </form>
-        <div className="min-h-36 border-t border-[var(--color-border-subtle)] px-6 py-4">
+        </div>
+        <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[var(--color-border-subtle)] px-4 py-3 sm:px-6">
+          <button type="button" onClick={onClose} className={outlineButton}>
+            Hủy
+          </button>
+          <button type="submit" form="movement-form" disabled={submitting} className={type === "out" ? dangerButton : primaryButton}>
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {type === "in" ? "Nhập kho" : "Xuất kho"}
+          </button>
+        </div>
+        <div className="max-h-28 overflow-y-auto border-t border-[var(--color-border-subtle)] px-4 py-3 sm:max-h-40 sm:px-6">
           <p className="mb-2 text-sm font-semibold">Phiếu gần đây</p>
           {!item || history.length === 0 ? (
             <p className="text-sm text-[var(--color-text-inverse)]">Chưa có phiếu cho sản phẩm này.</p>
@@ -371,7 +372,6 @@ export function MovementDialog({
               ))}
             </ul>
           )}
-        </div>
         </div>
       </div>
     </div>

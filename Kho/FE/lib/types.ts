@@ -16,6 +16,7 @@ export type ItemList = {
   limit: number;
   totalPages: number;
   columns: number[];
+  units: string[];
   summary: {
     totalItems: number;
     totalQuantity: number;
@@ -365,6 +366,62 @@ export type TireMoveInput = {
   brand: string;
   wear: number;
   note: string;
+};
+
+export type OilKind = "may" | "cau" | "so";
+
+export type OilStatus = "missing-km" | "missing-base" | "wait" | "prepare" | "change" | "urgent";
+
+export type EngineOil = {
+  lastKm: number | null;
+  lastDate: string | null;
+  traveled: number | null;
+  status: OilStatus;
+  label: string;
+  dueKm: number | null;
+  dueDate: string | null;
+};
+
+export type DistanceOil = {
+  lastKm: number | null;
+  lastDate: string | null;
+  traveled: number | null;
+};
+
+export type OilVehicle = {
+  driverId: string;
+  name: string;
+  plate: string;
+  mooc: string;
+  currentKm: number | null;
+  currentKmDate: string | null;
+  may: EngineOil;
+  cau: DistanceOil;
+  so: DistanceOil;
+};
+
+export type OilRule = {
+  dueKm: number;
+  prepareKm: number;
+  changeKm: number;
+  dateKm: number;
+  kmPerDay: number;
+};
+
+export type OilList = {
+  items: OilVehicle[];
+  rule: OilRule;
+};
+
+export type OilEvent = {
+  id: string;
+  driverId: string;
+  kind: OilKind;
+  km: number;
+  date: string;
+  note: string;
+  createdBy: string;
+  createdAt: string;
 };
 
 export type Driver = {

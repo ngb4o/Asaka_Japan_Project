@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { LoginScreen } from "@/components/LoginScreen";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { currentUser } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/session";
 
@@ -48,7 +49,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   if (session === "checking") {
-    return <div className="h-full animate-pulse bg-[#f1f5f9]" />;
+    return (
+      <div className="h-full bg-[#f1f5f9] p-3 sm:p-4">
+        <PageSkeleton />
+      </div>
+    );
   }
 
   if (session === "guest") {

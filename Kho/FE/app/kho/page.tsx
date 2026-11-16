@@ -3,6 +3,7 @@
 import { ArrowDownToLine, ArrowUpFromLine, ChevronLeft, ChevronRight, ImageIcon, Inbox, Loader2, Search, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatQuantity, MovementDialog } from "@/components/MovementDialog";
+import { ListSkeleton } from "@/components/PageSkeleton";
 import { PreviewableImage } from "@/components/PreviewableImage";
 import { StockJournal } from "@/components/StockJournal";
 import { listItems, mediaUrl } from "@/lib/api";
@@ -17,6 +18,7 @@ const emptyList: ItemList = {
   limit: PAGE_SIZE,
   totalPages: 1,
   columns: [],
+  units: [],
   summary: { totalItems: 0, totalQuantity: 0, columnCount: 0 },
 };
 
@@ -40,12 +42,12 @@ export default function WarehousePage() {
             <h1 className="text-base font-semibold tracking-tight">Kho hàng</h1>
             <p className="text-xs text-[var(--color-text-inverse)]">Tồn kho và lịch sử nhập xuất.</p>
           </div>
-          <div className="flex shrink-0 gap-2">
-            <button type="button" className={outlineAction} onClick={() => setMovementType("out")}>
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+            <button type="button" className={`${outlineAction} min-w-0 flex-1 sm:flex-none`} onClick={() => setMovementType("out")}>
               <ArrowUpFromLine className="h-4 w-4" />
               Xuất kho
             </button>
-            <button type="button" className={primaryButton} onClick={() => setMovementType("in")}>
+            <button type="button" className={`${primaryButton} min-w-0 flex-1 sm:flex-none`} onClick={() => setMovementType("in")}>
               <ArrowDownToLine className="h-4 w-4" />
               Nhập kho
             </button>
@@ -179,10 +181,7 @@ function StockLevels({ revision }: { revision: number }) {
         }}
       />
       {loading && items.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center text-sm text-[var(--color-text-inverse)]">
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Đang tải tồn kho...
-        </div>
+        <ListSkeleton />
       ) : items.length === 0 ? (
         <div className="flex min-h-0 flex-1 items-center justify-center">
           <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">

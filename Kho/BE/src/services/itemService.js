@@ -6,6 +6,14 @@ import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { buildSearchFilter } from '~/utils/search'
 import { removeStoredImage } from '~/utils/saveImage'
 import { movementService, roundQuantity } from '~/services/movementService'
+import { unitUtil } from '~/utils/unit'
+
+const parseQtyBound = (value) => {
+  if (value == null || value === '') return null
+  const number = Number(String(value).replace(',', '.'))
+  if (!Number.isFinite(number) || number < 0) return null
+  return roundQuantity(number)
+}
 
 const getList = async (query = {}) => {
   const { page, limit, skip } = parsePaginationQuery(query)
@@ -14,8 +22,30 @@ const getList = async (query = {}) => {
 
   if (search) Object.assign(filter, search)
 
-  const column = parseInt(query.column, 10)
-  if (Number.isFinite(column) && column >= 0) filter.column = column
+  if (query.column === 'none') {
+    filter.column = null
+  } else {
+    const column = parseInt(query.column, 10)
+    if (Number.isFinite(column) && column >= 0) filter.column = column
+  }
+
+  const quantity = {}
+  if (query.stock === 'in') quantity.$gt = 0
+  if (query.stock === 'out') quantity.$lte = 0
+
+  let qtyMin = parseQtyBound(query.qtyMin)
+  let qtyMax = parseQtyBound(query.qtyMax)
+  if (qtyMin != null && qtyMax != null && qtyMin > qtyMax) {
+    const swap = qtyMin
+    qtyMin = qtyMax
+    qtyMax = swap
+  }
+  if (qtyMin != null) quantity.$gte = qtyMin
+  if (qtyMax != null) quantity.$lte = quantity.$lte == null ? qtyMax : Math.min(quantity.$lte, qtyMax)
+  if (Object.keys(quantity).length) filter.quantity = quantity
+
+  const units = unitUtil.unitMatchValues(query.unit)
+  if (units.length) filter.unit = { $in: units }
 
   const result = await itemModel.findMany(filter, {
     limit,
@@ -32,6 +62,7 @@ const getList = async (query = {}) => {
       skip
     }, page),
     columns: summary.columns,
+    units: summary.units,
     summary: {
       totalItems: summary.totalItems,
       totalQuantity: summary.totalQuantity,
@@ -45,7 +76,7 @@ const createNew = async (payload, actor) => {
     name: payload.name,
     image: payload.image || '',
     quantity: payload.quantity,
-    unit: payload.unit || '',
+    unit: unitUtil.canonicalUnit(payload.unit),
     column: payload.column ?? null
   })
 
@@ -66,6 +97,7 @@ const update = async (id, payload, actor) => {
   }
 
   const nextPayload = { ...payload }
+  if (nextPayload.unit != null) nextPayload.unit = unitUtil.canonicalUnit(nextPayload.unit)
   if (nextPayload.quantity != null) {
     const nextQuantity = roundQuantity(nextPayload.quantity)
     const currentQuantity = roundQuantity(current.quantity)

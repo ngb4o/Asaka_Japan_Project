@@ -1,17 +1,44 @@
 "use client";
 
-import { CircleDot, FileText, LogOut, Menu, Package, Truck, Warehouse, X } from "lucide-react";
+import { ChevronDown, CircleDot, Droplet, FileText, LogOut, Package, Truck, Warehouse } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-const NAV = [
-  { href: "/", label: "Sản phẩm", icon: Package },
-  { href: "/kho", label: "Kho hàng", icon: Warehouse },
-  { href: "/lop", label: "Lốp", icon: CircleDot },
-  { href: "/drivers", label: "Lái xe", icon: Truck },
-  { href: "/phieu", label: "Phiếu", icon: FileText },
+const STORAGE_KEY = "kho_nav_open_groups";
+
+const NAV_GROUPS = [
+  {
+    id: "kho",
+    label: "Sản phẩm & Kho",
+    icon: Package,
+    items: [
+      { href: "/", label: "Sản phẩm", icon: Package },
+      { href: "/kho", label: "Kho hàng", icon: Warehouse },
+    ],
+  },
+  {
+    id: "xe",
+    label: "Xe",
+    icon: Truck,
+    items: [
+      { href: "/lop", label: "Lốp", icon: CircleDot },
+      { href: "/dau", label: "Thay dầu", icon: Droplet },
+      { href: "/drivers", label: "Lái xe", icon: Truck },
+    ],
+  },
+  {
+    id: "phieu",
+    label: "Phiếu",
+    icon: FileText,
+    items: [{ href: "/phieu", label: "Phiếu", icon: FileText }],
+  },
 ];
+
+function isActivePath(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function AppShell({
   accountName,
@@ -23,7 +50,37 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ kho: true });
+
+  useEffect(() => {
+    const activeIds = NAV_GROUPS.filter((group) => group.items.some((item) => isActivePath(pathname, item.href))).map((group) => group.id);
+    setOpenGroups(() => {
+      let stored: Record<string, boolean> = {};
+      try {
+        stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      } catch {
+        stored = {};
+      }
+      const next = { ...stored };
+      for (const group of NAV_GROUPS) {
+        if (typeof next[group.id] !== "boolean") next[group.id] = group.id === "kho" || activeIds.includes(group.id);
+      }
+      for (const id of activeIds) next[id] = true;
+      return next;
+    });
+  }, [pathname]);
+
+  function toggleGroup(id: string) {
+    setOpenGroups((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }
 
   const nav = (
     <>
@@ -36,25 +93,48 @@ export function AppShell({
           <p className="truncate text-xs text-[#8faf96]">ASAKA JAPAN</p>
         </div>
       </div>
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4">
-        {NAV.map((item) => {
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-          const Icon = item.icon;
+      <nav className="flex-1 space-y-2 overflow-y-auto px-3 pb-4">
+        {NAV_GROUPS.map((group) => {
+          const GroupIcon = group.icon;
+          const open = openGroups[group.id] ?? false;
+          const groupActive = group.items.some((item) => isActivePath(pathname, item.href));
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMenuOpen(false)}
-              className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium ${
-                active
-                  ? "bg-[rgb(1_125_3_/_0.32)] text-[#86efac]"
-                  : "text-[#8faf96] hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              {active ? <span className="absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-r bg-[#86efac]" /> : null}
-              <Icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{item.label}</span>
-            </Link>
+            <div key={group.id} className="space-y-1">
+              <button
+                type="button"
+                onClick={() => toggleGroup(group.id)}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold ${
+                  groupActive ? "bg-white/10 text-white" : "text-[#8faf96] hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <GroupIcon className="h-4 w-4 shrink-0 opacity-80" />
+                <span className="min-w-0 flex-1 truncate">{group.label}</span>
+                <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${open ? "rotate-0" : "-rotate-90"}`} />
+              </button>
+              <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+                <div className="overflow-hidden">
+                  <div className="space-y-0.5 pb-1 pl-2">
+                    {group.items.map((item) => {
+                      const active = isActivePath(pathname, item.href);
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium ${
+                            active ? "bg-[rgb(1_125_3_/_0.32)] text-[#86efac]" : "text-[#8faf96] hover:bg-white/5 hover:text-white"
+                          }`}
+                        >
+                          {active ? <span className="absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-r bg-[#86efac]" /> : null}
+                          <Icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
           );
         })}
       </nav>
@@ -75,39 +155,48 @@ export function AppShell({
   return (
     <div className="app-shell flex h-full w-full overflow-hidden bg-[#f1f5f9]">
       <aside className="hidden h-full w-[272px] shrink-0 flex-col bg-[#0c2810] text-[#ecfdf3] lg:flex print:hidden">{nav}</aside>
-      {menuOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden print:hidden">
-          <button type="button" aria-label="Đóng menu" className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
-          <aside className="ui-drawer relative z-10 flex h-full w-[min(100vw-2.5rem,288px)] flex-col bg-[#0c2810] text-[#ecfdf3] shadow-2xl">
-            <button
-              type="button"
-              aria-label="Đóng"
-              className="absolute top-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-lg text-white hover:bg-white/10"
-              onClick={() => setMenuOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </button>
-            {nav}
-          </aside>
-        </div>
-      ) : null}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex h-12 shrink-0 items-center gap-2 border-b border-[#e2e8f0] bg-white px-3 lg:hidden print:hidden">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white">
+            <img src="/images/brand/logo.png" alt="" className="h-full w-full object-contain" />
+          </span>
+          <p className="min-w-0 flex-1 truncate text-sm font-semibold">Kho hàng</p>
           <button
             type="button"
-            aria-label="Mở menu"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-[#f1f5f9] lg:hidden"
-            onClick={() => setMenuOpen(true)}
+            onClick={onLogout}
+            aria-label="Đăng xuất"
+            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-[#64748b] hover:bg-[#f1f5f9]"
           >
-            <Menu className="h-5 w-5" />
+            <LogOut className="h-4 w-4" />
+            <span className="max-w-24 truncate">{accountName || "Đăng xuất"}</span>
           </button>
-          <p className="truncate text-sm font-semibold">Kho hàng</p>
         </header>
         <main className="min-h-0 flex-1 overflow-hidden p-3 sm:p-4">
-          <div key={pathname} className="ui-page h-full min-h-0">
+          <div key={pathname} className="ui-page h-full min-h-0 min-w-0">
             {children}
           </div>
         </main>
+        <nav aria-label="Điều hướng" className="grid shrink-0 grid-cols-6 border-t border-[#e2e8f0] bg-white pb-[env(safe-area-inset-bottom)] lg:hidden print:hidden">
+          {NAV_GROUPS.flatMap((group) => group.items).map((item) => {
+            const active = isActivePath(pathname, item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`flex min-w-0 flex-col items-center gap-1 px-0.5 py-1.5 text-[10px] leading-none font-semibold ${
+                  active ? "text-[#017d03]" : "text-[#64748b]"
+                }`}
+              >
+                <span className={`flex h-7 w-full max-w-12 items-center justify-center rounded-full ${active ? "bg-[#dcfce7]" : ""}`}>
+                  <Icon className="h-[18px] w-[18px]" />
+                </span>
+                <span className="w-full truncate text-center">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
     </div>
   );

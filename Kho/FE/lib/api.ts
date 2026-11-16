@@ -27,6 +27,10 @@ import type {
   TireMountInput,
   TireMoveInput,
   WarehouseItem,
+  OilList,
+  OilVehicle,
+  OilKind,
+  OilEvent,
 } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8018";
@@ -67,13 +71,17 @@ function toFormData(input: ItemInput) {
 }
 
 export async function listItems(
-  params: { q?: string; column?: string; page?: number; limit?: number } = {}
+  params: { q?: string; column?: string; stock?: string; unit?: string; qtyMin?: string; qtyMax?: string; page?: number; limit?: number } = {}
 ) {
   const search = new URLSearchParams();
   search.set("limit", String(params.limit ?? 10));
   search.set("page", String(params.page ?? 1));
   if (params.q) search.set("q", params.q);
   if (params.column) search.set("column", params.column);
+  if (params.stock) search.set("stock", params.stock);
+  if (params.unit) search.set("unit", params.unit);
+  if (params.qtyMin) search.set("qtyMin", params.qtyMin);
+  if (params.qtyMax) search.set("qtyMax", params.qtyMax);
 
   const response = await authorizedFetch(`${API_URL}/api/v1/items?${search.toString()}`);
   return readData<ItemList>(response);
@@ -648,6 +656,37 @@ export async function moveTire(id: string, input: TireMoveInput) {
     body: JSON.stringify(input),
   });
   return readData<Tire>(response);
+}
+
+export async function listOils() {
+  const response = await authorizedFetch(`${API_URL}/api/v1/oils`);
+  return readData<OilList>(response);
+}
+
+export async function getOil(driverId: string) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/oils/${driverId}`);
+  return readData<{ vehicle: OilVehicle; events: OilEvent[] }>(response);
+}
+
+export async function setOilKm(driverId: string, input: { km: number; date: string }) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/oils/${driverId}/km`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return readData<OilVehicle>(response);
+}
+
+export async function recordOilChange(
+  driverId: string,
+  input: { kind: OilKind; km: number; date: string; note: string }
+) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/oils/${driverId}/changes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return readData<OilVehicle>(response);
 }
 
 export async function listDrivers(

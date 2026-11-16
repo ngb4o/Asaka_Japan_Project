@@ -16,6 +16,7 @@ import { ongDiaProposalRoute } from '~/routes/v1/ongDiaProposalRoute'
 import { phucVinhProposalRoute } from '~/routes/v1/phucVinhProposalRoute'
 import { tireProposalRoute } from '~/routes/v1/tireProposalRoute'
 import { tireRoute } from '~/routes/v1/tireRoute'
+import { oilRoute } from '~/routes/v1/oilRoute'
 import { verifyToken } from '~/middlewares/authMiddleware'
 
 const Router = express.Router()
@@ -32,6 +33,7 @@ Router.use('/slips', verifyToken, slipRoute)
 Router.use('/proposals', verifyToken, proposalRoute)
 Router.use('/tire-proposals', verifyToken, tireProposalRoute)
 Router.use('/tires', verifyToken, tireRoute)
+Router.use('/oils', verifyToken, oilRoute)
 Router.use('/electric-proposals', verifyToken, electricProposalRoute)
 Router.use('/phuc-vinh-proposals', verifyToken, phucVinhProposalRoute)
 Router.use('/office-proposals', verifyToken, officeProposalRoute)
