@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { BottomSheet } from "@/components/ui/responsive-dialog";
 import { Check, ChevronsUpDown, Search, X } from "lucide-react";
 import { foldText } from "@/lib/text";
 
@@ -235,30 +236,14 @@ export function SearchableSelect({
         </span>
       </button>
 
-      {open && typeof document !== "undefined"
+      {open && isMobile ? (
+        <BottomSheet rootRef={menuRef} title={title || placeholder} onClose={() => setOpen(false)}>
+          {menuList}
+        </BottomSheet>
+      ) : null}
+      {open && !isMobile && typeof document !== "undefined"
         ? createPortal(
-            isMobile ? (
-              <div ref={menuRef} className="fixed inset-0 z-[90]" role="dialog" aria-modal="true" aria-label={title || placeholder}>
-                <button type="button" aria-label="Đóng" className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-                <div className="absolute inset-x-0 bottom-0 flex max-h-[80dvh] flex-col overflow-hidden rounded-t-2xl bg-[var(--color-surface-elevated)] pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(0,0,0,0.22)]">
-                  <div className="flex shrink-0 flex-col items-center pt-2">
-                    <div className="mb-1 h-1 w-10 rounded-full bg-[var(--color-border-subtle)]" />
-                    <div className="relative flex w-full items-center justify-center border-b border-[var(--color-border-subtle)] px-12 pt-1 pb-3">
-                      <p className="truncate text-base font-semibold">{title || placeholder}</p>
-                      <button
-                        type="button"
-                        aria-label="Đóng"
-                        className="absolute top-1/2 right-3 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--color-text-inverse)] hover:bg-[var(--color-surface-muted)]"
-                        onClick={() => setOpen(false)}
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </div>
-                  {menuList}
-                </div>
-              </div>
-            ) : (
+            (
               <div
                 ref={menuRef}
                 className="fixed z-[90] overflow-hidden rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-elevated)]"

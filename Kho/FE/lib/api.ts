@@ -17,6 +17,7 @@ import type {
   OfficeProposal,
   WeldProposal,
   AdvanceProposal,
+  PaymentRequest,
   ViettelProposal,
   UtilityProposal,
   RentalProposal,
@@ -494,6 +495,41 @@ export async function updateAdvanceProposal(id: string, input: AdvanceProposalIn
 
 export async function deleteAdvanceProposal(id: string) {
   const response = await authorizedFetch(`${API_URL}/api/v1/advance-proposals/${id}`, { method: "DELETE" });
+  return readData<{ id: string }>(response);
+}
+
+export type PaymentRequestInput = AdvanceProposalInput;
+
+export async function listPaymentRequests() {
+  const response = await authorizedFetch(`${API_URL}/api/v1/payment-requests`);
+  return readData<PaymentRequest[]>(response);
+}
+
+export async function getPaymentRequest(id: string) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/payment-requests/${id}`);
+  return readData<PaymentRequest>(response);
+}
+
+export async function createPaymentRequest(input: PaymentRequestInput) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/payment-requests`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return readData<{ id: string }>(response);
+}
+
+export async function updatePaymentRequest(id: string, input: PaymentRequestInput) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/payment-requests/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return readData<{ id: string }>(response);
+}
+
+export async function deletePaymentRequest(id: string) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/payment-requests/${id}`, { method: "DELETE" });
   return readData<{ id: string }>(response);
 }
 

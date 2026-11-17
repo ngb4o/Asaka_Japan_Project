@@ -179,6 +179,8 @@ export type AdvanceProposal = {
   updatedAt?: string;
 };
 
+export type PaymentRequest = AdvanceProposal;
+
 export type WeldProposal = {
   id: string;
   reportDate: string;

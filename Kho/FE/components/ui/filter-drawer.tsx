@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Filter, X } from "lucide-react";
+import { BottomSheet } from "@/components/ui/responsive-dialog";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -111,31 +112,10 @@ export function FilterDrawer({
   const footer = <FilterFooter canClear={draftCount > 0} onClear={onClear} onDone={onApply} />;
 
   if (isMobile) {
-    return createPortal(
-      <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label={title}>
-        <button type="button" aria-label="Đóng bộ lọc" className="absolute inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
-        <div className="absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl bg-[var(--color-surface-elevated)] pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(0,0,0,0.22)]">
-          <div className="flex shrink-0 flex-col items-center pt-2">
-            <div className="mb-1 h-1 w-10 rounded-full bg-[var(--color-border-subtle)]" />
-            <div className="relative flex w-full items-center justify-center border-b border-[var(--color-border-subtle)] px-12 pt-1 pb-3">
-              <p className="truncate text-base font-semibold">{title}</p>
-              <button
-                type="button"
-                aria-label="Đóng"
-                className="absolute top-1/2 right-3 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--color-text-inverse)] hover:bg-[var(--color-surface-muted)]"
-                onClick={() => onOpenChange(false)}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-            <div className="space-y-4">{children}</div>
-          </div>
-          <div className="shrink-0 border-t border-[var(--color-border-subtle)] p-4">{footer}</div>
-        </div>
-      </div>,
-      document.body
+    return (
+      <BottomSheet title={title} onClose={() => onOpenChange(false)} layer="filter" footer={footer}>
+        <div className="space-y-4 px-4 py-4">{children}</div>
+      </BottomSheet>
     );
   }
 

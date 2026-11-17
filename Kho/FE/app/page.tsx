@@ -16,6 +16,7 @@ import {
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { FilterDrawer, FilterTrigger } from "@/components/ui/filter-drawer";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { PreviewableImage } from "@/components/PreviewableImage";
 import { PwaInstallBanner } from "@/components/PwaInstall";
@@ -625,9 +626,8 @@ function ItemDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
-      <button type="button" aria-label="Đóng" className="absolute inset-0" onClick={onClose} />
-      <div className="relative max-h-[90vh] w-full overflow-y-auto rounded-t-2xl bg-[var(--color-surface-elevated)] shadow-xl sm:max-w-lg sm:rounded-xl">
+    <ResponsiveDialog label={editing ? "Sửa sản phẩm" : "Thêm sản phẩm"} onClose={onClose} className="max-w-lg">
+      <div className="max-h-[85dvh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] px-4 py-4 sm:px-6">
           <h2 className="text-lg font-semibold">{editing ? "Sửa sản phẩm" : "Thêm sản phẩm"}</h2>
           <button
@@ -699,7 +699,7 @@ function ItemDialog({
             </div>
           </div>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
-          <div className="flex justify-end gap-2 pt-2">
+          <div data-slot="dialog-footer" className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className={`${outlineButton} h-10 px-4 text-sm`}>
               Hủy
             </button>
@@ -710,7 +710,7 @@ function ItemDialog({
           </div>
         </form>
       </div>
-    </div>
+    </ResponsiveDialog>
   );
 }
 
@@ -730,11 +730,11 @@ function ConfirmDialog({
   onConfirm: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
-      <div className="w-full max-w-sm rounded-2xl bg-[var(--color-surface-elevated)] p-5 shadow-xl">
+    <ResponsiveDialog label={title} onClose={onCancel} className="max-w-sm">
+      <div className="p-5">
         <h2 className="text-lg font-semibold">{title}</h2>
         <p className="mt-2 text-sm text-[var(--color-text-inverse)]">{description}</p>
-        <div className="mt-5 flex justify-end gap-2">
+        <div data-slot="dialog-footer" className="mt-5 flex justify-end gap-2">
           <button type="button" onClick={onCancel} className={`${outlineButton} h-10 px-4 text-sm`}>
             Hủy
           </button>
@@ -744,7 +744,7 @@ function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </ResponsiveDialog>
   );
 }
 

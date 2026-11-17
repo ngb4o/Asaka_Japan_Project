@@ -4,6 +4,7 @@ import { ChevronLeft, CircleDot, History, Loader2, Plus, Search, X } from "lucid
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
 import { correctTire, getTire, listDrivers, listTires, mountTires, moveTire } from "@/lib/api";
 import { ListSkeleton } from "@/components/PageSkeleton";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { foldText } from "@/lib/text";
 import type { Driver, Tire, TireEvent, TireKind, TireMoveInput, TirePlace, TirePosition, TireSide } from "@/lib/types";
 
@@ -643,8 +644,8 @@ function MountDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <form onSubmit={(event) => void submit(event)} className="flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-xl">
+    <ResponsiveDialog label="Gắn lốp" onClose={onClose} className="max-w-3xl">
+      <form onSubmit={(event) => void submit(event)} className="flex max-h-[85dvh] flex-col">
         <div className="border-b border-[var(--color-border-subtle)] px-4 py-3">
           <h2 className="text-base font-semibold">Gắn lốp</h2>
           <p className="text-sm text-[var(--color-text-inverse)]">Một phiếu nhiều seri. Cặp bên tài và bên phụ thêm bằng nút L+P.</p>
@@ -735,7 +736,7 @@ function MountDialog({
           </button>
         </div>
       </form>
-    </div>
+    </ResponsiveDialog>
   );
 }
 
@@ -808,8 +809,8 @@ function MoveDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <form onSubmit={(event) => void submit(event)} className="flex max-h-[calc(100vh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl">
+    <ResponsiveDialog label={`Chuyển ${tire.serial}`} onClose={onClose} className="max-w-lg">
+      <form onSubmit={(event) => void submit(event)} className="flex max-h-[85dvh] flex-col">
         <div className="border-b border-[var(--color-border-subtle)] px-4 py-3">
           <h2 className="text-base font-semibold">Chuyển {tire.serial}</h2>
           <p className="text-sm text-[var(--color-text-inverse)]">Đang ở {formatPlace(tire.place)}</p>
@@ -909,7 +910,7 @@ function MoveDialog({
           </button>
         </div>
       </form>
-    </div>
+    </ResponsiveDialog>
   );
 }
 
@@ -964,8 +965,8 @@ function HistoryDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <form onSubmit={(event) => void submit(event)} className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl">
+    <ResponsiveDialog label="Sửa lốp" onClose={onClose} className="max-w-lg">
+      <form onSubmit={(event) => void submit(event)} className="flex max-h-[85dvh] flex-col">
         <div className="border-b border-[var(--color-border-subtle)] px-4 py-3">
           <h2 className="text-base font-semibold">Sửa lốp</h2>
           <p className="text-sm text-[var(--color-text-inverse)]">Đang ở {formatPlace(tire.place)}</p>
@@ -1012,7 +1013,7 @@ function HistoryDialog({
           </button>
         </div>
       </form>
-    </div>
+    </ResponsiveDialog>
   );
 }
 

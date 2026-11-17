@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2, Truck, X } from "lucide-react";
 import { useCallback, useEffect, useId, useState } from "react";
 import { ListSkeleton } from "@/components/PageSkeleton";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { createDriver, deleteDriver, listDrivers, updateDriver } from "@/lib/api";
 import type { Driver, DriverInput, DriverList } from "@/lib/types";
 
@@ -202,16 +203,16 @@ export default function DriversPage() {
         />
       ) : null}
       {pendingDelete ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
-          <div className="w-full max-w-sm rounded-[var(--radius-card)] bg-white p-4 shadow-[var(--shadow-elevated)]">
+        <ResponsiveDialog label="Xóa lái xe?" onClose={() => setPendingDelete(null)} className="max-w-sm">
+          <div className="p-4">
             <p className="font-semibold">Xóa lái xe?</p>
             <p className="mt-1 text-sm text-[var(--color-text-inverse)]">{pendingDelete.name}</p>
-            <div className="mt-4 flex justify-end gap-2">
+            <div data-slot="dialog-footer" className="mt-4 flex justify-end gap-2">
               <button type="button" className={outlineButton} onClick={() => setPendingDelete(null)}>Hủy</button>
               <button type="button" className={dangerButton} onClick={() => void handleDelete()}>Xóa</button>
             </div>
           </div>
-        </div>
+        </ResponsiveDialog>
       ) : null}
       {toast ? (
         <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[var(--color-brand-ink)] px-4 py-2 text-sm text-white shadow-lg">
@@ -256,8 +257,8 @@ function DriverDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center">
-      <form onSubmit={(event) => void submit(event)} className="w-full max-w-md rounded-[var(--radius-card)] bg-white p-4 shadow-[var(--shadow-elevated)]">
+    <ResponsiveDialog label={driver ? "Sửa lái xe" : "Thêm lái xe"} onClose={onClose} className="max-w-md">
+      <form onSubmit={(event) => void submit(event)} className="p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 id={titleId} className="text-base font-semibold">{driver ? "Sửa lái xe" : "Thêm lái xe"}</h2>
           <button type="button" aria-label="Đóng" onClick={onClose} className={outlineButton}><X className="h-4 w-4" /></button>
@@ -273,12 +274,12 @@ function DriverDialog({
           </label>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
         </div>
-        <div className="mt-4 flex justify-end gap-2">
+        <div data-slot="dialog-footer" className="mt-4 flex justify-end gap-2">
           <button type="button" className={outlineButton} onClick={onClose}>Hủy</button>
           <button type="submit" className={primaryButton} disabled={saving}>{saving ? "Đang lưu" : "Lưu"}</button>
         </div>
       </form>
-    </div>
+    </ResponsiveDialog>
   );
 }
 

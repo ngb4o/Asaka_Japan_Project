@@ -2,6 +2,7 @@
 
 import { ArrowDownToLine, ArrowUpFromLine, Loader2, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { createMovement, listDrivers, listItems, listMovements } from "@/lib/api";
 import { foldText } from "@/lib/text";
 import type { Driver, MovementType, StockMovement, WarehouseItem } from "@/lib/types";
@@ -148,9 +149,8 @@ export function MovementDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <button type="button" aria-label="Đóng" className="absolute inset-0" onClick={onClose} />
-      <div className="relative flex h-[min(640px,calc(100vh-2rem))] w-full max-w-[720px] flex-col overflow-hidden rounded-xl bg-[var(--color-surface-elevated)] shadow-xl">
+    <ResponsiveDialog label={type === "in" ? "Nhập kho" : "Xuất kho"} onClose={onClose} className="max-w-[720px]">
+      <div className="flex max-h-[min(640px,85dvh)] flex-col">
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-4 sm:px-6">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold">{type === "in" ? "Nhập kho" : "Xuất kho"}</h2>
@@ -374,7 +374,7 @@ export function MovementDialog({
           )}
         </div>
       </div>
-    </div>
+    </ResponsiveDialog>
   );
 }
 

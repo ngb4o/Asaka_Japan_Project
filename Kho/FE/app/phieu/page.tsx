@@ -17,6 +17,11 @@ const FORMS = [
     detail: "Ngày, họ tên, nội dung, số tiền và tài khoản. Lưu nháp hoặc tải sheet.",
   },
   {
+    href: "/phieu/thanh-toan",
+    title: "Giấy đề nghị thanh toán",
+    detail: "Ngày, họ tên, nội dung chi phí, số tiền và số tài khoản. Lưu nháp hoặc tải sheet.",
+  },
+  {
     href: "/phieu/de-xuat-thanh-toan",
     title: "Báo cáo đề xuất và thanh toán vật tư",
     detail: "Lưu nháp hoặc tải sheet Excel đúng mẫu, với ngày, nội dung đề xuất và bảng vật tư.",

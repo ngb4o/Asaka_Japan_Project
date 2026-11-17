@@ -14,6 +14,7 @@ import { electricProposalModel } from '~/models/electricProposalModel'
 import { officeProposalModel } from '~/models/officeProposalModel'
 import { weldProposalModel } from '~/models/weldProposalModel'
 import { advanceProposalModel } from '~/models/advanceProposalModel'
+import { paymentRequestModel } from '~/models/paymentRequestModel'
 import { viettelProposalModel } from '~/models/viettelProposalModel'
 import { utilityProposalModel } from '~/models/utilityProposalModel'
 import { rentalProposalModel } from '~/models/rentalProposalModel'
@@ -95,6 +96,7 @@ CONNECT_DB()
     officeProposalModel.ensureIndexes(),
     weldProposalModel.ensureIndexes(),
     advanceProposalModel.ensureIndexes(),
+    paymentRequestModel.ensureIndexes(),
     viettelProposalModel.ensureIndexes(),
     utilityProposalModel.ensureIndexes(),
     rentalProposalModel.ensureIndexes(),

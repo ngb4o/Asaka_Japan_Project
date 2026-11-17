@@ -7,6 +7,7 @@ import { getOil, listOils, recordOilChange, setOilKm } from "@/lib/api";
 import type { DistanceOil, EngineOil, OilEvent, OilKind, OilStatus, OilVehicle } from "@/lib/types";
 import { foldText } from "@/lib/text";
 import { DateInput } from "@/components/ui/date-input";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 
 const KINDS: { id: OilKind; label: string }[] = [
   { id: "may", label: "Dầu máy" },
@@ -267,9 +268,8 @@ function VehicleDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
-      <button type="button" aria-label="Đóng" className="absolute inset-0" onClick={onClose} />
-      <div className="relative flex max-h-[calc(100vh-1rem)] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-xl">
+    <ResponsiveDialog label={vehicle.name} onClose={onClose} className="max-w-lg">
+      <div className="flex max-h-[85dvh] flex-col">
         <div className="flex items-start justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3">
           <div className="min-w-0">
             <h2 className="truncate text-base font-semibold">{vehicle.name}</h2>
@@ -326,7 +326,7 @@ function VehicleDialog({
           </section>
         </div>
       </div>
-    </div>
+    </ResponsiveDialog>
   );
 }
 
