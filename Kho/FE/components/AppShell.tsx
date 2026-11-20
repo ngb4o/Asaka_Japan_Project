@@ -165,20 +165,22 @@ export function AppShell({
     <div className="app-shell flex h-full w-full overflow-hidden bg-[#f1f5f9]">
       <aside className="hidden h-full w-[272px] shrink-0 flex-col bg-[var(--color-brand-ink)] text-[#e8f1fa] lg:flex print:hidden">{nav}</aside>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b border-[#e2e8f0] bg-white px-3 lg:hidden print:hidden">
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white">
-            <img src="/icons/icon-192.png" alt="" className="h-full w-full object-contain" />
-          </span>
-          <p className="min-w-0 flex-1 truncate text-sm font-semibold">Kho hàng</p>
-          <button
-            type="button"
-            onClick={onLogout}
-            aria-label="Đăng xuất"
-            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-[#64748b] hover:bg-[#f1f5f9]"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="max-w-24 truncate">{accountName || "Đăng xuất"}</span>
-          </button>
+        <header className="shrink-0 border-b border-[#e2e8f0] bg-white pt-[env(safe-area-inset-top)] lg:hidden print:hidden">
+          <div className="flex h-12 items-center gap-2 px-3">
+            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white">
+              <img src="/icons/icon-192.png" alt="" className="h-full w-full object-contain" />
+            </span>
+            <p className="min-w-0 flex-1 truncate text-sm font-semibold">Kho hàng</p>
+            <button
+              type="button"
+              onClick={onLogout}
+              aria-label="Đăng xuất"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-[#64748b] hover:bg-[#f1f5f9]"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="max-w-24 truncate">{accountName || "Đăng xuất"}</span>
+            </button>
+          </div>
         </header>
         <OfflineWarmup />
         <OfflineBar />

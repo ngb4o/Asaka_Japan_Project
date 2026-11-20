@@ -16,6 +16,7 @@ import { utilityProposalRoute } from '~/routes/v1/utilityProposalRoute'
 import { rentalProposalRoute } from '~/routes/v1/rentalProposalRoute'
 import { ongDiaProposalRoute } from '~/routes/v1/ongDiaProposalRoute'
 import { phucVinhProposalRoute } from '~/routes/v1/phucVinhProposalRoute'
+import { batteryProposalRoute } from '~/routes/v1/batteryProposalRoute'
 import { tireProposalRoute } from '~/routes/v1/tireProposalRoute'
 import { tireRoute } from '~/routes/v1/tireRoute'
 import { oilRoute } from '~/routes/v1/oilRoute'
@@ -38,6 +39,7 @@ Router.use('/tires', verifyToken, tireRoute)
 Router.use('/oils', verifyToken, oilRoute)
 Router.use('/electric-proposals', verifyToken, electricProposalRoute)
 Router.use('/phuc-vinh-proposals', verifyToken, phucVinhProposalRoute)
+Router.use('/battery-proposals', verifyToken, batteryProposalRoute)
 Router.use('/office-proposals', verifyToken, officeProposalRoute)
 Router.use('/weld-proposals', verifyToken, weldProposalRoute)
 Router.use('/advance-proposals', verifyToken, advanceProposalRoute)

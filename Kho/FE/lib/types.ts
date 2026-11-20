@@ -261,6 +261,8 @@ export type PhucVinhProposal = {
   updatedAt?: string;
 };
 
+export type BatteryProposal = PhucVinhProposal;
+
 export type ElectricProposalLine = {
   date: string;
   plate: string;

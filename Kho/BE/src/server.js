@@ -20,6 +20,7 @@ import { utilityProposalModel } from '~/models/utilityProposalModel'
 import { rentalProposalModel } from '~/models/rentalProposalModel'
 import { ongDiaProposalModel } from '~/models/ongDiaProposalModel'
 import { phucVinhProposalModel } from '~/models/phucVinhProposalModel'
+import { batteryProposalModel } from '~/models/batteryProposalModel'
 import { tireProposalModel } from '~/models/tireProposalModel'
 import { tireModel } from '~/models/tireModel'
 import { oilModel } from '~/models/oilModel'
@@ -93,6 +94,7 @@ CONNECT_DB()
     oilModel.ensureIndexes(),
     electricProposalModel.ensureIndexes(),
     phucVinhProposalModel.ensureIndexes(),
+    batteryProposalModel.ensureIndexes(),
     officeProposalModel.ensureIndexes(),
     weldProposalModel.ensureIndexes(),
     advanceProposalModel.ensureIndexes(),

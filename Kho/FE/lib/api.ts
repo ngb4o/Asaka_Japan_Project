@@ -23,6 +23,7 @@ import type {
   RentalProposal,
   OngDiaProposal,
   PhucVinhProposal,
+  BatteryProposal,
   TireProposal,
   Tire,
   TireList,
@@ -328,6 +329,41 @@ export async function createPhucVinhProposal(input: PhucVinhProposalInput) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
+  return readData<{ id: string }>(response);
+}
+
+export type BatteryProposalInput = PhucVinhProposalInput;
+
+export async function listBatteryProposals() {
+  const response = await authorizedFetch(`${API_URL}/api/v1/battery-proposals`);
+  return readData<BatteryProposal[]>(response);
+}
+
+export async function getBatteryProposal(id: string) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/battery-proposals/${id}`);
+  return readData<BatteryProposal>(response);
+}
+
+export async function createBatteryProposal(input: BatteryProposalInput) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/battery-proposals`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return readData<{ id: string }>(response);
+}
+
+export async function updateBatteryProposal(id: string, input: BatteryProposalInput) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/battery-proposals/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return readData<{ id: string }>(response);
+}
+
+export async function deleteBatteryProposal(id: string) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/battery-proposals/${id}`, { method: "DELETE" });
   return readData<{ id: string }>(response);
 }
 

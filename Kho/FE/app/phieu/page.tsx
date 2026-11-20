@@ -42,6 +42,11 @@ const FORMS = [
     detail: "Ngày, kế hoạch mua hàng và bảng vật tư. Lưu nháp hoặc tải sheet.",
   },
   {
+    href: "/phieu/ac-quy",
+    title: "Đề xuất vật tư ắc quy",
+    detail: "Ngày, kế hoạch mua ắc quy và bảng đơn giá đã gồm VAT. Lưu nháp hoặc tải sheet.",
+  },
+  {
     href: "/phieu/vat-tu-van-phong",
     title: "Đề xuất và thanh toán vật tư văn phòng",
     detail: "Ngày, nội dung đề xuất và bảng văn phòng phẩm. Lưu nháp hoặc tải sheet.",

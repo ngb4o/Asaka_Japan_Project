@@ -282,7 +282,7 @@ function SearchBox({ value, onSearch }: { value: string; onSearch: (value: strin
   const [draft, setDraft] = useState(value);
 
   useEffect(() => {
-    setDraft(value);
+    setDraft((current) => (current.trim() === value.trim() ? current : value));
   }, [value]);
 
   useEffect(() => {
