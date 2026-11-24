@@ -3,7 +3,7 @@
 import { ArrowDownToLine, ArrowUpFromLine, Loader2, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
-import { createMovement, listDrivers, listItems, listMovements } from "@/lib/api";
+import { createMovement, deleteMovement, getMovement, listDrivers, listItems, listMovements, updateMovement } from "@/lib/api";
 import { foldText } from "@/lib/text";
 import type { Driver, MovementType, StockMovement, WarehouseItem } from "@/lib/types";
 
@@ -12,28 +12,35 @@ const fieldClass =
 
 export function MovementDialog({
   item: fixedItem = null,
+  movement = null,
   type: lockedType,
   onClose,
   onDone,
 }: {
   item?: WarehouseItem | null;
+  movement?: StockMovement | null;
   type?: MovementType;
   onClose: () => void;
   onDone: (message: string) => void;
 }) {
-  const [type, setType] = useState<MovementType>(lockedType ?? "in");
+  const editing = Boolean(movement);
+  const [type, setType] = useState<MovementType>(movement?.type ?? lockedType ?? "in");
   const [picked, setPicked] = useState<WarehouseItem | null>(fixedItem);
   const [catalog, setCatalog] = useState<WarehouseItem[]>([]);
   const [productQuery, setProductQuery] = useState("");
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [driverId, setDriverId] = useState("");
+  const [driverId, setDriverId] = useState(movement?.driverId || "");
   const [driverQuery, setDriverQuery] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [note, setNote] = useState("");
+  const [quantity, setQuantity] = useState(movement ? String(movement.quantity) : "");
+  const [note, setNote] = useState(movement?.note || "");
   const [history, setHistory] = useState<StockMovement[]>([]);
+  const [allocated, setAllocated] = useState(0);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const item = picked;
+  const typeLocked = Boolean(lockedType) || (editing && allocated > 0);
 
   const matches = useMemo(() => {
     const keyword = foldText(productQuery.trim());
@@ -53,8 +60,13 @@ export function MovementDialog({
   }, [driverQuery, drivers]);
 
   const amount = Number(quantity);
+  const previewBase = item
+    ? movement
+      ? item.quantity - (movement.type === "in" ? movement.quantity : -movement.quantity)
+      : item.quantity
+    : 0;
   const nextBalance = item && Number.isFinite(amount)
-    ? Math.round((item.quantity + (type === "in" ? amount : -amount)) * 100) / 100
+    ? Math.round((previewBase + (type === "in" ? amount : -amount)) * 100) / 100
     : item?.quantity ?? 0;
 
   useEffect(() => {
@@ -66,7 +78,28 @@ export function MovementDialog({
   }, [onClose]);
 
   useEffect(() => {
-    if (fixedItem) return;
+    if (!movement) return;
+    let active = true;
+    getMovement(movement.id)
+      .then((result) => {
+        if (!active) return;
+        setPicked(result.item);
+        setAllocated(result.allocated || 0);
+        setType(result.movement.type);
+        setQuantity(String(result.movement.quantity));
+        setNote(result.movement.note || "");
+        setDriverId(result.movement.driverId || "");
+      })
+      .catch((err) => {
+        if (active) setError(err instanceof Error ? err.message : "Không tải được phiếu");
+      });
+    return () => {
+      active = false;
+    };
+  }, [movement]);
+
+  useEffect(() => {
+    if (fixedItem || movement) return;
     let active = true;
     listItems({ limit: 500 })
       .then((result) => {
@@ -78,7 +111,7 @@ export function MovementDialog({
     return () => {
       active = false;
     };
-  }, [fixedItem]);
+  }, [fixedItem, movement]);
 
   useEffect(() => {
     if (lockedType === "in") return;
@@ -96,7 +129,7 @@ export function MovementDialog({
   }, [lockedType]);
 
   useEffect(() => {
-    if (!item) {
+    if (!item || movement) {
       setHistory([]);
       return;
     }
@@ -111,7 +144,7 @@ export function MovementDialog({
     return () => {
       active = false;
     };
-  }, [item]);
+  }, [item, movement]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -123,38 +156,66 @@ export function MovementDialog({
       setError("Số lượng phải lớn hơn 0");
       return;
     }
-    if (type === "out" && amount > item.quantity) {
+    if (type === "out" && nextBalance < 0) {
       setError("Tồn kho không đủ để xuất");
+      return;
+    }
+    if (allocated > 0 && type === "out" && amount < allocated) {
+      setError(`Phiếu đã dùng ${formatQuantity(allocated)} trên phiếu xuất vật tư`);
       return;
     }
 
     setSubmitting(true);
     setError("");
     try {
-      await createMovement(item.id, {
+      const input = {
         type,
         quantity: amount,
         note: note.trim(),
         ...(type === "out" && driver ? { driverId: driver.id } : {}),
-      });
-      onDone(type === "in"
-        ? `Đã nhập ${formatQuantity(amount)} ${item.name}`
-        : driver
-          ? `Đã xuất ${formatQuantity(amount)} ${item.name} cho ${driver.name}`
-          : `Đã xuất ${formatQuantity(amount)} ${item.name}`);
+      };
+      if (movement) {
+        await updateMovement(movement.id, input);
+        onDone(`Đã sửa phiếu ${item.name}`);
+      } else {
+        await createMovement(item.id, input);
+        onDone(type === "in"
+          ? `Đã nhập ${formatQuantity(amount)} ${item.name}`
+          : driver
+            ? `Đã xuất ${formatQuantity(amount)} ${item.name} cho ${driver.name}`
+            : `Đã xuất ${formatQuantity(amount)} ${item.name}`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không lưu được phiếu");
       setSubmitting(false);
     }
   }
 
+  async function handleDelete() {
+    if (!movement) return;
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    setRemoving(true);
+    setError("");
+    try {
+      await deleteMovement(movement.id);
+      onDone(`Đã xóa phiếu ${movement.itemName}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không xóa được phiếu");
+      setRemoving(false);
+      setConfirmDelete(false);
+    }
+  }
+
   return (
-    <ResponsiveDialog label={type === "in" ? "Nhập kho" : "Xuất kho"} onClose={onClose} className="max-w-[720px]">
+    <ResponsiveDialog label={editing ? "Sửa phiếu" : type === "in" ? "Nhập kho" : "Xuất kho"} onClose={onClose} className="max-w-[720px]">
       <div className="flex max-h-[min(640px,85dvh)] flex-col">
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-4 sm:px-6">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold">{type === "in" ? "Nhập kho" : "Xuất kho"}</h2>
-            <p className="truncate text-sm text-[var(--color-text-inverse)]">{item ? item.name : "Chọn sản phẩm"}</p>
+            <h2 className="text-lg font-semibold">{editing ? "Sửa phiếu" : type === "in" ? "Nhập kho" : "Xuất kho"}</h2>
+            <p className="truncate text-sm text-[var(--color-text-inverse)]">{item ? item.name : movement?.itemName || "Chọn sản phẩm"}</p>
           </div>
           <button
             type="button"
@@ -167,7 +228,7 @@ export function MovementDialog({
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
         <form id="movement-form" onSubmit={handleSubmit} className="grid min-w-0 gap-4 px-4 py-4 sm:px-6">
-          {fixedItem ? null : item ? (
+          {fixedItem || editing ? null : item ? (
             <div className="flex h-12 items-center justify-between gap-3 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] px-3">
               <p className="min-w-0 truncate text-sm font-medium">{item.name}</p>
               <button
@@ -227,7 +288,7 @@ export function MovementDialog({
               {item.column == null ? "" : ` · Cột ${item.column}`}
             </p>
           ) : null}
-          {lockedType ? null : (
+          {typeLocked ? null : (
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -247,6 +308,11 @@ export function MovementDialog({
             </button>
           </div>
           )}
+          {allocated > 0 ? (
+            <p className="text-sm text-[var(--color-text-inverse)]">
+              Phiếu đã dùng {formatQuantity(allocated)} trên phiếu xuất vật tư. Chỉ sửa số lượng lớn hơn hoặc bằng mức này, không xóa được.
+            </p>
+          ) : null}
           {type === "out" ? (
             driver ? (
               <div className="flex h-14 items-center justify-between gap-3 rounded-[var(--radius-button)] border border-[var(--color-border-subtle)] px-3">
@@ -327,7 +393,7 @@ export function MovementDialog({
             />
           </label>
           <p className="text-sm">
-            Tồn sau phiếu{" "}
+            {editing ? "Tồn kho sau khi lưu" : "Tồn sau phiếu"}{" "}
             <span className={`font-semibold tabular-nums ${nextBalance < 0 ? "text-red-600" : ""}`}>
               {item && Number.isFinite(amount) && amount > 0 ? formatQuantity(Math.max(nextBalance, 0)) : formatQuantity(item?.quantity ?? 0)}
             </span>
@@ -335,15 +401,22 @@ export function MovementDialog({
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
         </form>
         </div>
-        <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[var(--color-border-subtle)] px-4 py-3 sm:px-6">
+        <div className={`grid shrink-0 gap-2 border-t border-[var(--color-border-subtle)] px-4 py-3 sm:px-6 ${editing ? "grid-cols-3" : "grid-cols-2"}`}>
+          {editing ? (
+            <button type="button" onClick={() => void handleDelete()} disabled={removing || allocated > 0} className={dangerButton}>
+              {removing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {confirmDelete ? "Xóa?" : "Xóa"}
+            </button>
+          ) : null}
           <button type="button" onClick={onClose} className={outlineButton}>
             Hủy
           </button>
-          <button type="submit" form="movement-form" disabled={submitting} className={type === "out" ? dangerButton : primaryButton}>
+          <button type="submit" form="movement-form" disabled={submitting} className={type === "out" && !editing ? dangerButton : primaryButton}>
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {type === "in" ? "Nhập kho" : "Xuất kho"}
+            {editing ? "Lưu" : type === "in" ? "Nhập kho" : "Xuất kho"}
           </button>
         </div>
+        {editing ? null : (
         <div className="max-h-28 overflow-y-auto border-t border-[var(--color-border-subtle)] px-4 py-3 sm:max-h-40 sm:px-6">
           <p className="mb-2 text-sm font-semibold">Phiếu gần đây</p>
           {!item || history.length === 0 ? (
@@ -373,6 +446,7 @@ export function MovementDialog({
             </ul>
           )}
         </div>
+        )}
       </div>
     </ResponsiveDialog>
   );

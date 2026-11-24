@@ -17,6 +17,8 @@ const TIRE_SCHEMA = Joi.object({
   serialKey: Joi.string().trim().min(1).max(40).required(),
   brand: Joi.string().trim().allow('').max(60).default(''),
   wear: Joi.number().integer().min(0).max(100).default(100),
+  kmAccumulated: Joi.number().min(0).default(0),
+  mountedKm: Joi.number().min(0).allow(null).default(null),
   place: PLACE_SCHEMA.required(),
   note: Joi.string().trim().allow('').max(300).default(''),
   createdAt: Joi.date().default(() => new Date()),
@@ -32,6 +34,8 @@ const EVENT_SCHEMA = Joi.object({
   to: PLACE_SCHEMA.required(),
   note: Joi.string().trim().allow('').max(300).default(''),
   wear: Joi.number().integer().min(0).max(100).allow(null).default(null),
+  km: Joi.number().min(0).allow(null).default(null),
+  traveled: Joi.number().min(0).allow(null).default(null),
   createdBy: Joi.string().trim().allow('').max(80).default(''),
   createdAt: Joi.date().default(() => new Date())
 })

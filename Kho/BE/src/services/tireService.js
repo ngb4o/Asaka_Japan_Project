@@ -1,9 +1,11 @@
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { GET_CLIENT } from '~/config/mongodb'
+import { driverModel } from '~/models/driverModel'
+import { oilModel } from '~/models/oilModel'
 import { tireModel } from '~/models/tireModel'
 import ApiError from '~/utils/ApiError'
-import { formatDocument, formatDocuments } from '~/utils/formatters'
+import { formatDocument } from '~/utils/formatters'
 import { buildPaginationResult, parsePaginationQuery } from '~/utils/pagination'
 import { buildSearchFilter } from '~/utils/search'
 
@@ -130,6 +132,120 @@ const wearOf = (value, fallback = 100) => {
   return wear
 }
 
+const finiteKm = (value) => {
+  const km = Number(value)
+  return Number.isFinite(km) ? km : null
+}
+
+const isRolling = (place) => (
+  Boolean(place)
+  && (place.kind === 'dau' || place.kind === 'mooc')
+  && place.position !== 'ngoai'
+  && place.axle != null
+)
+
+const parseKm = (value) => {
+  if (value === undefined || value === null || value === '') return null
+  const km = Number(value)
+  if (!Number.isInteger(km) || km < 0 || km > 9999999) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Km không hợp lệ')
+  }
+  return km
+}
+
+const loadOilKmIndex = async () => {
+  const [{ items }, states] = await Promise.all([
+    driverModel.findMany({ _destroy: false }, { limit: 500, skip: 0 }),
+    oilModel.listStates()
+  ])
+  const stateByDriver = new Map(states.map((state) => [String(state.driverId), state]))
+  const index = new Map()
+  for (const driver of items) {
+    const km = finiteKm(stateByDriver.get(String(driver._id))?.currentKm)
+    if (driver.plate) index.set(`dau:${plateOf(driver.plate)}`, km)
+    if (driver.mooc) index.set(`mooc:${plateOf(driver.mooc)}`, km)
+  }
+  return index
+}
+
+const lookupVehicleKm = async (kind, plate, index = null) => {
+  const p = plateOf(plate)
+  if (!p || (kind !== 'dau' && kind !== 'mooc')) return null
+  const map = index || await loadOilKmIndex()
+  return map.has(`${kind}:${p}`) ? map.get(`${kind}:${p}`) : null
+}
+
+const resolveKm = async (payloadKm, from, to, index = null) => {
+  let km = parseKm(payloadKm)
+  if (km != null) return km
+  if (!isRolling(from) && !isRolling(to)) return null
+  const place = isRolling(to) ? to : from
+  km = await lookupVehicleKm(place.kind, place.plate, index)
+  if (km == null) throw new ApiError(StatusCodes.BAD_REQUEST, 'Nhập số km đồng hồ')
+  return km
+}
+
+const applyKm = (current, nextPlace, km) => {
+  let kmAccumulated = finiteKm(current?.kmAccumulated) || 0
+  let mountedKm = finiteKm(current?.mountedKm)
+  let traveled = null
+  const was = isRolling(current?.place)
+  const next = isRolling(nextPlace)
+  const sameVehicle = was && next
+    && current.place.kind === nextPlace.kind
+    && current.place.plate === nextPlace.plate
+
+  if (sameVehicle) {
+    if (mountedKm == null && km != null) mountedKm = km
+    return { kmAccumulated, mountedKm, traveled }
+  }
+
+  if (was && mountedKm != null && km != null) {
+    if (km < mountedKm) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Km đồng hồ nhỏ hơn lúc gắn lốp')
+    }
+    traveled = km - mountedKm
+    kmAccumulated += traveled
+    mountedKm = null
+  } else if (was) {
+    mountedKm = null
+  }
+
+  mountedKm = next ? km : null
+  return { kmAccumulated, mountedKm, traveled }
+}
+
+const vehicleKmKey = (place) => `${place.kind}:${plateOf(place.plate)}`
+
+const vehicleKmMap = async (tires) => {
+  const index = await loadOilKmIndex()
+  const map = new Map()
+  for (const tire of tires) {
+    if (!isRolling(tire.place)) continue
+    const key = vehicleKmKey(tire.place)
+    if (!map.has(key)) map.set(key, index.get(key) ?? null)
+  }
+  return map
+}
+
+const formatTire = (doc, kmByVehicle = new Map()) => {
+  const tire = formatDocument(doc)
+  const kmAccumulated = finiteKm(tire.kmAccumulated) || 0
+  const mountedKm = finiteKm(tire.mountedKm)
+  const vehicleKm = isRolling(tire.place) ? (kmByVehicle.get(vehicleKmKey(tire.place)) ?? null) : null
+  const kmLive = isRolling(tire.place) && mountedKm != null && vehicleKm != null && vehicleKm >= mountedKm
+    ? vehicleKm - mountedKm
+    : null
+  return {
+    ...tire,
+    kmAccumulated,
+    mountedKm,
+    vehicleKm,
+    kmLive,
+    kmTotal: kmLive != null ? kmAccumulated + kmLive : kmAccumulated
+  }
+}
+
 const formatEvent = (doc) => {
   const formatted = formatDocument(doc)
   if (formatted?.tireId) formatted.tireId = formatted.tireId.toString()
@@ -147,8 +263,9 @@ const getList = async (query = {}) => {
   if (search) Object.assign(filter, search)
 
   const result = await tireModel.findMany(filter, { limit, skip, sort: { updatedAt: -1 } })
+  const kmByVehicle = await vehicleKmMap(result.items)
   return buildPaginationResult({
-    items: formatDocuments(result.items),
+    items: result.items.map((item) => formatTire(item, kmByVehicle)),
     total: result.total,
     limit,
     skip
@@ -159,8 +276,9 @@ const getOne = async (id) => {
   const tire = await tireModel.findOneById(id)
   if (!tire) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy lốp')
   const events = await tireModel.listEvents(id)
+  const kmByVehicle = await vehicleKmMap([tire])
   return {
-    tire: formatDocument(tire),
+    tire: formatTire(tire, kmByVehicle),
     events: events.map(formatEvent)
   }
 }
@@ -171,6 +289,8 @@ const writeTire = async (line, actor, session) => {
     serialKey: line.serialKey,
     brand: line.brand,
     wear: line.wear,
+    kmAccumulated: line.kmAccumulated || 0,
+    mountedKm: line.mountedKm ?? null,
     place: line.place,
     note: line.note || ''
   }, session)
@@ -182,6 +302,8 @@ const writeTire = async (line, actor, session) => {
     to: line.place,
     note: line.note || '',
     wear: line.wear,
+    km: line.km ?? null,
+    traveled: line.traveled ?? null,
     createdBy: actor
   }, session)
   return created.insertedId
@@ -197,12 +319,23 @@ const createNew = async (payload, actor) => {
   const { serial, serialKey } = identity
 
   const place = await normalizePlace(payload)
+  const km = await resolveKm(payload.km, null, place)
+  const stint = applyKm({ kmAccumulated: 0, mountedKm: null, place: null }, place, km)
   const brand = String(payload.brand || '').trim()
   const wear = wearOf(payload.wear, 100)
   const note = String(payload.note || '').trim()
-  const insertedId = await writeTire({ serial, serialKey, brand, wear, place, note }, actor, null)
+  const insertedId = await writeTire({
+    serial,
+    serialKey,
+    brand,
+    wear,
+    place,
+    note,
+    km,
+    ...stint
+  }, actor, null)
   const tire = await tireModel.findOneById(insertedId)
-  return formatDocument(tire)
+  return formatTire(tire, await vehicleKmMap(tire ? [tire] : []))
 }
 
 const mountMany = async (payload, actor) => {
@@ -254,6 +387,15 @@ const mountMany = async (payload, actor) => {
     reserved.add(slotKey(line.axle, position))
   }
 
+  const km = await resolveKm(payload.km, null, prepared[0].place)
+  for (const line of prepared) {
+    const stint = applyKm({ kmAccumulated: 0, mountedKm: null, place: null }, line.place, km)
+    line.km = km
+    line.kmAccumulated = stint.kmAccumulated
+    line.mountedKm = stint.mountedKm
+    line.traveled = stint.traveled
+  }
+
   const session = GET_CLIENT().startSession()
   const ids = []
   try {
@@ -273,9 +415,10 @@ const mountMany = async (payload, actor) => {
   const tires = []
   for (const id of ids) {
     const tire = await tireModel.findOneById(id)
-    if (tire) tires.push(formatDocument(tire))
+    if (tire) tires.push(tire)
   }
-  return tires
+  const kmByVehicle = await vehicleKmMap(tires)
+  return tires.map((tire) => formatTire(tire, kmByVehicle))
 }
 
 const move = async (id, payload, actor) => {
@@ -286,14 +429,21 @@ const move = async (id, payload, actor) => {
   const wear = wearOf(payload.wear, current.wear ?? 100)
   const note = String(payload.note || '').trim()
   const placeSame = samePlace(current.place, place)
+  const km = placeSame
+    ? parseKm(payload.km)
+    : await resolveKm(payload.km, current.place, place)
+  const stint = applyKm(current, place, km)
   const detailSame = brand === (current.brand || '') && wear === (current.wear ?? 100) && (note || current.note || '') === (current.note || '')
-  if (placeSame && detailSame) {
+  const kmSame = stint.kmAccumulated === (finiteKm(current.kmAccumulated) || 0) && stint.mountedKm === finiteKm(current.mountedKm)
+  if (placeSame && detailSame && kmSame) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Lốp đang ở chỗ này')
   }
   const updated = await tireModel.updatePlace(id, {
     place,
     brand,
     wear,
+    kmAccumulated: stint.kmAccumulated,
+    mountedKm: stint.mountedKm,
     note: note || current.note || ''
   })
   if (!updated) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy lốp')
@@ -306,10 +456,12 @@ const move = async (id, payload, actor) => {
       to: place,
       note,
       wear,
+      km,
+      traveled: stint.traveled,
       createdBy: actor
     })
   }
-  return formatDocument(updated)
+  return formatTire(updated, await vehicleKmMap([updated]))
 }
 
 const correct = async (id, payload) => {
@@ -326,10 +478,20 @@ const correct = async (id, payload) => {
   const { serial, serialKey } = identity
   const brand = String(payload.brand || '').trim()
   const wear = wearOf(payload.wear, current.wear ?? 100)
-  const updated = await tireModel.updatePlace(id, { serial, serialKey, brand, wear })
+  const fields = { serial, serialKey, brand, wear }
+  const km = parseKm(payload.km)
+  if (km != null && isRolling(current.place) && finiteKm(current.mountedKm) == null) {
+    fields.mountedKm = km
+  }
+  if (payload.kmAccumulated !== undefined && payload.kmAccumulated !== null && payload.kmAccumulated !== '') {
+    const past = Number(payload.kmAccumulated)
+    if (!Number.isFinite(past) || past < 0) throw new ApiError(StatusCodes.BAD_REQUEST, 'Km đã đi không hợp lệ')
+    fields.kmAccumulated = past
+  }
+  const updated = await tireModel.updatePlace(id, fields)
   if (!updated) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy lốp')
   if (serial !== current.serial) await tireModel.renameEvents(id, serial)
-  return formatDocument(updated)
+  return formatTire(updated, await vehicleKmMap([updated]))
 }
 
 export const tireService = {

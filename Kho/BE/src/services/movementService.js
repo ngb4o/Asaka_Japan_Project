@@ -139,20 +139,7 @@ const record = async (itemId, payload) => {
   const type = payload.type === 'out' ? 'out' : 'in'
   const note = String(payload.note || '').trim()
   const createdBy = String(payload.createdBy || '').trim()
-  const driver = { driverId: '', driverName: '', plate: '', mooc: '' }
-
-  if (type === 'out' && String(payload.driverId || '').trim()) {
-    const driverId = String(payload.driverId).trim()
-    if (!OBJECT_ID_RULE.test(driverId)) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Lái xe không hợp lệ')
-    }
-    const found = await driverModel.findOneById(driverId)
-    if (!found) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy lái xe')
-    driver.driverId = found._id.toString()
-    driver.driverName = found.name
-    driver.plate = found.plate || ''
-    driver.mooc = found.mooc || ''
-  }
+  const driver = await resolveDriver(type, payload.driverId)
   const session = GET_CLIENT().startSession()
   let movement = null
   let item = null
@@ -215,6 +202,156 @@ const record = async (itemId, payload) => {
   }
 }
 
+const signedQuantity = (type, quantity) => roundQuantity(type === 'in' ? quantity : -quantity)
+
+const allocatedOf = async (movementId, session = null) => {
+  const totals = await sumAllocatedQuantities([movementId], null, session)
+  return roundQuantity(totals.get(movementId) || 0)
+}
+
+const resolveDriver = async (type, driverId) => {
+  const driver = { driverId: '', driverName: '', plate: '', mooc: '' }
+  if (type !== 'out' || !String(driverId || '').trim()) return driver
+  const id = String(driverId).trim()
+  if (!OBJECT_ID_RULE.test(id)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Lái xe không hợp lệ')
+  }
+  const found = await driverModel.findOneById(id)
+  if (!found) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy lái xe')
+  driver.driverId = found._id.toString()
+  driver.driverName = found.name
+  driver.plate = found.plate || ''
+  driver.mooc = found.mooc || ''
+  return driver
+}
+
+const openingStockOf = async (itemId, session) => {
+  const items = GET_DB().collection(itemModel.ITEM_COLLECTION_NAME)
+  const item = await items.findOne({ _id: new ObjectId(itemId), _destroy: false }, { session })
+  if (!item) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy sản phẩm')
+  const rows = await movementModel.listByItemChrono(itemId, session)
+  const moved = rows.reduce((total, row) => roundQuantity(total + signedQuantity(row.type, row.quantity)), 0)
+  return { item, opening: roundQuantity((item.quantity || 0) - moved) }
+}
+
+const rebuildItemBalances = async (itemId, session, opening) => {
+  const rows = await movementModel.listByItemChrono(itemId, session)
+  let balance = roundQuantity(opening)
+  for (const row of rows) {
+    balance = roundQuantity(balance + signedQuantity(row.type, row.quantity))
+    if (balance < 0) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Tồn kho không đủ sau khi sửa phiếu')
+    }
+    if (roundQuantity(row.balanceAfter) !== balance) {
+      await movementModel.updateById(row._id, { balanceAfter: balance }, session)
+      row.balanceAfter = balance
+    }
+  }
+  const items = GET_DB().collection(itemModel.ITEM_COLLECTION_NAME)
+  const item = await items.findOne({ _id: new ObjectId(itemId), _destroy: false }, { session })
+  if (!item) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy sản phẩm')
+  await items.updateOne(
+    { _id: item._id },
+    { $set: { quantity: balance, updatedAt: new Date() } },
+    { session }
+  )
+  return { item: { ...item, quantity: balance, updatedAt: new Date() }, rows, balance }
+}
+
+const getOne = async (id) => {
+  const movement = await movementModel.findOneById(id)
+  if (!movement) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy phiếu')
+  const item = await itemModel.findOneById(movement.itemId)
+  if (!item) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy sản phẩm')
+  return {
+    movement: formatMovement(movement),
+    item: formatDocument(item),
+    allocated: await allocatedOf(id)
+  }
+}
+
+const update = async (id, payload) => {
+  const current = await movementModel.findOneById(id)
+  if (!current) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy phiếu')
+
+  const quantity = roundQuantity(payload.quantity)
+  if (!(quantity > 0)) throw new ApiError(StatusCodes.BAD_REQUEST, 'Số lượng phải lớn hơn 0')
+  const type = payload.type === 'out' ? 'out' : 'in'
+  const allocated = await allocatedOf(id)
+  if (allocated > 0) {
+    if (type !== 'out') {
+      throw new ApiError(StatusCodes.CONFLICT, 'Phiếu đã nằm trên phiếu xuất vật tư, không đổi sang nhập')
+    }
+    if (quantity < allocated) {
+      throw new ApiError(StatusCodes.CONFLICT, `Phiếu đã dùng ${allocated} trên phiếu xuất vật tư`)
+    }
+  }
+
+  const driver = await resolveDriver(type, payload.driverId)
+  const note = String(payload.note || '').trim()
+  const session = GET_CLIENT().startSession()
+  let movement = null
+  let item = null
+
+  try {
+    await session.withTransaction(async () => {
+      const latest = await movementModel.findOneById(id, session)
+      if (!latest) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy phiếu')
+      const { opening } = await openingStockOf(latest.itemId, session)
+      await movementModel.updateById(id, {
+        type,
+        quantity,
+        note,
+        ...driver
+      }, session)
+      const rebuilt = await rebuildItemBalances(latest.itemId, session, opening)
+      item = rebuilt.item
+      movement = rebuilt.rows.find((row) => String(row._id) === String(id)) || { ...latest, type, quantity, note, ...driver }
+    })
+  } finally {
+    await session.endSession()
+  }
+
+  return {
+    movement: formatMovement(movement),
+    item: formatDocument(item)
+  }
+}
+
+const remove = async (id) => {
+  const current = await movementModel.findOneById(id)
+  if (!current) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy phiếu')
+  const allocated = await allocatedOf(id)
+  if (allocated > 0) {
+    throw new ApiError(StatusCodes.CONFLICT, 'Phiếu đã nằm trên phiếu xuất vật tư, không xóa được')
+  }
+
+  const session = GET_CLIENT().startSession()
+  let item = null
+
+  try {
+    await session.withTransaction(async () => {
+      const latest = await movementModel.findOneById(id, session)
+      if (!latest) throw new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy phiếu')
+      const stillAllocated = await allocatedOf(id, session)
+      if (stillAllocated > 0) {
+        throw new ApiError(StatusCodes.CONFLICT, 'Phiếu đã nằm trên phiếu xuất vật tư, không xóa được')
+      }
+      const { opening } = await openingStockOf(latest.itemId, session)
+      await movementModel.deleteById(id, session)
+      const rebuilt = await rebuildItemBalances(latest.itemId, session, opening)
+      item = rebuilt.item
+    })
+  } finally {
+    await session.endSession()
+  }
+
+  return {
+    id,
+    item: formatDocument(item)
+  }
+}
+
 const actorName = (actor) => String(actor?.name || actor?.username || '').trim()
 
 const recordOpening = async (item, actor) => {
@@ -236,6 +373,9 @@ const recordOpening = async (item, actor) => {
 
 export const movementService = {
   getList,
+  getOne,
   record,
+  update,
+  remove,
   recordOpening
 }

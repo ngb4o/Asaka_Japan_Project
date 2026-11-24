@@ -2,11 +2,11 @@
 
 import { ChevronLeft, CircleDot, History, Loader2, Plus, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
-import { correctTire, getTire, listDrivers, listTires, mountTires, moveTire } from "@/lib/api";
+import { correctTire, getTire, listDrivers, listOils, listTires, mountTires, moveTire } from "@/lib/api";
 import { ListSkeleton } from "@/components/PageSkeleton";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { foldText } from "@/lib/text";
-import type { Driver, Tire, TireEvent, TireKind, TireMoveInput, TirePlace, TirePosition, TireSide } from "@/lib/types";
+import type { Driver, OilVehicle, Tire, TireEvent, TireKind, TireMoveInput, TirePlace, TirePosition, TireSide } from "@/lib/types";
 
 type Rig = {
   id: string;
@@ -34,6 +34,7 @@ const SIDES: { value: TireSide; label: string }[] = [
 export default function TirePage() {
   const [tires, setTires] = useState<Tire[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [oils, setOils] = useState<OilVehicle[]>([]);
   const [view, setView] = useState<"xe" | "kho">("xe");
   const [query, setQuery] = useState("");
   const [rig, setRig] = useState<Rig | null>(null);
@@ -46,12 +47,14 @@ export default function TirePage() {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const reload = useCallback(async () => {
-    const [tireList, driverList] = await Promise.all([
+    const [tireList, driverList, oilList] = await Promise.all([
       listTires({ limit: 500 }),
       listDrivers({ limit: 500 }),
+      listOils().catch(() => ({ items: [] as OilVehicle[] })),
     ]);
     setTires(tireList.items);
     setDrivers(driverList.items);
+    setOils(oilList.items);
   }, []);
 
   useEffect(() => {
@@ -98,7 +101,7 @@ export default function TirePage() {
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3">
           <div>
             <h1 className="text-base font-semibold tracking-tight">Lốp</h1>
-            <p className="text-xs text-[var(--color-text-inverse)]">Mở một xe để xem sơ đồ. Bấm bánh hoặc số seri để xem lịch sử.</p>
+            <p className="text-xs text-[var(--color-text-inverse)]">Mở một xe để xem sơ đồ. Gắn hoặc tháo lốp thì nhập km đồng hồ — lấy sẵn từ phần Dầu nếu có.</p>
           </div>
           <button type="button" className={primaryButton} onClick={() => openMount()}>
             <Plus className="h-4 w-4" />
@@ -186,6 +189,7 @@ export default function TirePage() {
         <MountDialog
           request={mount}
           drivers={drivers}
+          oils={oils}
           onClose={() => setMount(null)}
           onSave={async (input) => {
             const created = await mountTires(input);
@@ -202,6 +206,7 @@ export default function TirePage() {
         <MoveDialog
           tire={moving}
           drivers={drivers}
+          oils={oils}
           onClose={() => setMoving(null)}
           onSave={async (input) => {
             const updated = await moveTire(moving.id, input);
@@ -231,8 +236,8 @@ export default function TirePage() {
           }}
           onSave={async (input) => {
             const updated = await correctTire(historyTire.id, input);
-            setHistoryTire(null);
-            setToast(`Đã sửa seri ${updated.serial}`);
+            setHistoryTire(updated);
+            setToast(`Đã sửa lốp ${updated.serial}`);
             await reload();
           }}
         />
@@ -452,7 +457,7 @@ function SlotCards({
 }
 
 function SerialCard({ tire, caption, query, onOpen, fluid = false }: { tire: Tire | null; caption: string; query: string; onOpen: () => void; fluid?: boolean }) {
-  const size = fluid ? "h-auto min-h-[68px] w-full" : "h-[68px] w-full max-w-[168px]";
+  const size = fluid ? "h-auto min-h-[80px] w-full" : "h-[80px] w-full max-w-[168px]";
   if (!tire) {
     return (
       <button type="button" onClick={onOpen} className={`flex ${size} flex-col justify-center rounded-xl border border-dashed border-[#cbd5e1] bg-white/80 px-2.5 text-left hover:border-[var(--color-text-secondary)] hover:bg-[var(--color-brand-mist)]`}>
@@ -475,6 +480,7 @@ function SerialCard({ tire, caption, query, onOpen, fluid = false }: { tire: Tir
         {tire.brand ? <span className="min-w-0 truncate text-[11px] text-[#64748b]">{tire.brand}</span> : <span className="min-w-0 flex-1" />}
         <span className={`shrink-0 rounded-full px-1.5 text-[10px] font-semibold ${wearClass(tire.wear)}`}>{tire.wear == null ? "—" : `${tire.wear}%`}</span>
       </span>
+      <span className="truncate text-[10px] text-[#64748b]">{formatKmRun(tire)}</span>
     </button>
   );
 }
@@ -512,6 +518,7 @@ function TireChip({ tire, marked, onMove, onHistory }: { tire: Tire; marked: boo
         <div className="min-w-0">
           <button type="button" className="min-w-0 text-left" onClick={onHistory}>
             <p className="truncate text-sm font-semibold">{tire.brand ? `${tire.brand} - ` : ""}{tire.serial} <span className="font-medium text-[var(--color-text-inverse)]">({tire.wear == null ? "—" : `${tire.wear}%`})</span></p>
+            <p className="truncate text-xs text-[var(--color-text-inverse)]">{formatKmRun(tire)}</p>
           </button>
         </div>
       </div>
@@ -558,16 +565,19 @@ function WarehouseList({
 function MountDialog({
   request,
   drivers,
+  oils,
   onClose,
   onSave,
 }: {
   request: MountRequest;
   drivers: Driver[];
+  oils: OilVehicle[];
   onClose: () => void;
-  onSave: (input: { kind: "dau" | "mooc"; plate: string; lines: { serial: string; brand: string; wear: number; axle: number; side: TireSide }[] }) => Promise<void>;
+  onSave: (input: { kind: "dau" | "mooc"; plate: string; km?: number | null; lines: { serial: string; brand: string; wear: number; axle: number; side: TireSide }[] }) => Promise<void>;
 }) {
   const [kind, setKind] = useState<"dau" | "mooc">(request.kind);
   const [plate, setPlate] = useState(request.plate);
+  const [km, setKm] = useState(() => digitsOf(oilKmFor(oils, request.kind, request.plate)));
   const [driverId, setDriverId] = useState("");
   const [driverQuery, setDriverQuery] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([
@@ -588,12 +598,18 @@ function MountDialog({
     setDriverId(next.id);
     setDriverQuery("");
     const nextPlate = kind === "dau" ? next.plate : next.mooc;
-    if (nextPlate) setPlate(nextPlate);
+    if (nextPlate) {
+      setPlate(nextPlate);
+      setKm((current) => current || digitsOf(oilKmFor(oils, kind, nextPlate)));
+    }
   }
 
   function changeKind(next: "dau" | "mooc") {
     setKind(next);
-    if (driver) setPlate(next === "dau" ? driver.plate : driver.mooc);
+    if (!driver) return;
+    const nextPlate = next === "dau" ? driver.plate : driver.mooc;
+    setPlate(nextPlate);
+    setKm((current) => current || digitsOf(oilKmFor(oils, next, nextPlate)));
   }
 
   function append(drafts: Array<Omit<DraftLine, "id">>) {
@@ -636,7 +652,9 @@ function MountDialog({
       if (prepared.some((line) => !line.serial)) throw new Error("Nhập số seri");
       if (prepared.some((line) => !Number.isInteger(line.axle) || line.axle < 1 || line.axle > 12)) throw new Error("Cầu từ 1 đến 12");
       if (prepared.some((line) => !Number.isInteger(line.wear) || line.wear < 0 || line.wear > 100)) throw new Error("% còn từ 0 đến 100");
-      await onSave({ kind, plate, lines: prepared });
+      const parsedKm = km.trim() ? Number(km) : oilKmFor(oils, kind, plate);
+      if (parsedKm == null || !Number.isInteger(parsedKm) || parsedKm < 0) throw new Error("Nhập số km đồng hồ");
+      await onSave({ kind, plate, km: parsedKm, lines: prepared });
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Không lưu được");
       setSaving(false);
@@ -648,7 +666,7 @@ function MountDialog({
       <form onSubmit={(event) => void submit(event)} className="flex max-h-[85dvh] flex-col">
         <div className="border-b border-[var(--color-border-subtle)] px-4 py-3">
           <h2 className="text-base font-semibold">Gắn lốp</h2>
-          <p className="text-sm text-[var(--color-text-inverse)]">Một phiếu nhiều seri. Cặp bên tài và bên phụ thêm bằng nút L+P.</p>
+          <p className="text-sm text-[var(--color-text-inverse)]">Một phiếu nhiều seri. Nhập km đồng hồ lúc gắn để đếm km lốp.</p>
         </div>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
           {driver ? (
@@ -686,10 +704,23 @@ function MountDialog({
               <button key={value} type="button" className={kind === value ? activeFilter : idleFilter} onClick={() => changeKind(value)}>{label}</button>
             ))}
           </div>
-          <label className="block text-sm font-medium">
-            {kind === "dau" ? "Biển đầu" : "Biển mooc"}
-            <input value={plate} onChange={(event) => setPlate(event.target.value)} className={`${fieldClass} mt-1`} required />
-          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block text-sm font-medium">
+              {kind === "dau" ? "Biển đầu" : "Biển mooc"}
+              <input value={plate} onChange={(event) => setPlate(event.target.value)} className={`${fieldClass} mt-1`} required />
+            </label>
+            <label className="block text-sm font-medium">
+              Km đồng hồ
+              <input
+                value={km}
+                onChange={(event) => setKm(event.target.value.replace(/[^\d]/g, ""))}
+                className={`${fieldClass} mt-1`}
+                inputMode="numeric"
+                placeholder={oilKmFor(oils, kind, plate) == null ? "Km lúc gắn" : formatKm(oilKmFor(oils, kind, plate))}
+                required
+              />
+            </label>
+          </div>
           <div className="space-y-2">
             {lines.map((line, index) => (
               <div key={line.id} className="grid gap-2 rounded-lg border border-[var(--color-border-subtle)] p-2 sm:grid-cols-[1fr_1.2fr_72px_64px_auto_auto]">
@@ -743,16 +774,19 @@ function MountDialog({
 function MoveDialog({
   tire,
   drivers,
+  oils,
   onClose,
   onSave,
 }: {
   tire: Tire;
   drivers: Driver[];
+  oils: OilVehicle[];
   onClose: () => void;
   onSave: (input: TireMoveInput) => Promise<void>;
 }) {
   const [kind, setKind] = useState<TireKind>(tire.place.kind);
   const [plate, setPlate] = useState(tire.place.plate);
+  const [km, setKm] = useState(() => digitsOf(suggestedMoveKm(oils, tire.place.kind, tire.place.plate, tire.place.kind, tire.place.plate)));
   const [driverId, setDriverId] = useState("");
   const [driverQuery, setDriverQuery] = useState("");
   const [spot, setSpot] = useState<"cau" | "ngoai">(tire.place.position === "ngoai" ? "ngoai" : "cau");
@@ -776,7 +810,10 @@ function MoveDialog({
     setDriverId(next.id);
     setDriverQuery("");
     const nextPlate = kind === "mooc" ? next.mooc : next.plate;
-    if (nextPlate) setPlate(nextPlate);
+    if (nextPlate) {
+      setPlate(nextPlate);
+      setKm((current) => current || digitsOf(oilKmFor(oils, kind === "kho" ? "dau" : kind, nextPlate)));
+    }
   }
 
   function changeKind(next: TireKind) {
@@ -793,6 +830,12 @@ function MoveDialog({
       const nextWear = Number(wear);
       if (!Number.isInteger(nextWear) || nextWear < 0 || nextWear > 100) throw new Error("% còn từ 0 đến 100");
       const outside = kind !== "kho" && spot === "ngoai";
+      const destKind = kind === "kho" ? tire.place.kind : kind;
+      const destPlate = kind === "kho" ? tire.place.plate : plate.trim();
+      const destRolling = kind !== "kho" && !outside;
+      const needKm = isRollingPlace(tire.place) || destRolling;
+      const parsedKm = km.trim() ? Number(km) : suggestedMoveKm(oils, tire.place.kind, tire.place.plate, destKind, destPlate);
+      if (needKm && (parsedKm == null || !Number.isInteger(parsedKm) || parsedKm < 0)) throw new Error("Nhập số km đồng hồ");
       await onSave({
         kind,
         plate: kind === "kho" ? "" : plate.trim(),
@@ -801,6 +844,7 @@ function MoveDialog({
         brand: brand.trim(),
         wear: nextWear,
         note: note.trim(),
+        km: parsedKm,
       });
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Không lưu được");
@@ -813,7 +857,7 @@ function MoveDialog({
       <form onSubmit={(event) => void submit(event)} className="flex max-h-[85dvh] flex-col">
         <div className="border-b border-[var(--color-border-subtle)] px-4 py-3">
           <h2 className="text-base font-semibold">Chuyển {tire.serial}</h2>
-          <p className="text-sm text-[var(--color-text-inverse)]">Đang ở {formatPlace(tire.place)}</p>
+          <p className="text-sm text-[var(--color-text-inverse)]">Đang ở {formatPlace(tire.place)} · {formatKmRun(tire)}</p>
         </div>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
           <div className="grid grid-cols-2 gap-3">
@@ -897,6 +941,17 @@ function MoveDialog({
             </div>
           ) : null}
           <label className="block text-sm font-medium">
+            Km đồng hồ
+            <input
+              value={km}
+              onChange={(event) => setKm(event.target.value.replace(/[^\d]/g, ""))}
+              className={`${fieldClass} mt-1`}
+              inputMode="numeric"
+              placeholder="Km lúc tháo hoặc gắn"
+              required
+            />
+          </label>
+          <label className="block text-sm font-medium">
             Ghi chú
             <input value={note} onChange={(event) => setNote(event.target.value)} className={`${fieldClass} mt-1`} placeholder="Lý do chuyển" />
           </label>
@@ -927,11 +982,13 @@ function HistoryDialog({
   loading: boolean;
   onClose: () => void;
   onMove: () => void;
-  onSave: (input: { serial: string; brand: string; wear: number }) => Promise<void>;
+  onSave: (input: { serial: string; brand: string; wear: number; km?: number | null; kmAccumulated?: number | null }) => Promise<void>;
 }) {
   const [serial, setSerial] = useState(tire.serial);
   const [brand, setBrand] = useState(tire.brand || "");
   const [wear, setWear] = useState(tire.wear == null ? "100" : String(tire.wear));
+  const [mountedKm, setMountedKm] = useState(digitsOf(tire.mountedKm));
+  const [pastKm, setPastKm] = useState(digitsOf(tire.kmAccumulated));
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   useCloseOnEscape(onClose);
@@ -940,6 +997,8 @@ function HistoryDialog({
     setSerial(tire.serial);
     setBrand(tire.brand || "");
     setWear(tire.wear == null ? "100" : String(tire.wear));
+    setMountedKm(digitsOf(tire.mountedKm));
+    setPastKm(digitsOf(tire.kmAccumulated));
   }, [tire]);
 
   async function submit(event: FormEvent) {
@@ -956,7 +1015,14 @@ function HistoryDialog({
     setSaving(true);
     setError("");
     try {
-      await onSave({ serial: serial.trim(), brand: brand.trim(), wear: nextWear });
+      const payload: { serial: string; brand: string; wear: number; km?: number | null; kmAccumulated?: number | null } = {
+        serial: serial.trim(),
+        brand: brand.trim(),
+        wear: nextWear,
+      };
+      if (pastKm.trim()) payload.kmAccumulated = Number(pastKm);
+      if (mountedKm.trim()) payload.km = Number(mountedKm);
+      await onSave(payload);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Không sửa được");
     } finally {
@@ -969,7 +1035,7 @@ function HistoryDialog({
       <form onSubmit={(event) => void submit(event)} className="flex max-h-[85dvh] flex-col">
         <div className="border-b border-[var(--color-border-subtle)] px-4 py-3">
           <h2 className="text-base font-semibold">Sửa lốp</h2>
-          <p className="text-sm text-[var(--color-text-inverse)]">Đang ở {formatPlace(tire.place)}</p>
+          <p className="text-sm text-[var(--color-text-inverse)]">Đang ở {formatPlace(tire.place)} · {formatKmRun(tire)}</p>
         </div>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
           <label className="block text-sm font-medium">
@@ -986,6 +1052,27 @@ function HistoryDialog({
               <input value={wear} onChange={(event) => setWear(event.target.value.replace(/[^\d]/g, "").slice(0, 3))} className={`${fieldClass} mt-1`} inputMode="numeric" />
             </label>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm font-medium">
+              Km đã đi trước
+              <input value={pastKm} onChange={(event) => setPastKm(event.target.value.replace(/[^\d]/g, ""))} className={`${fieldClass} mt-1`} inputMode="numeric" placeholder="0" />
+            </label>
+            {isRollingPlace(tire.place) ? (
+              <label className="block text-sm font-medium">
+                Km đồng hồ lúc gắn
+                <input
+                  value={mountedKm}
+                  onChange={(event) => setMountedKm(event.target.value.replace(/[^\d]/g, ""))}
+                  className={`${fieldClass} mt-1`}
+                  inputMode="numeric"
+                  placeholder="Bắt đầu đếm"
+                  disabled={tire.mountedKm != null}
+                />
+              </label>
+            ) : (
+              <p className="self-end text-sm text-[var(--color-text-inverse)]">Lốp không gắn cầu thì không cộng km.</p>
+            )}
+          </div>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <p className="text-sm font-semibold">Lịch sử</p>
           {loading ? <p className="text-sm text-[var(--color-text-inverse)]">Đang tải lịch sử...</p> : events.length === 0 ? <p className="text-sm text-[var(--color-text-inverse)]">Chưa có lần chuyển.</p> : (
@@ -997,6 +1084,8 @@ function HistoryDialog({
                     {formatWhen(event.createdAt)}
                     {event.createdBy ? ` · ${event.createdBy}` : ""}
                     {event.wear == null ? "" : ` · ${event.wear}%`}
+                    {event.km == null ? "" : ` · đồng hồ ${formatKm(event.km)} km`}
+                    {event.traveled == null ? "" : ` · +${formatKm(event.traveled)} km`}
                     {event.note ? ` · ${event.note}` : ""}
                   </p>
                 </li>
@@ -1146,6 +1235,37 @@ function useCloseOnEscape(onClose: () => void) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+}
+
+function isRollingPlace(place: TirePlace) {
+  return (place.kind === "dau" || place.kind === "mooc") && place.position !== "ngoai" && place.axle != null;
+}
+
+function formatKm(value: number | null | undefined) {
+  if (value == null) return "—";
+  return new Intl.NumberFormat("vi-VN").format(value);
+}
+
+function formatKmRun(tire: Tire) {
+  if (isRollingPlace(tire.place) && tire.mountedKm == null) return "Chưa có mốc km";
+  return `Đã đi ${formatKm(tire.kmTotal)} km`;
+}
+
+function digitsOf(value: number | null | undefined) {
+  return value == null ? "" : String(value);
+}
+
+function oilKmFor(oils: OilVehicle[], kind: TireKind | "dau" | "mooc", plate: string) {
+  const p = plate.trim().toUpperCase();
+  if (!p) return null;
+  const match = oils.find((item) => (
+    kind === "mooc" ? item.mooc.trim().toUpperCase() === p : item.plate.trim().toUpperCase() === p
+  ));
+  return match?.currentKm ?? null;
+}
+
+function suggestedMoveKm(oils: OilVehicle[], fromKind: TireKind, fromPlate: string, toKind: TireKind, toPlate: string) {
+  return oilKmFor(oils, toKind, toPlate) ?? oilKmFor(oils, fromKind, fromPlate);
 }
 
 function formatWhen(value: string) {

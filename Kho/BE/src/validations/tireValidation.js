@@ -32,6 +32,11 @@ const placeFields = {
     'number.base': '% còn phải là số',
     'number.min': '% còn từ 0 đến 100',
     'number.max': '% còn từ 0 đến 100'
+  }),
+  km: Joi.number().integer().min(0).max(9999999).allow(null).empty('').optional().messages({
+    'number.base': 'Km phải là số',
+    'number.min': 'Km không được âm',
+    'number.max': 'Km quá lớn'
   })
 }
 
@@ -82,6 +87,11 @@ const mountSchema = Joi.object({
     'array.min': 'Thêm ít nhất một lốp',
     'array.max': 'Một phiếu tối đa 20 lốp',
     'any.required': 'Thêm ít nhất một lốp'
+  }),
+  km: Joi.number().integer().min(0).max(9999999).allow(null).empty('').optional().messages({
+    'number.base': 'Km phải là số',
+    'number.min': 'Km không được âm',
+    'number.max': 'Km quá lớn'
   })
 })
 
@@ -99,6 +109,16 @@ const correctSchema = Joi.object({
     'number.min': '% còn từ 0 đến 100',
     'number.max': '% còn từ 0 đến 100',
     'any.required': 'Nhập % còn'
+  }),
+  km: Joi.number().integer().min(0).max(9999999).allow(null).empty('').optional().messages({
+    'number.base': 'Km phải là số',
+    'number.min': 'Km không được âm',
+    'number.max': 'Km quá lớn'
+  }),
+  kmAccumulated: Joi.number().min(0).max(9999999).allow(null).empty('').optional().messages({
+    'number.base': 'Km đã đi phải là số',
+    'number.min': 'Km không được âm',
+    'number.max': 'Km quá lớn'
   })
 })
 

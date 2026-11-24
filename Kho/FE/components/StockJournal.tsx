@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Inbox, Loader2, Search, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MovementBadge, formatQuantity, formatRecipient, formatWhen } from "@/components/MovementDialog";
+import { MovementBadge, MovementDialog, formatQuantity, formatRecipient, formatWhen } from "@/components/MovementDialog";
 import { ListSkeleton } from "@/components/PageSkeleton";
 import { DateInput } from "@/components/ui/date-input";
 import { listMovements } from "@/lib/api";
@@ -18,7 +18,7 @@ const emptyList: MovementList = {
   totalPages: 1,
 };
 
-export function StockJournal({ revision = 0 }: { revision?: number }) {
+export function StockJournal({ revision = 0, onChanged }: { revision?: number; onChanged?: (message: string) => void }) {
   const isMobile = useIsMobile();
   const [data, setData] = useState<MovementList>(emptyList);
   const [items, setItems] = useState<StockMovement[]>([]);
@@ -30,6 +30,7 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState<StockMovement | null>(null);
   const requestRef = useRef(0);
   const loadingMoreRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -182,7 +183,8 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
             {items.map((movement) => (
               <article
                 key={movement.id}
-                className="rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] px-3 py-3"
+                className="cursor-pointer rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] px-3 py-3"
+                onClick={() => setEditing(movement)}
               >
                 <div className="flex items-start justify-between gap-3">
                   <p className="min-w-0 font-semibold leading-snug">{movement.itemName}</p>
@@ -200,6 +202,7 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
                 {formatRecipient(movement) ? (
                   <p className="mt-1 truncate text-xs text-[var(--color-text-inverse)]">{formatRecipient(movement)}</p>
                 ) : null}
+                <p className="mt-2 text-xs font-semibold text-[var(--color-text-secondary)]">Sửa / xóa</p>
               </article>
             ))}
             <div ref={sentinelRef} className="h-1" aria-hidden />
@@ -224,11 +227,16 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
                     <th className="font-medium">Xuất cho</th>
                     <th className="font-medium">Người</th>
                     <th className="font-medium">Ghi chú</th>
+                    <th className="font-medium"> </th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((movement) => (
-                    <tr key={movement.id}>
+                    <tr
+                      key={movement.id}
+                      className="cursor-pointer"
+                      onClick={() => setEditing(movement)}
+                    >
                       <td className="whitespace-nowrap text-sm">{formatWhen(movement.createdAt)}</td>
                       <td className="font-medium">{movement.itemName}</td>
                       <td>
@@ -242,6 +250,7 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
                       <td className="text-sm">{formatRecipient(movement) || "—"}</td>
                       <td>{movement.createdBy || "—"}</td>
                       <td className="text-sm text-[var(--color-text-inverse)]">{movement.note || "—"}</td>
+                      <td className="text-sm font-semibold text-[var(--color-text-secondary)]">Sửa</td>
                     </tr>
                   ))}
                 </tbody>
@@ -259,6 +268,17 @@ export function StockJournal({ revision = 0 }: { revision?: number }) {
           />
         </div>
       )}
+
+      {editing ? (
+        <MovementDialog
+          movement={editing}
+          onClose={() => setEditing(null)}
+          onDone={(message) => {
+            setEditing(null);
+            onChanged?.(message);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

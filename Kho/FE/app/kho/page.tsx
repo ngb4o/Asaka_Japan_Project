@@ -40,7 +40,7 @@ export default function WarehousePage() {
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3">
           <div>
             <h1 className="text-base font-semibold tracking-tight">Kho hàng</h1>
-            <p className="text-xs text-[var(--color-text-inverse)]">Tồn kho và lịch sử nhập xuất.</p>
+            <p className="text-xs text-[var(--color-text-inverse)]">Tồn kho và lịch sử nhập xuất. Bấm một phiếu trong Lịch sử để sửa hoặc xóa.</p>
           </div>
           <div className="flex w-full flex-wrap gap-2 sm:w-auto">
             <button type="button" className={`${outlineAction} min-w-0 flex-1 sm:flex-none`} onClick={() => setMovementType("out")}>
@@ -75,7 +75,13 @@ export default function WarehousePage() {
             <StockLevels revision={revision} />
           </div>
           <div className={tab === "history" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
-            <StockJournal revision={revision} />
+            <StockJournal
+              revision={revision}
+              onChanged={(message) => {
+                setToast(message);
+                setRevision((current) => current + 1);
+              }}
+            />
           </div>
         </div>
       </section>

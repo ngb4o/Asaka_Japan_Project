@@ -334,6 +334,11 @@ export type Tire = {
   serial: string;
   brand: string;
   wear: number | null;
+  kmAccumulated: number;
+  mountedKm: number | null;
+  vehicleKm: number | null;
+  kmLive: number | null;
+  kmTotal: number;
   place: TirePlace;
   note: string;
   createdAt?: string;
@@ -349,6 +354,8 @@ export type TireEvent = {
   to: TirePlace;
   note: string;
   wear?: number | null;
+  km?: number | null;
+  traveled?: number | null;
   createdBy: string;
   createdAt: string;
 };
@@ -372,6 +379,7 @@ export type TireMountLine = {
 export type TireMountInput = {
   kind: "dau" | "mooc";
   plate: string;
+  km?: number | null;
   lines: TireMountLine[];
 };
 
@@ -383,6 +391,7 @@ export type TireMoveInput = {
   brand: string;
   wear: number;
   note: string;
+  km?: number | null;
 };
 
 export type OilKind = "may" | "cau" | "so";

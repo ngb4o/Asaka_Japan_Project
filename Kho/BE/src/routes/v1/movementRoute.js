@@ -14,4 +14,9 @@ Router.route('/items/:id')
     movementController.create
   )
 
+Router.route('/:id')
+  .get(movementValidation.validateItemId, movementController.getOne)
+  .put(movementValidation.validateItemId, movementValidation.update, movementController.update)
+  .delete(movementValidation.validateItemId, movementController.remove)
+
 export const movementRoute = Router

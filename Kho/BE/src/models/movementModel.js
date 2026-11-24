@@ -30,6 +30,11 @@ const createNew = async (data, session = null) => {
   return await GET_DB().collection(MOVEMENT_COLLECTION_NAME).insertOne(validData, options)
 }
 
+const findOneById = async (id, session = null) => {
+  const options = session ? { session } : {}
+  return await GET_DB().collection(MOVEMENT_COLLECTION_NAME).findOne({ _id: new ObjectId(id) }, options)
+}
+
 const findMany = async (query = {}, options = {}) => {
   const { limit = 50, skip = 0, sort = { createdAt: -1 } } = options
   const collection = GET_DB().collection(MOVEMENT_COLLECTION_NAME)
@@ -37,6 +42,38 @@ const findMany = async (query = {}, options = {}) => {
   const total = await collection.countDocuments(query)
 
   return { items, total, limit, skip }
+}
+
+const listByItemChrono = async (itemId, session = null) => {
+  const options = session ? { session } : {}
+  return await GET_DB().collection(MOVEMENT_COLLECTION_NAME)
+    .find({ itemId: new ObjectId(itemId) }, options)
+    .sort({ createdAt: 1, _id: 1 })
+    .toArray()
+}
+
+const unwrapFindOneAndUpdate = (result) => {
+  if (result == null) return null
+  if (Object.prototype.hasOwnProperty.call(result, 'value') && !Object.prototype.hasOwnProperty.call(result, '_id')) {
+    return result.value ?? null
+  }
+  return result
+}
+
+const updateById = async (id, fields, session = null) => {
+  const options = { returnDocument: 'after' }
+  if (session) options.session = session
+  const result = await GET_DB().collection(MOVEMENT_COLLECTION_NAME).findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: fields },
+    options
+  )
+  return unwrapFindOneAndUpdate(result)
+}
+
+const deleteById = async (id, session = null) => {
+  const options = session ? { session } : {}
+  return await GET_DB().collection(MOVEMENT_COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) }, options)
 }
 
 const ensureIndexes = async () => {
@@ -50,6 +87,10 @@ export const movementModel = {
   MOVEMENT_COLLECTION_NAME,
   MOVEMENT_TYPES,
   createNew,
+  findOneById,
   findMany,
+  listByItemChrono,
+  updateById,
+  deleteById,
   ensureIndexes
 }

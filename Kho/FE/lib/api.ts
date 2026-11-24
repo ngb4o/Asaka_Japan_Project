@@ -760,6 +760,27 @@ export async function createMovement(itemId: string, input: MovementInput) {
   return readData<MovementResult>(response);
 }
 
+export async function getMovement(id: string) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/movements/${id}`);
+  return readData<MovementResult & { allocated: number }>(response);
+}
+
+export async function updateMovement(id: string, input: MovementInput) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/movements/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return readData<MovementResult>(response);
+}
+
+export async function deleteMovement(id: string) {
+  const response = await authorizedFetch(`${API_URL}/api/v1/movements/${id}`, {
+    method: "DELETE",
+  });
+  return readData<{ id: string; item: WarehouseItem }>(response);
+}
+
 export async function login(username: string, password: string) {
   const response = await fetch(`${API_URL}/api/v1/auth/login`, {
     method: "POST",
@@ -797,7 +818,7 @@ export async function mountTires(input: TireMountInput) {
   return readData<Tire[]>(response);
 }
 
-export async function correctTire(id: string, input: { serial: string; brand: string; wear: number }) {
+export async function correctTire(id: string, input: { serial: string; brand: string; wear: number; km?: number | null; kmAccumulated?: number | null }) {
   const response = await authorizedFetch(`${API_URL}/api/v1/tires/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },

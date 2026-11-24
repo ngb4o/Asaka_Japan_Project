@@ -44,8 +44,47 @@ const create = async (req, res, next) => {
   }
 }
 
+const getOne = async (req, res, next) => {
+  try {
+    const result = await movementService.getOne(req.params.id)
+    res.status(StatusCodes.OK).json({
+      message: 'Lấy phiếu xuất nhập thành công!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const update = async (req, res, next) => {
+  try {
+    const result = await movementService.update(req.params.id, req.body)
+    res.status(StatusCodes.OK).json({
+      message: 'Đã sửa phiếu!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const remove = async (req, res, next) => {
+  try {
+    const result = await movementService.remove(req.params.id)
+    res.status(StatusCodes.OK).json({
+      message: 'Đã xóa phiếu!',
+      data: result
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const movementController = {
   getList,
   getByItem,
-  create
+  getOne,
+  create,
+  update,
+  remove
 }
