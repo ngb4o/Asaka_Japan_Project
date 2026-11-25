@@ -27,7 +27,7 @@ type Line = {
   note: string;
 };
 
-const DEFAULT_CONTENT = "Nội dung đề xuất gồm: Do ở xưởng BDSC Đà Nẵng chỉ có 1 thợ phụ trách công việc sửa chữa, khối lượng công việc nhiều, không đảm bảo tiến độ thực hiện và gây quá tải, vất vả cho thợ. Vì vậy nên xưởng BDSC Đà Nẵng thuê thợ ngoài vào thay lốp và sửa chữa cho xe tại xưởng.";
+const DEFAULT_CONTENT = "Nội dung đề xuất gồm: Do ở xưởng BDSC Đà Nẵng chỉ có 1 thợ phụ trách công việc sửa chữa, khối lượng công việc nhiều, không đảm bảo tiến độ thực hiện và gây quá tải. Vì vậy nên xưởng BDSC Đà Nẵng thuê thợ ngoài vào thay lốp và sửa chữa cho xe tại xưởng.";
 const DRAFTS_OPEN_KEY = "kho-tire-drafts-open";
 
 let nextLineId = 1;
